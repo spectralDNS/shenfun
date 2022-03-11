@@ -8,16 +8,17 @@ class Coordinates:
 
     Parameters
     ----------
-    psi : tuple
+    psi : tuple or sp.Symbol
         The new coordinates
     rv : tuple
         The position vector in terms of the new coordinates
     assumptions : Sympy assumptions
-        One or more Sympy assumptions (https://docs.sympy.org/latest/modules/assumptions/index.html)
+        One or more `Sympy assumptions <https://docs.sympy.org/latest/modules/assumptions/index.html>`_
     replace : sequence of two-tuples
         Use Sympy's replace with these two-tuples
     measure : Python function to replace Sympy's count_ops.
-        For example, to discourage the use of powers in an expression use
+        For example, to discourage the use of powers in an expression use::
+
         def discourage_powers(expr):
             POW = sp.Symbol('POW')
             count = sp.count_ops(expr, visual=True)
@@ -26,7 +27,7 @@ class Coordinates:
             return count
     """
     def __init__(self, psi, rv, assumptions=True, replace=(), measure=sp.count_ops):
-        self._psi = psi
+        self._psi = (psi,) if isinstance(psi, sp.Symbol) else psi
         self._rv = rv
         self._assumptions = assumptions
         self._replace = replace

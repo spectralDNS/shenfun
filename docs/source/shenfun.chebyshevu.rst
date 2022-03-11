@@ -1,11 +1,11 @@
 shenfun.chebyshevu package
-=========================
+==========================
 
 Submodules
 ----------
 
 shenfun.chebyshevu.bases module
-------------------------------
+-------------------------------
 
 .. automodule:: shenfun.chebyshevu.bases
     :members:
@@ -14,7 +14,7 @@ shenfun.chebyshevu.bases module
 
 
 shenfun.chebyshevu.matrices module
----------------------------------
+----------------------------------
 
 .. automodule:: shenfun.chebyshevu.matrices
     :members:

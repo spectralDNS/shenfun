@@ -19,7 +19,7 @@ from shenfun import inner, div, grad, TestFunction, TrialFunction, \
 # Use sympy to compute a rhs, given an analytical solution
 # Choose a solution with non-zero values
 
-domain = (-1, 1)
+domain = (-2, 1)
 x = sp.symbols("x", real=True)
 ue = sp.cos(5*sp.pi*(x+0.1)/2)
 fe = ue.diff(x, 2)
@@ -30,7 +30,8 @@ bcs = [
     {'left': ('D', ue.subs(x, domain[0])), 'right': ('D', ue.subs(x, domain[1]))},
     {'left': ('N', ue.diff(x, 1).subs(x, domain[0])), 'right': ('D', ue.subs(x, domain[1]))},
     {'left': ('D', ue.subs(x, domain[0])), 'right': ('N', ue.diff(x, 1).subs(x, domain[1]))},
-    {'right': (('D', ue.subs(x, domain[1])), ('N', ue.diff(x, 1).subs(x, domain[1])))}
+    {'right': (('D', ue.subs(x, domain[1])), ('N', ue.diff(x, 1).subs(x, domain[1])))},
+    {'left': (('D', ue.subs(x, domain[0])), ('N', ue.diff(x, 1).subs(x, domain[0])))}
 ]
 
 def main(N, family, bci, plot=False):

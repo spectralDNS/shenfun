@@ -147,9 +147,12 @@ lagBasis = (lagbases.Orthogonal,
 hBasis = (hbases.Orthogonal,)
 
 jBasis = (jbases.Orthogonal,
-          jbases.ShenDirichlet,
-          jbases.ShenBiharmonic,
-          jbases.ShenOrder6)
+          jbases.CompactDirichlet,
+          jbases.CompactNeumann,
+          jbases.Phi1,
+          jbases.Phi2,
+          jbases.Phi3,
+          jbases.Phi4)
 
 cquads = ('GC', 'GL')
 lquads = ('LG', 'GL')
@@ -376,6 +379,7 @@ def test_eval_tensor(typecode, dim, ST, quad):
              'Neumann': (1-x**2)*sin(np.pi*x),
              'Biharmonic': (1-x**2)*sin(np.pi*x),
              '6th order': (1-x**2)**2*sin(np.pi*x),
+             'Biharmonic*2': (1-x**2)**3*sin(np.pi*x),
              'BiPolar': (1-x**2)*sin(np.pi*x),
              'BiPolar0': (1-x**2)*sin(np.pi*x),
              'UpperDirichlet': (1-x)*sin(np.pi*x),
@@ -386,6 +390,7 @@ def test_eval_tensor(typecode, dim, ST, quad):
              'Neumann': (1-y**2)*sin(np.pi*y),
              'Biharmonic': (1-y**2)*sin(np.pi*y),
              '6th order': (1-y**2)**2*sin(np.pi*y),
+             'Biharmonic*2': (1-y**2)**3*sin(np.pi*y),
              'BiPolar': (1-y**2)*sin(np.pi*y),
              'BiPolar0': (1-y**2)*sin(np.pi*y),
              'UpperDirichlet': (1-y)*sin(np.pi*y),
@@ -396,6 +401,7 @@ def test_eval_tensor(typecode, dim, ST, quad):
              'Neumann': (1-z**2)*sin(np.pi*z),
              'Biharmonic': (1-z**2)*sin(np.pi*z),
              '6th order': (1-z**2)**2*sin(np.pi*z),
+             'Biharmonic*2': (1-z**2)**3*sin(np.pi*z),
              'BiPolar': (1-z**2)*sin(np.pi*z),
              'BiPolar0': (1-z**2)*sin(np.pi*z),
              'UpperDirichlet': (1-z)*sin(np.pi*z),
@@ -441,17 +447,17 @@ def test_eval_tensor(typecode, dim, ST, quad):
             t0 = time()
             result = fft.eval(points, u_hat, method=0)
             t_0 += time()-t0
-            assert np.allclose(uq, result, 0, 1e-3), np.linalg.norm(uq-result)
+            assert np.allclose(uq, result, 0, 1e-2), np.linalg.norm(uq-result)
             t0 = time()
             result = fft.eval(points, u_hat, method=1)
             t_1 += time()-t0
-            assert np.allclose(uq, result, 0, 1e-3)
+            assert np.allclose(uq, result, 0, 1e-2)
             t0 = time()
             result = fft.eval(points, u_hat, method=2)
             t_2 += time()-t0
-            assert np.allclose(uq, result, 0, 1e-3), uq/result
+            assert np.allclose(uq, result, 0, 1e-2), uq/result
             result = u_hat.eval(points)
-            assert np.allclose(uq, result, 0, 1e-3)
+            assert np.allclose(uq, result, 0, 1e-2)
 
             bases.pop(axis)
             fft.destroy()
@@ -650,12 +656,12 @@ if __name__ == '__main__':
     #test_shentransform('d', 2, lbases.UpperDirichlet, 'LG')
     #test_eval_expression()
     #test_eval_expression2('L')
-    test_project('d', 1, cBasis[3], 'GC')
+    #test_project('d', 1, cBasis[3], 'GC')
     #test_project_lag('d', 2)
     #test_project_hermite('d', 2)
     #test_project2('d', 2, lbases.ShenNeumann, 'LG')
     #test_project_2dirichlet('GL')
-    #test_eval_tensor('d', 1, jbases.ShenOrder6, 'JG')
+    test_eval_tensor('d', 1, jbases.Phi4, 'JG')
     #test_eval_fourier('D', 3)
     #test_inner('C', 'F')
     #test_refine()

@@ -15,7 +15,6 @@ bases = (
     chebyshev.MikNeumann,
     chebyshev.CombinedShenNeumann,
     chebyshev.ShenBiharmonic,
-    chebyshev.SecondNeumann,
     chebyshev.ShenBiPolar,
     chebyshev.UpperDirichlet,
     chebyshev.DirichletNeumann,
@@ -47,11 +46,11 @@ bases = (
     laguerre.Orthogonal,
     laguerre.ShenDirichlet,
     jacobi.Orthogonal,
-    jacobi.ShenDirichlet,
-    jacobi.ShenBiharmonic,
-    jacobi.ShenOrder6,
+    jacobi.CompactDirichlet,
+    jacobi.CompactNeumann,
     jacobi.Phi1,
     jacobi.Phi2,
+    jacobi.Phi3,
     jacobi.Phi4
 )
 
@@ -60,27 +59,17 @@ bcbases = (
     chebyshev.BCNeumann,
     chebyshev.BCBiharmonic,
     chebyshev.BCUpperDirichlet,
-    chebyshev.BCNeumannDirichlet,
-    chebyshev.BCDirichletNeumann,
-    chebyshev.BCUpperDirichletNeumann,
     legendre.BCDirichlet,
     legendre.BCBiharmonic,
-    legendre.BCNeumannDirichlet,
-    legendre.BCDirichletNeumann,
     legendre.BCNeumann,
     legendre.BCBeamFixedFree,
     legendre.BCLowerDirichlet,
     legendre.BCUpperDirichlet,
-    legendre.BCUpperDirichletNeumann,
-    legendre.BCDirichletNeumannDirichlet,
-    legendre.BCShenBiPolar0,
-    chebyshevu.BCDirichlet,
-    chebyshevu.BCNeumann,
+    chebyshevu.BCGeneric
 )
 
 nonBC = (
     'Apply',
-    'Neumann2',
     'Periodic',
     'Biharmonic*2'
 )
@@ -113,5 +102,5 @@ def test_eval_basis_derivative(base):
             assert np.allclose(f0, f1)
 
 if __name__ == '__main__':
-    test_eval_basis_derivative(chebyshev.Heinrichs)
-    test_eval_basis(chebyshev.Heinrichs)
+    #test_eval_basis_derivative(chebyshev.Heinrichs)
+    test_eval_basis(chebyshev.UpperDirichlet)

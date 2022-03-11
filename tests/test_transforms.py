@@ -54,9 +54,12 @@ fBasis = (fbases.R2C,
           fbases.C2C)
 
 jBasis = (jbases.Orthogonal,
-          jbases.ShenDirichlet,
-          jbases.ShenBiharmonic,
-          jbases.ShenOrder6)
+          jbases.CompactDirichlet,
+          jbases.CompactNeumann,
+          jbases.Phi1,
+          jbases.Phi2,
+          jbases.Phi3,
+          jbases.Phi4)
 
 cquads = ('GC', 'GL')
 lquads = ('LG', 'GL')
@@ -153,12 +156,10 @@ def test_eval(ST, quad):
     ST = ST(N, **kwargs)
     points, weights = ST.mpmath_points_and_weights(N)
     fk = shenfun.Function(ST)
-    fj = shenfun.Array(ST)
-    fj[:] = np.random.random(fj.shape[0])
-    fk = ST.forward(fj, fk)
-    fj = ST.backward(fk, fj)
-    fk = ST.forward(fj, fk)
+    fk[:4] = 1
+    ST.eval(np.array([0.]), fk)
     f = ST.eval(points, fk)
+    fj = fk.backward()
     assert np.allclose(fj, f, rtol=1e-5, atol=1e-6), np.linalg.norm(fj-f)
     fj = ST.backward(fk, fj, fast_transform=False)
     fk = ST.forward(fj, fk, fast_transform=False)
@@ -560,5 +561,5 @@ if __name__ == '__main__':
     #test_transforms(cBasisGC[3], 'GC')
     #test_project_1D(cBasis[0])
     #test_scalarproduct(cBasis[2], 'GC')
-    test_eval(cuBasis[1], 'GU')
+    test_eval(jBasis[4], 'JG')
     #test_axis(laBasis[1], 'LG', 1)

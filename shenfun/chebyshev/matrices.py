@@ -1742,8 +1742,8 @@ class ASNSNmat(SpectralMatrix):
             s[0] = slice(None)
             j2 = j2[tuple(s)]
         vc = v[:-2]*j2
-        d0 = -2*np.pi*(k+1)/(k+2)
-        d2 = -4*np.pi*(k[:-2]+1)/(k[:-2]+2)**2
+        d0 = -2*np.pi*(k+1)/(k+2)*self.scale*self._keyscale
+        d2 = -4*np.pi*(k[:-2]+1)/(k[:-2]+2)**2*self.scale*self._keyscale
         c[N-1] = d0[N-1]*vc[N-1]
         c[N-2] = d0[N-2]*vc[N-2]
         s0 = 0

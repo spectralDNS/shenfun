@@ -39,7 +39,7 @@ fe = ue.diff(x, 2)
 # Size of discretization
 N = int(sys.argv[-2])
 
-SD = FunctionSpace(N, family=family, bc=(a, b), domain=domain)
+SD = FunctionSpace(N, family=family, bc=(a, b), domain=domain, alpha=1, beta=2) # alpha, beta are ignored by all other than jacobi
 u = TrialFunction(SD)
 v = TestFunction(SD)
 

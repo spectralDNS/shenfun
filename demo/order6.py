@@ -37,7 +37,7 @@ elif sol == 1:
 # Size of discretization
 N = int(sys.argv[-1])
 
-SD = FunctionSpace(N, 'J', bc='6th order', domain=domain)
+SD = FunctionSpace(N, 'J', bc=(0,)*6, domain=domain)
 X = SD.mesh()
 u = TrialFunction(SD)
 v = TestFunction(SD)

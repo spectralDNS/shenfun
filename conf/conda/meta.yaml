@@ -39,9 +39,6 @@ requirements:
     - netcdf4 * mpi_{{ mpi }}_*
 
 test:
-  files:
-    - conf/conda/component-requirements.txt
-
   source_files:
     - tests
     - demo

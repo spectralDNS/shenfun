@@ -89,6 +89,41 @@ def dqn(alf, bet, n, k, gn=cn):
     """
     return gn(alf, bet, n)*djt(alf, bet, n, k)
 
+def bnd_values(alf, bet, k=0, gn=1):
+    r"""Return lambda function for computing boundary values
+
+    .. math::
+
+        \frac{d^k}{dx^k}Q_n(\pm 1)
+
+    where :math:`Q^{(\alpha,\beta)}_n = g^{(\alpha,\beta)}_n P_n^{(\alpha,\beta)}`.
+
+    Parameters
+    ----------
+    alf, bet : Numbers
+        Jacobi parameters
+    k : int, optional
+        Number of derivatives
+    gn : scaling function, optional
+    """
+    if gn == 1:
+        gn = lambda a, b, n: 1
+
+    if k == 0:
+        return (lambda i: gn(alf, bet, i)*(-1)**i*sp.binomial(i+bet, i), lambda i: gn(alf, bet, i)*sp.binomial(i+alf, i))
+    elif k == 1:
+        gam = lambda i: sp.rf(i+alf+bet+1, 1)*sp.Rational(1, 2)
+        return (lambda i: gn(alf, bet, i)*(-1)**(i-1)*gam(i)*sp.binomial(i+bet, i-1), lambda i: gn(alf, bet, i)*gam(i)*sp.binomial(i+alf, i-1))
+    elif k == 2:
+        gam = lambda i: sp.rf(i+alf+bet+1, 2)*sp.Rational(1, 4)
+        return (lambda i: gn(alf, bet, i)*(-1)**i*gam(i)*sp.binomial(i+bet, i-2), lambda i: gn(alf, bet, i)*gam(i)*sp.binomial(i+alf, i-2))
+    elif k == 3:
+        gam = lambda i: sp.rf(i+alf+bet+1, 3)*sp.Rational(1, 8)
+        return (lambda i: gn(alf, bet, i)*(-1)**i*gam(i)*sp.binomial(i+bet, i-3), lambda i: gn(alf, bet, i)*gam(i)*sp.binomial(i+alf, i-3))
+    elif k == 4:
+        gam = lambda i: sp.rf(i+alf+bet+1, 4)*sp.Rational(1, 16)
+        return (lambda i: gn(alf, bet, i)*(-1)**i*gam(i)*sp.binomial(i+bet, i-4), lambda i: gn(alf, bet, i)*gam(i)*sp.binomial(i+alf, i-4))
+
 def _a(alf, bet, i, j):
     """Matrix A for non-normalized Jacobi polynomials
     """
@@ -266,7 +301,8 @@ def gamma(alf, bet, n):
     n : int
         Index
     """
-    f = 2**(alfa+beta+1)*sp.gamma(m+alfa+1)*sp.gamma(m+beta+1)/sp.gamma(m+alfa+beta+1)/sp.gamma(m+1)/(2*m+alfa+beta+1)
+    #f = 2**(alfa+beta+1)*sp.gamma(m+alfa+1)*sp.gamma(m+beta+1)/sp.gamma(m+alfa+beta+1)/sp.gamma(m+1)/(2*m+alfa+beta+1)
+    f = sp.rf(n+1, alfa)/sp.rf(n+beta+1, alfa) * 2**(alfa+beta+1)/(2*n+alfa+beta+1)
     return sp.simplify(f.subs(m, n)).subs([(alfa, alf), (beta, bet)])
 
 def h(alf, bet, n, k, gn=1):
@@ -292,7 +328,7 @@ def h(alf, bet, n, k, gn=1):
         Legendre uses gn=1.
     """
     f = gamma(alf+k, bet+k, n-k)*(psi(alf, bet, n, k))**2
-    return sp.simplify(f) if gn == 1 else sp.simplify(gn(alf, bet, n)**2*f)
+    return f if gn == 1 else sp.simplify(gn(alf, bet, n)**2*f)
 
 def matpow(mat, q, alf, bet, i, j, gn=1):
     """Compute and return component of q'th matrix power of mat

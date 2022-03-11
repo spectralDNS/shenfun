@@ -200,7 +200,7 @@ class TensorProductSpace(PFFT):
         that sympy can evaluate `sqrt(sympy.sin(theta)**2)` to `sympy.sin(theta)`
         and not `Abs(sympy.sin(theta))`. Different coordinates may require
         different assumptions to help sympy when computing basis functions
-        etc.
+        etc. See :class:`~shenfun.coordinates.Coordinates`.
     modify_spaces_inplace : bool, optional
         Whether or not a copy should be made of the input functionspaces.
         If True, then the input spaces will be modified inplace.
@@ -1635,45 +1635,30 @@ class BoundaryValues:
     Parameters
     ----------
     T : TensorProductSpace
-    bc : tuple of numbers
-        Tuple with physical boundary values at edges of 1D domain
+    bc : Instance of :class:`.BoundaryConditions`
     """
     # pylint: disable=protected-access, redefined-outer-name, dangerous-default-value, unsubscriptable-object
 
-    def __init__(self, T, bc=(0, 0)):
+    def __init__(self, T, bc):
         self.base = T
         self.tensorproductspace = None
-        self.bc = bc            # Containing Data, sp.Exprs or np.ndarray
-        self.bcs = list((0,)*len(bc))       # Processed bc
-        self.bcs_final = list((0,)*len(bc)) # Data. May differ from bcs only for TensorProductSpaces
+        self.bc = bc
+        self.bcs = bc.orderedvals()       # Processed bc
+        self.bcs_final = bc.orderedvals() # Data. May differ from bcs only for TensorProductSpaces
         self.axis = 0
         self.bc_time = 0
-        self.update_bcs(bc=bc)
-
-    def update_bcs(self, bc=None):
-        if bc is not None:
-            assert isinstance(bc, (list, tuple))
-            assert len(bc) in (2, 3, 4, 6, 8)
-            self.bc = list(bc)
-            for i, bci in enumerate(bc):
-                if isinstance(bci, (Number, sp.Expr, np.ndarray)):
-                    self.bcs[i] = bci
-                elif bci is None:
-                    self.bcs[i] = None
-                else:
-                    raise NotImplementedError
-
-            self.bcs_final[:] = self.bcs
 
     def update_bcs_time(self, time):
         tt = sp.symbols('t', real=True)
         update_time = False
-        for i, bci in enumerate(self.bc):
-            if isinstance(bci, sp.Expr):
-                if tt in bci.free_symbols:
-                    self.bc_time = time
-                    self.bcs[i] = bci.subs(tt, time)
-                    update_time = True
+        for key, val in self.bc.items():
+            for k, bci in val.items():
+                if isinstance(bci, sp.Expr):
+                    if tt in bci.free_symbols:
+                        self.bc_time = time
+                        val[k] = bci.subs(tt, time)
+                        update_time = True
+
         if update_time:
             self.bcs_final[:] = self.bcs
             if self.tensorproductspace is not None:
@@ -1714,7 +1699,7 @@ class BoundaryValues:
             self.number_of_bases_after_this = number_of_bases_after_this
 
             if self.has_nonhomogeneous_bcs() is False:
-                for i in range(len(self.bc)):
+                for i in range(len(self.bcs)):
                     self.bcs[i] = self.bcs_final[i] = 0
                 return
 
@@ -1724,9 +1709,9 @@ class BoundaryValues:
 
             b = Array(T)
             s = T.local_slice(False)[self.axis]
-            num_bcs = len(self.bc) - np.count_nonzero(np.array(self.bc) is None)
+            num_bcs = self.bc.num_bcs()
 
-            for j, bci in enumerate(self.bc):
+            for j, bci in enumerate(self.bc.orderedvals()):
                 if isinstance(bci, sp.Expr):
                     X = T.local_mesh(True)
                     for sym in bci.free_symbols:
@@ -1743,26 +1728,17 @@ class BoundaryValues:
 
                     # Put the value in the position of the bc dofs
                     if s.stop == int(this_base.N*this_base.padding_factor):
-                        if num_bcs == 1: # e.g., UpperDirichlet
-                            b[this_base.si[-1]] = f_bci
-                        else:
-                            b[this_base.si[-(len(self.bc))+j]] = f_bci
+                        b[this_base.si[-num_bcs+j]] = f_bci
 
                 elif isinstance(bci, (Number, np.ndarray)):
                     if s.stop == int(this_base.N*this_base.padding_factor):
-                        if num_bcs == 1:
-                            b[this_base.si[-1]] = bci
-                        else:
-                            b[this_base.si[-(len(self.bc))+j]] = bci
-
-                elif bci is None:
-                    continue
+                        b[this_base.si[-num_bcs+j]] = bci
 
                 else:
                     raise NotImplementedError
 
             if len(T.get_nonhomogeneous_axes()) == 1:
-                for j, bci in enumerate(self.bc):
+                for j, bci in enumerate(self.bc.orderedvals()):
                     from .spectralbase import FuncWrap
 
                     if number_of_bases_after_this == 0:
@@ -1780,79 +1756,11 @@ class BoundaryValues:
                     # Now b_hat contains the correct slices in slm1 and slm2
                     # These are the values to use on intermediate steps.
                     # If for example a Dirichlet space is squeezed between two Fourier spaces
-                    if num_bcs == 1:
-                        self.bcs[j] = b_hat[this_base.si[-1]].copy()
-                    else:
-                        self.bcs[j] = b_hat[this_base.si[-(len(self.bc))+j]].copy()
+                    self.bcs[j] = b_hat[this_base.si[-num_bcs+j]].copy()
 
                 b_hat = T.forward(b).copy()
-                for j, bci in enumerate(self.bc):
-                    if num_bcs == 1:
-                        self.bcs_final[j] = b_hat[this_base.si[-1]].copy()
-                    else:
-                        self.bcs_final[j] = b_hat[this_base.si[-(len(self.bc))+j]].copy()
-
-            #msdict = split(T.coors.sg)
-            #assert len(msdict) == 1
-            #_c = msdict[0]['coeff']
-            #if len(T.get_nonhomogeneous_axes()) == 1:
-            #    if number_of_bases_after_this == 0:
-            #        # Dirichlet base is the first to be transformed
-            #        b_hat = b
-
-            #    elif number_of_bases_after_this == 1:
-            #        T.forward._xfftn[0].input_array[...] = b*_c
-
-            #        T.forward._xfftn[0]()
-            #        arrayA = T.forward._xfftn[0].output_array
-            #        arrayB = T.forward._xfftn[1].input_array
-            #        T.forward._transfer[0](arrayA, arrayB)
-            #        b_hat = arrayB.copy()
-
-            #    elif number_of_bases_after_this == 2:
-
-            #        T.forward._xfftn[0].input_array[...] = b*_c
-            #        T.forward._xfftn[0]()
-            #        arrayA = T.forward._xfftn[0].output_array
-            #        arrayB = T.forward._xfftn[1].input_array
-            #        T.forward._transfer[0](arrayA, arrayB)
-
-            #        T.forward._xfftn[1]()
-            #        arrayA = T.forward._xfftn[1].output_array
-            #        arrayB = T.forward._xfftn[2].input_array
-            #        T.forward._transfer[1](arrayA, arrayB)
-            #        b_hat = arrayB.copy()
-
-            #    # Now b_hat contains the correct slices in slm1 and slm2
-            #    # These are the values to use on intermediate steps. If for example the Dirichlet space is squeezed between two Fourier spaces
-            #    for i in range(len(self.bc)):
-            #        if self.bcs[i] is None:
-            #            continue
-            #        if num_bcs == 1:
-            #            self.bcs[i] = b_hat[this_base.si[-1]].copy()
-            #        else:
-            #            self.bcs[i] = b_hat[this_base.si[-(len(self.bc))+i]].copy()
-
-            #    # Final (the values to set on fully transformed functions)
-
-            #    T.forward._xfftn[0].input_array[...] = b*_c
-
-            #    for i in range(len(T.forward._transfer)):
-            #        T.forward._xfftn[i]()
-            #        arrayA = T.forward._xfftn[i].output_array
-            #        arrayB = T.forward._xfftn[i+1].input_array
-            #        T.forward._transfer[i](arrayA, arrayB)
-
-            #    T.forward._xfftn[-1]()
-            #    b_hat = T.forward._xfftn[-1].output_array
-            #    for i in range(len(self.bc)):
-            #        if self.bcs[i] is None:
-            #            continue
-            #        elif num_bcs == 1:
-            #            self.bcs_final[i] = b_hat[this_base.si[-1]].copy()
-            #        else:
-            #            self.bcs_final[i] = b_hat[this_base.si[-(len(self.bc))+i]].copy()
-
+                for j in range(self.bc.num_bcs()):
+                    self.bcs_final[j] = b_hat[this_base.si[-num_bcs+j]].copy()
 
             elif len(T.get_nonhomogeneous_axes()) == 2:
                 assert len(T.bases) == 2, 'Only implemented for 2D'
@@ -1863,38 +1771,62 @@ class BoundaryValues:
 
                 other_base = bases[0]
                 ua = Array(other_base)
-                bc_this = this_base.bc.bc.copy()
-                bc_other = other_base.bc.bc.copy()
+                lr = {'left': 0, 'right': 1}
+                num_bcs = this_base.bcs.num_bcs()
                 df = 2./(other_base.domain[1]-other_base.domain[0])
-                for i in range(2): # e.g., x = -1 and then x = 1
-                    bcj = bc_this[i]
-                    for j in range(2): # e.g., y = -1 and then y = 1
-                        xj = other_base.domain[j]
-                        sym = sp.sympify(bcj).free_symbols
-                        if len(sym) == 1:
-                            xx = sym.pop()
-                            if j == 0 and other_base.boundary_condition() == 'NeumannDirichlet':
-                                s = bcj.diff(xx, 1).subs(xx, xj)/df
-                            elif j == 1 and other_base.boundary_condition() == 'DirichletNeumann':
-                                s = bcj.diff(xx, 1).subs(xx, xj)/df
-                            elif j == 0 and other_base.boundary_condition() == 'UpperDirichletNeumann':
-                                xj = other_base.domain[1]
-                                s = bcj.subs(xx, xj)
-                            elif j == 1 and other_base.boundary_condition() == 'UpperDirichletNeumann':
-                                s = bcj.diff(xx, 1).subs(xx, xj)/df
-                            elif other_base.boundary_condition() == 'Neumann':
-                                s = bcj.diff(xx, 1).subs(xx, xj)/df
+                for i, bcj in enumerate(this_base.bcs.orderedvals()):
+                    sym = sp.sympify(bcj).free_symbols
+                    xx = sym.pop() if len(sym) == 1 else None
+                    for lr_other, bco in other_base.bcs.items():
+                        xj = other_base.domain[lr[lr_other]]
+                        for key in bco.keys():
+                            if xx is not None:
+                                if key == 'D':
+                                    bco[key] = bcj.subs(xx, xj)
+                                elif key == 'N':
+                                    bco[key] = bcj.diff(xx, 1).subs(xx, xj)/df
+                                elif key == 'N2':
+                                    bco[key] = bcj.diff(xx, 2).subs(xx, xj)/df**2
+                                elif key == 'N3':
+                                    bco[key] = bcj.diff(xx, 3).subs(xx, xj)/df**3
+                                elif key == 'N4':
+                                    bco[key] = bcj.diff(xx, 4).subs(xx, xj)/df**4
                             else:
-                                s = bcj.subs(xx, xj)
-                            other_base.bc.bc[j] = s
-                            other_base.bc.bcs[j] = s
-                            other_base.bc.bcs_final[j] = s
-                        else:
-                            other_base.bc.bc[j] = bcj
-                            other_base.bc.bcs[j] = bcj
-                            other_base.bc.bcs_final[j] = bcj
-                    ua[:] = b[this_base.si[-(len(self.bc))+i]]
+                                bco[key] = bcj
+                        other_base.bc.bcs[:] = other_base.bcs.orderedvals()
+                        other_base.bc.bcs_final[:] = other_base.bcs.orderedvals()
+                    ua[:] = b[this_base.si[-num_bcs+i]]
                     self.bcs_final[i] = project(ua, other_base)
+
+                #for i in range(2): # e.g., x = -1 and then x = 1
+                #    bcj = bc_this[i]
+                #    for j in range(2): # e.g., y = -1 and then y = 1
+                #        xj = other_base.domain[j]
+                #        sym = sp.sympify(bcj).free_symbols
+                #        if len(sym) == 1:
+                #            xx = sym.pop()
+                #            if j == 0 and other_base.boundary_condition() == 'NeumannDirichlet':
+                #                s = bcj.diff(xx, 1).subs(xx, xj)/df
+                #            elif j == 1 and other_base.boundary_condition() == 'DirichletNeumann':
+                #                s = bcj.diff(xx, 1).subs(xx, xj)/df
+                #            elif j == 0 and other_base.boundary_condition() == 'UpperDirichletNeumann':
+                #                xj = other_base.domain[1]
+                #                s = bcj.subs(xx, xj)
+                #            elif j == 1 and other_base.boundary_condition() == 'UpperDirichletNeumann':
+                #                s = bcj.diff(xx, 1).subs(xx, xj)/df
+                #            elif other_base.boundary_condition() == 'Neumann':
+                #                s = bcj.diff(xx, 1).subs(xx, xj)/df
+                #            else:
+                #                s = bcj.subs(xx, xj)
+                #            other_base.bc.bc[j] = s
+                #            other_base.bc.bcs[j] = s
+                #            other_base.bc.bcs_final[j] = s
+                #        else:
+                #            other_base.bc.bc[j] = bcj
+                #            other_base.bc.bcs[j] = bcj
+                #            other_base.bc.bcs_final[j] = bcj
+                #    ua[:] = b[this_base.si[-(len(self.bc))+i]]
+                #    self.bcs_final[i] = project(ua, other_base)
 
     def add_to_orthogonal(self, u, uh):
         """Add contribution from boundary functions to `u`
@@ -1948,29 +1880,16 @@ class BoundaryValues:
             must be a fully transformed Function.
 
         """
-
-        M = len(self.bc)
-        num_bcs = len(self.bc) - np.count_nonzero(np.array(self.bc) == None)
-
+        M = self.bc.num_bcs()
         if final is True:
             for i in range(M):
-                if num_bcs == 1:
-                    if self.bcs_final[i] is None:
-                        continue
-                    u[self.base.si[-1]] = self.bcs_final[i]
-                else:
-                    u[self.base.si[-(M)+i]] = self.bcs_final[i]
-
+                u[self.base.si[-(M)+i]] = self.bcs_final[i]
         else:
             for i in range(M):
-                if num_bcs == 1:
-                    if self.bcs[i] is None:
-                        continue
-                    u[self.base.si[-1]] = self.bcs[i]
                 u[self.base.si[-(M)+i]] = self.bcs[i]
 
     def has_nonhomogeneous_bcs(self):
-        for bc in self.bc:
+        for bc in self.bc.orderedvals():
             if isinstance(bc, Number):
                 if not bc == 0:
                     return True

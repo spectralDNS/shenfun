@@ -54,6 +54,16 @@ shenfun.tensorproductspace module
     :undoc-members:
     :show-inheritance:
 
+shenfun.coordinates module
+---------------------------------
+
+.. automodule:: shenfun.coordinates
+    :members:
+    :special-members: __call__
+    :undoc-members:
+    :show-inheritance:
+
+
 Module contents
 ---------------
 

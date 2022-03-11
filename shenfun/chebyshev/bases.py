@@ -48,7 +48,7 @@ from time import time
 from scipy.special import eval_chebyt, eval_chebyu
 from mpi4py_fft import fftw
 from shenfun.spectralbase import SpectralBase, work, Transform, FuncWrap, \
-    islicedict, slicedict, getCompositeSpace
+    islicedict, slicedict, getCompositeBase, BoundaryConditions
 from shenfun.matrixbase import SparseMatrix
 from shenfun.optimization import optimizer
 from shenfun.config import config
@@ -63,7 +63,6 @@ __all__ = ['Orthogonal',
            'CombinedShenNeumann',
            'MikNeumann',
            'ShenBiharmonic',
-           'SecondNeumann',
            'UpperDirichlet',
            'LowerDirichlet',
            'UpperDirichletNeumann',
@@ -71,15 +70,14 @@ __all__ = ['Orthogonal',
            'ShenBiPolar',
            'DirichletNeumann',
            'NeumannDirichlet',
+           'Generic',
+           'BCGeneric',
            'BCDirichlet',
            'BCBiharmonic',
            'BCNeumann',
            'BCUpperDirichlet',
            'BCLowerDirichlet',
-           'BCNeumannDirichlet',
-           'BCDirichletNeumann',
-           'BCUpperDirichletNeumann',
-           'BCLowerDirichletNeumann']
+           'CompositeBase']
 
 
 #pylint: disable=abstract-method, not-callable, method-hidden, no-self-use, cyclic-import
@@ -115,34 +113,37 @@ class DCTWrap(FuncWrap):
 
 
 class Orthogonal(SpectralBase):
-    """Function space for regular Chebyshev series
+    r"""Function space for regular Chebyshev series
+
+    The orthogonal basis is
+
+    .. math::
+
+        T_k, \quad k = 0, 1, \ldots, N-1,
+
+    where :math:`T_k` is the :math:`k`'th Chebyshev polynomial of the first
+    kind.
 
     Parameters
     ----------
-        N : int, optional
-            Number of quadrature points
-        quad : str, optional
-            Type of quadrature
+    N : int, optional
+        Number of quadrature points
+    quad : str, optional
+        Type of quadrature
 
-            - GL - Chebyshev-Gauss-Lobatto
-            - GC - Chebyshev-Gauss
-        domain : 2-tuple of floats, optional
-            The computational domain
-        dtype : data-type, optional
-            Type of input data in real physical space. Will be overloaded when
-            basis is part of a :class:`.TensorProductSpace`.
-        padding_factor : float, optional
-            Factor for padding backward transforms.
-        dealias_direct : bool, optional
-            Set upper 1/3 of coefficients to zero before backward transform
-        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
-            Map for curvilinear coordinatesystem.
-            The new coordinate variable in the new coordinate system is the first item.
-            Second item is a tuple for the Cartesian position vector as function of the
-            new variable in the first tuple. Example::
-
-                theta = sp.Symbols('x', real=True, positive=True)
-                rv = (sp.cos(theta), sp.sin(theta))
+        - GL - Chebyshev-Gauss-Lobatto
+        - GC - Chebyshev-Gauss
+    domain : 2-tuple of floats, optional
+        The computational domain
+    dtype : data-type, optional
+        Type of input data in real physical space. Will be overloaded when
+        basis is part of a :class:`.TensorProductSpace`.
+    padding_factor : float, optional
+        Factor for padding backward transforms.
+    dealias_direct : bool, optional
+        Set upper 1/3 of coefficients to zero before backward transform
+    coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
+        Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
     """
 
     def __init__(self, N, quad='GC', domain=(-1., 1.), dtype=float, padding_factor=1,
@@ -227,10 +228,8 @@ class Orthogonal(SpectralBase):
         return sp.chebyshevt(i, x)
 
     def bnd_values(self, k=0):
-        if k == 0:
-            return (lambda i: (-1)**i, lambda i: 1)
-        elif k == 1:
-            return (lambda i: (-1)**(i+1)*i**2, lambda i: i**2)
+        from shenfun.jacobi.recursions import bnd_values, cn, half
+        return bnd_values(-half, -half, k=k, gn=cn)
 
     def evaluate_basis(self, x, i=0, output_array=None):
         x = np.atleast_1d(x)
@@ -240,10 +239,10 @@ class Orthogonal(SpectralBase):
         output_array[:] = eval_chebyt(i, x)
         return output_array
 
-    def evaluate_basis_all(self, x=None, argument=0):
-        if x is None:
-            x = self.mesh(False, False)
-        return self.vandermonde(x)
+    #def evaluate_basis_all(self, x=None, argument=0):
+    #    if x is None:
+    #        x = self.mesh(False, False)
+    #    return self.vandermonde(x)
 
     def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
         if x is None:
@@ -333,6 +332,12 @@ class Orthogonal(SpectralBase):
     def get_orthogonal(self):
         return self
 
+    def get_bc_basis(self):
+        if self._bc_basis:
+            return self._bc_basis
+        self._bc_basis = BCGeneric(self.N, bc=self.bcs, domain=self.domain)
+        return self._bc_basis
+
     def plan(self, shape, axis, dtype, options):
         if shape in (0, (0,)):
             return
@@ -389,50 +394,54 @@ class Orthogonal(SpectralBase):
 
 # Note that all composite spaces rely on the fast transforms of
 # the orthogonal space. For this reason we have an intermediate
-# class CompositeSpace for all composite spaces, where common code
+# class CompositeBase for all composite spaces, where common code
 # is implemented and reused by all.
-CompositeSpace = getCompositeSpace(Orthogonal)
+CompositeBase = getCompositeBase(Orthogonal)
 
-class ShenDirichlet(CompositeSpace):
-    r"""Function space for Dirichlet boundary conditions
+class ShenDirichlet(CompositeBase):
+    r"""Function space for Dirichlet boundary conditions.
 
-    u(-1)=a and u(1)=b
-
-    The basis function is
+    The basis :math:`\{\phi_k\}_{k=0}^{N-1}` is
 
     .. math::
 
-        \phi_k = T_k - T_{k+2}
+        \phi_k &= T_k - T_{k+2}, \, k=0, 1, \ldots, N-3, \\
+        \phi_{N-2} &= \frac{1}{2}(T_0-T_1), \\
+        \phi_{N-1} &= \frac{1}{2}(T_0+T_1),
+
+    such that
+
+    .. math::
+        u(x) &= \sum_{k=0}^{N-1} \hat{u}_k \phi_k(x), \\
+        u(-1) &= a \text{ and } u(1) = b.
+
+    The last two bases are for boundary conditions and only used if a or b are
+    different from 0. In one dimension :math:`\hat{u}_{N-2}=a` and
+    :math:`\hat{u}_{N-1}=b`.
 
     Parameters
     ----------
-        N : int, optional
-            Number of quadrature points
-        quad : str, optional
-            Type of quadrature
+    N : int, optional
+        Number of quadrature points
+    quad : str, optional
+        Type of quadrature
 
-            - GL - Chebyshev-Gauss-Lobatto
-            - GC - Chebyshev-Gauss
+        - GL - Chebyshev-Gauss-Lobatto
+        - GC - Chebyshev-Gauss
 
-        bc : 2-tuple of floats, optional
-            Boundary conditions at, respectively, x=(-1, 1).
-        domain : 2-tuple of floats, optional
-            The computational domain
-        dtype : data-type, optional
-            Type of input data in real physical space. Will be overloaded when
-            basis is part of a :class:`.TensorProductSpace`.
-        padding_factor : float, optional
-            Factor for padding backward transforms.
-        dealias_direct : bool, optional
-            Set upper 1/3 of coefficients to zero before backward transform
-        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
-            Map for curvilinear coordinatesystem.
-            The new coordinate variable in the new coordinate system is the first item.
-            Second item is a tuple for the Cartesian position vector as function of the
-            new variable in the first tuple. Example::
-
-                theta = sp.Symbols('x', real=True, positive=True)
-                rv = (sp.cos(theta), sp.sin(theta))
+    bc : 2-tuple of floats, optional
+        Boundary conditions at, respectively, x=(-1, 1).
+    domain : 2-tuple of floats, optional
+        The computational domain
+    dtype : data-type, optional
+        Type of input data in real physical space. Will be overloaded when
+        basis is part of a :class:`.TensorProductSpace`.
+    padding_factor : float, optional
+        Factor for padding backward transforms.
+    dealias_direct : bool, optional
+        Set upper 1/3 of coefficients to zero before backward transform
+    coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
+        Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
 
     Note
     ----
@@ -442,9 +451,9 @@ class ShenDirichlet(CompositeSpace):
 
     def __init__(self, N, quad="GC", bc=(0, 0), domain=(-1., 1.), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None, **kw):
-        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
-                                padding_factor=padding_factor, dealias_direct=dealias_direct,
-                                coordinates=coordinates)
+        CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
+                               padding_factor=padding_factor, dealias_direct=dealias_direct,
+                               coordinates=coordinates)
 
     @staticmethod
     def boundary_condition():
@@ -489,65 +498,61 @@ class ShenDirichlet(CompositeSpace):
         self.bc.add_to_orthogonal(output_array, input_array)
         return output_array
 
-    def get_bc_basis(self):
-        if self._bc_basis:
-            return self._bc_basis
-        self._bc_basis = BCDirichlet(self.N, quad=self.quad, domain=self.domain,
-                                     coordinates=self.coors.coordinates)
-        return self._bc_basis
+class Phi1(CompositeBase):
+    r"""Function space for Dirichlet boundary conditions.
 
-class Phi1(CompositeSpace):
-    r"""Function space for Dirichlet boundary conditions
-
-    u(-1)=a and u(1)=b
-
-    The basis function is
+    The basis :math:`\{\phi_k\}_{k=0}^{N-1}` is
 
     .. math::
 
-        \phi_k = (T_k - T_{k+2})/(\pi (k+1)) = \frac{2(1-x^2)}{\pi k(k+1)} T'_{k+1}
+        \phi_k &= \frac{T_k - T_{k+2}}{\pi (k+1)} = \frac{2(1-x^2)}{\pi k(k+1)} T'_{k+1}, \, k=0, 1, \ldots, N-3, \\
+        \phi_{N-2} &= \frac{1}{2}(T_0-T_1), \\
+        \phi_{N-1} &= \frac{1}{2}(T_0+T_1),
+
+    such that
+
+    .. math::
+        u(x) &= \sum_{k=0}^{N-1} \hat{u}_k \phi_k(x), \\
+        u(-1) &= a \text{ and } u(1) = b.
+
+    The last two bases are for boundary conditions and only used if a or b are
+    different from 0. In one dimension :math:`\hat{u}_{N-2}=a` and
+    :math:`\hat{u}_{N-1}=b`.
 
     Parameters
     ----------
-        N : int, optional
-            Number of quadrature points
-        quad : str, optional
-            Type of quadrature
+    N : int, optional
+        Number of quadrature points
+    quad : str, optional
+        Type of quadrature
 
-            - GL - Chebyshev-Gauss-Lobatto
-            - GC - Chebyshev-Gauss
+        - GL - Chebyshev-Gauss-Lobatto
+        - GC - Chebyshev-Gauss
 
-        bc : 2-tuple of floats, optional
-            Boundary conditions at, respectively, x=(-1, 1).
-        domain : 2-tuple of floats, optional
-            The computational domain
-        dtype : data-type, optional
-            Type of input data in real physical space. Will be overloaded when
-            basis is part of a :class:`.TensorProductSpace`.
-        padding_factor : float, optional
-            Factor for padding backward transforms.
-        dealias_direct : bool, optional
-            Set upper 1/3 of coefficients to zero before backward transform
-        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
-            Map for curvilinear coordinatesystem.
-            The new coordinate variable in the new coordinate system is the first item.
-            Second item is a tuple for the Cartesian position vector as function of the
-            new variable in the first tuple. Example::
-
-                theta = sp.Symbols('x', real=True, positive=True)
-                rv = (sp.cos(theta), sp.sin(theta))
+    bc : 2-tuple of floats, optional
+        Boundary conditions at, respectively, x=(-1, 1).
+    domain : 2-tuple of floats, optional
+        The computational domain
+    dtype : data-type, optional
+        Type of input data in real physical space. Will be overloaded when
+        basis is part of a :class:`.TensorProductSpace`.
+    padding_factor : float, optional
+        Factor for padding backward transforms.
+    dealias_direct : bool, optional
+        Set upper 1/3 of coefficients to zero before backward transform
+    coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
+        Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
 
     Note
     ----
     A test function is always using homogeneous boundary conditions.
 
     """
-
     def __init__(self, N, quad="GC", bc=(0, 0), domain=(-1., 1.), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None, **kw):
-        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
-                                padding_factor=padding_factor, dealias_direct=dealias_direct,
-                                coordinates=coordinates)
+        CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
+                               padding_factor=padding_factor, dealias_direct=dealias_direct,
+                               coordinates=coordinates)
 
     @staticmethod
     def boundary_condition():
@@ -567,62 +572,54 @@ class Phi1(CompositeSpace):
         sc = 1/np.pi/(np.arange(N)+1)
         return SparseMatrix({0: d*sc, 2: -sc[:-2]}, (N, N))
 
-    def get_bc_basis(self):
-        if self._bc_basis:
-            return self._bc_basis
-        self._bc_basis = BCDirichlet(self.N, quad=self.quad, domain=self.domain,
-                                     coordinates=self.coors.coordinates)
-        return self._bc_basis
 
-
-class Heinrichs(CompositeSpace):
+class Heinrichs(CompositeBase):
     r"""Function space for Dirichlet boundary conditions
 
-    u(-1)=a and u(1)=b
-
-    The basis function is
+    The basis :math:`\{\phi_k\}_{k=0}^{N-1}` is
 
     .. math::
 
-        \phi_k = (1-x^2)T_k
+        \phi_k &= \alpha_k(1-x^2) T_{k}, \, k=0, 1, \ldots, N-3, \\
+        \phi_{N-2} &= \frac{1}{2}(T_0-T_1), \\
+        \phi_{N-1} &= \frac{1}{2}(T_0+T_1),
 
-    If scaled is True it is
+    such that
 
     .. math::
+        u(x) &= \sum_{k=0}^{N-1} \hat{u}_k \phi_k(x), \\
+        u(-1) &= a \text{ and } u(1) = b.
 
-        \phi_k = (1-x^2)T_k/(k+1)/(k+2)
+    The last two bases are for boundary conditions and only used if a or b are
+    different from 0. In one dimension :math:`\hat{u}_{N-2}=a` and
+    :math:`\hat{u}_{N-1}=b`. If the parameter `scaled=True`, then
+    :math:`\alpha_k=1/(k+1)/(k+2)`, otherwise, :math:`\alpha_k=1`.
 
     Parameters
     ----------
-        N : int, optional
-            Number of quadrature points
-        quad : str, optional
-            Type of quadrature
+    N : int, optional
+        Number of quadrature points
+    quad : str, optional
+        Type of quadrature
 
-            - GL - Chebyshev-Gauss-Lobatto
-            - GC - Chebyshev-Gauss
+        - GL - Chebyshev-Gauss-Lobatto
+        - GC - Chebyshev-Gauss
 
-        bc : 2-tuple of floats, optional
-            Boundary conditions at, respectively, x=(-1, 1).
-        domain : 2-tuple of floats, optional
-            The computational domain
-        dtype : data-type, optiona
-            Type of input data in real physical space. Will be overloaded when
-            basis is part of a :class:`.TensorProductSpace`.
-        scaled : bool, optional
-            Whether or not to use scaled basis
-        padding_factor : float, optional
-            Factor for padding backward transforms.
-        dealias_direct : bool, optional
-            Set upper 1/3 of coefficients to zero before backward transform
-        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
-            Map for curvilinear coordinatesystem.
-            The new coordinate variable in the new coordinate system is the first item.
-            Second item is a tuple for the Cartesian position vector as function of the
-            new variable in the first tuple. Example::
-
-                theta = sp.Symbols('x', real=True, positive=True)
-                rv = (sp.cos(theta), sp.sin(theta))
+    bc : 2-tuple of floats, optional
+        Boundary conditions at, respectively, x=(-1, 1).
+    domain : 2-tuple of floats, optional
+        The computational domain
+    dtype : data-type, optiona
+        Type of input data in real physical space. Will be overloaded when
+        basis is part of a :class:`.TensorProductSpace`.
+    scaled : bool, optional
+        Whether or not to use scaled basis
+    padding_factor : float, optional
+        Factor for padding backward transforms.
+    dealias_direct : bool, optional
+        Set upper 1/3 of coefficients to zero before backward transform
+    coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
+        Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
 
     Note
     ----
@@ -632,9 +629,9 @@ class Heinrichs(CompositeSpace):
 
     def __init__(self, N, quad="GC", bc=(0, 0), domain=(-1., 1.), dtype=float, scaled=False,
                  padding_factor=1, dealias_direct=False, coordinates=None, **kw):
-        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc, scaled=scaled,
-                                padding_factor=padding_factor, dealias_direct=dealias_direct,
-                                coordinates=coordinates)
+        CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc, scaled=scaled,
+                               padding_factor=padding_factor, dealias_direct=dealias_direct,
+                               coordinates=coordinates)
 
     @staticmethod
     def boundary_condition():
@@ -663,59 +660,59 @@ class Heinrichs(CompositeSpace):
     def slice(self):
         return slice(0, self.N-2)
 
-    def get_bc_basis(self):
-        if self._bc_basis:
-            return self._bc_basis
-        self._bc_basis = BCDirichlet(self.N, quad=self.quad, domain=self.domain,
-                                     coordinates=self.coors.coordinates)
-        return self._bc_basis
-
-class ShenNeumann(CompositeSpace):
+class ShenNeumann(CompositeBase):
     r"""Function space for Neumann boundary conditions
 
-    u'(-1)=a and u'(1)=b
-
-    The basis function is
+    The basis :math:`\{\phi_k\}_{k=0}^{N-1}` is
 
     .. math::
 
-        \phi_n = T_n - \left(\frac{k}{k+2}\right)^2 T_{n+2}
+        \phi_k &= T_{k} - \left(\frac{k}{k+2}\right)^2 T_{k+2}, \, k=0, 1, \ldots, N-3, \\
+        \phi_{N-2} &= \frac{1}{8}(4T_1-T_2), \\
+        \phi_{N-1} &= \frac{1}{8}(4T_1+T_2),
+
+    such that
+
+    .. math::
+        u(x) &= \sum_{k=0}^{N-1} \hat{u}_k \phi_k(x), \\
+        u'(-1) &= a \text{ and } u'(1) = b.
+
+    The last two bases are for boundary conditions and only used if a or b are
+    different from 0. In one dimension :math:`\hat{u}_{N-2}=a` and
+    :math:`\hat{u}_{N-1}=b`.
 
     Parameters
     ----------
-        N : int, optional
-            Number of quadrature points
-        quad : str, optional
-            Type of quadrature
+    N : int, optional
+        Number of quadrature points
+    quad : str, optional
+        Type of quadrature
 
-            - GL - Chebyshev-Gauss-Lobatto
-            - GC - Chebyshev-Gauss
+        - GL - Chebyshev-Gauss-Lobatto
+        - GC - Chebyshev-Gauss
 
-        bc : 2-tuple of floats, optional
-            Boundary condition values at, respectively, x=(-1, 1).
-        domain : 2-tuple of floats, optional
-            The computational domain
-        dtype : data-type, optional
-            Type of input data in real physical space. Will be overloaded when
-            basis is part of a :class:`.TensorProductSpace`.
-        padding_factor : float, optional
-            Factor for padding backward transforms.
-        dealias_direct : bool, optional
-            Set upper 1/3 of coefficients to zero before backward transform
-        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
-            Map for curvilinear coordinatesystem.
-            The new coordinate variable in the new coordinate system is the first item.
-            Second item is a tuple for the Cartesian position vector as function of the
-            new variable in the first tuple. Example::
+    bc : 2-tuple of floats, optional
+        Boundary condition values at, respectively, x=(-1, 1).
+    domain : 2-tuple of floats, optional
+        The computational domain
+    dtype : data-type, optional
+        Type of input data in real physical space. Will be overloaded when
+        basis is part of a :class:`.TensorProductSpace`.
+    padding_factor : float, optional
+        Factor for padding backward transforms.
+    dealias_direct : bool, optional
+        Set upper 1/3 of coefficients to zero before backward transform
+    coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
+        Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
 
-                theta = sp.Symbols('x', real=True, positive=True)
-                rv = (sp.cos(theta), sp.sin(theta))
     """
     def __init__(self, N, quad="GC", bc=(0, 0), domain=(-1., 1.), dtype=float, padding_factor=1,
                  dealias_direct=False, coordinates=None, **kw):
-        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
-                                padding_factor=padding_factor, dealias_direct=dealias_direct,
-                                coordinates=coordinates)
+        if isinstance(bc, (tuple, list)):
+            bc = BoundaryConditions({'left': {'N': bc[0]}, 'right': {'N': bc[1]}})
+        CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
+                               padding_factor=padding_factor, dealias_direct=dealias_direct,
+                               coordinates=coordinates)
 
     @staticmethod
     def boundary_condition():
@@ -735,19 +732,11 @@ class ShenNeumann(CompositeSpace):
     def slice(self):
         return slice(0, self.N-2)
 
-    def get_bc_basis(self):
-        if self._bc_basis:
-            return self._bc_basis
-        self._bc_basis = BCNeumann(self.N, quad=self.quad, domain=self.domain,
-                                   coordinates=self.coors.coordinates)
-        return self._bc_basis
 
-class CombinedShenNeumann(CompositeSpace):
+class CombinedShenNeumann(CompositeBase):
     r"""Function space for Neumann boundary conditions
 
-    u'(-1)=a and u'(1)=b
-
-    The basis functions are
+    The basis :math:`\{\phi_k\}_{k=0}^{N-1}` is
 
     .. math::
 
@@ -755,44 +744,53 @@ class CombinedShenNeumann(CompositeSpace):
             T_0, \quad &k=0, \\
             T_1 - T_3/9, \quad &k=1, \\
             T_2/4 - T_4/16, \quad &k=2, \\
-            -\frac{T_{k-2}}{(k-2)^2} +2\frac{T_k}{k^2} - \frac{T_{k+2}}{(k+2)^2}, &k=3, 4, \ldots, N-3.
+            -\frac{T_{k-2}}{(k-2)^2} +2\frac{T_k}{k^2} - \frac{T_{k+2}}{(k+2)^2}, &k=3, 4, \ldots, N-3, \\
+            \frac{1}{8}(4T_1-T_2), \quad &k=N-2 \\
+            \frac{1}{8}(4T_1+T_2), \quad &k=N-1
         \end{cases}
+
+    such that
+
+    .. math::
+        u(x) &= \sum_{k=0}^{N-1} \hat{u}_k \phi_k(x), \\
+        u'(-1) &= a \text{ and } u'(1) = b.
+
+    The last two bases are for boundary conditions and only used if a or b are
+    different from 0. In one dimension :math:`\hat{u}_{N-2}=a` and
+    :math:`\hat{u}_{N-1}=b`.
 
     Parameters
     ----------
-        N : int, optional
-            Number of quadrature points
-        quad : str, optional
-            Type of quadrature
+    N : int, optional
+        Number of quadrature points
+    quad : str, optional
+        Type of quadrature
 
-            - GL - Chebyshev-Gauss-Lobatto
-            - GC - Chebyshev-Gauss
+        - GL - Chebyshev-Gauss-Lobatto
+        - GC - Chebyshev-Gauss
 
-        bc : 2-tuple of floats, optional
-            Boundary condition values at, respectively, x=(-1, 1).
-        domain : 2-tuple of floats, optional
-            The computational domain
-        dtype : data-type, optional
-            Type of input data in real physical space. Will be overloaded when
-            basis is part of a :class:`.TensorProductSpace`.
-        padding_factor : float, optional
-            Factor for padding backward transforms.
-        dealias_direct : bool, optional
-            Set upper 1/3 of coefficients to zero before backward transform
-        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
-            Map for curvilinear coordinatesystem.
-            The new coordinate variable in the new coordinate system is the first item.
-            Second item is a tuple for the Cartesian position vector as function of the
-            new variable in the first tuple. Example::
+    bc : 2-tuple of floats, optional
+        Boundary condition values at, respectively, x=(-1, 1).
+    domain : 2-tuple of floats, optional
+        The computational domain
+    dtype : data-type, optional
+        Type of input data in real physical space. Will be overloaded when
+        basis is part of a :class:`.TensorProductSpace`.
+    padding_factor : float, optional
+        Factor for padding backward transforms.
+    dealias_direct : bool, optional
+        Set upper 1/3 of coefficients to zero before backward transform
+    coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
+        Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
 
-                theta = sp.Symbols('x', real=True, positive=True)
-                rv = (sp.cos(theta), sp.sin(theta))
     """
     def __init__(self, N, quad="GC", bc=(0, 0), domain=(-1., 1.), dtype=float, padding_factor=1,
                  dealias_direct=False, coordinates=None, **kw):
-        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
-                                padding_factor=padding_factor, dealias_direct=dealias_direct,
-                                coordinates=coordinates)
+        if isinstance(bc, (tuple, list)):
+            bc = BoundaryConditions({'left': {'N': bc[0]}, 'right': {'N': bc[1]}})
+        CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
+                               padding_factor=padding_factor, dealias_direct=dealias_direct,
+                               coordinates=coordinates)
 
     @staticmethod
     def boundary_condition():
@@ -821,59 +819,69 @@ class CombinedShenNeumann(CompositeSpace):
     def slice(self):
         return slice(0, self.N-2)
 
-    def get_bc_basis(self):
-        if self._bc_basis:
-            return self._bc_basis
-        self._bc_basis = BCNeumann(self.N, quad=self.quad, domain=self.domain,
-                                   coordinates=self.coors.coordinates)
-        return self._bc_basis
-
-class MikNeumann(CompositeSpace):
+class MikNeumann(CompositeBase):
     r"""Function space for Neumann boundary conditions
 
-    u'(-1)=a and u'(1)=b
-
-    The basis function is
+    The basis :math:`\{\phi_k\}_{k=0}^{N-1}` is
 
     .. math::
 
-        \phi_k = \frac{2}{k+1}\int (T_{k-1}-T_{k+1})
+        \phi_k &= \frac{2}{k+1}\int (T_{k-1}-T_{k+1}) \\
+
+    which (with also boundary bases) becomes
+
+    .. math::
+
+        \phi_k = \frac{1}{k+1} \begin{cases}
+            T_0, &k=0, \\
+            3T_1-T_3/3, &k=1, \\
+            T_2-T_4/4, &k=2, \\
+            -\frac{T_{k-2}}{k-2} + 2\frac{T_k}{k} - \frac{T_{k+2}}{k+2} , &k=3, 4, \ldots, N-3, \\
+            \frac{1}{8}(4T_1-T_2), \quad &k=N-2 \\
+            \frac{1}{8}(4T_1+T_2), \quad &k=N-1
+        \end{cases}
+
+    such that
+
+    .. math::
+        u(x) &= \sum_{k=0}^{N-1} \hat{u}_k \phi_k(x), \\
+        u'(-1) &= a \text{ and } u'(1) = b.
+
+    The last two bases are for boundary conditions and only used if a or b are
+    different from 0. In one dimension :math:`\hat{u}_{N-2}=a` and
+    :math:`\hat{u}_{N-1}=b`.
 
     Parameters
     ----------
-        N : int, optional
-            Number of quadrature points
-        quad : str, optional
-            Type of quadrature
+    N : int, optional
+        Number of quadrature points
+    quad : str, optional
+        Type of quadrature
 
-            - GL - Chebyshev-Gauss-Lobatto
-            - GC - Chebyshev-Gauss
+        - GL - Chebyshev-Gauss-Lobatto
+        - GC - Chebyshev-Gauss
 
-        bc : 2-tuple of floats, optional
-            Boundary condition values at, respectively, x=(-1, 1).
-        domain : 2-tuple of floats, optional
-            The computational domain
-        dtype : data-type, optional
-            Type of input data in real physical space. Will be overloaded when
-            basis is part of a :class:`.TensorProductSpace`.
-        padding_factor : float, optional
-            Factor for padding backward transforms.
-        dealias_direct : bool, optional
-            Set upper 1/3 of coefficients to zero before backward transform
-        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
-            Map for curvilinear coordinatesystem.
-            The new coordinate variable in the new coordinate system is the first item.
-            Second item is a tuple for the Cartesian position vector as function of the
-            new variable in the first tuple. Example::
-
-                theta = sp.Symbols('x', real=True, positive=True)
-                rv = (sp.cos(theta), sp.sin(theta))
+    bc : 2-tuple of floats, optional
+        Boundary condition values at, respectively, x=(-1, 1).
+    domain : 2-tuple of floats, optional
+        The computational domain
+    dtype : data-type, optional
+        Type of input data in real physical space. Will be overloaded when
+        basis is part of a :class:`.TensorProductSpace`.
+    padding_factor : float, optional
+        Factor for padding backward transforms.
+    dealias_direct : bool, optional
+        Set upper 1/3 of coefficients to zero before backward transform
+    coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
+        Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
     """
     def __init__(self, N, quad="GC", bc=(0, 0), domain=(-1., 1.), dtype=float, padding_factor=1,
                  dealias_direct=False, coordinates=None, **kw):
-        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
-                                padding_factor=padding_factor, dealias_direct=dealias_direct,
-                                coordinates=coordinates)
+        if isinstance(bc, (tuple, list)):
+            bc = BoundaryConditions({'left': {'N': bc[0]}, 'right': {'N': bc[1]}})
+        CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
+                               padding_factor=padding_factor, dealias_direct=dealias_direct,
+                               coordinates=coordinates)
 
     @staticmethod
     def boundary_condition():
@@ -904,63 +912,62 @@ class MikNeumann(CompositeSpace):
     def slice(self):
         return slice(0, self.N-2)
 
-    def get_bc_basis(self):
-        if self._bc_basis:
-            return self._bc_basis
-        self._bc_basis = BCNeumann(self.N, quad=self.quad, domain=self.domain,
-                                   coordinates=self.coors.coordinates)
-        return self._bc_basis
 
-class ShenBiharmonic(CompositeSpace):
-    r"""Function space for biharmonic equation with 2 Dirichlet and
-    2 Neumann boundary conditions
+class ShenBiharmonic(CompositeBase):
+    r"""Function space for biharmonic equation.
 
-    u(-1)=a, u(1)=c, u'(-1)=b and u'(1)=d
-
-    The basis functions are
+    The basis :math:`\{\phi_k\}_{k=0}^{N-1}` is
 
     .. math::
 
-        \phi_n = T_n - \frac{2(n+2)}{n+3}T_{n+2}+\frac{n+1}{n+3}T_{n+4}
+        \phi_k &= T_n - \frac{2(n+2)}{n+3}T_{n+2}+\frac{n+1}{n+3}T_{n+4}, \, k=0, 1, \ldots, N-5, \\
+        \phi_{N-4} &= \frac{1}{16}(8T_0-9T_1+T_3), \\
+        \phi_{N-3} &= \frac{1}{16}(2T_0-T_1-2T_2+T_3), \\
+        \phi_{N-2} &= \frac{1}{16}(8T_0+9T_1-T_3), \\
+        \phi_{N-1} &= \frac{1}{16}(2T_0-T_1+2T_2+T_3),
+
+    such that
+
+    .. math::
+        u(x) &= \sum_{k=0}^{N-1} \hat{u}_k \phi_k(x), \\
+        u(-1)&=a, u'(-1) = b, u(1)=c, u'(1) = d.
+
+    The last four bases are for boundary conditions and only used if a, b, c or d are
+    different from 0. In one dimension :math:`\hat{u}_{N-4}=a`, :math:`\hat{u}_{N-3}=b`,
+    :math:`\hat{u}_{N-2}=c` and :math:`\hat{u}_{N-1}=d`.
 
     Parameters
     ----------
-        N : int, optional
-            Number of quadrature points
-        quad : str, optional
-            Type of quadrature
+    N : int, optional
+        Number of quadrature points
+    quad : str, optional
+        Type of quadrature
 
-            - GL - Chebyshev-Gauss-Lobatto
-            - GC - Chebyshev-Gauss
-        bc : 4-tuple of numbers
-            The values of the 4 boundary conditions at x=(-1, 1).
-            The two conditions on x=-1 first, and then x=1.
-            With (a, b, c, d) corresponding to
-            bc = {'left': [('D', a), ('N', b)], 'right': [('D', c), ('N', d)]}
-        domain : 2-tuple of floats, optional
-            The computational domain
-        dtype : data-type, optional
-            Type of input data in real physical space. Will be overloaded when
-            basis is part of a :class:`.TensorProductSpace`.
-        padding_factor : float, optional
-            Factor for padding backward transforms.
-        dealias_direct : bool, optional
-            Set upper 1/3 of coefficients to zero before backward transform
-        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
-            Map for curvilinear coordinatesystem.
-            The new coordinate variable in the new coordinate system is the first item.
-            Second item is a tuple for the Cartesian position vector as function of the
-            new variable in the first tuple. Example::
-
-                theta = sp.Symbols('x', real=True, positive=True)
-                rv = (sp.cos(theta), sp.sin(theta))
+        - GL - Chebyshev-Gauss-Lobatto
+        - GC - Chebyshev-Gauss
+    bc : 4-tuple of numbers
+        The values of the 4 boundary conditions at x=(-1, 1).
+        The two conditions on x=-1 first, and then x=1.
+        With (a, b, c, d) corresponding to
+        bc = {'left': [('D', a), ('N', b)], 'right': [('D', c), ('N', d)]}
+    domain : 2-tuple of floats, optional
+        The computational domain
+    dtype : data-type, optional
+        Type of input data in real physical space. Will be overloaded when
+        basis is part of a :class:`.TensorProductSpace`.
+    padding_factor : float, optional
+        Factor for padding backward transforms.
+    dealias_direct : bool, optional
+        Set upper 1/3 of coefficients to zero before backward transform
+    coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
+        Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
 
     """
     def __init__(self, N, quad="GC", bc=(0, 0, 0, 0), domain=(-1., 1.), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None, **kw):
-        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
-                                padding_factor=padding_factor, dealias_direct=dealias_direct,
-                                coordinates=coordinates)
+        CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
+                               padding_factor=padding_factor, dealias_direct=dealias_direct,
+                               coordinates=coordinates)
 
     @staticmethod
     def boundary_condition():
@@ -983,62 +990,68 @@ class ShenBiharmonic(CompositeSpace):
     def slice(self):
         return slice(0, self.N-4)
 
-    def get_bc_basis(self):
-        if self._bc_basis:
-            return self._bc_basis
-        self._bc_basis = BCBiharmonic(self.N, quad=self.quad, domain=self.domain,
-                                      coordinates=self.coors.coordinates)
-        return self._bc_basis
 
-class Phi2(CompositeSpace):
-    r"""Function space for biharmonic equation with 2 Dirichlet and
-    2 Neumann boundary conditions
+class Phi2(CompositeBase):
+    r"""Function space for biharmonic equation.
 
-    u(-1)=a, u(1)=c, u'(-1)=b and u'(1)=d
+    The basis :math:`\{\phi_k\}_{k=0}^{N-1}` is
 
     .. math::
 
-        \phi_k &= (T_k - \frac{2(k+2)}{k+3}T_{k+2} + \frac{k+1}{k+3}T_{k+4})/(2 \pi (k+1)(k+2)), \\
-               &= \frac{2(1-x^2)^2}{\pi (k+1)(k+2)^2(k+3)} T''_{k+2}
+        \phi_k = \frac{2(1-x^2)^2 T''_{k+2}}{\pi (k+1)(k+2)^2(k+3)} ,
+
+    which (along with boundary functions) becomes
+
+    .. math::
+
+        \phi_k &= \frac{1}{2 \pi (k+1)(k+2)}(T_k - \frac{2(k+2)}{k+3}T_{k+2} + \frac{k+1}{k+3}T_{k+4}), \, k=0, 1, \ldots, N-5, \\
+        \phi_{N-4} &= \frac{1}{16}(8T_0-9T_1+T_3), \\
+        \phi_{N-3} &= \frac{1}{16}(2T_0-T_1-2T_2+T_3), \\
+        \phi_{N-2} &= \frac{1}{16}(8T_0+9T_1-T_3), \\
+        \phi_{N-1} &= \frac{1}{16}(2T_0-T_1+2T_2+T_3),
+
+    such that
+
+    .. math::
+        u(x) &= \sum_{k=0}^{N-1} \hat{u}_k \phi_k(x), \\
+        u(-1)&=a, u'(-1) = b, u(1)=c, u'(1) = d.
+
+    The last four bases are for boundary conditions and only used if a, b, c or d are
+    different from 0. In one dimension :math:`\hat{u}_{N-4}=a`, :math:`\hat{u}_{N-3}=b`,
+    :math:`\hat{u}_{N-2}=c` and :math:`\hat{u}_{N-1}=d`.
 
     Parameters
     ----------
-        N : int, optional
-            Number of quadrature points
-        quad : str, optional
-            Type of quadrature
+    N : int, optional
+        Number of quadrature points
+    quad : str, optional
+        Type of quadrature
 
-            - GL - Chebyshev-Gauss-Lobatto
-            - GC - Chebyshev-Gauss
-        bc : 4-tuple of numbers
-            The values of the 4 boundary conditions at x=(-1, 1).
-            The two conditions at x=-1 first and then x=1.
-            With (a, b, c, d) corresponding to
-            bc = {'left': [('D', a), ('N', b)], 'right': [('D', c), ('N', d)]}
-        domain : 2-tuple of floats, optional
-            The computational domain
-        dtype : data-type, optional
-            Type of input data in real physical space. Will be overloaded when
-            basis is part of a :class:`.TensorProductSpace`.
-        padding_factor : float, optional
-            Factor for padding backward transforms.
-        dealias_direct : bool, optional
-            Set upper 1/3 of coefficients to zero before backward transform
-        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
-            Map for curvilinear coordinatesystem.
-            The new coordinate variable in the new coordinate system is the first item.
-            Second item is a tuple for the Cartesian position vector as function of the
-            new variable in the first tuple. Example::
-
-                theta = sp.Symbols('x', real=True, positive=True)
-                rv = (sp.cos(theta), sp.sin(theta))
+        - GL - Chebyshev-Gauss-Lobatto
+        - GC - Chebyshev-Gauss
+    bc : 4-tuple of numbers
+        The values of the 4 boundary conditions at x=(-1, 1).
+        The two conditions at x=-1 first and then x=1.
+        With (a, b, c, d) corresponding to
+        `bc = {'left': {'D': a, 'N': b}, 'right': {'D': c, 'N': d}}`
+    domain : 2-tuple of floats, optional
+        The computational domain
+    dtype : data-type, optional
+        Type of input data in real physical space. Will be overloaded when
+        basis is part of a :class:`.TensorProductSpace`.
+    padding_factor : float, optional
+        Factor for padding backward transforms.
+    dealias_direct : bool, optional
+        Set upper 1/3 of coefficients to zero before backward transform
+    coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
+        Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
 
     """
     def __init__(self, N, quad="GC", bc=(0, 0, 0, 0), domain=(-1., 1.), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None, **kw):
-        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
-                                padding_factor=padding_factor, dealias_direct=dealias_direct,
-                                coordinates=coordinates)
+        CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
+                               padding_factor=padding_factor, dealias_direct=dealias_direct,
+                               coordinates=coordinates)
         from shenfun.jacobi.recursions import half, cn, b, h, matpow, n
         #self.b0n = sp.simplify(matpow(b, 2, -half, -half, n+2, n, cn) / h(-half, -half, n, 0, cn))
         #self.b2n = sp.simplify(matpow(b, 2, -half, -half, n+2, n+2, cn) / h(-half, -half, n+2, 0, cn))
@@ -1068,16 +1081,9 @@ class Phi2(CompositeSpace):
     def slice(self):
         return slice(0, self.N-4)
 
-    def get_bc_basis(self):
-        if self._bc_basis:
-            return self._bc_basis
-        self._bc_basis = BCBiharmonic(self.N, quad=self.quad, domain=self.domain,
-                                      coordinates=self.coors.coordinates)
-        return self._bc_basis
 
-class Phi4(CompositeSpace):
-    r"""Function space for biharmonic equation with 4 Dirichlet and
-    4 Neumann boundary conditions
+class Phi4(CompositeBase):
+    r"""Function space with 4 Dirichlet and 4 Neumann boundary conditions
 
     The 8 boundary conditions are
 
@@ -1085,45 +1091,44 @@ class Phi4(CompositeSpace):
 
         \frac{d^k}{dx^k}u(\pm 1) = 0, \quad \forall k \in (0,1,2,3)
 
+    and the basis functions are
+
     .. math::
 
-        \phi_k = \frac{(1-x^2)^4}{h^{(4)}_{k+4}} T^{(4)}_{k+4} \\
-        h^{(4)}_k = \frac{\pi k \Gamma (k+4)}{2(k-4)!}
+        \phi_k &= \frac{(1-x^2)^4}{h^{(4)}_{k+4}} T^{(4)}_{k+4} \\
+        h^{(4)}_k &= \frac{\pi k \Gamma (k+4)}{2(k-4)!} = \int_{-1}^1 \frac{d^4 T_k}{dx^4} \frac{d^4 T_k}{dx^4} \frac{1}{\sqrt{1-x^2}} dx.
+
+    The boundary basis for inhomogeneous boundary conditions is too
+    messy to print, but can be obtained using :func:`.CompositeBase.get_bc_basis`.
 
     Parameters
     ----------
-        N : int, optional
-            Number of quadrature points
-        quad : str, optional
-            Type of quadrature
+    N : int, optional
+        Number of quadrature points
+    quad : str, optional
+        Type of quadrature
 
-            - GL - Chebyshev-Gauss-Lobatto
-            - GC - Chebyshev-Gauss
-        bc : 8-tuple of zeros
-        domain : 2-tuple of floats, optional
-            The computational domain
-        dtype : data-type, optional
-            Type of input data in real physical space. Will be overloaded when
-            basis is part of a :class:`.TensorProductSpace`.
-        padding_factor : float, optional
-            Factor for padding backward transforms.
-        dealias_direct : bool, optional
-            Set upper 1/3 of coefficients to zero before backward transform
-        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
-            Map for curvilinear coordinatesystem.
-            The new coordinate variable in the new coordinate system is the first item.
-            Second item is a tuple for the Cartesian position vector as function of the
-            new variable in the first tuple. Example::
-
-                theta = sp.Symbols('x', real=True, positive=True)
-                rv = (sp.cos(theta), sp.sin(theta))
+        - GL - Chebyshev-Gauss-Lobatto
+        - GC - Chebyshev-Gauss
+    bc : 8-tuple of numbers
+    domain : 2-tuple of floats, optional
+        The computational domain
+    dtype : data-type, optional
+        Type of input data in real physical space. Will be overloaded when
+        basis is part of a :class:`.TensorProductSpace`.
+    padding_factor : float, optional
+        Factor for padding backward transforms.
+    dealias_direct : bool, optional
+        Set upper 1/3 of coefficients to zero before backward transform
+    coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
+        Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
 
     """
     def __init__(self, N, quad="GC", bc=(0,)*8, domain=(-1, 1), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None, **kw):
-        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
-                                padding_factor=padding_factor, dealias_direct=dealias_direct,
-                                coordinates=coordinates)
+        CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
+                               padding_factor=padding_factor, dealias_direct=dealias_direct,
+                               coordinates=coordinates)
         from shenfun.jacobi.recursions import half, cn, b, h, matpow, n
         #self.b0n = sp.simplify(matpow(b, 4, -half, -half, n+4, n, cn) / h(-half, -half, n, 0, cn))
         #self.b2n = sp.simplify(matpow(b, 4, -half, -half, n+4, n+2, cn) / h(-half, -half, n+2, 0, cn))
@@ -1160,185 +1165,56 @@ class Phi4(CompositeSpace):
     def slice(self):
         return slice(0, self.N-8)
 
-    def get_bc_basis(self):
-        raise NotImplementedError
-        # This basis should probably only be used as test function, and thus no inhomogeneous bcs required
 
-class SecondNeumann(CompositeSpace): #pragma: no cover
-    """Function space for homogeneous second order Neumann boundary conditions
-
-    Parameters
-    ----------
-        N : int, optional
-            Number of quadrature points
-        quad : str, optional
-            Type of quadrature
-
-            - GL - Chebyshev-Gauss-Lobatto
-            - GC - Chebyshev-Gauss
-
-            Mean value
-        domain : 2-tuple of floats, optional
-            The computational domain
-        dtype : data-type, optional
-            Type of input data in real physical space. Will be overloaded when
-            basis is part of a :class:`.TensorProductSpace`.
-        padding_factor : float, optional
-            Factor for padding backward transforms.
-        dealias_direct : bool, optional
-            Set upper 1/3 of coefficients to zero before backward transform
-        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
-            Map for curvilinear coordinatesystem.
-            The new coordinate variable in the new coordinate system is the first item.
-            Second item is a tuple for the Cartesian position vector as function of the
-            new variable in the first tuple. Example::
-
-                theta = sp.Symbols('x', real=True, positive=True)
-                rv = (sp.cos(theta), sp.sin(theta))
-    """
-
-    def __init__(self, N, quad="GC", domain=(-1., 1.), dtype=float,
-                 padding_factor=1, dealias_direct=False, coordinates=None, **kw):
-        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
-                                padding_factor=padding_factor, dealias_direct=dealias_direct,
-                                coordinates=coordinates)
-        self._factor = np.zeros(0)
-
-    @staticmethod
-    def boundary_condition():
-        return 'Neumann2'
-
-    @staticmethod
-    def short_name():
-        return 'TN'
-
-    def _composite(self, V, argument=0):
-        assert self.N == V.shape[1]
-        P = np.zeros_like(V)
-        k = np.arange(self.N).astype(float)
-        P[:, :-2] = V[:, :-2] - (k[:-2]/(k[:-2]+2))**2*(k[:-2]**2-1)/((k[:-2]+2)**2-1)*V[:, 2:]
-        return P
-
-    def sympy_basis(self, i=0, x=xp):
-        assert i < self.N-2
-        return sp.chebyshevt(i, x) - (i/(i+2))**2*(i**2-1)/((i+2)**2-1)*sp.chebyshevt(i+2, x)
-
-    def evaluate_basis(self, x, i=0, output_array=None):
-        assert i < self.N-2
-        x = np.atleast_1d(x)
-        if output_array is None:
-            output_array = np.zeros(x.shape)
-        w = np.arccos(x)
-        output_array[:] = np.cos(i*w) - (i*1./(i+2))**2*(i**2-1.)/((i+2)**2-1.)*np.cos((i+2)*w)
-        return output_array
-
-    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
-        assert i < self.N-2
-        if x is None:
-            x = self.mesh(False, False)
-        if output_array is None:
-            output_array = np.zeros(x.shape)
-        x = np.atleast_1d(x)
-        basis = np.zeros(self.shape(True))
-        basis[np.array([i, i+2])] = (1, -(i*1./(i+2))**2*(i**2-1.)/((i+2)**2-1.))
-        basis = n_cheb.Chebyshev(basis)
-        if k > 0:
-            basis = basis.deriv(k)
-        output_array[:] = basis(x)
-        return output_array
-
-    def set_factor_array(self, v):
-        """Set intermediate factor arrays"""
-        if not self._factor.shape == v.shape:
-            k = self.wavenumbers().astype(float)
-            self._factor = (k/(k+2))**2*(k**2-1)/((k+2)**2-1)
-
-    def _evaluate_scalar_product(self, fast_transform=True):
-        if fast_transform is False:
-            SpectralBase._evaluate_scalar_product(self)
-            self.scalar_product.output_array[self.sl[slice(-2, None)]] = 0
-            return
-        Orthogonal._evaluate_scalar_product(self, True)
-        output = self.scalar_product.output_array
-        self.set_factor_array(output)
-        sm2 = self.sl[slice(0, -2)]
-        s2p = self.sl[slice(2, None)]
-        output[sm2] -= self._factor*output[s2p]
-        output[self.sl[slice(-2, None)]] = 0
-
-    def to_ortho(self, input_array, output_array=None):
-        if output_array is None:
-            output_array = np.zeros_like(input_array)
-        else:
-            output_array.fill(0)
-        s0 = self.sl[slice(0, -2)]
-        s1 = self.sl[slice(2, None)]
-        self.set_factor_array(input_array)
-        output_array[s0] = input_array[s0]
-        output_array[s1] -= self._factor*input_array[s0]
-        return output_array
-
-    def slice(self):
-        return slice(0, self.N-2)
-
-    def eval(self, x, u, output_array=None):
-        x = np.atleast_1d(x)
-        if output_array is None:
-            output_array = np.zeros(x.shape, dtype=self.dtype)
-        x = self.map_reference_domain(x)
-        w_hat = work[(u, 0, True)]
-        self.set_factor_array(u)
-        output_array[:] = chebval(x, u[:-2])
-        w_hat[2:] = self._factor*u[:-2]
-        output_array -= chebval(x, w_hat)
-        return output_array
-
-class UpperDirichlet(CompositeSpace):
+class UpperDirichlet(CompositeBase):
     r"""Function space with single Dirichlet on upper edge
 
-    u(1)=a
-
-    The basis functions are
+    The basis :math:`\{\phi_k\}_{k=0}^{N-1}` is
 
     .. math::
 
-        \phi_n = T_n - T_{n+1}
+        \phi_k &= T_{k} - T_{k+1}, \, k=0, 1, \ldots, N-2, \\
+        \phi_{N-1} &= T_0,
+
+    such that
+
+    .. math::
+        u(x) &= \sum_{k=0}^{N-1} \hat{u}_k \phi_k(x), \\
+        u(1) &= a.
+
+    The last basis function is for boundary condition and only used if a is
+    different from 0. In one dimension :math:`\hat{u}_{N-1}=a`.
 
     Parameters
     ----------
-        N : int, optional
-            Number of quadrature points
-        quad : str, optional
-            Type of quadrature
+    N : int, optional
+        Number of quadrature points
+    quad : str, optional
+        Type of quadrature
 
-            - GL - Chebyshev-Gauss-Lobatto
-            - GC - Chebyshev-Gauss
+        - GL - Chebyshev-Gauss-Lobatto
+        - GC - Chebyshev-Gauss
 
-        bc : 2-tuple of (None, number), optional
-            The number is the boundary condition value
-        domain : 2-tuple of floats, optional
-            The computational domain
-        dtype : data-type, optional
-            Type of input data in real physical space. Will be overloaded when
-            basis is part of a :class:`.TensorProductSpace`.
-        padding_factor : float, optional
-            Factor for padding backward transforms.
-        dealias_direct : bool, optional
-            Set upper 1/3 of coefficients to zero before backward transform
-        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
-            Map for curvilinear coordinatesystem.
-            The new coordinate variable in the new coordinate system is the first item.
-            Second item is a tuple for the Cartesian position vector as function of the
-            new variable in the first tuple. Example::
+    bc : 2-tuple of (None, number), optional
+        The number is the boundary condition value
+    domain : 2-tuple of floats, optional
+        The computational domain
+    dtype : data-type, optional
+        Type of input data in real physical space. Will be overloaded when
+        basis is part of a :class:`.TensorProductSpace`.
+    padding_factor : float, optional
+        Factor for padding backward transforms.
+    dealias_direct : bool, optional
+        Set upper 1/3 of coefficients to zero before backward transform
+    coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
+        Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
 
-                theta = sp.Symbols('x', real=True, positive=True)
-                rv = (sp.cos(theta), sp.sin(theta))
     """
     def __init__(self, N, quad="GC", bc=(None, 0), domain=(-1., 1.), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None, **kw):
-        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
-                                padding_factor=padding_factor, dealias_direct=dealias_direct,
-                                coordinates=coordinates)
+        CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
+                               padding_factor=padding_factor, dealias_direct=dealias_direct,
+                               coordinates=coordinates)
 
     @staticmethod
     def boundary_condition():
@@ -1357,59 +1233,56 @@ class UpperDirichlet(CompositeSpace):
     def slice(self):
         return slice(0, self.N-1)
 
-    def get_bc_basis(self):
-        if self._bc_basis:
-            return self._bc_basis
-        self._bc_basis = BCUpperDirichlet(self.N, quad=self.quad, domain=self.domain,
-                                          coordinates=self.coors.coordinates)
-        return self._bc_basis
 
-class LowerDirichlet(CompositeSpace):
+class LowerDirichlet(CompositeBase):
     r"""Function space with single Dirichlet boundary condition
 
-    u(-1)=a
-
-    The basis functions are
+    The basis :math:`\{\phi_k\}_{k=0}^{N-1}` is
 
     .. math::
 
-        \phi_n = T_n + T_{n+1}
+        \phi_k &= T_{k} + T_{k+1}, \, k=0, 1, \ldots, N-2, \\
+        \phi_{N-1} &= T_0,
+
+    such that
+
+    .. math::
+        u(x) &= \sum_{k=0}^{N-1} \hat{u}_k \phi_k(x), \\
+        u(-1) &= a.
+
+    The last basis funciton is for boundary condition and only used if a is
+    different from 0. In one dimension :math:`\hat{u}_{N-1}=a`.
 
     Parameters
     ----------
-        N : int
-            Number of quadrature points
-        quad : str, optional
-            Type of quadrature
+    N : int
+        Number of quadrature points
+    quad : str, optional
+        Type of quadrature
 
-            - GL - Chebyshev-Gauss-Lobatto
-            - GC - Chebyshev-Gauss
+        - GL - Chebyshev-Gauss-Lobatto
+        - GC - Chebyshev-Gauss
 
-        bc : tuple of (number, None)
-            Boundary conditions at edges of domain.
-        domain : 2-tuple of floats, optional
-            The computational domain
-        padding_factor : float, optional
-            Factor for padding backward transforms.
-        dealias_direct : bool, optional
-            Set upper 1/3 of coefficients to zero before backward transform
-        dtype : data-type, optional
-            Type of input data in real physical space. Will be overloaded when
-            basis is part of a :class:`.TensorProductSpace`.
-        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
-            Map for curvilinear coordinatesystem.
-            The new coordinate variable in the new coordinate system is the first item.
-            Second item is a tuple for the Cartesian position vector as function of the
-            new variable in the first tuple. Example::
+    bc : tuple of (number, None)
+        Boundary conditions at edges of domain.
+    domain : 2-tuple of floats, optional
+        The computational domain
+    padding_factor : float, optional
+        Factor for padding backward transforms.
+    dealias_direct : bool, optional
+        Set upper 1/3 of coefficients to zero before backward transform
+    dtype : data-type, optional
+        Type of input data in real physical space. Will be overloaded when
+        basis is part of a :class:`.TensorProductSpace`.
+    coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
+        Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
 
-                theta = sp.Symbols('x', real=True, positive=True)
-                rv = (sp.cos(theta), sp.sin(theta))
     """
     def __init__(self, N, quad="GC", bc=(0, None), domain=(-1., 1.), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None, **kw):
-        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
-                                padding_factor=padding_factor, dealias_direct=dealias_direct,
-                                coordinates=coordinates)
+        CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
+                               padding_factor=padding_factor, dealias_direct=dealias_direct,
+                               coordinates=coordinates)
 
     @staticmethod
     def boundary_condition():
@@ -1428,59 +1301,47 @@ class LowerDirichlet(CompositeSpace):
     def slice(self):
         return slice(0, self.N-1)
 
-    def get_bc_basis(self):
-        if self._bc_basis:
-            return self._bc_basis
-        self._bc_basis = BCLowerDirichlet(self.N, quad=self.quad, domain=self.domain,
-                                          coordinates=self.coors.coordinates)
-        return self._bc_basis
-
-class ShenBiPolar(CompositeSpace):
+class ShenBiPolar(CompositeBase):
     """Function space for the Biharmonic equation in polar coordinates
 
     u(-1)=a, u(1)=c, u'(-1)=b and u'(1)=d
 
     Parameters
     ----------
-        N : int
-            Number of quadrature points
-        quad : str, optional
-            Type of quadrature
+    N : int
+        Number of quadrature points
+    quad : str, optional
+        Type of quadrature
 
-            - GL - Chebyshev-Gauss-Lobatto
-            - GC - Chebyshev-Gauss
+        - GL - Chebyshev-Gauss-Lobatto
+        - GC - Chebyshev-Gauss
 
-        bc : 4-tuple of numbers
-            The values of the 4 boundary conditions at x=(-1, 1).
-            The two conditions at x=-1 first and then x=1.
-            With (a, b, c, d) corresponding to
-            bc = {'left': [('D', a), ('N', b)], 'right': [('D', c), ('N', d)]}
-        domain : 2-tuple of floats, optional
-            The computational domain
-        dtype : data-type, optional
-            Type of input data in real physical space. Will be overloaded when
-            basis is part of a :class:`.TensorProductSpace`.
-        padding_factor : float, optional
-            Factor for padding backward transforms.
-        dealias_direct : bool, optional
-            Set upper 1/3 of coefficients to zero before backward transform
-        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
-            Map for curvilinear coordinatesystem.
-            The new coordinate variable in the new coordinate system is the first item.
-            Second item is a tuple for the Cartesian position vector as function of the
-            new variable in the first tuple. Example::
+    bc : 4-tuple of numbers
+        The values of the 4 boundary conditions at x=(-1, 1).
+        The two conditions at x=-1 first and then x=1.
+        With (a, b, c, d) corresponding to
+        bc = {'left': [('D', a), ('N', b)], 'right': [('D', c), ('N', d)]}
+    domain : 2-tuple of floats, optional
+        The computational domain
+    dtype : data-type, optional
+        Type of input data in real physical space. Will be overloaded when
+        basis is part of a :class:`.TensorProductSpace`.
+    padding_factor : float, optional
+        Factor for padding backward transforms.
+    dealias_direct : bool, optional
+        Set upper 1/3 of coefficients to zero before backward transform
+    coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
+        Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
 
-                theta = sp.Symbols('x', real=True, positive=True)
-                rv = (sp.cos(theta), sp.sin(theta))
     """
-    def __init__(self, N, quad="GC", bc=(0, 0), domain=(-1., 1.), dtype=float,
+    def __init__(self, N, quad="GC", bc=(0, 0, 0, 0), domain=(-1., 1.), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None, **kw):
         #self.forward = functools.partial(self.forward, fast_transform=False)
         #self.backward = functools.partial(self.backward, fast_transform=False)
         #self.scalar_product = functools.partial(self.scalar_product, fast_transform=False)
-        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
-                                padding_factor=padding_factor, dealias_direct=dealias_direct,
-                                coordinates=coordinates)
+        CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
+                               padding_factor=padding_factor, dealias_direct=dealias_direct,
+                               coordinates=coordinates)
 
     @staticmethod
     def boundary_condition():
@@ -1507,55 +1368,61 @@ class ShenBiPolar(CompositeSpace):
     def slice(self):
         return slice(0, self.N-4)
 
-    def get_bc_basis(self):
-        if self._bc_basis:
-            return self._bc_basis
-        self._bc_basis = BCBiharmonic(self.N, quad=self.quad, domain=self.domain,
-                                      coordinates=self.coors.coordinates)
-        return self._bc_basis
 
-class DirichletNeumann(CompositeSpace):
-    """Function space for mixed Dirichlet/Neumann boundary conditions
+class DirichletNeumann(CompositeBase):
+    r"""Function space for mixed Dirichlet/Neumann boundary conditions
 
-    u(-1)=a and u'(1)=b
+    The basis :math:`\{\phi_k\}_{k=0}^{N-1}` is
+
+    .. math::
+
+        \phi_k &= T_{k} + \frac{4(k+1)}{2k^2+6k+5}T_{k+1} - \frac{2k^2+2k+1}{2k^2+6k+5}T_{k+2}, \, k=0, 1, \ldots, N-2, \\
+        \phi_{N-2} &= T_0, \\
+        \phi_{N-1} &= T_0+T_1,
+
+    such that
+
+    .. math::
+        u(x) &= \sum_{k=0}^{N-1} \hat{u}_k \phi_k(x), \\
+        u(-1) &= a, u'(1)=b.
+
+    The last two bases are for boundary conditions and only used if a or b are
+    different from 0. In one dimension :math:`\hat{u}_{N-2}=a` and
+    :math:`\hat{u}_{N-1}=b`.
 
     Parameters
     ----------
-        N : int, optional
-            Number of quadrature points
-        quad : str, optional
-            Type of quadrature
+    N : int, optional
+        Number of quadrature points
+    quad : str, optional
+        Type of quadrature
 
-            - GL - Chebyshev-Gauss-Lobatto
-            - GC - Chebyshev-Gauss
+        - GL - Chebyshev-Gauss-Lobatto
+        - GC - Chebyshev-Gauss
 
-        bc : 2-tuple of numbers
-            Boundary condition values at x=-1 and x=1
-        domain : 2-tuple of floats, optional
-            The computational domain
-        dtype : data-type, optional
-            Type of input data in real physical space. Will be overloaded when
-            basis is part of a :class:`.TensorProductSpace`.
-        padding_factor : float, optional
-            Factor for padding backward transforms.
-        dealias_direct : bool, optional
-            Set upper 1/3 of coefficients to zero before backward transform
-        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
-            Map for curvilinear coordinatesystem.
-            The new coordinate variable in the new coordinate system is the first item.
-            Second item is a tuple for the Cartesian position vector as function of the
-            new variable in the first tuple. Example::
-
-                theta = sp.Symbols('x', real=True, positive=True)
-                rv = (sp.cos(theta), sp.sin(theta))
+    bc : 2-tuple of numbers
+        Boundary condition values at x=-1 and x=1
+    domain : 2-tuple of floats, optional
+        The computational domain
+    dtype : data-type, optional
+        Type of input data in real physical space. Will be overloaded when
+        basis is part of a :class:`.TensorProductSpace`.
+    padding_factor : float, optional
+        Factor for padding backward transforms.
+    dealias_direct : bool, optional
+        Set upper 1/3 of coefficients to zero before backward transform
+    coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
+        Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
 
     """
 
     def __init__(self, N, quad="GC", bc=(0, 0), domain=(-1., 1.), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None, **kw):
-        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
-                                padding_factor=padding_factor, dealias_direct=dealias_direct,
-                                coordinates=coordinates)
+        if isinstance(bc, (tuple, list)):
+            bc = BoundaryConditions({'left': {'D': bc[0]}, 'right': {'N': bc[1]}})
+        CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
+                               padding_factor=padding_factor, dealias_direct=dealias_direct,
+                               coordinates=coordinates)
 
     @staticmethod
     def boundary_condition():
@@ -1570,62 +1437,68 @@ class DirichletNeumann(CompositeSpace):
         k = np.arange(N)
         d = np.ones(N)
         d[-2:] = 0
-        d1 = ((-k[:-1]**2 + (k[:-1]+2)**2)/((k[:-1]+1)**2 + (k[:-1]+2)**2))
-        d2 = ((-k[:-2]**2 - (k[:-2]+1)**2)/((k[:-2]+1)**2 + (k[:-2]+2)**2))
+        d1 = 4*(k[:-1]+1)/(2*k[:-1]**2+6*k[:-1]+5)
+        d2 = -(2*k[:-2]**2+2*k[:-2]+1)/(2*k[:-2]**2+6*k[:-2]+5)
         return SparseMatrix({0: d, 1: d1, 2: d2}, (N, N))
 
     def slice(self):
         return slice(0, self.N-2)
 
-    def get_bc_basis(self):
-        if self._bc_basis:
-            return self._bc_basis
-        self._bc_basis = BCDirichletNeumann(self.N, quad=self.quad, domain=self.domain,
-                                            coordinates=self.coors.coordinates)
-        return self._bc_basis
 
-class NeumannDirichlet(CompositeSpace):
-    """Function space for mixed Neumann/Dirichlet boundary conditions
+class NeumannDirichlet(CompositeBase):
+    r"""Function space for mixed Neumann/Dirichlet boundary conditions
 
-    u'(-1)=a and u(1)=b
+    The basis :math:`\{\phi_k\}_{k=0}^{N-1}` is
+
+    .. math::
+
+        \phi_k &= T_{k} - \frac{4(k+1)}{2k^2+6k+5}T_{k+1} - \frac{2k^2+2k+1}{2k^2+6k+5}T_{k+2}, \, k=0, 1, \ldots, N-2, \\
+        \phi_{N-2} &= -T_0+T_1, \\
+        \phi_{N-1} &= T_0,
+
+    such that
+
+    .. math::
+        u(x) &= \sum_{k=0}^{N-1} \hat{u}_k \phi_k(x), \\
+        u'(-1) &= a, u(1)=b.
+
+    The last two bases are for boundary conditions and only used if a or b are
+    different from 0. In one dimension :math:`\hat{u}_{N-2}=a` and
+    :math:`\hat{u}_{N-1}=b`.
 
     Parameters
     ----------
-        N : int, optional
-            Number of quadrature points
-        quad : str, optional
-            Type of quadrature
+    N : int, optional
+        Number of quadrature points
+    quad : str, optional
+        Type of quadrature
 
-            - GL - Chebyshev-Gauss-Lobatto
-            - GC - Chebyshev-Gauss
+        - GL - Chebyshev-Gauss-Lobatto
+        - GC - Chebyshev-Gauss
 
-        bc : 2-tuple of numbers
-            Boundary condition values at x=-1 and x=1
-        domain : 2-tuple of floats, optional
-            The computational domain
-        dtype : data-type, optional
-            Type of input data in real physical space. Will be overloaded when
-            basis is part of a :class:`.TensorProductSpace`.
-        padding_factor : float, optional
-            Factor for padding backward transforms.
-        dealias_direct : bool, optional
-            Set upper 1/3 of coefficients to zero before backward transform
-        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
-            Map for curvilinear coordinatesystem.
-            The new coordinate variable in the new coordinate system is the first item.
-            Second item is a tuple for the Cartesian position vector as function of the
-            new variable in the first tuple. Example::
-
-                theta = sp.Symbols('x', real=True, positive=True)
-                rv = (sp.cos(theta), sp.sin(theta))
+    bc : 2-tuple of numbers
+        Boundary condition values at x=-1 and x=1
+    domain : 2-tuple of floats, optional
+        The computational domain
+    dtype : data-type, optional
+        Type of input data in real physical space. Will be overloaded when
+        basis is part of a :class:`.TensorProductSpace`.
+    padding_factor : float, optional
+        Factor for padding backward transforms.
+    dealias_direct : bool, optional
+        Set upper 1/3 of coefficients to zero before backward transform
+    coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
+        Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
 
     """
 
     def __init__(self, N, quad="GC", bc=(0, 0), domain=(-1., 1.), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None, **kw):
-        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
-                                padding_factor=padding_factor, dealias_direct=dealias_direct,
-                                coordinates=coordinates)
+        if isinstance(bc, (tuple, list)):
+            bc = BoundaryConditions({'left': {'N': bc[0]}, 'right': {'D': bc[1]}})
+        CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
+                               padding_factor=padding_factor, dealias_direct=dealias_direct,
+                               coordinates=coordinates)
 
     @staticmethod
     def boundary_condition():
@@ -1640,63 +1513,69 @@ class NeumannDirichlet(CompositeSpace):
         k = np.arange(N)
         d = np.ones(N)
         d[-2:] = 0
-        d1 = (-(-k[:-1]**2 + (k[:-1]+2)**2)/((k[:-1]+1)**2 + (k[:-1]+2)**2))
-        d2 = ((-k[:-2]**2 - (k[:-2]+1)**2)/((k[:-2]+1)**2 + (k[:-2]+2)**2))
+        d1 = -4*(k[:-1]+1)/(2*k[:-1]**2+6*k[:-1]+5)
+        d2 = -(2*k[:-2]**2+2*k[:-2]+1)/(2*k[:-2]**2+6*k[:-2]+5)
         return SparseMatrix({0: d, 1: d1, 2: d2}, (N, N))
 
     def slice(self):
         return slice(0, self.N-2)
 
-    def get_bc_basis(self):
-        if self._bc_basis:
-            return self._bc_basis
-        self._bc_basis = BCNeumannDirichlet(self.N, quad=self.quad, domain=self.domain,
-                                            coordinates=self.coors.coordinates)
-        return self._bc_basis
 
-class UpperDirichletNeumann(CompositeSpace):
-    """Function space for both Dirichlet and Neumann boundary conditions
-    on the right hand side
+class UpperDirichletNeumann(CompositeBase):
+    r"""Function space for both Dirichlet and Neumann boundary conditions
+    on the right hand side.
 
-    u(1)=a and u'(1)=b
+    The basis :math:`\{\phi_k\}_{k=0}^{N-1}` is
+
+    .. math::
+
+        \phi_k &= T_{k} - \frac{4(k+1)}{2k+3}T_{k+1} + \frac{2k+1}{2k+3}T_{k+2}, \, k=0, 1, \ldots, N-2, \\
+        \phi_{N-2} &= T_0, \\
+        \phi_{N-1} &= -T_0+T_1,
+
+    such that
+
+    .. math::
+        u(x) &= \sum_{k=0}^{N-1} \hat{u}_k \phi_k(x), \\
+        u(1) &= a, u'(1)=b.
+
+    The last two bases are for boundary conditions and only used if a or b are
+    different from 0. In one dimension :math:`\hat{u}_{N-2}=a` and
+    :math:`\hat{u}_{N-1}=b`.
 
     Parameters
     ----------
-        N : int, optional
-            Number of quadrature points
-        quad : str, optional
-            Type of quadrature
+    N : int, optional
+        Number of quadrature points
+    quad : str, optional
+        Type of quadrature
 
-            - GL - Chebyshev-Gauss-Lobatto
-            - GC - Chebyshev-Gauss
+        - GL - Chebyshev-Gauss-Lobatto
+        - GC - Chebyshev-Gauss
 
-        bc : 2-tuple of numbers
-            Boundary condition values at the right edge of domain
-        domain : 2-tuple of floats, optional
-            The computational domain
-        dtype : data-type, optional
-            Type of input data in real physical space. Will be overloaded when
-            basis is part of a :class:`.TensorProductSpace`.
-        padding_factor : float, optional
-            Factor for padding backward transforms.
-        dealias_direct : bool, optional
-            Set upper 1/3 of coefficients to zero before backward transform
-        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
-            Map for curvilinear coordinatesystem.
-            The new coordinate variable in the new coordinate system is the first item.
-            Second item is a tuple for the Cartesian position vector as function of the
-            new variable in the first tuple. Example::
-
-                theta = sp.Symbols('x', real=True, positive=True)
-                rv = (sp.cos(theta), sp.sin(theta))
+    bc : 2-tuple of numbers
+        Boundary condition values at the right edge of domain
+    domain : 2-tuple of floats, optional
+        The computational domain
+    dtype : data-type, optional
+        Type of input data in real physical space. Will be overloaded when
+        basis is part of a :class:`.TensorProductSpace`.
+    padding_factor : float, optional
+        Factor for padding backward transforms.
+    dealias_direct : bool, optional
+        Set upper 1/3 of coefficients to zero before backward transform
+    coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
+        Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
 
     """
 
     def __init__(self, N, quad="GC", bc=(0, 0), domain=(-1., 1.), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None, **kw):
-        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
-                                padding_factor=padding_factor, dealias_direct=dealias_direct,
-                                coordinates=coordinates)
+        if isinstance(bc, (tuple, list)):
+            bc = BoundaryConditions({'right': {'D': bc[0], 'N': bc[1]}})
+        CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
+                               padding_factor=padding_factor, dealias_direct=dealias_direct,
+                               coordinates=coordinates)
 
     @staticmethod
     def boundary_condition():
@@ -1718,56 +1597,62 @@ class UpperDirichletNeumann(CompositeSpace):
     def slice(self):
         return slice(0, self.N-2)
 
-    def get_bc_basis(self):
-        if self._bc_basis:
-            return self._bc_basis
-        self._bc_basis = BCUpperDirichletNeumann(self.N, quad=self.quad, domain=self.domain,
-                                                 coordinates=self.coors.coordinates)
-        return self._bc_basis
 
-class LowerDirichletNeumann(CompositeSpace):
-    """Function space for both Dirichlet and Neumann boundary conditions
+class LowerDirichletNeumann(CompositeBase):
+    r"""Function space for both Dirichlet and Neumann boundary conditions
     on the left hand side
 
-    u(-1)=a and u'(-1)=b
+    The basis :math:`\{\phi_k\}_{k=0}^{N-1}` is
+
+    .. math::
+
+        \phi_k &= T_{k} + \frac{4(k+1)}{2k+3}T_{k+1} + \frac{2k+1}{2k+3}T_{k+2}, \, k=0, 1, \ldots, N-2, \\
+        \phi_{N-2} &= T_0, \\
+        \phi_{N-1} &= T_0+T_1,
+
+    such that
+
+    .. math::
+        u(x) &= \sum_{k=0}^{N-1} \hat{u}_k \phi_k(x), \\
+        u(-1) &= a, u'(-1)=b.
+
+    The last two bases are for boundary conditions and only used if a or b are
+    different from 0. In one dimension :math:`\hat{u}_{N-2}=a` and
+    :math:`\hat{u}_{N-1}=b`.
 
     Parameters
     ----------
-        N : int, optional
-            Number of quadrature points
-        quad : str, optional
-            Type of quadrature
+    N : int, optional
+        Number of quadrature points
+    quad : str, optional
+        Type of quadrature
 
-            - GL - Chebyshev-Gauss-Lobatto
-            - GC - Chebyshev-Gauss
+        - GL - Chebyshev-Gauss-Lobatto
+        - GC - Chebyshev-Gauss
 
-        bc : 2-tuple of numbers
-            Boundary condition values at the left edge of domain
-        domain : 2-tuple of floats, optional
-            The computational domain
-        dtype : data-type, optional
-            Type of input data in real physical space. Will be overloaded when
-            basis is part of a :class:`.TensorProductSpace`.
-        padding_factor : float, optional
-            Factor for padding backward transforms.
-        dealias_direct : bool, optional
-            Set upper 1/3 of coefficients to zero before backward transform
-        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
-            Map for curvilinear coordinatesystem.
-            The new coordinate variable in the new coordinate system is the first item.
-            Second item is a tuple for the Cartesian position vector as function of the
-            new variable in the first tuple. Example::
-
-                theta = sp.Symbols('x', real=True, positive=True)
-                rv = (sp.cos(theta), sp.sin(theta))
+    bc : 2-tuple of numbers
+        Boundary condition values at the left edge of domain
+    domain : 2-tuple of floats, optional
+        The computational domain
+    dtype : data-type, optional
+        Type of input data in real physical space. Will be overloaded when
+        basis is part of a :class:`.TensorProductSpace`.
+    padding_factor : float, optional
+        Factor for padding backward transforms.
+    dealias_direct : bool, optional
+        Set upper 1/3 of coefficients to zero before backward transform
+    coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
+        Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
 
     """
 
     def __init__(self, N, quad="GC", bc=(0, 0), domain=(-1., 1.), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None, **kw):
-        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
-                                padding_factor=padding_factor, dealias_direct=dealias_direct,
-                                coordinates=coordinates)
+        if isinstance(bc, (tuple, list)):
+            bc = BoundaryConditions({'left': {'D': bc[0], 'N': bc[1]}})
+        CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
+                               padding_factor=padding_factor, dealias_direct=dealias_direct,
+                               coordinates=coordinates)
 
     @staticmethod
     def boundary_condition():
@@ -1789,42 +1674,110 @@ class LowerDirichletNeumann(CompositeSpace):
     def slice(self):
         return slice(0, self.N-2)
 
-    def get_bc_basis(self):
-        if self._bc_basis:
-            return self._bc_basis
-        self._bc_basis = BCLowerDirichletNeumann(self.N, quad=self.quad, domain=self.domain,
-                                                 coordinates=self.coors.coordinates)
-        return self._bc_basis
 
-class BCBase(CompositeSpace):
+class Generic(CompositeBase):
+    r"""Function space for space with any boundary conditions
+
+    Any combination of Dirichlet and Neumann is possible.
+
+    Parameters
+    ----------
+    N : int, optional
+        Number of quadrature points
+    quad : str, optional
+        Type of quadrature
+
+        - GL - Chebyshev-Gauss-Lobatto
+        - GC - Chebyshev-Gauss
+
+    bc : dict, optional
+        The dictionary must have keys 'left' and 'right', to describe boundary
+        conditions on the left and right boundaries, and a list of 2-tuples to
+        specify the condition. Specify Dirichlet on both ends with
+
+            {'left': {'D': a}, 'right': {'D': b}}
+
+        for some values `a` and `b`, that will be neglected in the current
+        function. Specify mixed Neumann and Dirichlet as
+
+            {'left': {'N': a}, 'right': {'N': b}}
+
+        For both conditions on the right do
+
+            {'right': {'N': a, 'D': b}}
+
+        Any combination should be possible, and it should also be possible to
+        use second derivatives `N2`. See :class:`~shenfun.spectralbase.BoundaryConditions`.
+    domain : 2-tuple of floats, optional
+        The computational domain
+    dtype : data-type, optional
+        Type of input data in real physical space. Will be overloaded when
+        basis is part of a :class:`.TensorProductSpace`.
+    padding_factor : float, optional
+        Factor for padding backward transforms.
+    dealias_direct : bool, optional
+        Set upper 1/3 of coefficients to zero before backward transform
+    coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
+        Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
+
+    Note
+    ----
+    A test function is always using homogeneous boundary conditions.
+
+    """
+    def __init__(self, N, quad="GC", bc={}, domain=(-1., 1.), dtype=float,
+                 padding_factor=1, dealias_direct=False, coordinates=None, **kw):
+        from shenfun.utilities.findbasis import get_stencil_matrix
+        self._stencil = get_stencil_matrix(bc, 'chebyshev')
+        bc = BoundaryConditions(bc)
+        CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
+                               padding_factor=padding_factor, dealias_direct=dealias_direct,
+                               coordinates=coordinates)
+
+    @staticmethod
+    def boundary_condition():
+        return 'Generic'
+
+    @staticmethod
+    def short_name():
+        return 'GN'
+
+    def slice(self):
+        return slice(0, self.N-self.bcs.num_bcs())
+
+    def stencil_matrix(self, N=None):
+        from shenfun.utilities.findbasis import n
+        N = self.N if N is None else N
+        d0 = np.ones(N, dtype=int)
+        d0[-self.bcs.num_bcs():] = 0
+        d = {0: d0}
+        k = np.arange(N)
+        for i, s in enumerate(self._stencil):
+            di = sp.lambdify(n, s)(k[:-(i+1)])
+            if not np.allclose(di, 0):
+                if isinstance(di, np.ndarray):
+                    di[(N-self.bcs.num_bcs()):] = 0
+                d[i+1] = di
+        return SparseMatrix(d, (N, N))
+
+class BCBase(CompositeBase):
     """Function space for inhomogeneous boundary conditions
 
     Parameters
     ----------
-        N : int, optional
-            Number of quadrature points
-        quad : str, optional
-            Type of quadrature
+    N : int
+        Number of quadrature points in the homogeneous space.
+    bc : dict
+        The boundary conditions in dictionary form, see
+        :class:`.BoundaryConditions`.
+    domain : 2-tuple, optional
+        The domain of the homogeneous space.
 
-            - GL - Chebyshev-Gauss-Lobatto
-            - GC - Chebyshev-Gauss
-
-        domain : 2-tuple of floats, optional
-            The computational domain
-        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
-            Map for curvilinear coordinatesystem.
-            The new coordinate variable in the new coordinate system is the first item.
-            Second item is a tuple for the Cartesian position vector as function of the
-            new variable in the first tuple. Example::
-
-                theta = sp.Symbols('x', real=True, positive=True)
-                rv = (sp.cos(theta), sp.sin(theta))
     """
 
-    def __init__(self, N, quad="GC", domain=(-1., 1.), scaled=False,
-                 dtype=float, coordinates=None, **kw):
-        CompositeSpace.__init__(self, N, quad=quad, domain=domain,
-                                dtype=dtype, coordinates=coordinates)
+    def __init__(self, N, bc=None, domain=(-1, 1), **kw):
+        CompositeBase.__init__(self, N, bc=bc, domain=domain)
+        self._stencil_matrix = None
 
     def stencil_matrix(self, N=None):
         raise NotImplementedError
@@ -1883,8 +1836,7 @@ class BCBase(CompositeSpace):
         else:
             output_array.fill(0)
         M = self.stencil_matrix().T
-        for k, row in enumerate(M):
-            output_array[k] = np.dot(row, input_array)
+        output_array[:self.num_T] = np.dot(M, input_array[self.sl[self.slice()]])
         return output_array
 
     def eval(self, x, u, output_array=None):
@@ -1942,42 +1894,14 @@ class BCLowerDirichlet(BCBase):
     def stencil_matrix(self, N=None):
         return sp.Rational(1, 2)*np.array([[1, -1]])
 
-class BCNeumannDirichlet(BCBase):
+class BCGeneric(BCBase):
 
     @staticmethod
     def short_name():
-        return 'BCND'
+        return 'BG'
 
     def stencil_matrix(self, N=None):
-        return sp.Rational(1, 5)*np.array([[5, -3, -2],
-                                           [5, 0, 0]])
-
-class BCDirichletNeumann(BCBase):
-
-    @staticmethod
-    def short_name():
-        return 'BCDN'
-
-    def stencil_matrix(self, N=None):
-        return np.array([[1, 0],
-                         [1, 1]])
-
-class BCUpperDirichletNeumann(BCBase):
-
-    @staticmethod
-    def short_name():
-        return 'BCUDN'
-
-    def stencil_matrix(self, N=None):
-        return sp.Rational(1, 3)*np.array([[3, 0, 0],
-                                           [3, -5, 2]])
-
-class BCLowerDirichletNeumann(BCBase):
-
-    @staticmethod
-    def short_name():
-        return 'BCLDN'
-
-    def stencil_matrix(self, N=None):
-        return np.array([[1, 0],
-                         [1, 1]])
+        if self._stencil_matrix is None:
+            from shenfun.utilities.findbasis import get_bc_basis
+            self._stencil_matrix = np.array(get_bc_basis(self.bcs, 'chebyshev'))
+        return self._stencil_matrix

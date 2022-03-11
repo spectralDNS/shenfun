@@ -68,9 +68,12 @@ lagBasis = (lagbases.Orthogonal,
 hBasis = (hbases.Orthogonal,)
 
 jBasis = (jbases.Orthogonal,
-          jbases.ShenDirichlet,
-          jbases.ShenBiharmonic,
-          jbases.ShenOrder6)
+          jbases.CompactDirichlet,
+          jbases.CompactNeumann,
+          jbases.Phi1,
+          jbases.Phi2,
+          jbases.Phi3,
+          jbases.Phi4)
 
 cquads = ('GC', 'GL')
 lquads = ('LG', 'GL')
@@ -260,6 +263,7 @@ def test_jmatvec(b0, b1, quad, format, k0, k1):
     global c, c1
     b0 = b0(N, quad=quad)
     b1 = b1(N, quad=quad)
+
     mat = inner_product((b0, k0), (b1, k1))
     c = mat.matvec(a, c, format='csr')
     formats = mat._matvec_methods + ['python', 'csr']
@@ -745,12 +749,13 @@ if __name__ == '__main__':
     x = sp.symbols('x', real=True)
     xp = sp.Symbol('x', real=True, positive=True)
 
-    test_mat(((cbases.ShenBiharmonic, 0), (cbases.ShenDirichlet, 0)), cmatrices.BSBSDmat, 'GL')
+    #test_mat(((cbases.ShenBiharmonic, 0), (cbases.ShenDirichlet, 0)), cmatrices.BSBSDmat, 'GL')
     #test_mat(*cmats_and_quads[12])
     #test_cmatvec(cBasis[2], cBasis[2], 'GC', 2)
     #test_lmatvec(lBasis[0], lBasis[0], 'LG', 2, 0)
     #test_lagmatvec(lagBasis[0], lagBasis[1], 'LG', 'python', 3, 2, 0)
     #test_hmatvec(hBasis[0], hBasis[0], 'HG', 'self', 3, 1, 1)
+    test_jmatvec(jBasis[5], jBasis[5], 'JG', 'self', 1, 1)
     #test_isub(((cbases.ShenNeumann, 0), (cbases.ShenDirichlet, 1)), cmatrices.CSNSDmat, 'GC')
     #test_add(((cbases.Orthogonal, 0), (cbases.ShenDirichlet, 1)), cmatrices.CTSDmat, 'GC')
     #test_blockmatrix((D, F2, F))

@@ -44,10 +44,11 @@ from . import fourier
 from . import jacobi
 from . import matrixbase
 from . import la
+from .coordinates import Coordinates
 from .fourier import energy_fourier
 from .io import *
 from .matrixbase import *
-from .spectralbase import inner_product, MixedFunctionSpace
+from .spectralbase import inner_product, MixedFunctionSpace, BoundaryConditions
 from .forms import *
 from .tensorproductspace import *
 from .utilities import *

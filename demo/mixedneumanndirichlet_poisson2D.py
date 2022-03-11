@@ -20,11 +20,11 @@ from shenfun import inner, div, grad, TestFunction, TrialFunction, \
 # Use sympy to compute a rhs, given an analytical solution
 # Choose a solution with non-zero values
 
-xdomain = (-1, 1)
-ydomain = (-1, 1)
+xdomain = (-2, 2)
+ydomain = (-2, 2)
 x, y = sp.symbols("x,y", real=True)
-#ue = sp.cos(2*sp.pi*x)*sp.cos(2*sp.pi*y)
-ue = sp.chebyshevt(4, x)*sp.chebyshevt(4, y)
+ue = sp.cos(2*x)*sp.cos(2*y)
+#ue = sp.chebyshevt(4, x)*sp.chebyshevt(4, y)
 #ue = sp.legendre(4, x)*sp.legendre(4, y)
 #ue = x**2 + sp.exp(x+2*y)
 #ue = (0.5-x**3)*(0.5-y**3)
@@ -55,7 +55,6 @@ def main(N, family, bci, bcj, plotting=False):
     T = TensorProductSpace(comm, (BX, BY))
     u = TrialFunction(T)
     v = TestFunction(T)
-
     # Get f on quad points
     fj = Array(T, buffer=fe)
 
@@ -64,7 +63,7 @@ def main(N, family, bci, bcj, plotting=False):
 
     constraint = ()
     if T.use_fixed_gauge:
-        mean = dx(ua, weighted=True) / inner(1, Array(T, val=1))
+        mean = dx(ua, weighted=True) / dx(Array(T, val=1), weighted=True)
         constraint = ((0, mean),)
 
     # Compute right hand side of Poisson equation
@@ -73,15 +72,13 @@ def main(N, family, bci, bcj, plotting=False):
 
     # Get left hand side of Poisson equation
     A = inner(v, -div(grad(u)))
-
     u_hat = Function(T)
-
     sol = la.Solver2D(A)
     u_hat = sol(f_hat, u_hat, constraints=constraint)
     uj = u_hat.backward()
 
-    assert np.allclose(uj, ua), np.linalg.norm(uj-ua)
-    print("Error=%2.16e" %(np.sqrt(dx((uj-ua)**2))))
+    #assert np.allclose(uj, ua), np.linalg.norm(uj-ua)
+    print("Error=%2.16e, %d %d" %(np.sqrt(dx((uj-ua)**2)), bci, bcj))
 
     if 'pytest' not in os.environ and plotting is True:
         import matplotlib.pyplot as plt
@@ -97,7 +94,7 @@ def main(N, family, bci, bcj, plotting=False):
 
 if __name__ == '__main__':
     import sys
-    N = int(sys.argv[-1]) if len(sys.argv) == 2 else 16
+    N = int(sys.argv[-1]) if len(sys.argv) == 2 else 20
     for family in ('C', 'L'):
         for bci in range(4):
             for bcj in range(4):

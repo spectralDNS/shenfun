@@ -6,6 +6,7 @@ import numpy as np
 import sympy as sp
 from shenfun.config import config
 from shenfun.optimization.cython import evaluate
+from shenfun.spectralbase import BoundaryConditions
 from mpi4py_fft import DistArray
 
 __all__ = ('Expr', 'BasisFunction', 'TestFunction', 'TrialFunction', 'Function',
@@ -38,42 +39,11 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
         - ``Jacobi`` or ``J``
 
     bc : tuple or dict, optional
-        Choose one of
-
-        * 2-tuple of numbers (a, b) - Dirichlet boundary condition with
-          :math:`v(-1)=a` and :math:`v(1)=b`.
-
-        * (None, a) - Dirichlet on right boundary, nothing on left.
-
-        * 4-tuple (a, b, c, d) - Biharmonic with the two non-zero Dirichlet
-          conditions first :math:`v(-1)=a` and :math:`v(1)=b` and then
-          the two Neumann.
-
-        * dict with keys 'left' and 'right', for left and right boundaries,
-          and a list of 2-tuples to specify the condition. This is the most
-          general form, and all boundary conditions may be specified like this.
-          Specify Dirichlet on both ends with
-
-              {'left': [('D', a)], 'right': [('D', b)]}
-
-          Specify mixed Neumann and Dirichlet as
-
-              {'left': [('N', a)], 'right': [('D', b)]}
-
-          For both conditions on the right do
-
-              {'right': [('N', a), ('D', b)]}
-
-          Note that not all combinations are possible for biharmonic
-          problems. One combination that is possible is a fixed free beam
-          with
-
-              {'left': [('D', a), ('N', b)], 'right': [('N2', c), ('N3', d)]}
-
-          where 'N2' and 'N3' represent second and third derivatives.
+        See :class:`~shenfun.spectralbase.BoundaryConditions`
 
     dtype : str or np.dtype, optional
         The datatype of physical space (input to forward transforms)
+
     quad : str, optional
         Type of quadrature
 
@@ -107,25 +77,29 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
     domain : two-tuple of floats, optional
         The computational domain
     scaled : bool
-        Whether to use scaled basis (only Legendre)
+        Whether to use scaled basis
     basis : str
         Name of basis to use, if there are more than one possible basis for a given
         boundary condition. For example, there are three Dirichlet bases for the
-        Chebyshev family: 'Heinricht', 'ShenDirichlet' and 'Phi1'
+        Chebyshev family: :class:`~.chebyshev.bases.Heinrichs`, :class:`~.chebyshev.bases.ShenDirichlet`
+        and :class:`~.chebyshev.bases.Phi1`
     padding_factor : float, optional
         For padding backward transform (for dealiasing)
     dealias_direct : bool, optional
         Use 2/3-rule dealiasing
     coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
-        Map for curvilinear coordinatesystem.
-        The new coordinate variable in the new coordinate system is the first item.
-        Second item is a tuple for the Cartesian position vector as function of the
-        new variable in the first tuple. Example::
+        Map for curvilinear coordinates. Used for curves parametrized with one
+        parameter in :math:`\mathbb{R}^2` or :math:`\mathbb{R}^3`.
+        The parameter is the first item. Second item is a tuple of length 2 or
+        3 (for :math:`\mathbb{R}^2` or :math:`\mathbb{R}^3`) for the Cartesian
+        position vector. The sympy assumptions are there to help Sympy compute
+        basis vectors and metrics, see :class:`~shenfun.coordinates.Coordinates`
+        for options.
+        Example circle of radius 1::
 
-            theta = sp.Symbols('x', real=True, positive=True)
+            theta = sp.Symbol('x', real=True)
             rv = (sp.cos(theta), sp.sin(theta))
-
-        where theta and rv are the first and second items in the 2-tuple.
+            FunctionSpace(16, 'L', coordinates=(theta, rv), domain=(0, 2*np.pi))
 
     Examples
     --------
@@ -141,57 +115,6 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
     par.update(kw)
     if domain is not None:
         par['domain'] = domain
-
-    def _process_bcs(bc, domain):
-
-        bcs = {'left': [], 'right': []}
-        df = 1
-        if domain is not None:
-            df = 2./(domain[1]-domain[0])
-        if isinstance(bc, tuple):
-            # Short form for Dirichlet or biharmonic with 2 or 4 numbers
-            assert len(bc) in (2, 4)
-            assert np.all([isinstance(i, (sp.Expr, Number)) or i is None for i in bc])
-            if len(bc) == 2:
-                if bc[0] is not None:
-                    bcs['left'] = [('D', bc[0])]
-                if bc[1] is not None:
-                    bcs['right'] = [('D', bc[1])]
-
-            if len(bc) == 4:
-                bcs['left'] = [('D', bc[0]), ('N', bc[1])]
-                bcs['right'] = [('D', bc[2]), ('N', bc[3])]
-            key = ['L'+bci[0] for bci in bcs['left']] + ['R'+bci[0] for bci in bcs['right']]
-
-        elif isinstance(bc, dict):
-            bcs = {k.lower(): list(v) if isinstance(v[0], (tuple, list)) else [v] for k, v in bc.items()}
-            bc = []
-            key = []
-            if 'left' in bcs:
-                bcs['left'].sort()
-                for bci in bcs['left']:
-                    if bci[0] == 'N':
-                        bc.append(bci[1]/df)
-                    elif bci[0] == 'N2':
-                        bc.append(bci[1]/df**2)
-                    elif bci[0] == 'N3':
-                        bc.append(bci[1]/df**3)
-                    else:
-                        bc.append(bci[1])
-                key += ['L'+bci[0] for bci in bcs['left']]
-            if 'right' in bcs:
-                bcs['right'].sort()
-                for bci in bcs['right']:
-                    if bci[0] == 'N':
-                        bc.append(bci[1]/df)
-                    elif bci[0] == 'N2':
-                        bc.append(bci[1]/df**2)
-                    elif bci[0] == 'N3':
-                        bc.append(bci[1]/df**3)
-                    else:
-                        bc.append(bci[1])
-                key += ['R'+bci[0] for bci in bcs['right']]
-        return key, tuple(bc)
 
     if family.lower() in ('fourier', 'f'):
         from shenfun import fourier
@@ -228,21 +151,22 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
             'LDLNRDRN': chebyshev.bases.ShenBiharmonic
         }
 
-        if isinstance(bc, (tuple, dict)):
-            key, par['bc'] = _process_bcs(bc, domain)
-
-        elif bc is None:
-            key = ''
-
-        else:
-            raise NotImplementedError
-
         if basis is not None:
             assert isinstance(basis, str)
             B = getattr(chebyshev.bases, basis)
+            if isinstance(bc, tuple) or 'Generic' in basis:
+                par['bc'] = bc
         else:
-            B = bases[''.join(key)]
+            if isinstance(bc, (tuple, dict)):
+                bcs = BoundaryConditions(bc, domain=domain)
+                key = bcs.orderednames()
+                par['bc'] = bcs
+            elif bc is None:
+                key = ''
+            else:
+                raise RuntimeError
 
+            B = bases[''.join(key)]
         return B(N, **par)
 
     elif family.lower() in ('legendre', 'l'):
@@ -271,19 +195,20 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
             assert isinstance(scaled, bool)
             par['scaled'] = scaled
 
-        if isinstance(bc, (tuple, dict)):
-            key, par['bc'] = _process_bcs(bc, domain)
-
-        elif bc is None:
-            key = ''
-
-        else:
-            raise NotImplementedError
-
         if basis is not None:
             assert isinstance(basis, str)
             B = getattr(legendre.bases, basis)
+            if isinstance(bc, tuple):
+                par['bc'] = bc
         else:
+            if isinstance(bc, (tuple, dict)):
+                bcs = BoundaryConditions(bc, domain=domain)
+                key = bcs.orderednames()
+                par['bc'] = bcs
+            elif bc is None:
+                key = ''
+            else:
+                raise RuntimeError
             B = bases[''.join(key)]
 
         return B(N, **par)
@@ -305,19 +230,21 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
             'LDLNRDRN': chebyshevu.bases.Phi2
         }
 
-        if isinstance(bc, (tuple, dict)):
-            key, par['bc'] = _process_bcs(bc, domain)
-
-        elif bc is None:
-            key = ''
-
-        else:
-            raise NotImplementedError
-
         if basis is not None:
             assert isinstance(basis, str)
             B = getattr(chebyshevu.bases, basis)
+            if isinstance(bc, tuple):
+                par['bc'] = bc
         else:
+            if isinstance(bc, (tuple, dict)):
+                bcs = BoundaryConditions(bc, domain=domain)
+                key = bcs.orderednames()
+                par['bc'] = bcs
+
+            elif bc is None:
+                key = ''
+            else:
+                raise NotImplementedError
             B = bases[''.join(key)]
 
         return B(N, **par)
@@ -378,18 +305,19 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
         bases = {
             '': jacobi.bases.Orthogonal,
             'LDRD': jacobi.bases.CompactDirichlet,
+            'LNRN': jacobi.bases.CompactNeumann,
             'LDLNRDRN': jacobi.bases.Phi2,
-            '6th order': jacobi.bases.ShenOrder6
+            'LDLNLN2RDRNRN2': jacobi.bases.Phi3,
+            'LDLNLN2N3RDRNRN2N3': jacobi.bases.Phi4,
         }
 
         if isinstance(bc, (tuple, dict)):
-            key, par['bc'] = _process_bcs(bc, domain)
+            bcs = BoundaryConditions(bc, domain=domain)
+            key = bcs.orderednames()
+            par['bc'] = bcs
 
         elif bc is None:
             key = ''
-
-        elif bc == '6th order':
-            key = bc
 
         else:
             raise NotImplementedError
@@ -426,8 +354,8 @@ class Expr:
 
         - the outermost list represents a tensor component. There is one item for
           each tensor component. If the Expr is a scalar with rank = 0, then
-          len(terms) = 1. For vectors it equals the number of dimensions and
-          for second order tensors it equals ndim**2
+          len(terms) = 1. For vectors it equals ndim, which is the number of
+          dimensions, and for second order tensors it equals ndim*ndim.
 
         - the second nested list represents the different terms in the form, that
           may be more than one. For example, the scalar valued `div(grad(u))` has
@@ -826,7 +754,7 @@ class Expr:
         Note
         ----
         The contravariant vector components are the components to the
-        covariant basisvectors. If the basis vectors are normalize, i.e.,
+        covariant basisvectors. If the basis vectors are normalized, i.e.,
         if the setting is config['basisvectors'] == 'normal', then the
         normal vector components must be scaled in order to get to the
         contravariant components.
@@ -1035,7 +963,7 @@ class Expr:
 
 
 class BasisFunction:
-    """Base class for arguments to shenfun's Exprs
+    """Base class for arguments to shenfun's :class:`.Expr`
 
     Parameters
     ----------
@@ -1044,7 +972,7 @@ class BasisFunction:
     index : int
         Local component of basis in :class:`.CompositeSpace`
     offset : int
-        The number of scalar spaces (i.e., :class:`.TensorProductSpace`es)
+        The number of scalar spaces (i.e., :class:`.TensorProductSpace`)
         ahead of this space
     base : The base :class:`BasisFunction`
     """
@@ -1094,7 +1022,7 @@ class BasisFunction:
     def offset(self):
         """Return offset of this basis
 
-        The offset is the number of scalar :class:`.TensorProductSpace`es ahead
+        The offset is the number of scalar :class:`.TensorProductSpace` es ahead
         of this space in a :class:`.CompositeSpace`.
         """
         return self._offset
@@ -1141,13 +1069,13 @@ class TestFunction(BasisFunction):
 
     Parameters
     ----------
-    space: :class:`TensorProductSpace` or :class:`CompositeSpace`
+    space: :class:`.TensorProductSpace` or :class:`.CompositeSpace`
     index: int, optional
         Component of basis in :class:`.CompositeSpace`
     offset : int
-        The number of scalar spaces (i.e., :class:`.TensorProductSpace`es)
+        The number of scalar spaces (i.e., :class:`.TensorProductSpace`)
         ahead of this space
-    base : The base :class:`TestFunction`
+    base : The base :class:`.TestFunction`
     """
 
     def __init__(self, space, index=0, offset=0, base=None):
@@ -1162,13 +1090,13 @@ class TrialFunction(BasisFunction):
 
     Parameters
     ----------
-    space: :class:`TensorProductSpace` or :class:`CompositeSpace`
+    space: :class:`.TensorProductSpace` or :class:`.CompositeSpace`
     index: int, optional
         Component of basis in :class:`.CompositeSpace`
     offset : int
-        The number of scalar spaces (i.e., :class:`.TensorProductSpace`es)
+        The number of scalar spaces (i.e., :class:`.TensorProductSpace`)
         ahead of this space
-    base : The base :class:`TrialFunction`
+    base : The base :class:`.TrialFunction`
     """
     def __init__(self, space, index=0, offset=0, base=None):
         BasisFunction.__init__(self, space, index, offset, base)
@@ -1396,7 +1324,7 @@ class ShenfunBaseArray(DistArray):
 
 class Function(ShenfunBaseArray, BasisFunction):
     r"""
-    Spectral Galerkin function for given :class:`.TensorProductSpace` or :func:`.SpectralBase`
+    Spectral Galerkin function for given :class:`.TensorProductSpace` or :class:`.SpectralBase`
 
     The Function in one dimension is
 
@@ -1433,7 +1361,7 @@ class Function(ShenfunBaseArray, BasisFunction):
 
     Parameters
     ----------
-    space : :class:`.TensorProductSpace` or :class:`.FunctionSpace`
+    space : :class:`.TensorProductSpace` or :func:`.FunctionSpace`
     val : int or float
         Value used to initialize array
     buffer : Numpy array, :class:`.Function` or sympy `Expr`
@@ -1447,7 +1375,9 @@ class Function(ShenfunBaseArray, BasisFunction):
         Absolute tolerance for adaptively finding dimension of space from
         the buffer
 
-    .. note:: For more information, see `numpy.ndarray <https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html>`_
+    Note
+    ----
+    For more information, see `numpy.ndarray <https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html>`_
 
     Example
     -------
@@ -1905,7 +1835,9 @@ class Array(ShenfunBaseArray):
         A sympy expression is evaluated on the quadrature mesh and
         the result is used as buffer.
 
-    .. note:: For more information, see `numpy.ndarray <https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html>`_
+    Note
+    ----
+    For more information, see `numpy.ndarray <https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html>`_
 
     Examples
     --------
@@ -1931,7 +1863,7 @@ class Array(ShenfunBaseArray):
     def offset(self):
         """Return offset of this basis
 
-        The offset is the number of scalar :class:`.TensorProductSpace`es ahead
+        The offset is the number of scalar :class:`.TensorProductSpace` es ahead
         of this Arrays space in a :class:`.CompositeSpace`.
         """
         return self._offset

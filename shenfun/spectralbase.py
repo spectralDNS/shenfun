@@ -14,6 +14,7 @@ See the [documentation](https://shenfun.readthedocs.io) for more details.
 """
 #pylint: disable=unused-argument, not-callable, no-self-use, protected-access, too-many-public-methods, missing-docstring
 
+import copy
 import importlib
 from numbers import Number
 import sympy as sp
@@ -975,8 +976,8 @@ class SpectralBase:
                  padding_factor=padding_factor,
                  dealias_direct=dealias_direct,
                  coordinates=self.coors.coordinates)
-        if hasattr(self.bc, 'bc'):
-            d['bc'] = tuple(self.bc.bc)
+        if hasattr(self, 'bcs'):
+            d['bc'] = copy.deepcopy(self.bcs)
         if hasattr(self, '_scaled'):
             d['scaled'] = self._scaled
         for key in ('alpha', 'beta'):
@@ -1006,8 +1007,8 @@ class SpectralBase:
                  padding_factor=self.padding_factor,
                  dealias_direct=self.dealias_direct,
                  coordinates=self.coors.coordinates)
-        if hasattr(self.bc, 'bc'):
-            d['bc'] = tuple(self.bc.bc)
+        if hasattr(self, 'bcs'):
+            d['bc'] = copy.deepcopy(self.bcs)
         if hasattr(self, '_scaled'):
             d['scaled'] = self._scaled
         for key in ('alpha', 'beta'):
@@ -1030,8 +1031,8 @@ class SpectralBase:
             - dtype
             - padding_factor
             - dealias_direct
-            - coorrdinates
-            - bc
+            - coordinates
+            - bcs
             - scaled
 
             Not all will be applicable for all spaces.
@@ -1048,8 +1049,8 @@ class SpectralBase:
                  padding_factor=self.padding_factor,
                  dealias_direct=self.dealias_direct,
                  coordinates=self.coors.coordinates)
-        if hasattr(self.bc, 'bc'):
-            d['bc'] = tuple(self.bc.bc)
+        if hasattr(self, 'bcs'):
+            d['bc'] = copy.deepcopy(self.bcs)
         if hasattr(self, '_scaled'):
             d['scaled'] = self._scaled
         for key in ('alpha', 'beta'):
@@ -1079,6 +1080,7 @@ class SpectralBase:
                  coordinates=self.coors.coordinates)
         if hasattr(self, '_scaled'):
             d['scaled'] = self._scaled
+
         for key in ('alpha', 'beta'):
             if hasattr(self, key):
                 d[key] = object.__getattribute__(self, key)
@@ -1166,34 +1168,46 @@ class SpectralBase:
             sp = self.sl[slice(-nd, None)]
             padded_array[sp] = trunc_array[sl]
 
-def getCompositeSpace(Orthogonal):
-    """Dynamic class factory for Composite spaces
+
+def getCompositeBase(Orthogonal):
+    """Dynamic class factory for Composite bases
 
     Parameters
     ----------
-    Orthogonal : SpectralBase class
-        Either Chebyshev, ChebyshevU, Legendre or Jacobi
-    """
+    Orthogonal : :class:`.SpectralBase`
+        Dynamic inheritance, using base class as either one of
 
-    class CompositeSpace(Orthogonal):
+            - :class:`.chebyshev.bases.Orthogonal`
+            - :class:`.chebyshevu.bases.Orthogonal`
+            - :class:`.legendre.bases.Orthogonal`
+            - :class:`.jacobi.bases.Orthogonal`
+    Returns
+    -------
+    Either one of the classes
+
+        - :class:`.chebyshev.bases.CompositeBase`
+        - :class:`.chebyshevu.bases.CompositeBase`
+        - :class:`.legendre.bases.CompositeBase`
+        - :class:`.jacobi.bases.CompositeBase`
+
+    """
+    class CompositeBase(Orthogonal):
         """Common class for all spaces based on composite bases"""
 
         def __init__(self, *args, **kwargs):
             bc = kwargs.pop('bc', None)
             scaled = kwargs.pop('scaled', None)
-            alpha = kwargs.pop('alpha', None)
-            beta = kwargs.pop('beta', None)
             Orthogonal.__init__(self, *args, **kwargs)
             if bc is not None:
                 from shenfun.tensorproductspace import BoundaryValues
-                self.bc = bc
+                from shenfun.forms.arguments import BoundaryConditions
+                if isinstance(bc, (tuple, list)):
+                    bc = BoundaryConditions(bc, domain=kwargs['domain'])
+                assert isinstance(bc, BoundaryConditions)
+                self.bcs = bc
                 self.bc = BoundaryValues(self, bc=bc)
             if scaled is not None:
                 self._scaled = scaled
-            if alpha is not None:
-                self.alpha = alpha
-            if beta is not None:
-                self.beta = beta
 
         def evaluate_basis_all(self, x=None, argument=0):
             V = Orthogonal.evaluate_basis_all(self, x=x, argument=argument)
@@ -1228,10 +1242,16 @@ def getCompositeSpace(Orthogonal):
             return False
 
         def get_orthogonal(self):
-            return Orthogonal(self.N, quad=self.quad, domain=self.domain, dtype=self.dtype,
-                              padding_factor=self.padding_factor,
-                              dealias_direct=self.dealias_direct,
-                              coordinates=self.coors.coordinates)
+            kwargs = dict(quad=self.quad,
+                          domain=self.domain,
+                          dtype=self.dtype,
+                          padding_factor=self.padding_factor,
+                          dealias_direct=self.dealias_direct,
+                          coordinates=self.coors.coordinates)
+            for kw in ('alpha', 'beta'):
+                if hasattr(self, kw):
+                    kwargs[kw] = getattr(self, kw)
+            return Orthogonal(self.N, **kwargs)
 
         @property
         def has_nonhomogeneous_bcs(self):
@@ -1339,7 +1359,103 @@ def getCompositeSpace(Orthogonal):
             output_array = Orthogonal.eval(self, x, w, output_array)
             return output_array
 
-    return CompositeSpace
+    return CompositeBase
+
+class BoundaryConditions(dict):
+    """Boundary conditions for :class:`.SpectralBase`.
+
+    Parameters
+    ----------
+    bc : dict or n-tuple
+        The dictionary must have keys 'left' and 'right', to describe boundary
+        conditions on the left and right boundaries, and another dictionary on
+        left or right to describe the condition. For example, specify Dirichlet
+        on both ends with
+
+            {'left': {'D': a}, 'right': {'D': b}}
+
+        for some values `a` and `b`. Specify Neumann as
+
+            {'left': {'N': a}, 'right': {'N': b}}
+
+        A mixture of 3 conditions:
+
+            {'left': {'N': a}, 'right': {'D': b, 'N': c}}
+
+        Etc. Any combination should be possible, and it should also be possible
+        to use higher order derivatives with `N2`, `N3` etc.
+
+        If `bc` is an n-tuple, then we assume the basis function is
+
+            (None, a) - {'right': {'D': a}}
+            (a, None) - {'left': {'D': a}}
+            (a, b) - {'left': {'D': a}, 'right': {'D': b}}
+            (a, b, c, d) - {'left': {'D': a, 'N': b}, 'right': {'D': c, 'N': d}}
+            (a, b, c, d, e, f) - {'left': {'D': a, 'N': b, 'N2': c}, 'right': {'D': d, 'N': e, 'N2': f}}
+            etc.
+    domain : 2-tuple of numbers, optional
+        The domain, if different than (-1, 1).
+
+    """
+    def __init__(self, bc, domain=None):
+        bcs = {'left': {}, 'right': {}}
+        if isinstance(bc, tuple):
+            assert len(bc) in (2, 4, 6, 8)
+            assert np.all([isinstance(i, (sp.Expr, Number)) or i is None for i in bc])
+            if len(bc) == 2:
+                if bc[0] is not None:
+                    bcs['left']['D'] = bc[0]
+                if bc[1] is not None:
+                    bcs['right']['D'] = bc[1]
+            elif len(bc) == 4:
+                bcs['left'].update({'D': bc[0], 'N': bc[1]})
+                bcs['right'].update({'D': bc[2], 'N': bc[3]})
+            elif len(bc) == 6:
+                bcs['left'].update({'D': bc[0], 'N': bc[1], 'N2': bc[2]})
+                bcs['right'].update({'D': bc[3], 'N': bc[4], 'N2': bc[5]})
+            elif len(bc) == 8:
+                bcs['left'].update({'D': bc[0], 'N': bc[1], 'N2': bc[2], 'N3': bc[3]})
+                bcs['right'].update({'D': bc[4], 'N': bc[5], 'N2': bc[6], 'N3': bc[7]})
+        elif isinstance(bc, dict):
+            if isinstance(bc.get("left", {}) or bc.get("right", {}), (tuple, list)):
+                # old form {'left': [('D', 0), ('N', 0)], 'right': [('D', 0)]}
+                bc = {k.lower(): list(v) if isinstance(v[0], (tuple, list)) else [v] for k, v in bc.items()}
+                for key, val in bc.items():
+                    bcs[key] = {v[0]: v[1] for v in val}
+            else:
+                bcs.update(bc)
+
+        # Take care of non-standard domain size
+        df = 1
+        if domain is not None:
+            assert isinstance(domain, (tuple, list))
+            df = 2./(domain[1]-domain[0])
+        for key, val in bcs.items():
+            for bc, v in val.items():
+                if bc == 'N':
+                    bcs[key][bc] = bcs[key][bc]/df
+                elif bc == 'N2':
+                    bcs[key][bc] = bcs[key][bc]/df**2
+                elif bc == 'N3':
+                    bcs[key][bc] = bcs[key][bc]/df**3
+        dict.__init__(self, bcs)
+
+    def orderednames(self):
+        return ['L'+bci for bci in sorted(self['left'].keys())] + ['R'+bci for bci in sorted(self['right'].keys())]
+
+    def orderedvals(self):
+        return [self['left'][bci] for bci in sorted(self['left'].keys())] + [self['right'][bci] for bci in sorted(self['right'].keys())]
+
+    def num_bcs(self):
+        return len(self.orderedvals())
+
+    def num_derivatives(self):
+        n = {'D': 0, 'N': 1, 'N2': 2, 'N3': 3, 'N4': 4}
+        num_diff = 0
+        for key, val in self.items():
+            for k, v in val.items():
+                num_diff += n[k]
+        return num_diff
 
 class MixedFunctionSpace:
     """Class for composite bases in 1D
