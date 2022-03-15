@@ -113,7 +113,8 @@ class Orthogonal(SpectralBase):
         output_array[:] = basis(x)*np.exp(-x/2)
         return output_array
 
-    def bnd_values(self, k=0):
+    @staticmethod
+    def bnd_values(k=0, **kw):
         if k == 0:
             return (lambda i: 1, None)
         elif k == 1:
@@ -273,9 +274,9 @@ class CompactDirichlet(CompositeBase):
         Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
 
     """
-    def __init__(self, N, quad="LG", bc=(0,), dtype=float, padding_factor=1,
+    def __init__(self, N, bc=(0,), dtype=float, padding_factor=1,
                  dealias_direct=False, coordinates=None, **kw):
-        CompositeBase.__init__(self, N, dtype=dtype, quad=quad, padding_factor=padding_factor,
+        CompositeBase.__init__(self, N, quad='LG', dtype=dtype, padding_factor=padding_factor,
                                bc=bc, dealias_direct=dealias_direct, domain=(0, np.inf),
                                coordinates=coordinates)
 
@@ -320,12 +321,12 @@ class CompactNeumann(CompositeBase):
         Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
 
     """
-    def __init__(self, N, quad="LG", bc=(0,), dtype=float, padding_factor=1,
+    def __init__(self, N, bc=(0,), dtype=float, padding_factor=1,
                  dealias_direct=False, coordinates=None, **kw):
         if isinstance(bc, (tuple, list)):
             assert len(bc) == 1
             bc = BoundaryConditions({'left': {'N': bc[0]}, 'right': {}}, domain=(0, np.inf))
-        CompositeBase.__init__(self, N, dtype=dtype, quad=quad, padding_factor=padding_factor,
+        CompositeBase.__init__(self, N, dtype=dtype, quad='LG', padding_factor=padding_factor,
                                bc=bc, dealias_direct=dealias_direct, domain=(0, np.inf),
                                coordinates=coordinates)
 
@@ -520,6 +521,6 @@ class BCGeneric(BCBase):
 
     def stencil_matrix(self, N=None):
         if self._stencil_matrix is None:
-            from shenfun.utilities.findbasis import get_bc_basis
+            from shenfun.utilities import get_bc_basis
             self._stencil_matrix = np.array(get_bc_basis(self.bcs, 'laguerre'))
         return self._stencil_matrix

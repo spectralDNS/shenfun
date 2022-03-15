@@ -180,8 +180,8 @@ def test_to_ortho(basis, quad):
             B1 = cBasis[0](N, quad)
         #B3 = cBasis[0](N, quad)
     elif basis.family() == 'laguerre':
-        B1 = laBasis[0](N, quad)
-        #B3 = laBasis[0](N, quad)
+        B1 = laBasis[0](N)
+        #B3 = laBasis[0](N)
 
     B0 = basis(N, quad=quad)
     a = shenfun.Array(B0)

@@ -1,5 +1,5 @@
-from shenfun import chebyshev, chebyshevu, legendre, jacobi, laguerre
-from shenfun.spectralbase import BoundaryConditions
+import importlib
+import functools
 from sympy.matrices.common import NonInvertibleMatrixError
 import sympy as sp
 import numpy as np
@@ -31,19 +31,9 @@ def get_stencil_matrix(bcs, family, alpha=None, beta=None):
     alpha, beta : numbers, optional
         The Jacobi parameters, used only for `family=Jacobi`
     """
-    if family.lower() in ('chebyshev', 'c'):
-        basis = chebyshev.Orthogonal(0)
-    elif family.lower() in ('chebyshevu', 'u'):
-        basis = chebyshevu.Orthogonal(0)
-    elif family.lower() in ('legendre', 'l'):
-        basis = legendre.Orthogonal(0)
-    elif family.lower() in ('jacobi', 'j'):
-        assert alpha is not None
-        assert beta is not None
-        basis = jacobi.Orthogonal(0, alpha=alpha, beta=beta)
-    elif family.lower() in ('laguerre', 'la'):
-        basis = laguerre.Orthogonal(0)
-
+    from shenfun.spectralbase import BoundaryConditions
+    base = importlib.import_module('.'.join(('shenfun', family.lower())))
+    bnd_values = functools.partial(base.Orthogonal.bnd_values, alpha=alpha, beta=beta)
     bcs = BoundaryConditions(bcs)
     bc = {'D': 0, 'N': 1, 'N2': 2, 'N3': 3, 'N4': 4}
     lr = {'L': 0, 'R': 1}
@@ -51,7 +41,7 @@ def get_stencil_matrix(bcs, family, alpha=None, beta=None):
     r = []
     for key in bcs.orderednames():
         k, v = key[0], key[1:]
-        f = basis.bnd_values(k=bc[v])[lr[k]]
+        f = bnd_values(k=bc[v])[lr[k]]
         s.append([sp.simplify(f(n+j)) for j in range(1, 1+bcs.num_bcs())])
         r.append(-sp.simplify(f(n)))
     A = sp.Matrix(s)
@@ -79,22 +69,9 @@ def get_bc_basis(bcs, family, alpha=None, beta=None):
     alpha, beta : numbers, optional
         The Jacobi parameters, used only for `family=Jacobi`
     """
-    if family.lower() in ('chebyshev', 'c'):
-        basis = chebyshev.Orthogonal(0)
-    elif family.lower() in ('chebyshevu', 'u'):
-        basis = chebyshevu.Orthogonal(0)
-    elif family.lower() in ('legendre', 'l'):
-        basis = legendre.Orthogonal(0)
-    elif family.lower() in ('jacobi', 'j'):
-        assert alpha is not None
-        assert beta is not None
-        basis = jacobi.Orthogonal(0, alpha=alpha, beta=beta)
-    elif family.lower() in ('laguerre', 'la'):
-        basis = laguerre.Orthogonal(0)
-    else:
-        raise NotImplementedError
-
-    # Count number of boundary conditions and derivatives
+    from shenfun.spectralbase import BoundaryConditions
+    base = importlib.import_module('.'.join(('shenfun', family.lower())))
+    bnd_values = functools.partial(base.Orthogonal.bnd_values, alpha=alpha, beta=beta)
     bcs = BoundaryConditions(bcs)
     def _computematrix(first):
         bc = {'D': 0, 'N': 1, 'N2': 2, 'N3': 3, 'N4': 4}
@@ -103,7 +80,7 @@ def get_bc_basis(bcs, family, alpha=None, beta=None):
         r = []
         for key in bcs.orderednames():
             k, v = key[0], key[1:]
-            f = basis.bnd_values(k=bc[v])[lr[k]]
+            f = bnd_values(k=bc[v])[lr[k]]
             s.append([sp.simplify(f(j)) for j in range(first, first+bcs.num_bcs())])
 
         A = sp.Matrix(s)

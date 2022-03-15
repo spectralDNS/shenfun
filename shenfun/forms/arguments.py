@@ -141,16 +141,16 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
         # So LDRD means left Dirichlet, right Dirichlet
         bases = defaultdict(lambda: chebyshev.bases.Generic,
             {
-            '': chebyshev.bases.Orthogonal,
-            'LDRD': chebyshev.bases.ShenDirichlet,
-            'LNRN': chebyshev.bases.ShenNeumann,
-            'LDRN': chebyshev.bases.DirichletNeumann,
-            'LNRD': chebyshev.bases.NeumannDirichlet,
-            'RD': chebyshev.bases.UpperDirichlet,
-            'LD': chebyshev.bases.LowerDirichlet,
-            'RDRN': chebyshev.bases.UpperDirichletNeumann,
-            'LDLN': chebyshev.bases.LowerDirichletNeumann,
-            'LDLNRDRN': chebyshev.bases.ShenBiharmonic
+                '': chebyshev.bases.Orthogonal,
+                'LDRD': chebyshev.bases.ShenDirichlet,
+                'LNRN': chebyshev.bases.ShenNeumann,
+                'LDRN': chebyshev.bases.DirichletNeumann,
+                'LNRD': chebyshev.bases.NeumannDirichlet,
+                'RD': chebyshev.bases.UpperDirichlet,
+                'LD': chebyshev.bases.LowerDirichlet,
+                'RDRN': chebyshev.bases.UpperDirichletNeumann,
+                'LDLN': chebyshev.bases.LowerDirichletNeumann,
+                'LDLNRDRN': chebyshev.bases.ShenBiharmonic
             })
 
         if basis is not None:
@@ -177,16 +177,16 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
 
         bases = defaultdict(lambda: legendre.bases.Generic,
             {
-            '': legendre.bases.Orthogonal,
-            'LDRD': legendre.bases.ShenDirichlet,
-            'LNRN': legendre.bases.ShenNeumann,
-            'LDRN': legendre.bases.DirichletNeumann,
-            'LNRD': legendre.bases.NeumannDirichlet,
-            'LD': legendre.bases.LowerDirichlet,
-            'RD': legendre.bases.UpperDirichlet,
-            'RDRN': legendre.bases.UpperDirichletNeumann,
-            'LDLNRDRN': legendre.bases.ShenBiharmonic,
-            'LDLNRN2RN3': legendre.bases.BeamFixedFree,
+                '': legendre.bases.Orthogonal,
+                'LDRD': legendre.bases.ShenDirichlet,
+                'LNRN': legendre.bases.ShenNeumann,
+                'LDRN': legendre.bases.DirichletNeumann,
+                'LNRD': legendre.bases.NeumannDirichlet,
+                'LD': legendre.bases.LowerDirichlet,
+                'RD': legendre.bases.UpperDirichlet,
+                'RDRN': legendre.bases.UpperDirichletNeumann,
+                'LDLNRDRN': legendre.bases.ShenBiharmonic,
+                'LDLNRN2RN3': legendre.bases.BeamFixedFree,
             })
 
         if quad is not None:
@@ -228,10 +228,10 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
 
         bases = defaultdict(lambda: chebyshevu.bases.Generic,
             {
-            '': chebyshevu.bases.Orthogonal,
-            'LDRD': chebyshevu.bases.CompactDirichlet,
-            'LNRN': chebyshevu.bases.CompactNeumann,
-            'LDLNRDRN': chebyshevu.bases.Phi2
+                '': chebyshevu.bases.Orthogonal,
+                'LDRD': chebyshevu.bases.CompactDirichlet,
+                'LNRN': chebyshevu.bases.CompactNeumann,
+                'LDLNRDRN': chebyshevu.bases.Phi2
             })
 
         if basis is not None:
@@ -262,9 +262,9 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
 
         bases = defaultdict(lambda: laguerre.bases.Generic,
             {
-            '': laguerre.bases.Orthogonal,
-            'LD': laguerre.bases.CompactDirichlet,
-            'LN': laguerre.bases.CompactNeumann,
+                '': laguerre.bases.Orthogonal,
+                'LD': laguerre.bases.CompactDirichlet,
+                'LN': laguerre.bases.CompactNeumann,
             })
 
         if basis is not None:
@@ -319,12 +319,12 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
 
         bases = defaultdict(lambda: jacobi.bases.Generic,
             {
-            '': jacobi.bases.Orthogonal,
-            'LDRD': jacobi.bases.CompactDirichlet,
-            'LNRN': jacobi.bases.CompactNeumann,
-            'LDLNRDRN': jacobi.bases.Phi2,
-            'LDLNLN2RDRNRN2': jacobi.bases.Phi3,
-            'LDLNLN2N3RDRNRN2N3': jacobi.bases.Phi4,
+                '': jacobi.bases.Orthogonal,
+                'LDRD': jacobi.bases.CompactDirichlet,
+                'LNRN': jacobi.bases.CompactNeumann,
+                'LDLNRDRN': jacobi.bases.Phi2,
+                'LDLNLN2RDRNRN2': jacobi.bases.Phi3,
+                'LDLNLN2N3RDRNRN2N3': jacobi.bases.Phi4,
             })
 
         if isinstance(bc, (str, tuple, dict)):

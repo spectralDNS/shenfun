@@ -13,10 +13,11 @@ import sympy as sp
 from scipy.fftpack import dct
 from shenfun.optimization import optimizer
 from shenfun.config import config
+from .findbasis import get_bc_basis, get_stencil_matrix
 
 __all__ = ['dx', 'clenshaw_curtis1D', 'CachedArrayDict', 'surf3D', 'wrap_periodic',
            'outer', 'dot', 'apply_mask', 'integrate_sympy', 'mayavi_show',
-           'quiver3D']
+           'quiver3D', 'get_bc_basis', 'get_stencil_matrix']
 
 
 def dx(u, weighted=False):

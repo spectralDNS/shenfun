@@ -212,9 +212,9 @@ class Orthogonal(SpectralBase):
     def sympy_basis(self, i=0, x=xp):
         return sp.jacobi(i, self.alpha, self.beta, x)
 
-    def bnd_values(self, k=0):
+    def bnd_values(k=0, alpha=0, beta=0):
         from shenfun.jacobi.recursions import bnd_values
-        return bnd_values(self.alpha, self.beta, k=k)
+        return bnd_values(alpha, beta, k=k)
 
     def evaluate_basis(self, x, i=0, output_array=None):
         x = np.atleast_1d(x)

@@ -116,7 +116,7 @@ class FourierBase(SpectralBase):
         return points, np.array([2*np.pi/N])
 
     def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
-        k = self.wavenumbers(False, False, False)
+        k = self.wavenumbers(bcast=False, scaled=False, eliminate_highest_freq=False)
         return sp.exp(sp.I*k[i]*x)
 
     def weight(self, x=sp.symbols('x', real=True)):

@@ -1,11 +1,9 @@
 import functools
 import sympy as sp
 import numpy as np
-from scipy.special import gamma
 from shenfun.matrixbase import SpectralMatrix
-
-from . import bases
 from shenfun.la import TDMA, PDMA
+from . import bases
 
 J  = bases.Orthogonal
 CD = bases.CompactDirichlet

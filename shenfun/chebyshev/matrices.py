@@ -1219,16 +1219,16 @@ class BSDHHmat(SpectralMatrix):
         cp = np.ones(test[0].N); cp[2] = 2
         dk = np.ones(test[0].N); dk[:2] = 0
         d = {-2: -(np.pi/8)*ck[:-4],
-              0: (np.pi/8)*(ck[:-2]*(ck[:-2]+1)+dk[:-2]),
-              2: -(np.pi/8)*(ck[:-4]+2),
-              4: (np.pi/8)}
+             0: (np.pi/8)*(ck[:-2]*(ck[:-2]+1)+dk[:-2]),
+             2: -(np.pi/8)*(ck[:-4]+2),
+             4: (np.pi/8)}
 
         if trial[0].is_scaled():
             k = np.arange(test[0].N)
             d[-2] *= 1/(k[1:-3]*k[2:-2])
-            d[0]  *= 1/(k[1:-1]*k[2:])
-            d[2]  *= 1/((k[:-4]+3)*(k[:-4]+4))
-            d[4]  *= 1/((k[:-6]+5)*(k[:-6]+6))
+            d[0] *= 1/(k[1:-1]*k[2:])
+            d[2] *= 1/((k[:-4]+3)*(k[:-4]+4))
+            d[4] *= 1/((k[:-6]+5)*(k[:-6]+6))
 
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 

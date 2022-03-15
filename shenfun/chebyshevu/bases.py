@@ -148,7 +148,8 @@ class Orthogonal(SpectralBase):
     def sympy_basis(self, i=0, x=xp):
         return sp.chebyshevu(i, x)
 
-    def bnd_values(self, k=0):
+    @staticmethod
+    def bnd_values(k=0, **kw):
         from shenfun.jacobi.recursions import bnd_values, un, half
         return bnd_values(half, half, k=k, gn=un)
 
@@ -261,7 +262,7 @@ class Orthogonal(SpectralBase):
         N : int, optional
             The number of quadrature points
         """
-        raise SparseMatrix({0: 1}, (N, N))
+        return SparseMatrix({0: 1}, (N, N))
 
     def get_bc_basis(self):
         if self._bc_basis:
@@ -888,7 +889,7 @@ class BCGeneric(BCBase):
 
     def stencil_matrix(self, N=None):
         if self._stencil_matrix is None:
-            from shenfun.utilities.findbasis import get_bc_basis
+            from shenfun.utilities import get_bc_basis
             self._stencil_matrix = np.array(get_bc_basis(self.bcs, 'chebyshevu'))
         return self._stencil_matrix
 

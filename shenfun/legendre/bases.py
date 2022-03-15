@@ -215,15 +215,10 @@ class Orthogonal(SpectralBase):
     def sympy_basis(self, i=0, x=xp):
         return sp.legendre(i, x)
 
-    def bnd_values(self, k=0):
+    @staticmethod
+    def bnd_values(k=0, **kw):
         from shenfun.jacobi.recursions import bnd_values
         return bnd_values(0, 0, k=k)
-        #if k == 0:
-        #    return (lambda i: (-1)**i, lambda i: 1)
-        #elif k == 1:
-        #    return (lambda i: sp.Rational(1, 2)*(-1)**(i+1)*(i+1)*i, lambda i: sp.Rational(1, 2)*i*(i+1))
-        #elif k == 2:
-        #    return (lambda i: sp.Rational(1, 8)*(-1)**i*(i+2)*(i+1)*i*(i-1), lambda i: sp.Rational(1, 8)*(i+2)*(i+1)*i*(i-1))
 
     def evaluate_basis(self, x, i=0, output_array=None):
         x = np.atleast_1d(x)
@@ -1415,7 +1410,7 @@ class Generic(CompositeBase):
     """
     def __init__(self, N, quad="LG", bc={}, domain=(-1., 1.), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None, **kw):
-        from shenfun.utilities.findbasis import get_stencil_matrix
+        from shenfun.utilities import get_stencil_matrix
         self._stencil = get_stencil_matrix(bc, 'legendre')
         if not isinstance(bc, BoundaryConditions):
             bc = BoundaryConditions(bc, domain=domain)

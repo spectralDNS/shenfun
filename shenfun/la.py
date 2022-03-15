@@ -11,7 +11,6 @@ from shenfun.config import config
 from shenfun.optimization import optimizer, get_optimized
 from shenfun.matrixbase import SparseMatrix, extract_bc_matrices, \
     SpectralMatrix, BlockMatrix, TPMatrix, get_simplified_tpmatrices
-from shenfun.forms.arguments import Function
 from mpi4py import MPI
 
 comm = MPI.COMM_WORLD

@@ -107,7 +107,7 @@ mpirun -np 4 python MixedPoisson.py 24 25 legendre
 mpirun -np 4 python MixedPoisson.py 24 25 chebyshev
 mpirun -np 4 python MixedPoisson3D.py legendre
 mpirun -np 4 python MixedPoisson3D.py chebyshev
-mpirun -np 4 python laguerre_dirichlet_poisson2D.py 70
+mpirun -np 4 python laguerre_poisson2D.py 70 dirichlet
 mpirun -np 4 python hermite_poisson2D.py 36
 fi
 

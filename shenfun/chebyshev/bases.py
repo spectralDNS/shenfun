@@ -227,7 +227,8 @@ class Orthogonal(SpectralBase):
     def sympy_basis(self, i=0, x=xp):
         return sp.chebyshevt(i, x)
 
-    def bnd_values(self, k=0):
+    @staticmethod
+    def bnd_values(k=0, **kw):
         from shenfun.jacobi.recursions import bnd_values, cn, half
         return bnd_values(-half, -half, k=k, gn=cn)
 
@@ -1903,6 +1904,6 @@ class BCGeneric(BCBase):
 
     def stencil_matrix(self, N=None):
         if self._stencil_matrix is None:
-            from shenfun.utilities.findbasis import get_bc_basis
+            from shenfun.utilities import get_bc_basis
             self._stencil_matrix = np.array(get_bc_basis(self.bcs, 'chebyshev'))
         return self._stencil_matrix
