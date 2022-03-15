@@ -29,8 +29,8 @@ def dx(u, weighted=False):
     Parameters
     ----------
 
-        u : Array
-            The Array to integrate
+    u : Array
+        The Array to integrate
 
     Note
     ----
@@ -458,6 +458,8 @@ def mayavi_show():
 def wrap_periodic(xs, axes=()):
     """Return arrays wrapped around periodically
 
+    Parameters
+    ----------
     xs : array or sequence of arrays
     axes : sequence of integers, optional
         Extend arrays in xs by one in direction given by wrap

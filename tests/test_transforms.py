@@ -44,11 +44,11 @@ lBasis = (lbases.Orthogonal,
 
 # Bases with only LG quadrature
 lBasisLG = (lbases.UpperDirichlet,
-            lbases.ShenBiPolar,
-            lbases.ShenBiPolar0)
+            lbases.ShenBiPolar)
 
 laBasis = (labases.Orthogonal,
-           labases.ShenDirichlet)
+           labases.CompactDirichlet,
+           labases.CompactNeumann)
 
 fBasis = (fbases.R2C,
           fbases.C2C)

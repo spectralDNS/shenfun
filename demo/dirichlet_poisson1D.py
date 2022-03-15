@@ -10,7 +10,7 @@ The equation to solve is
 """
 import sys
 import os
-from sympy import symbols, sin, pi
+import sympy as sp
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, \
     Array, Function, FunctionSpace, dx
@@ -23,23 +23,19 @@ assert isinstance(int(sys.argv[-2]), int)
 family = sys.argv[-1].lower()
 
 # Use sympy to compute a rhs, given an analytical solution
-domain = (-1, 1)
-a = 1.
-b = -1.
-if family == 'jacobi':
-    a = 0
-    b = 0
+L = 1.2
+domain = (-L, L)
 
-x = symbols("x", real=True)
-d = 2/(domain[1]-domain[0])
-x_map = -1+(x-domain[0])*d
-ue = sin(4*pi*x_map)*(x_map-1)*(x_map+1) + a*(1-x_map)/2 + b*(1+x_map)/2
+x = sp.symbols("x", real=True)
+ue = sp.sin(4*sp.pi*x)
 fe = ue.diff(x, 2)
+
+# Get possibly nonzero boundary values
+bcs = ue.subs(x, -L).n(), ue.subs(x, L).n()
 
 # Size of discretization
 N = int(sys.argv[-2])
-
-SD = FunctionSpace(N, family=family, bc=(a, b), domain=domain, alpha=1, beta=2) # alpha, beta are ignored by all other than jacobi
+SD = FunctionSpace(N, family=family, bc=f'u(-{L})={bcs[0]} && u({L})={bcs[1]}', domain=domain, alpha=1, beta=2) # alpha, beta are ignored by all other than jacobi
 u = TrialFunction(SD)
 v = TestFunction(SD)
 

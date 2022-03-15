@@ -2,14 +2,12 @@ r"""
 Solve Poisson equation in 2D with periodic bcs in one direction
 and homogeneous Dirichlet in the other
 
+.. math::
+
     \nabla^2 u = f,
 
-Use Fourier basis for the periodic direction and Shen's Dirichlet basis for the
+Use Fourier basis for the periodic direction and a Dirichlet basis for the
 non-periodic direction.
-
-The equation to solve is
-
-     (\nabla^2 u, v) = (f, v)
 
 """
 import sys
@@ -32,9 +30,6 @@ Solver = chebyshev.la.Helmholtz if family == 'chebyshev' else la.SolverGeneric1N
 # Use sympy to compute a rhs, given an analytical solution
 a = 1
 b = -1
-if family == 'jacobi':
-    a = 0
-    b = 0
 x, y = symbols("x,y")
 
 ue = (cos(4*x) + sin(2*y))*(1 - x**2) + a*(1 - x)/2 + b*(1 + x)/2
@@ -43,7 +38,7 @@ fe = ue.diff(x, 2) + ue.diff(y, 2)
 # Size of discretization
 N = (int(sys.argv[-2]), int(sys.argv[-2])+1)
 
-SD = FunctionSpace(N[0], family=family, bc=(a, b))
+SD = FunctionSpace(N[0], family=family, bc=f'u(-1)={a} && u(1)={b}')
 K1 = FunctionSpace(N[1], family='F', dtype='d', domain=(-2*np.pi, 2*np.pi))
 T = TensorProductSpace(comm, (SD, K1), axes=(0, 1))
 

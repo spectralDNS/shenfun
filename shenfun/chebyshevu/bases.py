@@ -327,18 +327,23 @@ CompositeBase = getCompositeBase(Orthogonal)
 class Phi1(CompositeBase):
     r"""Function space for Dirichlet boundary conditions
 
-    .. math::
-
-        u(x_0)=bc[0] \text{ and } u(x_1)=bc[1], \quad \text{for } x \in [x_0, x_1]
-
-    The basis function is
+    The basis :math:`\{\phi_k\}_{k=0}^{N-1}` is
 
     .. math::
 
-        \phi_n &= \frac{1}{\pi}\left(\frac{U_n}{n+1}-\frac{U_{n+2}}{n+3}\right) \\
-               &=  \frac{(1-x^2)U'_{k+1}}{h^{(1)}_{k+1}}
+        \phi_k &= \frac{1}{\pi}\left(\frac{U_k}{k+1}-\frac{U_{k+2}}{k+3}\right) = \frac{(1-x^2)U'_{k+1}}{h^{(1)}_{k+1}} \, k=0, 1, \ldots, N-3, \\
+        \phi_{N-2} &= \tfrac{1}{2}U_0 - \tfrac{1}{4}U_1, \\
+        \phi_{N-1} &= \tfrac{1}{2}U_0 + \tfrac{1}{4}U_1,
 
-    where :math:`h^{(1)}_n = \frac{\pi n(n+2)}{2}`.
+    where :math:`h^{(1)}_n = \frac{\pi n(n+2)}{2}`. We have
+
+    .. math::
+        u(x) &= \sum_{k=0}^{N-1} \hat{u}_k \phi_k(x), \\
+        u(-1) &= a \text{ and } u(1) = b.
+
+    The last two bases are for boundary conditions and only used if a or b are
+    different from 0. In one dimension :math:`\hat{u}_{N-2}=a` and
+    :math:`\hat{u}_{N-1}=b`.
 
     Parameters
     ----------
@@ -375,8 +380,10 @@ class Phi1(CompositeBase):
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates, scaled=scaled)
         from shenfun.jacobi.recursions import b, h, half, n, un
-        self.b0n = sp.simplify(b(half, half, n+1, n, un) / (h(half, half, n, 0, un)))
-        self.b2n = sp.simplify(b(half, half, n+1, n+2, un) / (h(half, half, n+2, 0, un)))
+        #self.b0n = sp.simplify(b(half, half, n+1, n, un) / (h(half, half, n, 0, un)))
+        #self.b2n = sp.simplify(b(half, half, n+1, n+2, un) / (h(half, half, n+2, 0, un)))
+        self.b0n = 1/(np.pi*(n+1))
+        self.b2n = -1/(np.pi*(n+3))
 
     @staticmethod
     def boundary_condition():
@@ -401,18 +408,35 @@ class Phi1(CompositeBase):
         return slice(0, self.N-2)
 
 class Phi2(CompositeBase):
-    r"""Function space for Biharmonic boundary conditions
+    r"""Function space for biharmonic equation.
 
-    u(-1)=a, u'(-1)=b, u(1)=c and u'(1)=d
-
-    The basis function is
+    The basis :math:`\{\phi_k\}_{k=0}^{N-1}` is
 
     .. math::
 
-        \phi_n &= \frac{(1-x^2)^2 U''_{k+2}}{h^{(2)}_{k+2}} \\
-               &= \frac{1}{2\pi(n+1)(n+2)}\left(U_n- \frac{2(n+1)}{n+4}U_{n+2} + \frac{(n+1)(n+2)}{(n+3)(n+4)}U_{n+4} \right)
+        \phi_k &= \frac{(1-x^2)^2 U''_{k+2}}{h^{(2)}_{k+2}} \\
+               &= \frac{1}{2\pi(k+1)(k+2)}\left(U_k- \frac{2(k+1)}{k+4}U_{k+2} + \frac{(k+1)(k+2)}{(k+3)(k+4)}U_{k+4} \right)
 
-    where :math:`h^{(2)}_n = \frac{\pi (n+3)(n+2)n(n-1)}{2}`.
+    where :math:`h^{(2)}_n = \frac{\pi (n+3)(n+2)n(n-1)}{2}`. Along with
+    boundary functions we get
+
+    .. math::
+
+        \phi_k &= \frac{1}{2 \pi (k+1)(k+2)}(T_k - \frac{2(k+2)}{k+3}T_{k+2} + \frac{k+1}{k+3}T_{k+4}), \, k=0, 1, \ldots, N-5, \\
+        \phi_{N-4} &= \tfrac{1}{2}U_0-\tfrac{5}{6}U_1+\tfrac{1}{32}U_3, \\
+        \phi_{N-3} &= \tfrac{3}{16}U_0-\tfrac{1}{16}U_1-\tfrac{1}{16}U_2+\tfrac{1}{32}U_3, \\
+        \phi_{N-2} &= \tfrac{1}{2}U_0+\tfrac{5}{16}U_1-\tfrac{1}{32}U_3), \\
+        \phi_{N-1} &= -\tfrac{3}{16}U_0-\tfrac{1}{16}U_1+\tfrac{1}{16}U_2+\tfrac{1}{32}U_3,
+
+    such that
+
+    .. math::
+        u(x) &= \sum_{k=0}^{N-1} \hat{u}_k \phi_k(x), \\
+        u(-1)&=a, u'(-1) = b, u(1)=c, u'(1) = d.
+
+    The last four bases are for boundary conditions and only used if a, b, c or d are
+    different from 0. In one dimension :math:`\hat{u}_{N-4}=a`, :math:`\hat{u}_{N-3}=b`,
+    :math:`\hat{u}_{N-2}=c` and :math:`\hat{u}_{N-1}=d`.
 
     Parameters
     ----------
@@ -449,9 +473,12 @@ class Phi2(CompositeBase):
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
         from shenfun.jacobi.recursions import b, h, half, n, matpow, un
-        self.b0n = sp.simplify(matpow(b, 2, half, half, n+2, n, un) / (h(half, half, n, 0, un)))
-        self.b2n = sp.simplify(matpow(b, 2, half, half, n+2, n+2, un) / (h(half, half, n+2, 0, un)))
-        self.b4n = sp.simplify(matpow(b, 2, half, half, n+2, n+4, un) / (h(half, half, n+4, 0, un)))
+        #self.b0n = sp.simplify(matpow(b, 2, half, half, n+2, n, un) / (h(half, half, n, 0, un)))
+        #self.b2n = sp.simplify(matpow(b, 2, half, half, n+2, n+2, un) / (h(half, half, n+2, 0, un)))
+        #self.b4n = sp.simplify(matpow(b, 2, half, half, n+2, n+4, un) / (h(half, half, n+4, 0, un)))
+        self.b0n = 1/(2*np.pi*(n+1)*(n+2))
+        self.b2n = -1/(np.pi*(n+2)*(n+4))
+        self.b4n = 1/(2*np.pi*(n+4)*(n+5))
 
     @staticmethod
     def boundary_condition():
@@ -476,15 +503,25 @@ class Phi2(CompositeBase):
 
 
 class CompactDirichlet(CompositeBase):
-    r"""Function space for Dirichlet boundary conditions
+    r"""Function space for Dirichlet boundary conditions.
 
-    u(-1)=a and u(1)=b
-
-    The basis function is
+    The basis :math:`\{\phi_k\}_{k=0}^{N-1}` is
 
     .. math::
 
-        \phi_n = {U_n}-\frac{n+1}{n+3} U_{n+2}
+        \phi_k &= U_k - \frac{k+1}{k+3}U_{k+2}, \, k=0, 1, \ldots, N-3, \\
+        \phi_{N-2} &= \tfrac{1}{2}U_0 - \tfrac{1}{4}U_1, \\
+        \phi_{N-1} &= \tfrac{1}{2}U_0 + \tfrac{1}{4}U_1,
+
+    such that
+
+    .. math::
+        u(x) &= \sum_{k=0}^{N-1} \hat{u}_k \phi_k(x), \\
+        u(-1) &= a \text{ and } u(1) = b.
+
+    The last two bases are for boundary conditions and only used if a or b are
+    different from 0. In one dimension :math:`\hat{u}_{N-2}=a` and
+    :math:`\hat{u}_{N-1}=b`.
 
     Parameters
     ----------
@@ -545,13 +582,23 @@ class CompactDirichlet(CompositeBase):
 class CompactNeumann(CompositeBase):
     r"""Function space for Neumann boundary conditions
 
-    u'(-1)=a and u'(1)=b
-
-    The basis function is
+    The basis :math:`\{\phi_k\}_{k=0}^{N-1}` is
 
     .. math::
 
-        \phi_n = {U_n}-\frac{n (n+1)}{(n+3)(n+4)} U_{n+2}
+        \phi_k = {U_k}-\frac{k(k+1)}{(k+3)(k+4)} U_{k+2}, \, k=0, 1, \ldots, N-3, \\
+        \phi_{N-2} &= \tfrac{1}{16}(4U_1-U_2), \\
+        \phi_{N-1} &= \tfrac{1}{16}(4U_1+U_2),
+
+    such that
+
+    .. math::
+        u(x) &= \sum_{k=0}^{N-1} \hat{u}_k \phi_k(x), \\
+        u'(-1) &= a \text{ and } u'(1) = b.
+
+    The last two bases are for boundary conditions and only used if a or b are
+    different from 0. In one dimension :math:`\hat{u}_{N-2}=a` and
+    :math:`\hat{u}_{N-1}=b`.
 
     Parameters
     ----------
@@ -609,6 +656,91 @@ class CompactNeumann(CompositeBase):
     def slice(self):
         return slice(0, self.N-2)
 
+class Generic(CompositeBase):
+    r"""Function space for space with any boundary conditions
+
+    Any combination of Dirichlet and Neumann is possible.
+
+    Parameters
+    ----------
+    N : int, optional
+        Number of quadrature points
+    quad : str, optional
+        Type of quadrature
+
+        - GL - Chebyshev-Gauss-Lobatto
+        - GC - Chebyshev-Gauss
+
+    bc : dict, optional
+        The dictionary must have keys 'left' and 'right', to describe boundary
+        conditions on the left and right boundaries, and a list of 2-tuples to
+        specify the condition. Specify Dirichlet on both ends with
+
+            {'left': {'D': a}, 'right': {'D': b}}
+
+        for some values `a` and `b`, that will be neglected in the current
+        function. Specify mixed Neumann and Dirichlet as
+
+            {'left': {'N': a}, 'right': {'N': b}}
+
+        For both conditions on the right do
+
+            {'right': {'N': a, 'D': b}}
+
+        Any combination should be possible, and it should also be possible to
+        use second derivatives `N2`. See :class:`~shenfun.spectralbase.BoundaryConditions`.
+    domain : 2-tuple of floats, optional
+        The computational domain
+    dtype : data-type, optional
+        Type of input data in real physical space. Will be overloaded when
+        basis is part of a :class:`.TensorProductSpace`.
+    padding_factor : float, optional
+        Factor for padding backward transforms.
+    dealias_direct : bool, optional
+        Set upper 1/3 of coefficients to zero before backward transform
+    coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
+        Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
+
+    Note
+    ----
+    A test function is always using homogeneous boundary conditions.
+
+    """
+    def __init__(self, N, quad="GC", bc={}, domain=(-1., 1.), dtype=float,
+                 padding_factor=1, dealias_direct=False, coordinates=None, **kw):
+        from shenfun.utilities.findbasis import get_stencil_matrix
+        self._stencil = get_stencil_matrix(bc, 'chebyshevu')
+        bc = BoundaryConditions(bc)
+        CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
+                               padding_factor=padding_factor, dealias_direct=dealias_direct,
+                               coordinates=coordinates)
+
+    @staticmethod
+    def boundary_condition():
+        return 'Generic'
+
+    @staticmethod
+    def short_name():
+        return 'GU'
+
+    def slice(self):
+        return slice(0, self.N-self.bcs.num_bcs())
+
+    def stencil_matrix(self, N=None):
+        from shenfun.utilities.findbasis import n
+        N = self.N if N is None else N
+        d0 = np.ones(N, dtype=int)
+        d0[-self.bcs.num_bcs():] = 0
+        d = {0: d0}
+        k = np.arange(N)
+        for i, s in enumerate(self._stencil):
+            di = sp.lambdify(n, s)(k[:-(i+1)])
+            if not np.allclose(di, 0):
+                if isinstance(di, np.ndarray):
+                    di[(N-self.bcs.num_bcs()):] = 0
+                d[i+1] = di
+        return SparseMatrix(d, (N, N))
+
 
 class BCBase(CompositeBase):
     """Function space for inhomogeneous boundary conditions
@@ -622,8 +754,8 @@ class BCBase(CompositeBase):
         :class:`.BoundaryConditions`.
     domain : 2-tuple, optional
         The domain of the homogeneous space.
-    """
 
+    """
     def __init__(self, N, bc=(0, 0), domain=(-1, 1), **kw):
         CompositeBase.__init__(self, N, bc=bc, domain=(-1, 1))
         self._stencil_matrix = None

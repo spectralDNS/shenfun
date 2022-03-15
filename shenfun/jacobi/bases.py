@@ -32,7 +32,7 @@ from scipy.special import eval_jacobi, roots_jacobi #, gamma
 from mpi4py_fft import fftw
 from shenfun.config import config
 from shenfun.spectralbase import SpectralBase, Transform, islicedict, \
-    slicedict, getCompositeBase
+    slicedict, getCompositeBase, BoundaryConditions
 from shenfun.matrixbase import SparseMatrix
 from .recursions import b, h, matpow, n
 
@@ -61,6 +61,7 @@ __all__ = ['Orthogonal',
            'CompactDirichlet',
            'CompactNeumann',
            'CompositeBase',
+           'Generic',
            'BCBase',
            'BCGeneric',
            'mode',
@@ -827,6 +828,8 @@ class CompactNeumann(CompositeBase):
     def __init__(self, N, quad="JG", bc=(0., 0.), domain=(-1., 1.), dtype=float,
                  padding_factor=1, dealias_direct=False, alpha=0, beta=0,
                  coordinates=None, **kw):
+        if isinstance(bc, (tuple, list)):
+            bc = BoundaryConditions({'left': {'N': bc[0]}, 'right': {'N': bc[1]}}, domain=domain)
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                alpha=alpha, beta=beta, coordinates=coordinates)
@@ -855,6 +858,93 @@ class CompactNeumann(CompositeBase):
     def slice(self):
         return slice(0, self.N-2)
 
+
+class Generic(CompositeBase):
+    r"""Function space for space with any boundary conditions
+
+    Any combination of Dirichlet and Neumann is possible.
+
+    Parameters
+    ----------
+    N : int, optional
+        Number of quadrature points
+    quad : str, optional
+        Type of quadrature
+
+        - GL - Chebyshev-Gauss-Lobatto
+        - GC - Chebyshev-Gauss
+
+    bc : dict, optional
+        The dictionary must have keys 'left' and 'right', to describe boundary
+        conditions on the left and right boundaries, and a list of 2-tuples to
+        specify the condition. Specify Dirichlet on both ends with
+
+            {'left': {'D': a}, 'right': {'D': b}}
+
+        for some values `a` and `b`, that will be neglected in the current
+        function. Specify mixed Neumann and Dirichlet as
+
+            {'left': {'N': a}, 'right': {'N': b}}
+
+        For both conditions on the right do
+
+            {'right': {'N': a, 'D': b}}
+
+        Any combination should be possible, and it should also be possible to
+        use second derivatives `N2`. See :class:`~shenfun.spectralbase.BoundaryConditions`.
+    domain : 2-tuple of floats, optional
+        The computational domain
+    dtype : data-type, optional
+        Type of input data in real physical space. Will be overloaded when
+        basis is part of a :class:`.TensorProductSpace`.
+    padding_factor : float, optional
+        Factor for padding backward transforms.
+    dealias_direct : bool, optional
+        Set upper 1/3 of coefficients to zero before backward transform
+    coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
+        Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
+
+    Note
+    ----
+    A test function is always using homogeneous boundary conditions.
+
+    """
+    def __init__(self, N, quad="JG", bc={}, domain=(-1., 1.), dtype=float,
+                 padding_factor=1, dealias_direct=False, coordinates=None,
+                 alpha=0, beta=0, **kw):
+        from shenfun.utilities.findbasis import get_stencil_matrix
+        self._stencil = get_stencil_matrix(bc, 'jacobi', alpha, beta)
+        if not isinstance(bc, BoundaryConditions):
+            bc = BoundaryConditions(bc, domain=domain)
+        CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
+                               padding_factor=padding_factor, dealias_direct=dealias_direct,
+                               alpha=alpha, beta=beta, coordinates=coordinates)
+
+    @staticmethod
+    def boundary_condition():
+        return 'Generic'
+
+    @staticmethod
+    def short_name():
+        return 'GJ'
+
+    def slice(self):
+        return slice(0, self.N-self.bcs.num_bcs())
+
+    def stencil_matrix(self, N=None):
+        from shenfun.utilities.findbasis import n
+        N = self.N if N is None else N
+        d0 = np.ones(N, dtype=int)
+        d0[-self.bcs.num_bcs():] = 0
+        d = {0: d0}
+        k = np.arange(N)
+        for i, s in enumerate(self._stencil):
+            di = sp.lambdify(n, s)(k[:-(i+1)])
+            if not np.allclose(di, 0):
+                if isinstance(di, np.ndarray):
+                    di[(N-self.bcs.num_bcs()):] = 0
+                d[i+1] = di
+        return SparseMatrix(d, (N, N))
 
 class BCBase(CompositeBase):
     """Function space for inhomogeneous boundary conditions

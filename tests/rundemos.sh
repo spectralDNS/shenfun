@@ -44,8 +44,11 @@ python biharmonic3D_2nonperiodic.py
 python biharmonic2D_2nonperiodic.py legendre
 python biharmonic3D_2nonperiodic.py legendre
 
-python laguerre_dirichlet_poisson1D.py 70
-python laguerre_dirichlet_poisson2D.py 60
+python laguerre_poisson1D.py 70 dirichlet
+python laguerre_poisson1D.py 70 neumann
+python laguerre_poisson2D.py 60 dirichlet
+python laguerre_poisson2D.py 60 neumann
+
 python laguerre_legendre_poisson2D.py 60
 
 python biharmonic2D_2nonperiodic.py chebyshev
@@ -63,8 +66,6 @@ python dirichlet_dirichlet_poisson2D.py 24 25 legendre
 python dirichlet_dirichlet_poisson2D.py 24 25 chebyshev
 python dirichlet_dirichlet_poisson2D.py 24 25 jacobi
 
-#python unitdisc_helmholtz.py
-#python unitdisc_biharmonic.py
 python mixedneumanndirichlet_poisson1D.py 24 chebyshev
 python mixedneumanndirichlet_poisson1D.py 24 legendre
 python mixedneumanndirichlet_poisson2D.py

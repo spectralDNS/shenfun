@@ -138,11 +138,11 @@ lBasis = (lbases.Orthogonal,
 
 # Bases with only LG quadrature
 lBasisLG = (lbases.UpperDirichlet,
-            lbases.ShenBiPolar,
-            lbases.ShenBiPolar0)
+            lbases.ShenBiPolar)
 
 lagBasis = (lagbases.Orthogonal,
-            lagbases.ShenDirichlet)
+            lagbases.CompactDirichlet,
+            lagbases.CompactNeumann)
 
 hBasis = (hbases.Orthogonal,)
 
@@ -544,7 +544,7 @@ def test_assign(fam):
     for bc in (None, (0, 0), (0, 0, 0, 0)):
         dtype = 'D' if fam == 'F' else 'd'
         bc = 'periodic' if fam == 'F' else bc
-        if bc == (0, 0, 0, 0) and fam in ('La', 'H'):
+        if bc in ((0, 0), (0, 0, 0, 0)) and fam in ('La', 'H'):
             continue
         tol = 1e-12 if fam in ('C', 'L', 'F') else 1e-5
         N = (10, 12)

@@ -201,7 +201,7 @@ Now, when $\hat{\bs{u}} = \{\hat{u}_{\ts{k}}\}_{\ts{k} \in \bs{k}}$ is
 found by solving this linear system over the
 entire computational mesh, it may be
 transformed to real space $u(\bs{x})$ using (ref{eq:3d:u}). Note that the matrices
-$A \in \mathbb{R}^{N_0-3 \times N_0-3}$ and $B \in \mathbb{R}^{N_0-3 \times N_0-3}$
+$A \in \mathbb{R}^{N_0-2 \times N_0-2}$ and $B \in \mathbb{R}^{N_0-2 \times N_0-2}$
 differ for Legendre or Chebyshev bases, but
 for either case they have a
 special structure that allows for a solution to be found very efficiently
@@ -316,7 +316,7 @@ transformed, then the data will be aligned in this direction, whereas the other
 two directions may both, or just one of them, be distributed.
 
 Note that `X` is a list containing local values of the arrays $\{x_i\}_{i=0}^{N_0-1}$,
-$\{y_j\}_{j=0}^{N_1-0}$ and $\{z_k\}_{k=0}^{N_2-1}$.
+$\{y_j\}_{j=0}^{N_1-1}$ and $\{z_k\}_{k=0}^{N_2-1}$.
 Now, it's not possible to run a jupyter notebook with more than one process,
 but we can imagine running "the complete solver": "https://github.com/spectralDNS/shenfun/blob/master/demo/dirichlet_poisson3D.py"
 with 4 procesors and a processor mesh of shape $2\times 2$.

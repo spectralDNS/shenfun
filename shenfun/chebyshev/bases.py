@@ -709,7 +709,7 @@ class ShenNeumann(CompositeBase):
     def __init__(self, N, quad="GC", bc=(0, 0), domain=(-1., 1.), dtype=float, padding_factor=1,
                  dealias_direct=False, coordinates=None, **kw):
         if isinstance(bc, (tuple, list)):
-            bc = BoundaryConditions({'left': {'N': bc[0]}, 'right': {'N': bc[1]}})
+            bc = BoundaryConditions({'left': {'N': bc[0]}, 'right': {'N': bc[1]}}, domain=domain)
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
@@ -787,7 +787,7 @@ class CombinedShenNeumann(CompositeBase):
     def __init__(self, N, quad="GC", bc=(0, 0), domain=(-1., 1.), dtype=float, padding_factor=1,
                  dealias_direct=False, coordinates=None, **kw):
         if isinstance(bc, (tuple, list)):
-            bc = BoundaryConditions({'left': {'N': bc[0]}, 'right': {'N': bc[1]}})
+            bc = BoundaryConditions({'left': {'N': bc[0]}, 'right': {'N': bc[1]}}, domain=domain)
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
@@ -878,7 +878,7 @@ class MikNeumann(CompositeBase):
     def __init__(self, N, quad="GC", bc=(0, 0), domain=(-1., 1.), dtype=float, padding_factor=1,
                  dealias_direct=False, coordinates=None, **kw):
         if isinstance(bc, (tuple, list)):
-            bc = BoundaryConditions({'left': {'N': bc[0]}, 'right': {'N': bc[1]}})
+            bc = BoundaryConditions({'left': {'N': bc[0]}, 'right': {'N': bc[1]}}, domain=domain)
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
@@ -1096,10 +1096,11 @@ class Phi4(CompositeBase):
     .. math::
 
         \phi_k &= \frac{(1-x^2)^4}{h^{(4)}_{k+4}} T^{(4)}_{k+4} \\
-        h^{(4)}_k &= \frac{\pi k \Gamma (k+4)}{2(k-4)!} = \int_{-1}^1 \frac{d^4 T_k}{dx^4} \frac{d^4 T_k}{dx^4} \frac{1}{\sqrt{1-x^2}} dx.
+        h^{(4)}_k &= \frac{\pi k \Gamma (k+4)}{2(k-4)!} = \int_{-1}^1 T^{(4)}_k T^{(4)}_k \frac{1}{\sqrt{1-x^2}} dx.
 
-    The boundary basis for inhomogeneous boundary conditions is too
-    messy to print, but can be obtained using :func:`.CompositeBase.get_bc_basis`.
+    where :math:`T^{(4)}_k` is the 4th derivative of :math:`T_k`. The boundary
+    basis for inhomogeneous boundary conditions is too messy to print, but can
+    be obtained using :func:`~shenfun.utilities.findbasis.get_bc_basis`.
 
     Parameters
     ----------
@@ -1419,7 +1420,7 @@ class DirichletNeumann(CompositeBase):
     def __init__(self, N, quad="GC", bc=(0, 0), domain=(-1., 1.), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None, **kw):
         if isinstance(bc, (tuple, list)):
-            bc = BoundaryConditions({'left': {'D': bc[0]}, 'right': {'N': bc[1]}})
+            bc = BoundaryConditions({'left': {'D': bc[0]}, 'right': {'N': bc[1]}}, domain=domain)
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
@@ -1495,7 +1496,7 @@ class NeumannDirichlet(CompositeBase):
     def __init__(self, N, quad="GC", bc=(0, 0), domain=(-1., 1.), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None, **kw):
         if isinstance(bc, (tuple, list)):
-            bc = BoundaryConditions({'left': {'N': bc[0]}, 'right': {'D': bc[1]}})
+            bc = BoundaryConditions({'left': {'N': bc[0]}, 'right': {'D': bc[1]}}, domain=domain)
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
@@ -1572,7 +1573,7 @@ class UpperDirichletNeumann(CompositeBase):
     def __init__(self, N, quad="GC", bc=(0, 0), domain=(-1., 1.), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None, **kw):
         if isinstance(bc, (tuple, list)):
-            bc = BoundaryConditions({'right': {'D': bc[0], 'N': bc[1]}})
+            bc = BoundaryConditions({'right': {'D': bc[0], 'N': bc[1]}}, domain=domain)
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
@@ -1649,7 +1650,7 @@ class LowerDirichletNeumann(CompositeBase):
     def __init__(self, N, quad="GC", bc=(0, 0), domain=(-1., 1.), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None, **kw):
         if isinstance(bc, (tuple, list)):
-            bc = BoundaryConditions({'left': {'D': bc[0], 'N': bc[1]}})
+            bc = BoundaryConditions({'left': {'D': bc[0], 'N': bc[1]}}, domain=domain)
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
@@ -1729,7 +1730,7 @@ class Generic(CompositeBase):
                  padding_factor=1, dealias_direct=False, coordinates=None, **kw):
         from shenfun.utilities.findbasis import get_stencil_matrix
         self._stencil = get_stencil_matrix(bc, 'chebyshev')
-        bc = BoundaryConditions(bc)
+        bc = BoundaryConditions(bc, domain=domain)
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
@@ -1740,7 +1741,7 @@ class Generic(CompositeBase):
 
     @staticmethod
     def short_name():
-        return 'GN'
+        return 'GT'
 
     def slice(self):
         return slice(0, self.N-self.bcs.num_bcs())

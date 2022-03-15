@@ -1,5 +1,6 @@
 from numbers import Number, Integral
 from itertools import product
+from collections import defaultdict
 import copy
 from scipy.special import sph_harm, erf, airy
 import numpy as np
@@ -138,7 +139,8 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
         # Boundary conditions abbreviated in dictionary keys as
         #   left->L, right->R, Dirichlet->D, Neumann->N
         # So LDRD means left Dirichlet, right Dirichlet
-        bases = {
+        bases = defaultdict(lambda: chebyshev.bases.Generic,
+            {
             '': chebyshev.bases.Orthogonal,
             'LDRD': chebyshev.bases.ShenDirichlet,
             'LNRN': chebyshev.bases.ShenNeumann,
@@ -149,7 +151,7 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
             'RDRN': chebyshev.bases.UpperDirichletNeumann,
             'LDLN': chebyshev.bases.LowerDirichletNeumann,
             'LDLNRDRN': chebyshev.bases.ShenBiharmonic
-        }
+            })
 
         if basis is not None:
             assert isinstance(basis, str)
@@ -157,7 +159,8 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
             if isinstance(bc, tuple) or 'Generic' in basis:
                 par['bc'] = bc
         else:
-            if isinstance(bc, (tuple, dict)):
+            if isinstance(bc, (str, tuple, dict)):
+                domain = (-1, 1) if domain is None else domain
                 bcs = BoundaryConditions(bc, domain=domain)
                 key = bcs.orderednames()
                 par['bc'] = bcs
@@ -172,7 +175,8 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
     elif family.lower() in ('legendre', 'l'):
         from shenfun import legendre
 
-        bases = {
+        bases = defaultdict(lambda: legendre.bases.Generic,
+            {
             '': legendre.bases.Orthogonal,
             'LDRD': legendre.bases.ShenDirichlet,
             'LNRN': legendre.bases.ShenNeumann,
@@ -181,11 +185,9 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
             'LD': legendre.bases.LowerDirichlet,
             'RD': legendre.bases.UpperDirichlet,
             'RDRN': legendre.bases.UpperDirichletNeumann,
-            'LNRDRN': legendre.bases.ShenBiPolar0,
             'LDLNRDRN': legendre.bases.ShenBiharmonic,
             'LDLNRN2RN3': legendre.bases.BeamFixedFree,
-            'LDLNRD': legendre.bases.DirichletNeumannDirichlet
-        }
+            })
 
         if quad is not None:
             assert quad in ('LG', 'GL')
@@ -201,7 +203,8 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
             if isinstance(bc, tuple):
                 par['bc'] = bc
         else:
-            if isinstance(bc, (tuple, dict)):
+            if isinstance(bc, (str, tuple, dict)):
+                domain = (-1, 1) if domain is None else domain
                 bcs = BoundaryConditions(bc, domain=domain)
                 key = bcs.orderednames()
                 par['bc'] = bcs
@@ -223,12 +226,13 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
             assert isinstance(scaled, bool)
             par['scaled'] = scaled
 
-        bases = {
+        bases = defaultdict(lambda: chebyshevu.bases.Generic,
+            {
             '': chebyshevu.bases.Orthogonal,
             'LDRD': chebyshevu.bases.CompactDirichlet,
             'LNRN': chebyshevu.bases.CompactNeumann,
             'LDLNRDRN': chebyshevu.bases.Phi2
-        }
+            })
 
         if basis is not None:
             assert isinstance(basis, str)
@@ -236,7 +240,8 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
             if isinstance(bc, tuple):
                 par['bc'] = bc
         else:
-            if isinstance(bc, (tuple, dict)):
+            if isinstance(bc, (str, tuple, dict)):
+                domain = (-1, 1) if domain is None else domain
                 bcs = BoundaryConditions(bc, domain=domain)
                 key = bcs.orderednames()
                 par['bc'] = bcs
@@ -252,23 +257,33 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
     elif family.lower() in ('laguerre', 'la'):
         from shenfun import laguerre
         if quad is not None:
-            assert quad in ('LG', 'GR')
+            assert quad in ('LG',)
             par['quad'] = quad
 
-        if bc is None:
-            B = laguerre.bases.Orthogonal
+        bases = defaultdict(lambda: laguerre.bases.Generic,
+            {
+            '': laguerre.bases.Orthogonal,
+            'LD': laguerre.bases.CompactDirichlet,
+            'LN': laguerre.bases.CompactNeumann,
+            })
 
-        elif isinstance(bc, tuple):
-            assert len(bc) == 2
-            par['bc'] = bc
-            B = laguerre.bases.ShenDirichlet
-
-        elif isinstance(bc, str):
-            if bc.lower() == 'dirichlet':
-                B = laguerre.bases.ShenDirichlet
-
+        if basis is not None:
+            assert isinstance(basis, str)
+            B = getattr(laguerre.bases, basis)
+            if isinstance(bc, tuple):
+                par['bc'] = bc
         else:
-            raise NotImplementedError
+            if isinstance(bc, (str, tuple, dict)):
+                domain = (0, np.inf) if domain is None else domain
+                bcs = BoundaryConditions(bc, domain=domain)
+                key = bcs.orderednames()
+                par['bc'] = bcs
+
+            elif bc is None:
+                key = ''
+            else:
+                raise NotImplementedError
+            B = bases[''.join(key)]
 
         return B(N, **par)
 
@@ -302,16 +317,18 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
             assert isinstance(scaled, bool)
             par['scaled'] = scaled
 
-        bases = {
+        bases = defaultdict(lambda: jacobi.bases.Generic,
+            {
             '': jacobi.bases.Orthogonal,
             'LDRD': jacobi.bases.CompactDirichlet,
             'LNRN': jacobi.bases.CompactNeumann,
             'LDLNRDRN': jacobi.bases.Phi2,
             'LDLNLN2RDRNRN2': jacobi.bases.Phi3,
             'LDLNLN2N3RDRNRN2N3': jacobi.bases.Phi4,
-        }
+            })
 
-        if isinstance(bc, (tuple, dict)):
+        if isinstance(bc, (str, tuple, dict)):
+            domain = (-1, 1) if domain is None else domain
             bcs = BoundaryConditions(bc, domain=domain)
             key = bcs.orderednames()
             par['bc'] = bcs
@@ -671,7 +688,7 @@ class Expr:
                 last_conj_index = -1
                 sl = -1
                 for axis, k in enumerate(b0):
-                    xx = test_sp[axis].map_reference_domain(np.squeeze(x[axis]))
+                    xx = np.atleast_1d(test_sp[axis].map_reference_domain(np.squeeze(x[axis])))
                     P = test_sp[axis].evaluate_basis_derivative_all(xx, k=k)
                     if not test_sp[axis].domain_factor() == 1:
                         P *= test_sp[axis].domain_factor()**(k)

@@ -36,7 +36,7 @@ fe = ue.diff(x, 2) + ue.diff(y, 2)
 # Size of discretization
 N = (int(sys.argv[-1]), int(sys.argv[-1])//2)
 
-D0 = FunctionSpace(N[0], 'Laguerre', bc=(0, 0))
+D0 = FunctionSpace(N[0], 'Laguerre', bc=(0,))
 D1 = FunctionSpace(N[1], 'Legendre', bc=(0, 0))
 T = TensorProductSpace(comm, (D0, D1), axes=(0, 1))
 u = TrialFunction(T)

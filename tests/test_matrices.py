@@ -57,13 +57,13 @@ lBasis = (lbases.Orthogonal,
 lBasisLG = (lbases.UpperDirichlet,
             lbases.LowerDirichlet,
             lbases.ShenBiPolar,
-            lbases.ShenBiPolar0,
             lbases.Phi1,
             lbases.Phi2,
             lbases.Phi4)
 
 lagBasis = (lagbases.Orthogonal,
-            lagbases.ShenDirichlet)
+            lagbases.CompactDirichlet,
+            lagbases.CompactNeumann)
 
 hBasis = (hbases.Orthogonal,)
 

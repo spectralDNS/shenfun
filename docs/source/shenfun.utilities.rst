@@ -4,6 +4,14 @@ shenfun.utilities package
 Submodules
 ----------
 
+shenfun.utilities.findbasis module
+----------------------------------
+
+.. automodule:: shenfun.utilities.findbasis
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 shenfun.utilities.integrators module
 ------------------------------------
 

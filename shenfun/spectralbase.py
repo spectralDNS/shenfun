@@ -14,6 +14,7 @@ See the [documentation](https://shenfun.readthedocs.io) for more details.
 """
 #pylint: disable=unused-argument, not-callable, no-self-use, protected-access, too-many-public-methods, missing-docstring
 
+import re
 import copy
 import importlib
 from numbers import Number
@@ -449,7 +450,7 @@ class SpectralBase:
         return V
 
     def _evaluate_expansion_all(self, input_array, output_array,
-                               x=None, fast_transform=False):
+                                x=None, fast_transform=False):
         r"""Evaluate expansion on 'x' or entire mesh
 
         .. math::
@@ -1366,7 +1367,7 @@ class BoundaryConditions(dict):
 
     Parameters
     ----------
-    bc : dict or n-tuple
+    bc : str, dict or n-tuple
         The dictionary must have keys 'left' and 'right', to describe boundary
         conditions on the left and right boundaries, and another dictionary on
         left or right to describe the condition. For example, specify Dirichlet
@@ -1385,7 +1386,7 @@ class BoundaryConditions(dict):
         Etc. Any combination should be possible, and it should also be possible
         to use higher order derivatives with `N2`, `N3` etc.
 
-        If `bc` is an n-tuple, then we assume the basis function is
+        If `bc` is an n-tuple, then we assume the basis function is::
 
             (None, a) - {'right': {'D': a}}
             (a, None) - {'left': {'D': a}}
@@ -1393,16 +1394,87 @@ class BoundaryConditions(dict):
             (a, b, c, d) - {'left': {'D': a, 'N': b}, 'right': {'D': c, 'N': d}}
             (a, b, c, d, e, f) - {'left': {'D': a, 'N': b, 'N2': c}, 'right': {'D': d, 'N': e, 'N2': f}}
             etc.
+
+        If `bc` is a single string, then we assume the boundary conditions
+        are described directly for generic function `u`, like::
+
+            'u(-1)=0&&u(1)=0' - Dirichlet on boundaries x=-1 and x=1
+            'u'(-1)=0&&u'(1)=0' - Neumann on boundaries x=-1 and x=1
+            'u(-2)=a&&u(2)=b' - Dirichlet with values a and b on boundaries
+                x=-2 and x=2.
+            etc.
+
     domain : 2-tuple of numbers, optional
         The domain, if different than (-1, 1).
 
     """
     def __init__(self, bc, domain=None):
         bcs = {'left': {}, 'right': {}}
+        if isinstance(bc, str):
+            # Boundary conditions given in single string with boundary conditions separated by &&
+            for bci in bc.split('&&'):
+                # Check for Dirichlet
+                x = re.search("u\((.*)\)=(.*)", bci)
+                if x:
+                    if np.abs(float(x.group(1))-domain[0]) < 1e-8:
+                        # left boundary
+                        bcs['left']['D'] = float(x.group(2))
+                    elif np.abs(float(x.group(1))-domain[1]) < 1e-8:
+                        # right boundary
+                        bcs['right']['D'] = float(x.group(2))
+                    else:
+                        raise RuntimeError('Boundary condition not matching domain')
+                    continue
+                x = re.search("u'\((.*)\)=(.*)", bci)
+                if x:
+                    if np.abs(float(x.group(1))-domain[0]) < 1e-8:
+                        # left boundary
+                        bcs['left']['N'] = float(x.group(2))
+                    elif np.abs(float(x.group(1))-domain[1]) < 1e-8:
+                        # right boundary
+                        bcs['right']['N'] = float(x.group(2))
+                    else:
+                        raise RuntimeError('Boundary condition not matching domain')
+                    continue
+                x = re.search("u''\((.*)\)=(.*)", bci)
+                if x:
+                    if np.abs(float(x.group(1))-domain[0]) < 1e-8:
+                        # left boundary
+                        bcs['left']['N2'] = float(x.group(2))
+                    elif np.abs(float(x.group(1))-domain[1]) < 1e-8:
+                        # right boundary
+                        bcs['right']['N2'] = float(x.group(2))
+                    else:
+                        raise RuntimeError('Boundary condition not matching domain')
+                    continue
+                x = re.search("u'''\((.*)\)=(.*)", bci)
+                if x:
+                    if np.abs(float(x.group(1))-domain[0]) < 1e-8:
+                        # left boundary
+                        bcs['left']['N3'] = float(x.group(2))
+                    elif np.abs(float(x.group(1))-domain[1]) < 1e-8:
+                        # right boundary
+                        bcs['right']['N3'] = float(x.group(2))
+                    else:
+                        raise RuntimeError('Boundary condition not matching domain')
+                    continue
+                x = re.search("u''''\((.*)\)=(.*)", bci)
+                if x:
+                    if np.abs(float(x.group(1))-domain[0]) < 1e-8:
+                        # left boundary
+                        bcs['left']['N4'] = float(x.group(2))
+                    elif np.abs(float(x.group(1))-domain[1]) < 1e-8:
+                        # right boundary
+                        bcs['right']['N4'] = float(x.group(2))
+                    else:
+                        raise RuntimeError('Boundary condition not matching domain')
+
         if isinstance(bc, tuple):
-            assert len(bc) in (2, 4, 6, 8)
+            assert len(bc) in (1, 2, 4, 6, 8)
             assert np.all([isinstance(i, (sp.Expr, Number)) or i is None for i in bc])
-            if len(bc) == 2:
+            if len(bc) == 1: # Laguerre
+                bcs['left']['D'] = bc[0]
+            elif len(bc) == 2:
                 if bc[0] is not None:
                     bcs['left']['D'] = bc[0]
                 if bc[1] is not None:
@@ -1421,15 +1493,16 @@ class BoundaryConditions(dict):
                 # old form {'left': [('D', 0), ('N', 0)], 'right': [('D', 0)]}
                 bc = {k.lower(): list(v) if isinstance(v[0], (tuple, list)) else [v] for k, v in bc.items()}
                 for key, val in bc.items():
-                    bcs[key] = {v[0]: v[1] for v in val}
+                    bcs[key] = {v[0]: copy.deepcopy(v[1]) for v in val}
             else:
-                bcs.update(bc)
+                bcs.update(copy.deepcopy(bc))
 
         # Take care of non-standard domain size
         df = 1
         if domain is not None:
             assert isinstance(domain, (tuple, list))
-            df = 2./(domain[1]-domain[0])
+            if np.isfinite(domain[0]*domain[1]):
+                df = 2./(domain[1]-domain[0])
         for key, val in bcs.items():
             for bc, v in val.items():
                 if bc == 'N':

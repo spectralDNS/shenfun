@@ -4,7 +4,7 @@ and homogeneous Dirichlet in the other. The domain is [0, inf] x [0, 2\pi]
 
 .. math::
 
-    \nabla^2 u = f,
+    -\nabla^2 u = f,
 
 Use Fourier basis for the periodic direction and Shen's Dirichlet basis for the
 non-periodic direction.
@@ -13,28 +13,32 @@ The equation to solve for the Laguerre basis is
 
 .. math::
 
-     (\nabla u, \nabla v) = -(f, v)
+     -(\nabla^2 u, v) = (f, v)
 
 """
 import sys
 import os
 from sympy import symbols, cos, sin, exp
 import numpy as np
-from shenfun import inner, grad, TestFunction, TrialFunction, la, \
+from shenfun import inner, div, grad, TestFunction, TrialFunction, la, \
     Array, Function, FunctionSpace, TensorProductSpace, dx, comm
 
-assert len(sys.argv) == 2, "Call with one command-line arguments"
-assert isinstance(int(sys.argv[-1]), int)
+assert len(sys.argv) == 3, "Call with two command-line arguments"
+assert isinstance(int(sys.argv[-2]), int)
+assert sys.argv[-1].lower() in ('dirichlet', 'neumann')
 
 # Use sympy to compute a rhs, given an analytical solution
 x, y = symbols("x,y", real=True)
-ue = cos(2*y)*sin(2*x)*exp(-x)
-fe = ue.diff(x, 2) + ue.diff(y, 2)
+ue = cos(2*y)*cos(2*x)*exp(-x)
+fe = -ue.diff(x, 2) - ue.diff(y, 2)
 
 # Size of discretization
-N = (int(sys.argv[-1]), int(sys.argv[-1])//2)
+N = (int(sys.argv[-2]), int(sys.argv[-2])//2)
 
-SD = FunctionSpace(N[0], 'Laguerre', bc=(0, 0))
+if sys.argv[-1].lower() == 'dirichlet':
+    SD = FunctionSpace(N[0], 'Laguerre', bc=(ue.subs(x, 0),))
+else:
+    SD = FunctionSpace(N[0], 'Laguerre', bc={'left': {'N': ue.diff(x, 1).subs(x, 0)}})
 K1 = FunctionSpace(N[1], 'Fourier', dtype='d')
 T = TensorProductSpace(comm, (SD, K1), axes=(0, 1))
 u = TrialFunction(T)
@@ -45,10 +49,10 @@ fj = Array(T, buffer=fe)
 
 # Compute right hand side of Poisson equation
 f_hat = Function(T)
-f_hat = inner(v, -fj, output_array=f_hat)
+f_hat = inner(v, fj, output_array=f_hat)
 
 # Get left hand side of Poisson equation
-matrices = inner(grad(v), grad(u))
+matrices = inner(v, -div(grad(u)))
 
 # Solve and transform to real space
 u_hat = Function(T)           # Solution spectral space

@@ -309,8 +309,6 @@ CompositeBase = getCompositeBase(Orthogonal)
 class ShenDirichlet(CompositeBase):
     r"""Function space for Dirichlet boundary conditions
 
-    Function space for Dirichlet boundary conditions.
-
     The basis :math:`\{\phi_k\}_{k=0}^{N-1}` is
 
     .. math::
@@ -531,7 +529,7 @@ class ShenNeumann(CompositeBase):
     def __init__(self, N, quad="LG", bc=(0, 0), domain=(-1., 1.), padding_factor=1,
                  dealias_direct=False, dtype=float, coordinates=None, **kw):
         if isinstance(bc, (tuple, list)):
-            bc = BoundaryConditions({'left': {'N': bc[0]}, 'right': {'N': bc[1]}})
+            bc = BoundaryConditions({'left': {'N': bc[0]}, 'right': {'N': bc[1]}}, domain=domain)
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
@@ -672,7 +670,7 @@ class Phi2(CompositeBase):
         \phi_k &= \frac{1}{2(2k+3)}\left(L_k - \frac{2(2k+5)}{2k+7}L_{k+2} + \frac{2k+3}{2k+7}L_{k+4}\right), \, k=0, 1, \ldots, N-5, \\
         \phi_{N-4} &= \tfrac{1}{2}L_0-\tfrac{3}{5}L_1+\tfrac{1}{10}L_3, \\
         \phi_{N-3} &= \tfrac{1}{6}L_0-\tfrac{1}{10}L_1-\tfrac{1}{6}L_2+\tfrac{1}{10}L_3, \\
-        \phi_{N-2} &= \tfrac{1}{2}L_0+\tfrac{3}{5}L_1-\tfrac{1}{10}L_3), \\
+        \phi_{N-2} &= \tfrac{1}{2}L_0+\tfrac{3}{5}L_1-\tfrac{1}{10}L_3, \\
         \phi_{N-1} &= -\tfrac{1}{6}L_0-\tfrac{1}{10}L_1+\tfrac{1}{6}L_2+\tfrac{1}{10}L_3,
 
     such that
@@ -749,11 +747,11 @@ class Phi4(CompositeBase):
     .. math::
 
         \phi_k &= \frac{(1-x^2)^4}{h^{(4)}_{k+4}} L^{(4)}_{k+4}, \\
-        h^{(4)}_k &= \frac{2 \left(k + 5\right)^{2} \left(k + 6\right)^{2} \left(k + 7\right)^{2} \left(k + 8\right)^{2} \Gamma^{2}\left(k + 5\right)}{\left(2 k + 9\right) \Gamma\left(k + 1\right) \Gamma\left(k + 9\right)} = \int_{-1}^1 L^{(4)}_k L^{(4)}_k dx,
+        h^{(4)}_{k+4} &= \frac{2\Gamma(k+9)}{\Gamma(k+1)(2k+9)} = \int_{-1}^1 L^{(4)}_{k+4} L^{(4)}_{k+4} dx,
 
     where :math:`L^{(4)}_k` is the 4'th derivative of :math:`L_k`.
     The boundary basis for inhomogeneous boundary conditions is too
-    messy to print, but can be obtained using :func:`.CompositeBase.get_bc_basis`.
+    messy to print, but can be obtained using :func:`~shenfun.utilities.findbasis.get_bc_basis`.
 
     Parameters
     ----------
@@ -881,7 +879,7 @@ class BeamFixedFree(CompositeBase):
     def __init__(self, N, quad="LG", bc=(0, 0, 0, 0), domain=(-1., 1.), padding_factor=1,
                  dealias_direct=False, dtype=float, coordinates=None, **kw):
         if isinstance(bc, (tuple, list)):
-            bc = BoundaryConditions({'left': {'D': bc[0], 'N': bc[1]}, 'right': {'N2': bc[2], 'N3': bc[3]}})
+            bc = BoundaryConditions({'left': {'D': bc[0], 'N': bc[1]}, 'right': {'N2': bc[2], 'N3': bc[3]}}, domain=domain)
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
@@ -1118,7 +1116,7 @@ class DirichletNeumann(CompositeBase):
     def __init__(self, N, quad="LG", bc=(0., 0.), domain=(-1., 1.), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None, **kw):
         if isinstance(bc, (tuple, list)):
-            bc = BoundaryConditions({'left': {'D': bc[0]}, 'right': {'N': bc[1]}})
+            bc = BoundaryConditions({'left': {'D': bc[0]}, 'right': {'N': bc[1]}}, domain=domain)
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
@@ -1260,7 +1258,7 @@ class NeumannDirichlet(CompositeBase):
     def __init__(self, N, quad="LG", bc=(0., 0.), domain=(-1., 1.), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None, **kw):
         if isinstance(bc, (tuple, list)):
-            bc = BoundaryConditions({'left': {'N': bc[0]}, 'right': {'D': bc[1]}})
+            bc = BoundaryConditions({'left': {'N': bc[0]}, 'right': {'D': bc[1]}}, domain=domain)
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
@@ -1340,7 +1338,7 @@ class UpperDirichletNeumann(CompositeBase):
     def __init__(self, N, quad="LG", bc=(0., 0.), domain=(-1., 1.), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None, **kw):
         if isinstance(bc, (tuple, list)):
-            bc = BoundaryConditions({'right': {'D': bc[0], 'N': bc[1]}})
+            bc = BoundaryConditions({'right': {'D': bc[0], 'N': bc[1]}}, domain=domain)
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
@@ -1377,13 +1375,13 @@ class Generic(CompositeBase):
     quad : str, optional
         Type of quadrature
 
-        - GL - Chebyshev-Gauss-Lobatto
-        - GC - Chebyshev-Gauss
+        - LG - Legendre-Gauss
+        - GL - Legendre-Gauss-Lobatto
 
     bc : dict, optional
         The dictionary must have keys 'left' and 'right', to describe boundary
-        conditions on the left and right boundaries, and a list of 2-tuples to
-        specify the condition. Specify Dirichlet on both ends with
+        conditions on the left and right boundaries. Specify Dirichlet on both
+        ends with
 
             {'left': {'D': a}, 'right': {'D': b}}
 
@@ -1415,11 +1413,12 @@ class Generic(CompositeBase):
     A test function is always using homogeneous boundary conditions.
 
     """
-    def __init__(self, N, quad="GC", bc={}, domain=(-1., 1.), dtype=float,
+    def __init__(self, N, quad="LG", bc={}, domain=(-1., 1.), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None, **kw):
         from shenfun.utilities.findbasis import get_stencil_matrix
         self._stencil = get_stencil_matrix(bc, 'legendre')
-        bc = BoundaryConditions(bc)
+        if not isinstance(bc, BoundaryConditions):
+            bc = BoundaryConditions(bc, domain=domain)
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
@@ -1430,7 +1429,7 @@ class Generic(CompositeBase):
 
     @staticmethod
     def short_name():
-        return 'GN'
+        return 'GL'
 
     def slice(self):
         return slice(0, self.N-self.bcs.num_bcs())
