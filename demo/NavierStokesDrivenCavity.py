@@ -99,7 +99,7 @@ uiuj_hat = Function(S1)
 BS = BlockMatrix(inner(TestFunction(W1), div(TrialFunction(S1))))
 
 def compute_rhs(ui_hat, bh_hat):
-    global uip, uiuj, uiuj_hat
+    global uiuj, uiuj_hat
     bh_hat.fill(0)
     bi_hat = bh_hat[0]
     # Get convection

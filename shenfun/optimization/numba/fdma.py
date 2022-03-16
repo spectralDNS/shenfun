@@ -1,5 +1,4 @@
 import numba as nb
-import numpy as np
 from .la import Solve_axis_2D, Solve_axis_3D
 
 __all__ = ['FDMA_LU', 'FDMA_Solve', 'FDMA_inner_solve']

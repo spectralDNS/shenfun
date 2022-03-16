@@ -123,6 +123,7 @@ def bnd_values(alf, bet, k=0, gn=1):
     elif k == 4:
         gam = lambda i: sp.rf(i+alf+bet+1, 4)*sp.Rational(1, 16)
         return (lambda i: gn(alf, bet, i)*(-1)**i*gam(i)*sp.binomial(i+bet, i-4), lambda i: gn(alf, bet, i)*gam(i)*sp.binomial(i+alf, i-4))
+    raise RuntimeError
 
 def _a(alf, bet, i, j):
     """Matrix A for non-normalized Jacobi polynomials
@@ -361,15 +362,14 @@ def _matpow(mat, m2, q, alf, bet, i, j):
 
     def d2(alf, bet, i, j):
         return (
-        mat(alf, bet, i, i-1)*m2(alf, bet, i-1, j)+
-        mat(alf, bet, i, i)*m2(alf, bet, i, j)+
-        mat(alf, bet, i, i+1)*m2(alf, bet, i+1, j))
+            mat(alf, bet, i, i-1)*m2(alf, bet, i-1, j)+
+            mat(alf, bet, i, i)*m2(alf, bet, i, j)+
+            mat(alf, bet, i, i+1)*m2(alf, bet, i+1, j))
 
     if q == 2:
         return d2(alf, bet, i, j)
 
     return _matpow(mat, d2, q-1, alf, bet, i, j)
-
 
 def pmat(mat, q, alf, bet, M, N, gn=1):
     r"""Return SparseMatrix of q'th matrix power of recursion matrix mat

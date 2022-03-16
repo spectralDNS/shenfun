@@ -1525,8 +1525,8 @@ class BoundaryConditions(dict):
     def num_derivatives(self):
         n = {'D': 0, 'N': 1, 'N2': 2, 'N3': 3, 'N4': 4}
         num_diff = 0
-        for key, val in self.items():
-            for k, v in val.items():
+        for val in self.values():
+            for k in val:
                 num_diff += n[k]
         return num_diff
 

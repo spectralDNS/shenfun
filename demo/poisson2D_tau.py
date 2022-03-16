@@ -50,7 +50,7 @@ f_hat = Function(T)
 f_hat = inner(v, fj, output_array=f_hat)
 
 # Get left hand side of Poisson equation
-M = inner(v, div(grad(u)), level=2)
+M = inner(v, div(grad(u)))
 
 # Fix boundary conditions
 A = M[0].mats[0]

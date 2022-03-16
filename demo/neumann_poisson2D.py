@@ -14,7 +14,7 @@ The equation to solve is
 """
 import sys
 import os
-from sympy import symbols, cos, sin, pi
+import sympy as sp
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, \
     TensorProductSpace, FunctionSpace, Array, Function, comm, la, dx, \
@@ -29,9 +29,8 @@ family = sys.argv[-1].lower()
 Solver = chebyshev.la.Helmholtz if family == 'chebyshev' else la.SolverGeneric1ND
 
 # Use sympy to compute a rhs, given an analytical solution
-x, y = symbols("x,y", real=True)
-#ue = (1-x**3)*cos(2*y)
-ue = cos(2*pi*x)
+x, y = sp.symbols("x,y", real=True)
+ue = sp.cos(2*sp.pi*x)
 fe = -ue.diff(x, 2)-ue.diff(y, 2)
 
 # Size of discretization

@@ -28,8 +28,8 @@ as they assume all matrices are diagonal.
 import types
 import numpy as np
 from shenfun import Function, TPMatrix, TrialFunction, TestFunction,\
-    inner, la, Expr, CompositeSpace, BlockMatrix, extract_bc_matrices,\
-    SparseMatrix, get_simplified_tpmatrices, ScipyMatrix
+    inner, la, Expr, CompositeSpace, BlockMatrix, SparseMatrix, \
+    get_simplified_tpmatrices, ScipyMatrix
 
 __all__ = ('IRK3', 'BackwardEuler', 'RK4', 'ETDRK4', 'ETD')
 
@@ -165,7 +165,7 @@ class IRK3(IntegratorBase):
                 else:
                     raise NotImplementedError
             else:
-                self.solver.append(BlockMatrixSolver(mats))
+                self.solver.append(la.BlockMatrixSolver(mats))
 
             if u0:
                 rhs_mats = inner(v, u+((a[rk]+b[rk])*dt/2)*u0)

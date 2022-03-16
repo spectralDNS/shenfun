@@ -353,8 +353,8 @@ def Helmholtz_Neumann_matvec3D(v, b, alfa, beta, dd, ud, bl, bd, bu, axis):
     elif axis == 1:
         for i in range(v.shape[0]):
             for k in range(v.shape[2]):
-               Helmholtz_Neumann_matvec1D(v[i, :, k], b[i, :, k], alfa[i, 0, k],
-                                          beta[i, 0, k], dd, ud, bl, bd, bu)
+                Helmholtz_Neumann_matvec1D(v[i, :, k], b[i, :, k], alfa[i, 0, k],
+                                           beta[i, 0, k], dd, ud, bl, bd, bu)
     elif axis == 2:
         for i in range(v.shape[0]):
             for j in range(v.shape[1]):

@@ -6,11 +6,10 @@ from __future__ import division
 from typing import List
 from copy import copy, deepcopy
 from collections.abc import Mapping, MutableMapping
-from numbers import Number, Integral
+from numbers import Number
 import numpy as np
 import sympy as sp
 from scipy.sparse import bmat, dia_matrix, csr_matrix, kron, diags as sp_diags
-from scipy.sparse.linalg import spsolve
 from mpi4py import MPI
 from shenfun.config import config
 from .utilities import integrate_sympy
@@ -475,7 +474,7 @@ class SparseMatrix(MutableMapping):
     def isidentity(self):
         if not len(self) == 1:
             return False
-        if (0 not in self):
+        if 0 not in self:
             return False
         d = self[0]
         if np.all(d == 1):
@@ -491,7 +490,7 @@ class SparseMatrix(MutableMapping):
         for key, val in self.items():
             if key <= 0:
                 continue
-            if not np.all(abs(self[key]-self[-key]) < 1e-16):
+            if not np.all(abs(val-self[-key]) < 1e-16):
                 return False
         return True
 
@@ -673,7 +672,7 @@ class Identity(SparseMatrix):
         SparseMatrix.__init__(self, {0:1}, shape, scale)
         self.measure = 1
 
-    def solve(self, b, u=None, axis=0):
+    def solve(self, b, u=None, axis=0, constraints=()):
         if u is None:
             u = b
         else:
@@ -708,7 +707,7 @@ class ScipyMatrix(csr_matrix):
             The axis over which to take the matrix vector product
 
         """
-        N, M = self.shape
+        M = self.shape[1]
         c.fill(0)
 
         # Roll relevant axis to first
@@ -991,7 +990,6 @@ class BlockMatrix:
         if self._Ai is not None:
             return
         self._Ai = {}
-        tpmat = self.get_mats(True)
         N = self.testbase.forward.output_array.shape
         daxes = self.get_diagonal_axes()
         ndindices = [(0,)] if len(daxes) == 0 else np.ndindex(tuple(np.array(N)[daxes]))
@@ -1352,10 +1350,10 @@ class TPMatrix:
             return TPMatrix(self.mats, self.space, self.trialspace, self.scale*a,
                             self.global_index, self.testbase, self.trialbase)
 
-        elif isinstance(a, np.ndarray):
-            c = np.empty_like(a)
-            c = self.matvec(a, c)
-            return c
+        assert isinstance(a, np.ndarray)
+        c = np.empty_like(a)
+        c = self.matvec(a, c)
+        return c
 
     def __rmul__(self, a):
         """Returns copy of self.__rmul__(a) <==> a*self"""

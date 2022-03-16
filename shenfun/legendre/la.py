@@ -118,7 +118,7 @@ class Helmholtz_2dirichlet:
             self.u_B[:] = self.u_B.dot(self.Vy.T)
             self.transAB.backward(self.u_B, u)
 
-        if solver == 1:
+        elif solver == 1:
             #FIXME Should improve this after redesign of solvers
 
             if comm.Get_size() > 1:
@@ -156,43 +156,44 @@ class Helmholtz_2dirichlet:
             self.transAB.backward(self.u_B, u)
             u[:] = self.V.dot(u)
 
-        elif solver == 2: # pragma: no cover
-            N = self.A.testfunction[0].N
-            s = self.A.testfunction[0].slice()
-            AA = np.zeros((N, N))
-            BB = np.zeros((N, N))
-            G = np.zeros((N, N))
-            H = np.zeros((N, N))
+        #elif solver == 2: # pragma: no cover
+        #    N = self.A.testfunction[0].N
+        #    s = self.A.testfunction[0].slice()
+        #    AA = np.zeros((N, N))
+        #    BB = np.zeros((N, N))
+        #    G = np.zeros((N, N))
+        #    H = np.zeros((N, N))
 
-            BB[s, s] = self.B.diags().toarray()
-            AA[s, s] = self.A.diags().toarray()
-            G[:] = BB.dot(u)
-            H[:] = u.dot(BB)
-            bc = b.copy()
-            B_scale = np.broadcast_to(self.B.scale, (1, u.shape[1])).copy()
-            B_scale *= self.scale['BUB']
-            Helmx = Helmholtz(self.A, self.B, np.ones((1, 1)), B_scale)
-            converged = False
-            G_old = G.copy()
-            Hc = H.copy()
-            num_iter = 0
-            # Solve with successive overrelaxation
-            Gc = G.T.copy()
-            omega = 1.6
-            om = 1.
-            while not converged and num_iter < 1000:
-                bc[:] = b - G.dot(AA.T)
-                Hc = Helmx(bc, Hc)
-                H[:] = om*Hc + (1-om)*H[:]
-                bc[:] = b.T - (H.T).dot(AA.T)
-                Gc = Helmx(bc, Gc)
-                G[:] = om*Gc.T + (1-om)*G[:]
-                err = np.linalg.norm(G_old-G)
-                print('Error ', num_iter, err)
-                num_iter += 1
-                G_old[:] = G
-                converged = err < 1e-10
-                om = omega
+        #    BB[s, s] = self.B.diags().toarray()
+        #    AA[s, s] = self.A.diags().toarray()
+        #    G[:] = BB.dot(u)
+        #    H[:] = u.dot(BB)
+        #    bc = b.copy()
+        #    B_scale = np.broadcast_to(self.B.scale, (1, u.shape[1])).copy()
+        #    B_scale *= self.scale['BUB']
+        #    Helmx = Helmholtz(self.A, self.B, np.ones((1, 1)), B_scale)
+        #    converged = False
+        #    G_old = G.copy()
+        #    Hc = H.copy()
+        #    num_iter = 0
+        #    # Solve with successive overrelaxation
+        #    Gc = G.T.copy()
+        #    omega = 1.6
+        #    om = 1.
+        #    while not converged and num_iter < 1000:
+        #        bc[:] = b - G.dot(AA.T)
+        #        Hc = Helmx(bc, Hc)
+        #        H[:] = om*Hc + (1-om)*H[:]
+        #        bc[:] = b.T - (H.T).dot(AA.T)
+        #        Gc = Helmx(bc, Gc)
+        #        G[:] = om*Gc.T + (1-om)*G[:]
+        #        err = np.linalg.norm(G_old-G)
+        #        print('Error ', num_iter, err)
+        #        num_iter += 1
+        #        G_old[:] = G
+        #        converged = err < 1e-10
+        #        om = omega
 
-            u = self.B.solve(G, u)
+        #    u = self.B.solve(G, u)
+
         return u

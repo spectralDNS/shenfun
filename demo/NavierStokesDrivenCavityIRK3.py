@@ -69,16 +69,15 @@ class NavierStokesIRK3(IRK3):
         S1 = TensorSpace(V1.get_orthogonal().get_dealiased())
         self.uiuj = Array(S1)
         self.uiuj_hat = Function(S1)
-
         IRK3.__init__(self, VQ)
 
-    def LinearRHS(self, up, *params):
+    def LinearRHS(self, up):
         u, p = up
         return self.nu*div(grad(u))-grad(p)
 
     def NonlinearRHS(self, up, up_hat, rhs, **params):
         vq = TestFunction(self.T)
-        v, q = vq
+        v = vq[0]
         rhs.fill(0)
         bi_hat = rhs[0]    # rhs vector for monentum equation
         ui_hat = up_hat[0] # velocity vector

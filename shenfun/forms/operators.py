@@ -5,7 +5,7 @@ import numpy as np
 import sympy as sp
 import copy
 from shenfun.config import config
-from .arguments import Expr, BasisFunction, Function, Array
+from .arguments import Expr, BasisFunction, Array
 
 __all__ = ('div', 'grad', 'Dx', 'curl')
 
@@ -23,11 +23,11 @@ def _expr_from_vector_components(comp, basis):
             his = hi
         elif len(comp) == ndim**2:
             his = [hi[i]*hi[j] for i in range(ndim) for j in range(ndim)]
-    for i in range(len(comp)):
-        comp[i] *= his[i]
-        terms += copy.deepcopy(comp[i]._terms)
-        scales += copy.deepcopy(comp[i]._scales)
-        indices += copy.deepcopy(comp[i]._indices)
+    for i, c in enumerate(comp):
+        c *= his[i]
+        terms += copy.deepcopy(c._terms)
+        scales += copy.deepcopy(c._scales)
+        indices += copy.deepcopy(c._indices)
     return Expr(basis, terms, scales, indices)
 
 def div(test):

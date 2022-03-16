@@ -1,4 +1,3 @@
-from copy import copy
 import types
 import numpy as np
 from shenfun.tensorproductspace import TensorProductSpace

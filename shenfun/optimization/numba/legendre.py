@@ -4,7 +4,6 @@ import numpy as np
 @nb.jit(nopython=True, fastmath=True, cache=True)
 def legendre_orthogonal_scalar_product(xj, wj, input_array, output_array):
     N = xj.shape[0]
-    phi_i = np.zeros_like(xj)
     Lnm = np.ones_like(xj)
     Ln = xj.copy()
     Lnp = ((2+1)*xj*Ln - 1*Lnm)/2

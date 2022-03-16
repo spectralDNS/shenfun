@@ -129,7 +129,6 @@ class Bcosmat(SpectralMatrix):
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
-        k = test[0].wavenumbers(bcast=False, scaled=False, eliminate_highest_freq=False)
         N = test[0].N
         d = {1: 0.5,
              -1: 0.5,

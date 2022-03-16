@@ -1309,7 +1309,6 @@ class CompositeSpace:
         return dims
 
     def get_ndiag_slices(self, j=()):
-        nvars = self.num_components()
         sl = self.slice()
         daxes = self.get_diagonal_axes()
         if len(daxes) > 0:

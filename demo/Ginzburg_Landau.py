@@ -12,7 +12,7 @@ Use Fourier basis V and find u in VxV such that
 from sympy import symbols, exp
 import matplotlib.pyplot as plt
 from mpi4py_fft import generate_xdmf, fftw
-from shenfun import inner, div, grad, TestFunction, TrialFunction, \
+from shenfun import div, grad, TestFunction, TrialFunction, \
     TensorProductSpace, Array, Function, ETDRK4, HDF5File, FunctionSpace, comm
 
 # Use sympy to set up initial condition
@@ -49,7 +49,6 @@ def LinearRHS(self, u, **par):
     return div(grad(u)) + u
 
 def NonlinearRHS(self, u, u_hat, rhs, **par):
-    global Up, Tp
     rhs.fill(0)
     Up = u_hat.backward(padding_factor=padding_factor)
     Up[:] = -(1+1.5j)*Up*abs(Up)**2

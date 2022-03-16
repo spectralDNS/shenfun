@@ -10,7 +10,7 @@ basis for the non-periodic direction.
 """
 import sys
 import os
-from sympy import symbols, cos, sin, chebyshevt, pi
+import sympy as sp
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Array, \
     Function, TensorProductSpace, FunctionSpace, comm, la, chebyshev
@@ -20,13 +20,10 @@ family = sys.argv[-1].lower() if len(sys.argv) == 2 else 'chebyshev'
 BiharmonicSolver = chebyshev.la.Biharmonic if family == 'chebyshev' else la.SolverGeneric1ND
 
 # Use sympy to compute a rhs, given an analytical solution
-x, y = symbols("x,y", real=True)
+x, y = sp.symbols("x,y", real=True)
 a = 1
 b = -1
-if family == 'jacobi':
-    a = 0
-    b = 0
-ue = (sin(2*pi*x))*(1-x**2) + a*(1/2-9/16*x+1/16*chebyshevt(3, x)) + b*(1/2+9/16*x-1/16*chebyshevt(3, x))
+ue = (sp.sin(2*sp.pi*x))*(1-x**2) + a*(1/2-9/16*x+1/16*sp.chebyshevt(3, x)) + b*(1/2+9/16*x-1/16*sp.chebyshevt(3, x))
 #ue = (sin(2*np.pi*x)*cos(2*y))*(1-x**2) + a*(0.5-0.6*x+1/10*legendre(3, x)) + b*(0.5+0.6*x-1./10.*legendre(3, x))
 fe = ue.diff(x, 4) + ue.diff(y, 4) + 2*ue.diff(x, 2, y, 2)
 

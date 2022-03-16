@@ -68,11 +68,10 @@ from __future__ import division
 import functools
 import numpy as np
 import sympy as sp
-import scipy.sparse as scp
 from shenfun.matrixbase import SpectralMatrix, SparseMatrix
 from shenfun.la import TwoDMA
-from . import bases
 from shenfun.chebyshev import bases as chebbases
+from . import bases
 
 x = sp.symbols('x', real=True)
 xp = sp.symbols('x', real=True, positive=True)

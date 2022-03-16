@@ -3,10 +3,9 @@
 from copy import copy
 import numpy as np
 from shenfun.optimization import optimizer
-from shenfun.optimization.cython import la
 from shenfun.la import SparseMatrixSolver
 from shenfun.matrixbase import TPMatrix, SpectralMatrix, extract_bc_matrices,\
-    SparseMatrix, get_simplified_tpmatrices
+    get_simplified_tpmatrices
 
 
 class ADDSolver(SparseMatrixSolver):
