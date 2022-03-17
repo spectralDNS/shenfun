@@ -260,7 +260,7 @@ class BackwardEuler(IntegratorBase):
             else:
                 raise NotImplementedError
         else:
-            self.solver = BlockMatrixSolver(mats)
+            self.solver = la.BlockMatrixSolver(mats)
         self.rhs_mats = BlockMatrix(M if isinstance(M, list) else [M])
 
     def compute_rhs(self, u, u_hat, dU, dU1):

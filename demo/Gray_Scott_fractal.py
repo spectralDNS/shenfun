@@ -83,7 +83,7 @@ def LinearRHS(self, u, alpha1, alpha2, **params):
     return LL
 
 def NonlinearRHS(self, uv, uv_hat, rhs, kappa, **params):
-    global b0, UVp, w0, w1, TVp
+    global b0, w0, w1
     rhs.fill(0)
     UVp = uv_hat.backward(padding_factor=padding_factor) # 3/2-rule dealiasing for nonlinear term
     w1[0] = b0*(1-UVp[0]) - UVp[0]*UVp[1]**2

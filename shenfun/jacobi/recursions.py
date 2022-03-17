@@ -499,7 +499,7 @@ def ShiftedMatrix(mat, q, r, s, M=0, N=0, k=None, alf=0, bet=0, gn=1):
     if isinstance(mat, SparseMatrix):
         A = mat
         M, N = A.shape
-        M, N= M-r, N-s
+        M, N = M-r, N-s
     elif k is not None:
         A = a_mat(mat, k, q, alf, bet, M+max(r, s), N+max(r, s), gn)
     else:

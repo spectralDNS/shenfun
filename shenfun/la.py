@@ -2,15 +2,14 @@ r"""
 This module contains linear algebra solvers for SparseMatrices,
 TPMatrices and BlockMatrices.
 """
-import numpy as np
 from numbers import Number, Integral
+import numpy as np
 from scipy.sparse import spmatrix, kron
-from scipy.sparse.linalg import spsolve, splu
-from scipy.linalg import solve_banded
+from scipy.sparse.linalg import splu
 from shenfun.config import config
 from shenfun.optimization import optimizer, get_optimized
 from shenfun.matrixbase import SparseMatrix, extract_bc_matrices, \
-    SpectralMatrix, BlockMatrix, TPMatrix, get_simplified_tpmatrices
+    BlockMatrix, TPMatrix, get_simplified_tpmatrices
 from mpi4py import MPI
 
 comm = MPI.COMM_WORLD

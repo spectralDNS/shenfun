@@ -44,10 +44,9 @@ import functools
 import numpy as np
 from numpy.polynomial import chebyshev as n_cheb
 import sympy as sp
-from time import time
-from scipy.special import eval_chebyt, eval_chebyu
+from scipy.special import eval_chebyt
 from mpi4py_fft import fftw
-from shenfun.spectralbase import SpectralBase, work, Transform, FuncWrap, \
+from shenfun.spectralbase import SpectralBase, Transform, FuncWrap, \
     islicedict, slicedict, getCompositeBase, BoundaryConditions
 from shenfun.matrixbase import SparseMatrix
 from shenfun.optimization import optimizer
@@ -149,8 +148,8 @@ class Orthogonal(SpectralBase):
     def __init__(self, N, quad='GC', domain=(-1., 1.), dtype=float, padding_factor=1,
                  dealias_direct=False, coordinates=None, **kw):
         SpectralBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
-                               padding_factor=padding_factor, dealias_direct=dealias_direct,
-                               coordinates=coordinates)
+                              padding_factor=padding_factor, dealias_direct=dealias_direct,
+                              coordinates=coordinates)
         assert quad in ('GC', 'GL')
         if quad == 'GC':
             self._xfftn_fwd = functools.partial(fftw.dctn, type=2)

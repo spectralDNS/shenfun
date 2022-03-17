@@ -4,10 +4,9 @@ Module for defining function spaces in the Chebyshev family
 from __future__ import division
 import functools
 import numpy as np
-import sympy as sp
-from time import time
-from scipy.special import eval_chebyu
 from numpy.polynomial import chebyshev as n_cheb
+import sympy as sp
+from scipy.special import eval_chebyu
 from mpi4py_fft import fftw
 from shenfun.spectralbase import SpectralBase, Transform, FuncWrap, \
     islicedict, slicedict, getCompositeBase, BoundaryConditions
@@ -380,7 +379,7 @@ class Phi1(CompositeBase):
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates, scaled=scaled)
-        from shenfun.jacobi.recursions import b, h, half, n, un
+        from shenfun.jacobi.recursions import n
         #self.b0n = sp.simplify(b(half, half, n+1, n, un) / (h(half, half, n, 0, un)))
         #self.b2n = sp.simplify(b(half, half, n+1, n+2, un) / (h(half, half, n+2, 0, un)))
         self.b0n = 1/(np.pi*(n+1))
@@ -473,7 +472,7 @@ class Phi2(CompositeBase):
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
-        from shenfun.jacobi.recursions import b, h, half, n, matpow, un
+        from shenfun.jacobi.recursions import n
         #self.b0n = sp.simplify(matpow(b, 2, half, half, n+2, n, un) / (h(half, half, n, 0, un)))
         #self.b2n = sp.simplify(matpow(b, 2, half, half, n+2, n+2, un) / (h(half, half, n+2, 0, un)))
         #self.b4n = sp.simplify(matpow(b, 2, half, half, n+2, n+4, un) / (h(half, half, n+4, 0, un)))
@@ -757,8 +756,8 @@ class BCBase(CompositeBase):
         The domain of the homogeneous space.
 
     """
-    def __init__(self, N, bc=(0, 0), domain=(-1, 1), **kw):
-        CompositeBase.__init__(self, N, bc=bc, domain=(-1, 1))
+    def __init__(self, N, bc=None, domain=(-1, 1), **kw):
+        CompositeBase.__init__(self, N, bc=bc, domain=domain)
         self._stencil_matrix = None
 
     def stencil_matrix(self, N=None):
@@ -876,10 +875,10 @@ class BCBiharmonic(BCBase):
         return 'BCB'
 
     def stencil_matrix(self, N=None):
-        return sp.Rational(1, 32)*np.array([[16, -10,  0,  1],
-                                            [ 6,  -2, -2,  1],
-                                            [16,  10,  0, -1],
-                                            [-6,  -2,  2,  1]])
+        return sp.Rational(1, 32)*np.array([[16, -10, 0, 1],
+                                            [6, -2, -2, 1],
+                                            [16, 10, 0, -1],
+                                            [-6, -2, 2, 1]])
 
 class BCGeneric(BCBase):
 

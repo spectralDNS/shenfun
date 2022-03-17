@@ -212,6 +212,7 @@ class Orthogonal(SpectralBase):
     def sympy_basis(self, i=0, x=xp):
         return sp.jacobi(i, self.alpha, self.beta, x)
 
+    @staticmethod
     def bnd_values(k=0, alpha=0, beta=0):
         from shenfun.jacobi.recursions import bnd_values
         return bnd_values(alpha, beta, k=k)
@@ -340,7 +341,7 @@ class Phi1(CompositeBase):
         #self.b2n = sp.simplify(b(alpha, beta, n+1, n+2) / h(alpha, beta, n+2, 0))
         a, b = alpha, beta
         self.b0n = 2**(-a - b)*sp.gamma(n + 1)*sp.gamma(a + b + n + 2)/((a + b + 2*n + 2)*sp.gamma(a + n + 1)*sp.gamma(b + n + 1))
-        if not alpha == beta:
+        if alpha != beta:
             self.b1n = 2**(-a - b)*(a - b)*(a + b + 2*n + 3)*sp.gamma(n + 2)*sp.gamma(a + b + n + 2)/((a + b + 2*n + 2)*(a + b + 2*n + 4)*sp.gamma(a + n + 2)*sp.gamma(b + n + 2))
         self.b2n = -2**(-a - b)*sp.gamma(n + 3)*sp.gamma(a + b + n + 2)/((a + b + 2*n + 4)*sp.gamma(a + n + 2)*sp.gamma(b + n + 2))
 
@@ -360,7 +361,7 @@ class Phi1(CompositeBase):
         d0, d2 = np.zeros(N), np.zeros(N-2)
         d0[:-2] = sp.lambdify(n, self.b0n)(k[:N-2])
         d2[:] = sp.lambdify(n, self.b2n)(k[:N-2])
-        if not self.alpha == self.beta:
+        if self.alpha != self.beta:
             d1 = np.zeros(N-1)
             d1[:-1] = sp.lambdify(n, self.b1n)(k[:N-2])
             self._stencil_matrix[N] = SparseMatrix({0: d0, 1: d1, 2: d2}, (N, N))
@@ -428,7 +429,7 @@ class Phi2(CompositeBase):
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                alpha=alpha, beta=beta, coordinates=coordinates)
-        self._stencil_matrix ={}
+        self._stencil_matrix = {}
         a, b = alpha, beta
         #self.b0n = sp.simplify(matpow(b, 2, alpha, beta, n+2, n) / h(alpha, beta, n, 0))
         #self.b1n = sp.simplify(matpow(b, 2, alpha, beta, n+2, n+1) / h(alpha, beta, n+1, 0))
@@ -438,7 +439,7 @@ class Phi2(CompositeBase):
         self.b0n = 2**(-a - b + 1)*sp.gamma(n + 1)*sp.gamma(a + b + n + 3)/((a + b + 2*n + 2)*(a + b + 2*n + 3)*(a + b + 2*n + 4)*sp.gamma(a + n + 1)*sp.gamma(b + n + 1))
         self.b2n = 2**(-a - b + 1)*(a + b + 2*n + 5)*(a**2 - 4*a*b - 2*a*n - 5*a + b**2 - 2*b*n - 5*b - 2*n**2 - 10*n - 12)*sp.gamma(n + 3)*sp.gamma(a + b + n + 3)/((a + b + 2*n + 3)*(a + b + 2*n + 4)*(a + b + 2*n + 6)*(a + b + 2*n + 7)*sp.gamma(a + n + 3)*sp.gamma(b + n + 3))
         self.b4n = 2**(-a - b + 1)*sp.gamma(n + 5)*sp.gamma(a + b + n + 3)/((a + b + 2*n + 6)*(a + b + 2*n + 7)*(a + b + 2*n + 8)*sp.gamma(a + n + 3)*sp.gamma(b + n + 3))
-        if not self.alpha == self.beta:
+        if self.alpha != self.beta:
             self.b1n = 2**(-a - b + 2)*(a - b)*sp.gamma(n + 2)*sp.gamma(a + b + n + 3)/((a + b + 2*n + 2)*(a + b + 2*n + 4)*(a + b + 2*n + 6)*sp.gamma(a + n + 2)*sp.gamma(b + n + 2))
             self.b3n = -2**(-a - b + 2)*(a - b)*sp.gamma(n + 4)*sp.gamma(a + b + n + 3)/((a + b + 2*n + 4)*(a + b + 2*n + 6)*(a + b + 2*n + 8)*sp.gamma(a + n + 3)*sp.gamma(b + n + 3))
 
@@ -459,7 +460,7 @@ class Phi2(CompositeBase):
         d0[:-4] = sp.lambdify(n, self.b0n)(k[:N-4])
         d2[:-2] = sp.lambdify(n, self.b2n)(k[:N-4])
         d4[:] = sp.lambdify(n, self.b4n)(k[:N-4])
-        if not self.alpha == self.beta:
+        if self.alpha != self.beta:
             d1, d3 = np.zeros(N-1), np.zeros(N-3)
             d1[:-3] = sp.lambdify(n, self.b1n)(k[:N-4])
             d3[:-1] = sp.lambdify(n, self.b3n)(k[:N-4])
@@ -537,7 +538,7 @@ class Phi3(CompositeBase):
         self.b2n = 3*2**(-a - b + 2)*(a**2 - 3*a*b - a*n - 3*a + b**2 - b*n - 3*b - n**2 - 6*n - 8)*sp.gamma(n + 3)*sp.gamma(a + b + n + 4)/((a + b + 2*n + 3)*(a + b + 2*n + 4)*(a + b + 2*n + 6)*(a + b + 2*n + 8)*(a + b + 2*n + 9)*sp.gamma(a + n + 3)*sp.gamma(b + n + 3))
         self.b4n = 3*2**(-a - b + 2)*(-a**2 + 3*a*b + a*n + 4*a - b**2 + b*n + 4*b + n**2 + 8*n + 15)*sp.gamma(n + 5)*sp.gamma(a + b + n + 4)/((a + b + 2*n + 5)*(a + b + 2*n + 6)*(a + b + 2*n + 8)*(a + b + 2*n + 10)*(a + b + 2*n + 11)*sp.gamma(a + n + 4)*sp.gamma(b + n + 4))
         self.b6n = -2**(-a - b + 2)*sp.gamma(n + 7)*sp.gamma(a + b + n + 4)/((a + b + 2*n + 8)*(a + b + 2*n + 9)*(a + b + 2*n + 10)*(a + b + 2*n + 11)*(a + b + 2*n + 12)*sp.gamma(a + n + 4)*sp.gamma(b + n + 4))
-        if not alpha == beta:
+        if alpha != beta:
             #self.b1n = sp.simplify(matpow(b, 3, self.alpha, self.beta, n+3, n+1) / h(self.alpha, self.beta, n+1, 0))
             #self.b3n = sp.simplify(matpow(b, 3, self.alpha, self.beta, n+3, n+3) / h(self.alpha, self.beta, n+3, 0))
             #self.b5n = sp.simplify(matpow(b, 3, self.alpha, self.beta, n+3, n+5) / h(self.alpha, self.beta, n+5, 0))
@@ -563,7 +564,7 @@ class Phi3(CompositeBase):
         d2[:-4] = sp.lambdify(n, self.b2n)(k[:N-6])
         d4[:-2] = sp.lambdify(n, self.b4n)(k[:N-6])
         d6[:] = sp.lambdify(n, self.b6n)(k[:N-6])
-        if not self.alpha == self.beta:
+        if self.alpha != self.beta:
             d1, d3, d5 = np.zeros(N-1), np.zeros(N-3), np.zeros(N-5)
             d1[:-7] = sp.lambdify(n, self.b1n)(k[:N-6])
             d3[:-3] = sp.lambdify(n, self.b3n)(k[:N-6])
@@ -645,7 +646,7 @@ class Phi4(CompositeBase):
         self.b6n = 2**(-a - b + 4)*(3*a**2 - 8*a*b - 2*a*n - 11*a + 3*b**2 - 2*b*n - 11*b - 2*n**2 - 22*n - 56)*sp.gamma(n + 7)*sp.gamma(a + b + n + 5)/((a + b + 2*n + 7)*(a + b + 2*n + 8)*(a + b + 2*n + 10)*(a + b + 2*n + 11)*(a + b + 2*n + 12)*(a + b + 2*n + 14)*(a + b + 2*n + 15)*sp.gamma(a + n + 5)*sp.gamma(b + n + 5))
         self.b8n = 2**(-a - b + 3)*sp.gamma(n + 9)*sp.gamma(a + b + n + 5)/((a + b + 2*n + 10)*(a + b + 2*n + 11)*(a + b + 2*n + 12)*(a + b + 2*n + 13)*(a + b + 2*n + 14)*(a + b + 2*n + 15)*(a + b + 2*n + 16)*sp.gamma(a + n + 5)*sp.gamma(b + n + 5))
 
-        if not alpha == beta:
+        if alpha != beta:
             #self.b1n = sp.simplify(matpow(b, 4, alpha, beta, n+4, n+1) / h(alpha, beta, n+1, 0))
             #self.b3n = sp.simplify(matpow(b, 4, alpha, beta, n+4, n+3) / h(alpha, beta, n+3, 0))
             #self.b5n = sp.simplify(matpow(b, 4, alpha, beta, n+4, n+5) / h(alpha, beta, n+5, 0))
@@ -674,7 +675,7 @@ class Phi4(CompositeBase):
         d4[:-4] = sp.lambdify(n, self.b4n)(k[:N-8])
         d6[:-2] = sp.lambdify(n, self.b6n)(k[:N-8])
         d8[:] = sp.lambdify(n, self.b8n)(k[:N-8])
-        if not self.alpha == self.beta:
+        if self.alpha != self.beta:
             d1, d3, d5, d7 = np.zeros(N-1), np.zeros(N-3), np.zeros(N-5), np.zeros(N-7)
             d1[:-7] = sp.lambdify(n, self.b1n)(k[:N-8])
             d3[:-5] = sp.lambdify(n, self.b3n)(k[:N-8])
@@ -748,7 +749,7 @@ class CompactDirichlet(CompositeBase):
         a, b = alpha, beta
         self.b1n = None
         self.b2n = -(n + 1)*(n + 2)*(a + b + 2*n + 2)/((a + n + 1)*(b + n + 1)*(a + b + 2*n + 4))
-        if not self.alpha == self.beta:
+        if self.alpha != self.beta:
             self.b1n = (a - b)*(n + 1)*(a + b + 2*n + 3)/((a + n + 1)*(b + n + 1)*(a + b + 2*n + 4))
 
     @staticmethod

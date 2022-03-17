@@ -307,7 +307,7 @@ def dot(u, v, output_array=None, forward_output=True):
                 for i in range(D):
                     ui = ua[i]
                     for j in range(D):
-                        g = g[i, j]
+                        g = gij[i, j]
                         if not g == 0:
                             uv += ui*va[j]*measure(g)
 
@@ -536,7 +536,7 @@ def surf3D(u, mesh=None, backend='plotly', wrapaxes=(), slices=None, fig=None, k
 
     return fig
 
-def quiver3D(u, mesh=None, wrapaxes=(), new_figure=False, slices=None, fig=None, kind='normal', **kw):
+def quiver3D(u, mesh=None, wrapaxes=(), slices=None, fig=None, kind='normal', **kw):
     """
 
     Parameters

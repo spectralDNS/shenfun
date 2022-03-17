@@ -77,7 +77,6 @@ def get_bc_basis(bcs, family, alpha=None, beta=None):
         bc = {'D': 0, 'N': 1, 'N2': 2, 'N3': 3, 'N4': 4}
         lr = {'L': 0, 'R': 1}
         s = []
-        r = []
         for key in bcs.orderednames():
             k, v = key[0], key[1:]
             f = bnd_values(k=bc[v])[lr[k]]
@@ -88,6 +87,7 @@ def get_bc_basis(bcs, family, alpha=None, beta=None):
         return s
 
     first_basis = bcs.num_derivatives() // bcs.num_bcs()
+    first = 0
     for first in range(first_basis+1):
         try:
             s = _computematrix(first)

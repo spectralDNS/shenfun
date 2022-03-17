@@ -38,7 +38,6 @@ to the orthogonal basis.
 """
 
 from __future__ import division
-import os
 import functools
 import sympy as sp
 import numpy as np
@@ -46,7 +45,7 @@ from numpy.polynomial import legendre as leg
 from scipy.special import eval_legendre
 from mpi4py_fft import fftw
 from shenfun.config import config
-from shenfun.spectralbase import SpectralBase, work, Transform, islicedict, \
+from shenfun.spectralbase import SpectralBase, Transform, islicedict, \
     slicedict, getCompositeBase, BoundaryConditions
 from shenfun.matrixbase import SparseMatrix
 from .lobatto import legendre_lobatto_nodes_and_weights
@@ -774,9 +773,9 @@ class Phi4(CompositeBase):
     def __init__(self, N, quad="LG", bc=(0,)*8, domain=(-1, 1), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None, **kw):
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
-                                padding_factor=padding_factor, dealias_direct=dealias_direct,
-                                coordinates=coordinates)
-        from shenfun.jacobi.recursions import b, h, matpow, n
+                               padding_factor=padding_factor, dealias_direct=dealias_direct,
+                               coordinates=coordinates)
+        from shenfun.jacobi.recursions import n
         #self.b0n = sp.simplify(matpow(b, 4, 0, 0, n+4, n) / h(0, 0, n, 0))
         #self.b2n = sp.simplify(matpow(b, 4, 0, 0, n+4, n+2) / h(0, 0, n+2, 0))
         #self.b4n = sp.simplify(matpow(b, 4, 0, 0, n+4, n+4) / h(0, 0, n+4, 0))
@@ -896,7 +895,7 @@ class BeamFixedFree(CompositeBase):
         f2 = -(2*(k[:-2]-1)*(k[:-2]+1)*(k[:-2]+6)*(2*k[:-2]+5)/((k[:-2]+3)**2*(k[:-2]+4)*(2*k[:-2]+7)))
         f3 = -4*(k[:-3]+1)**2*(2*k[:-3]+3)/((k[:-3]+3)**2*(k[:-3]+4)**2)
         f4 = (((k[:-4]+1)/(k[:-4]+3))*((k[:-4]+2)/(k[:-4]+4)))**2*(2*k[:-4]+3)/(2*k[:-4]+7)
-        return SparseMatrix({0: d, 1: f1, 2: f2,3: f3, 4: f4}, (N, N))
+        return SparseMatrix({0: d, 1: f1, 2: f2, 3: f3, 4: f4}, (N, N))
 
     def slice(self):
         return slice(0, self.N-4)

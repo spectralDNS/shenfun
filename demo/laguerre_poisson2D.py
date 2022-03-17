@@ -18,7 +18,7 @@ The equation to solve for the Laguerre basis is
 """
 import sys
 import os
-from sympy import symbols, cos, sin, exp
+import sympy as sp
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, la, \
     Array, Function, FunctionSpace, TensorProductSpace, dx, comm
@@ -28,8 +28,8 @@ assert isinstance(int(sys.argv[-2]), int)
 assert sys.argv[-1].lower() in ('dirichlet', 'neumann')
 
 # Use sympy to compute a rhs, given an analytical solution
-x, y = symbols("x,y", real=True)
-ue = cos(2*y)*cos(2*x)*exp(-x)
+x, y = sp.symbols("x,y", real=True)
+ue = sp.cos(2*y)*sp.cos(2*x)*sp.exp(-x)
 fe = -ue.diff(x, 2) - ue.diff(y, 2)
 
 # Size of discretization
