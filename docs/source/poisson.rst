@@ -13,8 +13,8 @@ Demo - 1D Poisson's equation
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve Poisson's
 equation with Dirichlet boundary conditions in one dimension. Spectral convergence, as
 shown in the figure below, is demonstrated.
-The demo is implemented in
-a single Python file `dirichlet_poisson1D.py <https://github.com/spectralDNS/shenfun/blob/master/demo/dirichlet_poisson1D.py>`__, and
+The demo is implemented in slightly more generic terms (more boundary conditions)
+in `poisson1D.py <https://github.com/spectralDNS/shenfun/blob/master/demo/poisson1D.py>`__, and
 the numerical method is is described in more detail by J. Shen :cite:`shen1` and :cite:`shen95`.
 
 Please note that there is also a `live version <https://mikaem.github.io/shenfun-demos/content/poisson.html>`__
@@ -408,7 +408,7 @@ after :math:`N=40` roundoff errors dominate as the errornorm trails off around :
 Complete solver
 ---------------
 
-A complete solver, that can use either Legendre or Chebyshev bases, chosen as a
-command-line argument, can also be found `here <https://github.com/spectralDNS/shenfun/blob/master/demo/dirichlet_poisson1D.py>`__.
+A complete solver, that can use any family of bases (Chebyshev, Legendre, Jacobi, Chebyshev second kind),
+and any kind of boundary condition, can be found `here <https://github.com/spectralDNS/shenfun/blob/master/demo/poisson1D.py>`__.
 
 .. ======= Bibliography =======

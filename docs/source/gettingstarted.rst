@@ -132,21 +132,22 @@ for all :math:`k \in 0, 1, \ldots, 7`. This can be rewritten on matrix form as
 
 .. math::
 
-    B_{kj} \hat{u}_j = \tilde{u}_k,
+    b_{kj} \hat{u}_j = \tilde{u}_k,
 
-where :math:`B_{kj} = (T_j, T_k)_w`, :math:`\tilde{u}_k = (u, T_k)_w` and
+where :math:`b_{kj} = (T_j, T_k)_w`, :math:`\tilde{u}_k = (u, T_k)_w` and
 summation is implied by the repeating :math:`j` indices. Since the
-Chebyshev polynomials are orthogonal the mass matrix :math:`B_{kj}` is
-diagonal. We can assemble both :math:`B_{kj}` and :math:`\tilde{u}_j`
-with shenfun, and at the same time introduce the :class:`.TestFunction`,
-:class:`.TrialFunction` classes and the :func:`.inner` function::
+Chebyshev polynomials are orthogonal the mass matrix :math:`B=(b_{kj})_{k,j=0}^{7}`
+is diagonal. We can assemble both the matrix :math:`B` and the vector
+:math:`\boldsymbol{\tilde{u}}=(\tilde{u}_j)_{j=0}^7` with shenfun, and at the
+same time introduce the :class:`.TestFunction`, :class:`.TrialFunction` classes
+and the :func:`.inner` function::
 
     from shenfun import TestFunction, TrialFunction, inner
     u = TrialFunction(T)
     v = TestFunction(T)
     B = inner(u, v)
     u_tilde = inner(ue, v)
-    print(B)
+    dict(B)
       {0: array([3.14159265, 1.57079633, 1.57079633, 1.57079633, 1.57079633,
        1.57079633, 1.57079633, 1.57079633])}
     print(u_tilde)
@@ -172,7 +173,7 @@ Note that the matrix :math:`B` assembled above is stored using shenfun's
 :class:`.SpectralMatrix` class, which is a subclass of Python's dictionary,
 where the keys are the diagonals and the values are the diagonal entries.
 The matrix :math:`B` is seen to have only one diagonal (the principal)
-:math:`\{B_{ii}\}_{i=0}^{7}`.
+:math:`\{b_{ii}\}_{i=0}^{7}`.
 
 With the matrix comes a `solve` method and we can solve for :math:`\hat{u}`
 through::
@@ -260,70 +261,54 @@ Boundary conditions
 -------------------
 
 The :func:`.FunctionSpace` has a keyword `bc` that can be used to specify
-boundary conditions. This keyword can take several different inputs, at
-least for the Chebyshev and Legendre spaces. The
-default is `None`, which will return an orthogonal space with no boundary
-condition associated. This means a pure Chebyshev or Legendre series, if
-these are the families. Otherwise, a Dirichlet space can be chosen using
-either one of::
+boundary conditions. This keyword can take several different inputs. The
+default is ``None``, which will return an orthogonal space with no boundary
+condition associated. This means for example a pure orthogonal Chebyshev
+or Legendre series, if these are the families. Otherwise, a Dirichlet space
+can be chosen using either one of::
 
     bc = (a, b)
-    bc = {'left': ('D', a), 'right': ('D', b)}
+    bc = {'left': {'D': a}, 'right': {'D': b}}
+    bc = f"u(-1)={a} && u(1)={b}"
 
 This sets a Dirichlet boundary condition on both left and right hand side
-of the domain, with `a` and `b` being the values. A pure Neumann space
-may be chosen using::
+of the domain, with ``a`` and ``b`` being the values. The third option uses the
+location of the baundary, so here the domain is the standard reference domain
+(-1, 1). Similarly, a pure Neumann space may be chosen using either::
 
-    bc = {'left': ('N', a), 'right': ('N', b)}
+    bc = {'left': {'N': a}, 'right': {'N': b}}
+    bc = f"u'(-1)={a} && u'(1)={b}"
 
 Using either one of::
 
     bc = (None, b)
-    bc = {'right': ('D', b)}
+    bc = {'right': {'D': b}}
+    bc = f"u(1)={b}"
 
 returns a space with only one Dirichlet boundary condition, on the right
 hand side of the domain. For one Dirichlet boundary condition on the
-left instead use `bc = (b, None)` or `bc = {'left': ('D', b)}`.
+left instead use ``bc = (a, None)``, ``bc = {'left': {'D': a}}`` or
+``bc = f"u(-1)={a}"``.
 
 Using either one of::
 
     bc = (a, b, c, d)
-    bc = {'left': [('D', a), ('N', c)], 'right': [('D', b), ('N', d)]}
+    bc = {'left': {'D': a, 'N': b}}, 'right': {'D': c, 'N': d}}
+    bc = f"u({-1})={a} && u'(-1)={b} && u(1)={c} && u'(1)={d}"
 
-returns a space with 4 boundary conditions (biharmonic), where `a` and `b`
-are the Dirichlet values on left and right, whereas `c` and `d` are the
-Neumann values on left and right.
+returns a space with 4 boundary conditions (biharmonic), where ``a`` and ``b``
+are the Dirichlet and Neumann values on the left boundary, whereas ``c`` and ``d``
+are the values on right.
 
-For a Jacobi basis it is possible to choose a space with six boundary
-conditions fixed::
+The Laguerre basis is used to solve problems on the half-line :math:`x \in [0, \infty]`.
+For this family you can only specify boundary conditions at the
+left boundary. However, the Poisson equation requires only one condition,
+and the biharmonic problem two. The solution is automatically set to
+zero at :math:`x \rightarrow \infty`.
 
-    bc = (a, b, c, d, e, f)
-
-Here the last two are for second derivatives, whereas the first 4 are as
-for the biharmonic space.
-
-The dictionary form shown above is the most generic approach, and
-it may be used to create mixed Dirichlet and Neumann boundary conditions
-on the left and right boundaries. For example::
-
-    bc = {'left': ('D', a), 'right': ('N', b)}
-
-for a mixed Dirichlet boundary condition on the left and Neumann on the
-right.
-
-Note that currently it is not possible to choose any combination
-of boundary conditions. For second order equations like Poisson
-it is quite flexible and one may mix Neumann and Dirichlet.
-For the biharmonic problem, there are only two possible
-choices. The regular with Dirichlet and Neumann on both edges of
-the domain. Or fixed beam boundary conditions with Dirichlet and
-Neumann on the left domain and conditions on the second and third
-derivatives on the right hand side (:math:`u''(1)` and
-:math:`u'''(1)`). This does not
-mean that other boundary conditions are not possible, it has simply
-not been implemented
-yet. If you need boundary conditions that are not yet implemented,
-then please open up an issue on github.
+Any kind of boundary condition may be specified. For higher order
+derivatives, use the form ``bc = f"u''(-1)={a}"``, or ``bc = {'left': {'N2': a}}``,
+and similar for higher order.
 
 Multidimensional problems
 -------------------------
@@ -339,7 +324,7 @@ create tensor product spaces using the class :class:`.TensorProductSpace`::
     T = TensorProductSpace(comm, (C0, K0))
 
 Associated with this is a Cartesian mesh :math:`[-1, 1] \times [0, 2\pi]`. We use
-classes :class:`.Function`, :class:`.TrialFunction` and :class:`TestFunction`
+classes :class:`.Function`, :class:`.TrialFunction` and :class:`.TestFunction`
 exactly as before::
 
     u = TrialFunction(T)
@@ -380,26 +365,26 @@ trial and test functions (using :math:`v_{mn}` for test):
 
 .. math::
      \int_{-1}^{1} \int_{0}^{2 \pi} \frac{\partial u}{\partial x} \frac{\partial v}{\partial x} dxdy &= \int_{-1}^{1} \int_{0}^{2 \pi} \frac{\partial}{\partial x} \left( \sum_k \sum_l \hat{u}_{kl} \Psi_k(x) \phi_l(y) \right) \frac{\partial}{\partial x} \left( \Psi_m(x) \phi_n(y)  \right)dxdy, \\
-          &= \sum_k \sum_l \underbrace{ \int_{-1}^{1}  \frac{\partial \Psi_k(x)}{\partial x} \frac{\partial \Psi_m(x)}{\partial x} dx}_{A_{mk}} \underbrace{ \int_{0}^{2 \pi} \phi_l(y) \phi_{n}(y) dy}_{B_{nl}} \, \hat{u}_{kl},
+          &= \sum_k \sum_l \underbrace{ \int_{-1}^{1}  \frac{\partial \Psi_k(x)}{\partial x} \frac{\partial \Psi_m(x)}{\partial x} dx}_{a_{mk}} \underbrace{ \int_{0}^{2 \pi} \phi_l(y) \phi_{n}(y) dy}_{b_{nl}} \, \hat{u}_{kl},
 
-where :math:`A \in \mathbb{R}^{N-2 \times N-2}` and :math:`B \in \mathbb{R}^{M \times M}`.
-The tensor product matrix :math:`A_{mk} B_{nl}` (or in matrix notation :math:`A \otimes B`)
+where :math:`A = (a_{mk}) \in \mathbb{R}^{N-2 \times N-2}` and :math:`B = (b_{nl}) \in \mathbb{R}^{M \times M}`.
+The tensor product matrix :math:`a_{mk} b_{nl}` (or in matrix notation :math:`A \otimes B`)
 is the first item of the two
 items in the list that is returned by ``inner(grad(u), grad(v))``. The other
 item is of course the second term in the last line of :eq:`eq:poissons`:
 
 .. math::
      \int_{-1}^{1} \int_{0}^{2 \pi} \frac{\partial u}{\partial y} \frac{\partial v}{\partial y} dxdy &= \int_{-1}^{1} \int_{0}^{2 \pi} \frac{\partial}{\partial y} \left( \sum_k \sum_l \hat{u}_{kl} \Psi_k(x) \phi_l(y) \right) \frac{\partial}{\partial y} \left(\Psi_m(x) \phi_n(y) \right) dxdy \\
-          &= \sum_k \sum_l \underbrace{ \int_{-1}^{1}  \Psi_k(x) \Psi_m(x) dx}_{C_{mk}} \underbrace{ \int_{0}^{2 \pi} \frac{\partial \phi_l(y)}{\partial y} \frac{ \phi_{n}(y) }{\partial y} dy}_{D_{nl}} \, \hat{u}_{kl}
+          &= \sum_k \sum_l \underbrace{ \int_{-1}^{1}  \Psi_k(x) \Psi_m(x) dx}_{c_{mk}} \underbrace{ \int_{0}^{2 \pi} \frac{\partial \phi_l(y)}{\partial y} \frac{ \phi_{n}(y) }{\partial y} dy}_{d_{nl}} \, \hat{u}_{kl}
 
-The tensor product matrices :math:`A_{mk} B_{nl}` and :math:`C_{mk}D_{nl}` are both instances
+The tensor product matrices :math:`a_{mk} b_{nl}` and :math:`c_{mk}d_{nl}` are both instances
 of the :class:`.TPMatrix` class. Together they lead to linear algebra systems
 like:
 
 .. math::
     :label: eq:multisystem
 
-    (A_{mk}B_{nl} + C_{mk}D_{nl}) \hat{u}_{kl} = \tilde{f}_{mn},
+    (a_{mk}b_{nl} + c_{mk}d_{nl}) \hat{u}_{kl} = \tilde{f}_{mn},
 
 where
 
@@ -412,29 +397,42 @@ an alternative formulation here is
 
 .. math::
 
-    A \hat{u} B^T + C \hat{u} D^T = \tilde{f}
+    A U B^T + C U D^T = F
 
-where :math:`\hat{u}` and :math:`\tilde{f}` are treated as regular matrices
-(:math:`\hat{u} \in \mathbb{R}^{N-2 \times M}` and :math:`\tilde{f} \in \mathbb{R}^{N-2 \times M}`).
+where :math:`U=(\hat{u}_{kl}) \in \mathbb{R}^{N-2 \times M}` and
+:math:`F = (\tilde{f}_{kl}) \in \mathbb{R}^{N-2 \times M}` are treated as regular matrices.
 This formulation is utilized to derive efficient solvers for tensor product bases
 in multiple dimensions using the matrix decomposition
-method in :cite:`shen1` and :cite:`shen95`.
+method in :cite:`shen1` and :cite:`shen95`. In shenfun we have generic solvers
+for such multi-dimensional problems that make use of Kronecker product
+matrices and the ``vec`` `operation <https://en.wikipedia.org/wiki/Kronecker_product#Matrix_equations>`_.
+We have
+
+.. math::
+
+    \text{vec}(A U B^T) + \text{vec}(C U D^T) &= \text{vec}(F), \\
+    (A \otimes B + C \otimes D ) \text{vec}(U) &= \text{vec}(F)
+
+where the column vector :math:`\text{vec}(U) = (\hat{u}_{0,0}, \ldots, \hat{u}_{0,M-1}, \hat{u}_{1,0}, \ldots \hat{u}_{1,M-1}, \ldots, \ldots \hat{u}_{N-3,0}, \ldots, \hat{u}_{M-1,M-1})^T`
+is obtained by flattening the row-major matrix :math:`U`. The generic Kronecker solvers
+are found in :class:`.Solver2D` and :class:`.Solver3D` for two- and three-dimensional
+problems.
 
 Note that in our case the equation system :eq:`eq:multisystem` can be greatly simplified since
-three of the submatrices (:math:`A_{mk}, B_{nl}` and :math:`D_{nl}`) are diagonal.
+three of the submatrices (:math:`A, B` and :math:`D`) are diagonal.
 Even more, two of them equal the identity matrix
 
 .. math::
 
-    A_{mk} &= \delta_{mk}, \\
-    B_{nl} &= \delta_{nl},
+    a_{mk} &= \delta_{mk}, \\
+    b_{nl} &= \delta_{nl},
 
 whereas the last one can be written in terms of the identity
 (no summation on repeating indices)
 
 .. math::
 
-    D_{nl} = -nl\delta_{nl}.
+    d_{nl} = -nl\delta_{nl}.
 
 Inserting for this in :eq:`eq:multisystem` and simplifying by requiring that
 :math:`l=n` in the second step, we get
@@ -442,12 +440,25 @@ Inserting for this in :eq:`eq:multisystem` and simplifying by requiring that
 .. math::
     :label: eq:matfourier
 
-    (\delta_{mk}\delta_{nl} - ln C_{mk}\delta_{nl}) \hat{u}_{kl} &= \tilde{f}_{mn}, \\
-    (\delta_{mk} - l^2 C_{mk}) \hat{u}_{kl} &= \tilde{f}_{ml}.
+    (\delta_{mk}\delta_{nl} - ln c_{mk}\delta_{nl}) \hat{u}_{kl} &= \tilde{f}_{mn}, \\
+    (\delta_{mk} - l^2 c_{mk}) \hat{u}_{kl} &= \tilde{f}_{ml}.
 
 Now if we keep :math:`l` fixed this latter equation is simply a regular
 linear algebra problem to solve for :math:`\hat{u}_{kl}`, for all :math:`k`.
 Of course, this solve needs to be carried out for all :math:`l`.
+
+Note that there is a generic solver :class:`.SolverGeneric1ND` available for
+problems like :eq:`eq:multisystem`, that have one Fourier space and one
+non-periodic space. Another possible solver is :class:`.Solver2D`, which
+makes no assumptions of diagonality and solves the problem using a
+Kronecker product matrix. Assuming there is a right hand side function
+`f`, the solver is created and used as::
+
+    from shenfun import la
+    solver = la.SolverGeneric1ND(A)
+    u_hat = Function(T)
+    f_tilde = inner(v, f)
+    u_hat = solver(f_tilde, u_hat)
 
 For multidimensional problems it is possible to use a boundary condition
 that is a function of the computational coordinates. For
@@ -468,17 +479,11 @@ boundary condition is :math:`(1-x)(1+x)`. Note that only
 the right hand side of the domain for `B1`. Also note that the
 boundary condition on the square domain should match in the
 corners, or else there will be severe Gibbs oscillations in
-the solution.
+the solution. The problem with two non-periodic directions
+can use the solvers :class:`.Solver2D` or :class:`.SolverGeneric2ND`,
+where the latter can also take one Fourier direction in a 3D
+problem.
 
-
-Note that there is a generic solver available for the system
-:eq:`eq:multisystem` in :class:`.SolverGeneric2ND` that makes no
-assumptions on diagonality. However, this solver will, naturally, be
-quite a bit slower than a tailored solver that takes advantage of
-diagonality. For the Poisson equation such solvers are available for
-both Legendre and Chebyshev bases, see the extended demo :ref:`Demo - 3D Poisson's equation`
-or the demo programs `dirichlet_poisson2D.py <https://github.com/spectralDNS/shenfun/blob/master/demo/dirichlet_poisson2D.py>`_
-and `dirichlet_poisson3D.py <https://github.com/spectralDNS/shenfun/blob/master/demo/dirichlet_poisson3D.py>`_.
 
 Curvilinear coordinates
 -----------------------
@@ -574,7 +579,7 @@ on a circular disc, a solver for `3D Poisson equation in a pipe <https://github.
 and a solver for the `biharmonic equation on a part of the disc <https://github.com/spectralDNS/shenfun/blob/master/demo/unitdisc_biharmonic2NP.py>`_.
 Also, the Helmholtz equation solved on the unit sphere using
 spherical coordinates is shown `here <https://github.com/spectralDNS/shenfun/blob/master/demo/sphere_helmholtz.py>`_,
-and on the torus `here <https://github.com/spectralDNS/shenfun/blob/master/binder/torus.ipynb>`_.
+and on the torus `here <https://github.com/spectralDNS/shenfun/blob/master/binder/Torus.ipynb>`_.
 A solution from solving the biharmonic equation with homogeneous
 Dirichlet boundary conditions on :math:`(\theta, r) \in [0, \pi/2] \times [0.5, 1]`
 is shown below.
@@ -811,6 +816,8 @@ forward with a given timestep
     u_hat = integrator.solve(u_, u_hat, dt, (0, end_time))
 
 The solution is two waves travelling through eachother, seemingly undisturbed.
+See `kdv.py <https://github.com/spectralDNS/shenfun/blob/master/sandbox/kdv.py>`_
+for more details.
 
 .. image:: KdV.png
     :width: 600px

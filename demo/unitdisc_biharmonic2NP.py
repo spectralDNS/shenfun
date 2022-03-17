@@ -17,7 +17,7 @@ import sympy as sp
 theta, r = psi = sp.symbols('x,y', real=True, positive=True)
 rv = (r*sp.cos(theta), r*sp.sin(theta))
 
-N = 100
+N = 50
 by_parts = True
 L0 = FunctionSpace(N, 'L', bc=(0, 0, 0, 0), domain=(0, np.pi/2))
 L1 = FunctionSpace(N, 'L', bc=(0, 0, 0, 0), domain=(0.5, 1))

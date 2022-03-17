@@ -420,7 +420,8 @@ class ETDRK4(IntegratorBase):
         L = self.LinearRHS(u, **self.params)
         if isinstance(L, Expr):
             L = inner(v, L)
-            L = get_simplified_tpmatrices(L)[0]
+            if isinstance(L, list):
+                L = get_simplified_tpmatrices(L)[0]
         if isinstance(L, list):
             assert self.T.tensor_rank == 1
             assert L[0].isidentity()

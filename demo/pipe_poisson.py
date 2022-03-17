@@ -30,10 +30,10 @@ g = -ue.diff(r, 2) - (1/r)*ue.diff(r, 1) - (1/r**2)*ue.diff(theta, 2) - ue.diff(
 N = 32
 F0 = FunctionSpace(N, 'F', dtype='D')
 F1 = FunctionSpace(N, 'F', dtype='d')
-L = FunctionSpace(N, 'L', bc='Dirichlet', domain=(0, 1))
+L = FunctionSpace(N, 'L', bc=(0, 0), domain=(0, 1))
 F2 = FunctionSpace(1, 'F', dtype='D')
 F3 = FunctionSpace(N, 'F', dtype='d')
-L0 = FunctionSpace(N, 'L', bc='UpperDirichlet', domain=(0, 1))
+L0 = FunctionSpace(N, 'L', bc=(None, 0), domain=(0, 1))
 T = TensorProductSpace(comm, (L, F0, F1), coordinates=(psi, rv))
 T0 = TensorProductSpace(MPI.COMM_SELF, (L0, F2, F3), coordinates=(psi, rv))
 

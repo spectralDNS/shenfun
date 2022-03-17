@@ -1414,7 +1414,7 @@ class BoundaryConditions(dict):
             # Boundary conditions given in single string with boundary conditions separated by &&
             for bci in bc.split('&&'):
                 # Check for Dirichlet
-                x = re.search("u\((.*)\)=(.*)", bci)
+                x = re.search(r"u\((.*)\)=(.*)", bci)
                 if x:
                     if np.abs(float(x.group(1))-domain[0]) < 1e-8:
                         # left boundary
@@ -1425,7 +1425,7 @@ class BoundaryConditions(dict):
                     else:
                         raise RuntimeError('Boundary condition not matching domain')
                     continue
-                x = re.search("u'\((.*)\)=(.*)", bci)
+                x = re.search(r"u'\((.*)\)=(.*)", bci)
                 if x:
                     if np.abs(float(x.group(1))-domain[0]) < 1e-8:
                         # left boundary
@@ -1436,7 +1436,7 @@ class BoundaryConditions(dict):
                     else:
                         raise RuntimeError('Boundary condition not matching domain')
                     continue
-                x = re.search("u''\((.*)\)=(.*)", bci)
+                x = re.search(r"u''\((.*)\)=(.*)", bci)
                 if x:
                     if np.abs(float(x.group(1))-domain[0]) < 1e-8:
                         # left boundary
@@ -1447,7 +1447,7 @@ class BoundaryConditions(dict):
                     else:
                         raise RuntimeError('Boundary condition not matching domain')
                     continue
-                x = re.search("u'''\((.*)\)=(.*)", bci)
+                x = re.search(r"u'''\((.*)\)=(.*)", bci)
                 if x:
                     if np.abs(float(x.group(1))-domain[0]) < 1e-8:
                         # left boundary
@@ -1458,7 +1458,7 @@ class BoundaryConditions(dict):
                     else:
                         raise RuntimeError('Boundary condition not matching domain')
                     continue
-                x = re.search("u''''\((.*)\)=(.*)", bci)
+                x = re.search(r"u''''\((.*)\)=(.*)", bci)
                 if x:
                     if np.abs(float(x.group(1))-domain[0]) < 1e-8:
                         # left boundary
@@ -1468,6 +1468,7 @@ class BoundaryConditions(dict):
                         bcs['right']['N4'] = float(x.group(2))
                     else:
                         raise RuntimeError('Boundary condition not matching domain')
+                raise RuntimeError(f'Boundary condition {bci} not understood')
 
         if isinstance(bc, tuple):
             assert len(bc) in (1, 2, 4, 6, 8)

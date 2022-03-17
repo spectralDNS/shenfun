@@ -15,8 +15,8 @@ equation in a 3D tensor product domain that has homogeneous Dirichlet boundary
 conditions in one direction and periodicity in the
 remaining two. The solver described runs with MPI without any further
 considerations required from the user. Spectral convergence, as shown in Figure :ref:`fig:3d:ct0`, is demonstrated.
-The demo is implemented in
-a single Python file `dirichlet_poisson3D.py <https://github.com/spectralDNS/shenfun/blob/master/demo/dirichlet_poisson3D.py>`__, and the numerical method is is described in more detail by J. Shen :cite:`shen1` and :cite:`shen95`.
+The demo is implemented in slightly more generic terms (more boundary conditions) in
+`poisson3D.py <https://github.com/spectralDNS/shenfun/blob/master/demo/poisson3D.py>`__, and the numerical method is is described in more detail by J. Shen :cite:`shen1` and :cite:`shen95`.
 
 .. _fig:3d:ct0:
 
@@ -293,7 +293,7 @@ Now, when :math:`\hat{\boldsymbol{u}} = \{\hat{u}_{\boldsymbol{\textsf{k}}}\}_{\
 found by solving this linear system over the
 entire computational mesh, it may be
 transformed to real space :math:`u(\boldsymbol{x})` using :eq:`eq:3d:u`. Note that the matrices
-:math:`A \in \mathbb{R}^{N_0-3 \times N_0-3}` and :math:`B \in \mathbb{R}^{N_0-3 \times N_0-3}`
+:math:`A \in \mathbb{R}^{N_0-2 \times N_0-2}` and :math:`B \in \mathbb{R}^{N_0-2 \times N_0-2}`
 differ for Legendre or Chebyshev bases, but
 for either case they have a
 special structure that allows for a solution to be found very efficiently
@@ -421,9 +421,9 @@ transformed, then the data will be aligned in this direction, whereas the other
 two directions may both, or just one of them, be distributed.
 
 Note that ``X`` is a list containing local values of the arrays :math:`\{x_i\}_{i=0}^{N_0-1}`,
-:math:`\{y_j\}_{j=0}^{N_1-0}` and :math:`\{z_k\}_{k=0}^{N_2-1}`.
+:math:`\{y_j\}_{j=0}^{N_1-1}` and :math:`\{z_k\}_{k=0}^{N_2-1}`.
 Now, it's not possible to run a jupyter notebook with more than one process,
-but we can imagine running `the complete solver <https://github.com/spectralDNS/shenfun/blob/master/demo/dirichlet_poisson3D.py>`__
+but we can imagine running `the complete solver <https://github.com/spectralDNS/shenfun/blob/master/demo/poisson3D.py>`__
 with 4 procesors and a processor mesh of shape :math:`2\times 2`.
 We would then get the following local slices for
 each processor in spectral space
@@ -632,7 +632,7 @@ after :math:`N=24` roundoff errors dominate as the errornorm trails off around :
 Complete solver
 ---------------
 
-A complete solver, that can use either Legendre or Chebyshev bases, chosen as a
-command-line argument, can also be found `here <https://github.com/spectralDNS/shenfun/blob/master/demo/dirichlet_poisson3D.py>`__.
+A complete solver, that can use any family of bases (Chebyshev, Legendre, Jacobi, Chebyshev second kind),
+and any kind of boundary condition, can be found `here <https://github.com/spectralDNS/shenfun/blob/master/demo/poisson3D.py>`__.
 
 .. ======= Bibliography =======

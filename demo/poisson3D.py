@@ -35,7 +35,7 @@ import os
 import sympy as sp
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, \
-    Array, Function, FunctionSpace, TensorProductSpace, comm, la, \
+    Array, Function, FunctionSpace, TensorProductSpace, la, \
     chebyshev, dx, MPI
 from mpi4py_fft.pencil import Subcomm
 

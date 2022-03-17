@@ -64,8 +64,8 @@ def update(self, u, u_hat, t, tstep, plot_tstep, write_tstep, file, **params):
     global count
     if tstep % plot_tstep == 0 and plot_tstep > 0:
         u = u_hat.backward(u)
-        image.ax.clear()
-        image.ax.contourf(X[0], X[1], u.real, 100)
+        image.axes.clear()
+        image.axes.contourf(X[0], X[1], u.real, 100)
         plt.pause(1e-6)
         count += 1
         #plt.savefig('Ginzburg_Landau_{}_{}.png'.format(N[0], count))
