@@ -58,12 +58,14 @@ bcbases = (
     chebyshev.BCNeumann,
     chebyshev.BCBiharmonic,
     chebyshev.BCUpperDirichlet,
+    chebyshev.BCGeneric,
     legendre.BCDirichlet,
     legendre.BCBiharmonic,
     legendre.BCNeumann,
     legendre.BCBeamFixedFree,
     legendre.BCLowerDirichlet,
     legendre.BCUpperDirichlet,
+    legendre.BCGeneric,
     chebyshevu.BCGeneric
 )
 
@@ -76,7 +78,10 @@ nonBC = (
 @pytest.mark.parametrize('base', bases+bcbases)
 def test_eval_basis(base):
     N = 8
-    B = base(N)
+    d = {}
+    if base.short_name() == 'BG':
+        d = {'bc': (0, 0)}
+    B = base(N, **d)
     x = sp.symbols('x', real=True)
     M = B.dim() if B.boundary_condition() in nonBC else N
     for i in range(M):
@@ -89,7 +94,10 @@ def test_eval_basis(base):
 @pytest.mark.parametrize('base', bases+bcbases)
 def test_eval_basis_derivative(base):
     N = 8
-    B = base(N)
+    d = {}
+    if base.short_name() == 'BG':
+        d = {'bc': (0, 0)}
+    B = base(N, **d)
     M = B.dim() if B.boundary_condition() in nonBC else N
     for i in range(M):
         x = sp.symbols('x', real=True)
