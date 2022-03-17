@@ -467,7 +467,7 @@ class SparseMatrix(MutableMapping):
 
     def isdiagonal(self):
         if len(self) == 1:
-            if (0 in self):
+            if 0 in self:
                 return True
         return False
 

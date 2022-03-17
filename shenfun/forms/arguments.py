@@ -140,18 +140,18 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
         #   left->L, right->R, Dirichlet->D, Neumann->N
         # So LDRD means left Dirichlet, right Dirichlet
         bases = defaultdict(lambda: chebyshev.bases.Generic,
-            {
-                '': chebyshev.bases.Orthogonal,
-                'LDRD': chebyshev.bases.ShenDirichlet,
-                'LNRN': chebyshev.bases.ShenNeumann,
-                'LDRN': chebyshev.bases.DirichletNeumann,
-                'LNRD': chebyshev.bases.NeumannDirichlet,
-                'RD': chebyshev.bases.UpperDirichlet,
-                'LD': chebyshev.bases.LowerDirichlet,
-                'RDRN': chebyshev.bases.UpperDirichletNeumann,
-                'LDLN': chebyshev.bases.LowerDirichletNeumann,
-                'LDLNRDRN': chebyshev.bases.ShenBiharmonic
-            })
+                            {
+                                '': chebyshev.bases.Orthogonal,
+                                'LDRD': chebyshev.bases.ShenDirichlet,
+                                'LNRN': chebyshev.bases.ShenNeumann,
+                                'LDRN': chebyshev.bases.DirichletNeumann,
+                                'LNRD': chebyshev.bases.NeumannDirichlet,
+                                'RD': chebyshev.bases.UpperDirichlet,
+                                'LD': chebyshev.bases.LowerDirichlet,
+                                'RDRN': chebyshev.bases.UpperDirichletNeumann,
+                                'LDLN': chebyshev.bases.LowerDirichletNeumann,
+                                'LDLNRDRN': chebyshev.bases.ShenBiharmonic
+                            })
 
         if basis is not None:
             assert isinstance(basis, str)
@@ -176,18 +176,18 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
         from shenfun import legendre
 
         bases = defaultdict(lambda: legendre.bases.Generic,
-            {
-                '': legendre.bases.Orthogonal,
-                'LDRD': legendre.bases.ShenDirichlet,
-                'LNRN': legendre.bases.ShenNeumann,
-                'LDRN': legendre.bases.DirichletNeumann,
-                'LNRD': legendre.bases.NeumannDirichlet,
-                'LD': legendre.bases.LowerDirichlet,
-                'RD': legendre.bases.UpperDirichlet,
-                'RDRN': legendre.bases.UpperDirichletNeumann,
-                'LDLNRDRN': legendre.bases.ShenBiharmonic,
-                'LDLNRN2RN3': legendre.bases.BeamFixedFree,
-            })
+                            {
+                                '': legendre.bases.Orthogonal,
+                                'LDRD': legendre.bases.ShenDirichlet,
+                                'LNRN': legendre.bases.ShenNeumann,
+                                'LDRN': legendre.bases.DirichletNeumann,
+                                'LNRD': legendre.bases.NeumannDirichlet,
+                                'LD': legendre.bases.LowerDirichlet,
+                                'RD': legendre.bases.UpperDirichlet,
+                                'RDRN': legendre.bases.UpperDirichletNeumann,
+                                'LDLNRDRN': legendre.bases.ShenBiharmonic,
+                                'LDLNRN2RN3': legendre.bases.BeamFixedFree,
+                            })
 
         if quad is not None:
             assert quad in ('LG', 'GL')
@@ -227,12 +227,12 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
             par['scaled'] = scaled
 
         bases = defaultdict(lambda: chebyshevu.bases.Generic,
-            {
-                '': chebyshevu.bases.Orthogonal,
-                'LDRD': chebyshevu.bases.CompactDirichlet,
-                'LNRN': chebyshevu.bases.CompactNeumann,
-                'LDLNRDRN': chebyshevu.bases.Phi2
-            })
+                            {
+                                '': chebyshevu.bases.Orthogonal,
+                                'LDRD': chebyshevu.bases.CompactDirichlet,
+                                'LNRN': chebyshevu.bases.CompactNeumann,
+                                'LDLNRDRN': chebyshevu.bases.Phi2
+                            })
 
         if basis is not None:
             assert isinstance(basis, str)
@@ -261,11 +261,11 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
             par['quad'] = quad
 
         bases = defaultdict(lambda: laguerre.bases.Generic,
-            {
-                '': laguerre.bases.Orthogonal,
-                'LD': laguerre.bases.CompactDirichlet,
-                'LN': laguerre.bases.CompactNeumann,
-            })
+                            {
+                                '': laguerre.bases.Orthogonal,
+                                'LD': laguerre.bases.CompactDirichlet,
+                                'LN': laguerre.bases.CompactNeumann,
+                            })
 
         if basis is not None:
             assert isinstance(basis, str)
@@ -318,14 +318,14 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
             par['scaled'] = scaled
 
         bases = defaultdict(lambda: jacobi.bases.Generic,
-            {
-                '': jacobi.bases.Orthogonal,
-                'LDRD': jacobi.bases.CompactDirichlet,
-                'LNRN': jacobi.bases.CompactNeumann,
-                'LDLNRDRN': jacobi.bases.Phi2,
-                'LDLNLN2RDRNRN2': jacobi.bases.Phi3,
-                'LDLNLN2N3RDRNRN2N3': jacobi.bases.Phi4,
-            })
+                            {
+                                '': jacobi.bases.Orthogonal,
+                                'LDRD': jacobi.bases.CompactDirichlet,
+                                'LNRN': jacobi.bases.CompactNeumann,
+                                'LDLNRDRN': jacobi.bases.Phi2,
+                                'LDLNLN2RDRNRN2': jacobi.bases.Phi3,
+                                'LDLNLN2N3RDRNRN2N3': jacobi.bases.Phi4,
+                            })
 
         if isinstance(bc, (str, tuple, dict)):
             domain = (-1, 1) if domain is None else domain
@@ -485,6 +485,7 @@ class Expr:
             return 1
         if len(self._terms) == len(self._terms[0][0])**2:
             return 2
+        raise RuntimeError
 
     @property
     def tensor_rank(self):
@@ -609,9 +610,6 @@ class Expr:
         ndim = self.dimensions
         if basis is None:
             basis = 'u'
-
-        if self.expr_rank() > 0:
-            b = self.function_space().coors.get_covariant_basis()
 
         if isinstance(basis, str):
             # Create sympy Function
@@ -740,7 +738,7 @@ class Expr:
         basis = self._basis
         if self.tensor_rank:
             if ((self.expr_rank() == self.tensor_rank and self.is_basis_function) or
-                (self.expr_rank() > self.tensor_rank and self.tensor_rank > 0)):
+                    (self.expr_rank() > self.tensor_rank and self.tensor_rank > 0)):
                 basis = self._basis[i]
 
         if self.expr_rank() == 1:
@@ -1896,7 +1894,6 @@ class Array(ShenfunBaseArray):
         assert self.tensor_rank == 1
         T = self.function_space()
         psi = T.coors.psi
-        ndim = len(psi)
         x = T.local_mesh(True)
         b = T.coors.get_basis()
         bij = np.array(sp.lambdify(psi, b)(*x), dtype=object)
@@ -1908,4 +1905,3 @@ class Array(ShenfunBaseArray):
         sl[1] = None
         uc = np.sum(self[tuple(sl)]*bij, axis=0)
         return uc
-

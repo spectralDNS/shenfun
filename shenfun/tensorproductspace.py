@@ -1695,8 +1695,6 @@ class BoundaryValues:
                     if axis is None:
                         number_of_bases_after_this += 1
 
-            self.number_of_bases_after_this = number_of_bases_after_this
-
             if self.has_nonhomogeneous_bcs() is False:
                 for i in range(len(self.bcs)):
                     self.bcs[i] = self.bcs_final[i] = 0
@@ -1796,36 +1794,6 @@ class BoundaryValues:
                         other_base.bc.bcs_final[:] = other_base.bcs.orderedvals()
                     ua[:] = b[this_base.si[-num_bcs+i]]
                     self.bcs_final[i] = project(ua, other_base)
-
-                #for i in range(2): # e.g., x = -1 and then x = 1
-                #    bcj = bc_this[i]
-                #    for j in range(2): # e.g., y = -1 and then y = 1
-                #        xj = other_base.domain[j]
-                #        sym = sp.sympify(bcj).free_symbols
-                #        if len(sym) == 1:
-                #            xx = sym.pop()
-                #            if j == 0 and other_base.boundary_condition() == 'NeumannDirichlet':
-                #                s = bcj.diff(xx, 1).subs(xx, xj)/df
-                #            elif j == 1 and other_base.boundary_condition() == 'DirichletNeumann':
-                #                s = bcj.diff(xx, 1).subs(xx, xj)/df
-                #            elif j == 0 and other_base.boundary_condition() == 'UpperDirichletNeumann':
-                #                xj = other_base.domain[1]
-                #                s = bcj.subs(xx, xj)
-                #            elif j == 1 and other_base.boundary_condition() == 'UpperDirichletNeumann':
-                #                s = bcj.diff(xx, 1).subs(xx, xj)/df
-                #            elif other_base.boundary_condition() == 'Neumann':
-                #                s = bcj.diff(xx, 1).subs(xx, xj)/df
-                #            else:
-                #                s = bcj.subs(xx, xj)
-                #            other_base.bc.bc[j] = s
-                #            other_base.bc.bcs[j] = s
-                #            other_base.bc.bcs_final[j] = s
-                #        else:
-                #            other_base.bc.bc[j] = bcj
-                #            other_base.bc.bcs[j] = bcj
-                #            other_base.bc.bcs_final[j] = bcj
-                #    ua[:] = b[this_base.si[-(len(self.bc))+i]]
-                #    self.bcs_final[i] = project(ua, other_base)
 
     def add_to_orthogonal(self, u, uh):
         """Add contribution from boundary functions to `u`

@@ -400,8 +400,8 @@ cool colormap:
             self.image = plt.contourf(X[0], X[1], U, 256, cmap=self.cm)
         if tstep % params['plot_step'] == 0 and params['plot_step'] > 0:
             u = u_hat.backward(u)
-            self.image.ax.clear()
-            self.image.ax.contourf(X[0], X[1], u, 256, cmap=self.cm)
+            self.image.axes.clear()
+            self.image.axes.contourf(X[0], X[1], u, 256, cmap=self.cm)
             plt.pause(1e-6)
             print('Energy =', dx(u**2))
     

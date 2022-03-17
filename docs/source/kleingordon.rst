@@ -577,8 +577,8 @@ The actual ``update`` function is
         if rank == 0 and tstep % params['plot_tstep'] == 0 and params['plot_tstep'] > 0:
             fu = fu_hat.backward(fu)
             f, u = fu[:]
-            image.ax.clear()
-            image.ax.contourf(X[1][..., 0], X[0][..., 0], u[..., N[2]//2], 100)
+            image.axes.clear()
+            image.axes.contourf(X[1][..., 0], X[0][..., 0], u[..., N[2]//2], 100)
             plt.pause(1e-6)
             transformed = True
     

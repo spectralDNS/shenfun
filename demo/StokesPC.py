@@ -190,7 +190,7 @@ if __name__ == "__main__":
     vars = (r'$u_x$', r'$u_y$', r'$p$')
     for i in range(3):
         plt.loglog(N, E[i, :], marks[i], label=vars[i])
-        slope, intercept = np.polyfit(np.log(N[-2:]), np.log(E[i,-2:]), 1)
+        slope, intercept = np.polyfit(np.log(N[-2:]), np.log(E[i, -2:]), 1)
         if i != 1:
             annotation.slope_marker((N[-2], E[i, -2]), ("{0:.2f}".format(slope), 1),
                                     ax=ax, poly_kwargs=pa, text_kwargs=ta)

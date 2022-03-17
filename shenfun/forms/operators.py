@@ -1,11 +1,11 @@
 """
 This module contains the implementation of operators acting on arguments.
 """
+import copy
 import numpy as np
 import sympy as sp
-import copy
 from shenfun.config import config
-from .arguments import Expr, BasisFunction, Array
+from .arguments import Expr, BasisFunction
 
 __all__ = ('div', 'grad', 'Dx', 'curl')
 

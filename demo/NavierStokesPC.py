@@ -223,7 +223,7 @@ if __name__ == "__main__":
     plt.ylabel(r'$|Error|_{L^2}$')
     plt.xticks(N)
     ax.get_xaxis().set_minor_formatter(NullFormatter())
-    fmt = lambda v: r"$\Delta t/{0}$".format(v) if v!=1 else r"$\Delta t$"
+    fmt = lambda v: r"$\Delta t/{0}$".format(v) if v != 1 else r"$\Delta t$"
     plt.gca().set_xticklabels(list(map(fmt, N)))
     #plt.savefig("navier-stokes.pdf", orientation='portrait')
     plt.show()

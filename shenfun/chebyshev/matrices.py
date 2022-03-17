@@ -77,9 +77,8 @@ from __future__ import division
 import functools
 import numpy as np
 import sympy as sp
-from shenfun.optimization import cython, numba, optimizer
-from shenfun.matrixbase import SpectralMatrix, SparseMatrix, extract_diagonal_matrix
-from shenfun.la import SparseMatrixSolver
+from shenfun.optimization import cython, numba
+from shenfun.matrixbase import SpectralMatrix, extract_diagonal_matrix
 from shenfun.la import TDMA as generic_TDMA
 from shenfun.la import PDMA as generic_PDMA
 from shenfun.la import TwoDMA, FDMA
