@@ -25,8 +25,7 @@ import os
 import sys
 import time
 import numpy as np
-from scipy.sparse.linalg import splu
-import sympy
+import sympy as sp
 from shenfun import *
 
 assert comm.Get_size() == 1, "Two non-periodic directions only have solver implemented for serial"
@@ -37,7 +36,7 @@ alfa = 0.1 # underrelaxation factor
 N = 64
 family = 'Chebyshev'
 #family = 'Legendre'
-x = sympy.symbols('x', real='True')
+x = sp.symbols('x', real='True')
 D0 = FunctionSpace(N, family, bc=(0, 0))
 #D1 = FunctionSpace(N, family, bc=(0, 1))
 D1 = FunctionSpace(N, family, bc=(0, (1-x)**2*(1+x)**2))
@@ -136,7 +135,8 @@ up = Array(VQ)
 up = uh_hat.backward(up)
 u_, p_ = up
 
-if 'pytest' in os.environ: sys.exit(0)
+if 'pytest' in os.environ:
+    sys.exit(0)
 
 # Postprocessing
 # Solve streamfunction

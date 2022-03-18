@@ -288,7 +288,6 @@ def dot(u, v, output_array=None, forward_output=True):
             raise NotImplementedError
 
     else:
-        from shenfun import config
         gij = Vu.coors.get_metric_tensor(config['basisvectors'])
         mesh = Vup.local_mesh(True)
         def measure(g):

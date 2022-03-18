@@ -3,7 +3,6 @@ Module for implementation of the :class:`.TensorProductSpace` class and
 related methods.
 """
 from numbers import Number
-import functools
 import sympy as sp
 import numpy as np
 from shenfun.fourier.bases import R2C, C2C

@@ -3,7 +3,6 @@ This module contains classes for working with sparse matrices.
 
 """
 from __future__ import division
-from typing import List
 from copy import copy, deepcopy
 from collections.abc import Mapping, MutableMapping
 from numbers import Number
