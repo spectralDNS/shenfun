@@ -39,7 +39,7 @@ python biharmonic2D_2nonperiodic.py jacobi
 python hermite_poisson1D.py 36
 python hermite_poisson2D.py 36
 
-python order6.py 20
+python order6.py
 
 python beam_biharmonic1D.py 36
 

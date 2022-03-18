@@ -12,12 +12,15 @@ from shenfun.spectralbase import SpectralBase, Transform, FuncWrap, \
     islicedict, slicedict, getCompositeBase, BoundaryConditions
 from shenfun.matrixbase import SparseMatrix
 from shenfun.config import config
+from shenfun.jacobi.recursions import n
 
 #pylint: disable=abstract-method, not-callable, method-hidden, no-self-use, cyclic-import
 
 __all__ = ['Orthogonal',
            'Phi1',
            'Phi2',
+           'Phi3',
+           'Phi4',
            'CompactDirichlet',
            'CompactNeumann',
            'CompositeBase',
@@ -53,6 +56,15 @@ class DCTWrap(FuncWrap):
 
 class Orthogonal(SpectralBase):
     """Function space for Chebyshev series of second kind
+
+    The orthogonal basis is
+
+    .. math::
+
+        U_k, \quad k = 0, 1, \ldots, N-1,
+
+    where :math:`U_k` is the :math:`k`'th Chebyshev polynomial of the second
+    kind.
 
     Parameters
     ----------
@@ -253,14 +265,6 @@ class Orthogonal(SpectralBase):
         return output_array
 
     def stencil_matrix(self, N=None):
-        """Matrix describing the linear combination of orthogonal basis
-        functions for the current basis.
-
-        Parameters
-        ----------
-        N : int, optional
-            The number of quadrature points
-        """
         return SparseMatrix({0: 1}, (N, N))
 
     def get_bc_basis(self):
@@ -352,9 +356,8 @@ class Phi1(CompositeBase):
     quad : str, optional
         Type of quadrature
 
-        - GL - Chebyshev-Gauss-Lobatto
         - GC - Chebyshev-Gauss
-
+        - GU - Chebyshevu-Gauss
     bc : 2-tuple of floats, optional
         Boundary conditions at, respectively, x=(-1, 1).
     domain : 2-tuple of floats, optional
@@ -445,9 +448,8 @@ class Phi2(CompositeBase):
     quad : str, optional
         Type of quadrature
 
-        - GL - Chebyshev-Gauss-Lobatto
         - GC - Chebyshev-Gauss
-
+        - GU - Chebyshevu-Gauss
     bc : 4-tuple of floats, optional
         2 boundary conditions at, respectively, x=-1 and x=1.
     domain : 2-tuple of floats, optional
@@ -489,7 +491,6 @@ class Phi2(CompositeBase):
         return 'P2'
 
     def stencil_matrix(self, N=None):
-        from shenfun.jacobi.recursions import n
         N = self.N if N is None else N
         k = np.arange(N)
         d0, d2, d4 = np.zeros(N), np.zeros(N-2), np.zeros(N-4)
@@ -500,6 +501,171 @@ class Phi2(CompositeBase):
 
     def slice(self):
         return slice(0, self.N-4)
+
+class Phi3(CompositeBase):
+    r"""Function space for 6'th order equation
+
+    The basis functions are
+
+    .. math::
+
+        \phi_k &= \frac{(1-x^2)^3}{h^{(3)}_{k+3}} U^{(3)}_{k+3} \\
+        h^{(3)}_{k+3} &= \frac{\pi \Gamma (k+8)}{2(k+4)k!} = \int_{-1}^1 U^{(3)}_k U^{(3)}_k (1-x^2)^{3.5}} dx.
+
+    where :math:`U^{(3)}_k` is the 3rd derivative of :math:`U_k`. The boundary
+    basis for inhomogeneous boundary conditions is too messy to print, but can
+    be obtained using :func:`~shenfun.utilities.findbasis.get_bc_basis`. We have
+
+    .. math::
+        u(x) &= \sum_{k=0}^{N-1} \hat{u}_k \phi_k(x), \\
+        u(-1) &= a, u'(-1)=b, u''(-1)=c, u(1)=d u'(1)=e, u''(1)=f.
+
+    The last 6 basis functions are only used if there are nonzero boundary
+    conditions.
+
+    Parameters
+    ----------
+    N : int, optional
+        Number of quadrature points
+    quad : str, optional
+        Type of quadrature
+
+        - GC - Chebyshev-Gauss
+        - GU - Chebyshevu-Gauss
+    bc : 6-tuple of floats, optional
+        3 boundary conditions at, respectively, x=-1 and x=1.
+    domain : 2-tuple of floats, optional
+        The computational domain
+    dtype : data-type, optional
+        Type of input data in real physical space. Will be overloaded when
+        basis is part of a :class:`.TensorProductSpace`.
+    padding_factor : float, optional
+        Factor for padding backward transforms.
+    dealias_direct : bool, optional
+        Set upper 1/3 of coefficients to zero before backward transform
+    coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
+         Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
+
+    """
+    def __init__(self, N, quad="GU", bc=(0,)*6, domain=(-1, 1), dtype=float,
+                 padding_factor=1, dealias_direct=False, coordinates=None, **kw):
+        CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
+                               padding_factor=padding_factor, dealias_direct=dealias_direct,
+                               coordinates=coordinates)
+        #self.b0n = sp.simplify(matpow(b, 3, half, half, n+3, n, un) / (h(half, half, n, 0, un)))
+        #self.b2n = sp.simplify(matpow(b, 3, half, half, n+3, n+2, un) / (h(half, half, n+2, 0, un)))
+        #self.b4n = sp.simplify(matpow(b, 3, half, half, n+3, n+4, un) / (h(half, half, n+4, 0, un)))
+        #self.b6n = sp.simplify(matpow(b, 3, half, half, n+3, n+6, un) / (h(half, half, n+6, 0, un)))
+        self.b0n = 1/(4*sp.pi*(n+1)*(n+2)*(n+3))
+        self.b2n = -3/(4*sp.pi*(n+2)*(n+3)*(n+5))
+        self.b4n = 3/(4*sp.pi*(n+3)*(n+5)*(n+6))
+        self.b6n = -1/(4*sp.pi*(n+5)*(n+6)*(n+7))
+
+    @staticmethod
+    def boundary_condition():
+        return '6th order'
+
+    @staticmethod
+    def short_name():
+        return 'P3'
+
+    def stencil_matrix(self, N=None):
+        N = self.N if N is None else N
+        k = np.arange(N)
+        d0, d2, d4, d6 = np.zeros(N), np.zeros(N-2), np.zeros(N-4), np.zeros(N-6)
+        d0[:-6] = sp.lambdify(n, self.b0n)(k[:N-6])
+        d2[:-4] = sp.lambdify(n, self.b2n)(k[:N-6])
+        d4[:-2] = sp.lambdify(n, self.b4n)(k[:N-6])
+        d6[:] = sp.lambdify(n, self.b6n)(k[:N-6])
+        return SparseMatrix({0: d0, 2: d2, 4: d4, 6: d6}, (N, N))
+
+    def slice(self):
+        return slice(0, self.N-6)
+
+class Phi4(CompositeBase):
+    r"""Function space for 8th order equation
+
+    The basis functions are
+
+    .. math::
+
+        \phi_k &= \frac{(1-x^2)^4}{h^{(4)}_{k+4}} U^{(4)}_{k+4} \\
+        h^{(4)}_{k+4} &= \frac{\pi \Gamma (k+10)}{2(k+5)k!} = \int_{-1}^1 U^{(4)}_{k+4} U^{(4)}_{k+4} (1-x^2)^{4.5}} dx.
+
+    where :math:`U^{(4)}_k` is the 4th derivative of :math:`U_k`. The boundary
+    basis for inhomogeneous boundary conditions is too messy to print, but can
+    be obtained using :func:`~shenfun.utilities.findbasis.get_bc_basis`. We have
+
+    .. math::
+        u(x) &= \sum_{k=0}^{N-1} \hat{u}_k \phi_k(x), \\
+        u(-1) &= a, u'(-1)=b, u''(-1)=c, u'''(-1)=d, u(1)=e u'(1)=f, u''(1)=g, u'''(1)=h
+
+    The last 8 basis functions are only used if there are nonzero boundary
+    conditions.
+
+    Parameters
+    ----------
+    N : int, optional
+        Number of quadrature points
+    quad : str, optional
+        Type of quadrature
+
+        - GC - Chebyshev-Gauss
+        - GU - Chebyshevu-Gauss
+    bc : 8-tuple of numbers
+    domain : 2-tuple of floats, optional
+        The computational domain
+    dtype : data-type, optional
+        Type of input data in real physical space. Will be overloaded when
+        basis is part of a :class:`.TensorProductSpace`.
+    padding_factor : float, optional
+        Factor for padding backward transforms.
+    dealias_direct : bool, optional
+        Set upper 1/3 of coefficients to zero before backward transform
+    coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
+        Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
+
+    """
+    def __init__(self, N, quad="GC", bc=(0,)*8, domain=(-1, 1), dtype=float,
+                 padding_factor=1, dealias_direct=False, coordinates=None, **kw):
+        CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
+                               padding_factor=padding_factor, dealias_direct=dealias_direct,
+                               coordinates=coordinates)
+        from shenfun.jacobi.recursions import half, cn, b, h, matpow, n
+        #self.b0n = sp.simplify(matpow(b, 4, -half, -half, n+4, n, cn) / h(-half, -half, n, 0, cn))
+        #self.b2n = sp.simplify(matpow(b, 4, -half, -half, n+4, n+2, cn) / h(-half, -half, n+2, 0, cn))
+        #self.b4n = sp.simplify(matpow(b, 4, -half, -half, n+4, n+4, cn) / h(-half, -half, n+4, 0, cn))
+        #self.b6n = sp.simplify(matpow(b, 4, -half, -half, n+4, n+6, cn) / h(-half, -half, n+6, 0, cn))
+        #self.b8n = sp.simplify(matpow(b, 4, -half, -half, n+4, n+8, cn) / h(-half, -half, n+8, 0, cn))
+        # Below are the same but faster since already simplified
+        self.b0n = 1/(8*sp.pi*(n + 1)*(n + 2)*(n + 3)*(n + 4))
+        self.b2n = -1/(2*sp.pi*(n + 1)*(n + 3)*(n + 4)*(n + 5))
+        self.b4n = 3/(4*sp.pi*(n + 2)*(n + 3)*(n + 5)*(n + 6))
+        self.b6n = -1/(2*sp.pi*(n + 3)*(n + 4)*(n + 5)*(n + 7))
+        self.b8n = 1/(8*sp.pi*(n + 4)*(n + 5)*(n + 6)*(n + 7))
+
+    @staticmethod
+    def boundary_condition():
+        return 'Biharmonic*2'
+
+    @staticmethod
+    def short_name():
+        return 'P4'
+
+    def stencil_matrix(self, N=None):
+        from shenfun.jacobi.recursions import n
+        N = self.N if N is None else N
+        k = np.arange(N)
+        d0, d2, d4, d6, d8 = np.zeros(N), np.zeros(N-2), np.zeros(N-4), np.zeros(N-6), np.zeros(N-8)
+        d0[:-8] = sp.lambdify(n, self.b0n)(k[:N-8])
+        d2[:-6] = sp.lambdify(n, self.b2n)(k[:N-8])
+        d4[:-4] = sp.lambdify(n, self.b4n)(k[:N-8])
+        d6[:-2] = sp.lambdify(n, self.b6n)(k[:N-8])
+        d8[:] = sp.lambdify(n, self.b8n)(k[:N-8])
+        return SparseMatrix({0: d0, 2: d2, 4: d4, 6: d6, 8: d8}, (N, N))
+
+    def slice(self):
+        return slice(0, self.N-8)
 
 
 class CompactDirichlet(CompositeBase):
@@ -530,9 +696,8 @@ class CompactDirichlet(CompositeBase):
     quad : str, optional
         Type of quadrature
 
-        - GL - Chebyshev-Gauss-Lobatto
         - GC - Chebyshev-Gauss
-
+        - GU - Chebyshevu-Gauss
     bc : 2-tuple of floats, optional
         Boundary conditions at, respectively, x=(-1, 1).
     domain : 2-tuple of floats, optional
@@ -607,9 +772,8 @@ class CompactNeumann(CompositeBase):
     quad : str, optional
         Type of quadrature
 
-        - GL - Chebyshev-Gauss-Lobatto
         - GC - Chebyshev-Gauss
-
+        - GU - Chebyshevu-Gauss
     bc : 2-tuple of floats, optional
         Boundary conditions at, respectively, x=(-1, 1).
     domain : 2-tuple of floats, optional
@@ -668,9 +832,8 @@ class Generic(CompositeBase):
     quad : str, optional
         Type of quadrature
 
-        - GL - Chebyshev-Gauss-Lobatto
         - GC - Chebyshev-Gauss
-
+        - GU - Chebyshevu-Gauss
     bc : dict, optional
         The dictionary must have keys 'left' and 'right', to describe boundary
         conditions on the left and right boundaries, and a list of 2-tuples to

@@ -44,6 +44,7 @@ cBasisGC = (cbases.ShenBiPolar,
             cbases.CombinedShenNeumann,
             cbases.Phi1,
             cbases.Phi2,
+            cbases.Phi3,
             cbases.Phi4
             )
 
@@ -59,6 +60,7 @@ lBasisLG = (lbases.UpperDirichlet,
             lbases.ShenBiPolar,
             lbases.Phi1,
             lbases.Phi2,
+            lbases.Phi3,
             lbases.Phi4)
 
 lagBasis = (lagbases.Orthogonal,

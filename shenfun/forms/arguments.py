@@ -150,7 +150,8 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
                                 'LD': chebyshev.bases.LowerDirichlet,
                                 'RDRN': chebyshev.bases.UpperDirichletNeumann,
                                 'LDLN': chebyshev.bases.LowerDirichletNeumann,
-                                'LDLNRDRN': chebyshev.bases.ShenBiharmonic
+                                'LDLNRDRN': chebyshev.bases.ShenBiharmonic,
+                                'LDLNLN2RDRNRN2': chebyshev.bases.Phi3
                             })
 
         if basis is not None:
@@ -186,6 +187,7 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
                                 'RD': legendre.bases.UpperDirichlet,
                                 'RDRN': legendre.bases.UpperDirichletNeumann,
                                 'LDLNRDRN': legendre.bases.ShenBiharmonic,
+                                'LDLNLN2RDRNRN2': legendre.bases.Phi3,
                                 'LDLNRN2RN3': legendre.bases.BeamFixedFree,
                             })
 
@@ -231,7 +233,9 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
                                 '': chebyshevu.bases.Orthogonal,
                                 'LDRD': chebyshevu.bases.CompactDirichlet,
                                 'LNRN': chebyshevu.bases.CompactNeumann,
-                                'LDLNRDRN': chebyshevu.bases.Phi2
+                                'LDLNRDRN': chebyshevu.bases.Phi2,
+                                'LDLNLN2RDRNRN2': chebyshevu.bases.Phi3,
+                                'LDLNLN2N3RDRNRN2N3': chebyshevu.bases.Phi4
                             })
 
         if basis is not None:

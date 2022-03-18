@@ -478,7 +478,7 @@ class Phi3(CompositeBase):
     The basis :math:`\{\phi_k\}_{k=0}^{N-1}` is
 
     .. math::
-        \phi_k &= \frac{(1-x^2)^3}{h^{(3,\alpha,\beta)}_{k+3}} \frac{d^3P^{(\alpha,\beta)}_{k+3}}{dx}, \, k=0, 1, \ldots, N-7, \\
+        \phi_k &= \frac{(1-x^2)^3}{h^{(3,\alpha,\beta)}_{k+3}} \frac{d^3P^{(\alpha,\beta)}_{k+3}}{dx^3}, \, k=0, 1, \ldots, N-7, \\
 
     where
 

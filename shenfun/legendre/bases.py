@@ -48,6 +48,7 @@ from shenfun.config import config
 from shenfun.spectralbase import SpectralBase, Transform, islicedict, \
     slicedict, getCompositeBase, BoundaryConditions
 from shenfun.matrixbase import SparseMatrix
+from shenfun.jacobi.recursions import n
 from .lobatto import legendre_lobatto_nodes_and_weights
 from . import fastgl
 
@@ -56,6 +57,7 @@ __all__ = ['Orthogonal',
            'ShenDirichlet',
            'Phi1',
            'Phi2',
+           'Phi3',
            'Phi4',
            'ShenNeumann',
            'ShenBiharmonic',
@@ -727,8 +729,87 @@ class Phi2(CompositeBase):
     def slice(self):
         return slice(0, self.N-4)
 
+class Phi3(CompositeBase):
+    r"""Function space for 6th order equations
+
+    The basis :math:`\{\phi_k\}_{k=0}^{N-1}` is
+
+    .. math::
+        \phi_k &= \frac{(1-x^2)^3}{h^{(3)}_{k+3}} L^{(3)}_{k+3}}, \, k=0, 1, \ldots, N-7, \\
+        h^{(3)}_{k+3} &= \frac{2\Gamma(k+7)}{\Gamma(k+1)(2k+7)} = \int_{-1}^1 L^{(3)}_{k+3} L^{(3)}_{k+3} dx,
+
+    where :math:`L^{(3)}_k` is the 3'rd derivative of :math:`L_k`.
+    The 6 boundary basis functions are computed using :func:`.jacobi.findbasis.get_bc_basis`,
+    but they are too messy to print here. We have
+
+    .. math::
+        u(x) &= \sum_{k=0}^{N-1} \hat{u}_k \phi_k(x), \\
+        u(-1) &= a, u'(-1)=b, u''(-1)=c, u(1)=d u'(1)=e, u''(1)=f.
+
+    The last 6 basis functions are for boundary conditions and only used if there
+    are nonzero boundary conditions.
+
+    Parameters
+    ----------
+    N : int
+        Number of quadrature points
+    quad : str, optional
+        Type of quadrature
+        - LG - Legendre-Gauss
+        - GL - Legendre-Gauss-Lobatto
+    bc : 6-tuple of numbers, optional
+        Boundary conditions.
+    padding_factor : float, optional
+        Factor for padding backward transforms.
+    dealias_direct : bool, optional
+        Set upper 1/3 of coefficients to zero before backward transform
+    dtype : data-type, optional
+        Type of input data in real physical space. Will be overloaded when
+        basis is part of a :class:`.TensorProductSpace`.
+    coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
+        Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
+    """
+    def __init__(self, N, quad="LG", bc=(0,)*6, domain=(-1, 1), dtype=float,
+                 padding_factor=1, dealias_direct=False, coordinates=None, **kw):
+        CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
+                               padding_factor=padding_factor, dealias_direct=dealias_direct,
+                               coordinates=coordinates)
+        self._stencil_matrix = {}
+        #self.b0n = sp.simplify(matpow(b, 3, 0, 0, n+3, n) / h(0, 0, n, 0))
+        #self.b2n = sp.simplify(matpow(b, 3, 0, 0, n+3, n+2) / h(0, 0, n+2, 0))
+        #self.b4n = sp.simplify(matpow(b, 3, 0, 0, n+3, n+4) / h(0, 0, n+4, 0))
+        #self.b6n = sp.simplify(matpow(b, 3, 0, 0, n+3, n+6) / h(0, 0, n+6, 0))
+        self.b0n = 1/(2*(4*n**2 + 16*n + 15))
+        self.b2n = -3/(8*n**2 + 48*n + 54)
+        self.b4n = 3/(2*(4*n**2 + 32*n + 55))
+        self.b6n = -1/(8*n**2 + 80*n + 198)
+
+    @staticmethod
+    def boundary_condition():
+        return '6th order'
+
+    @staticmethod
+    def short_name():
+        return 'P3'
+
+    def stencil_matrix(self, N=None):
+        N = self.N if N is None else N
+        if N in self._stencil_matrix:
+            return self._stencil_matrix[N]
+        k = np.arange(N)
+        d0, d2, d4, d6 = np.zeros(N), np.zeros(N-2), np.zeros(N-4), np.zeros(N-6)
+        d0[:-6] = sp.lambdify(n, self.b0n)(k[:N-6])
+        d2[:-4] = sp.lambdify(n, self.b2n)(k[:N-6])
+        d4[:-2] = sp.lambdify(n, self.b4n)(k[:N-6])
+        d6[:] = sp.lambdify(n, self.b6n)(k[:N-6])
+        self._stencil_matrix[N] = SparseMatrix({0: d0, 2: d2, 4: d4, 6: d6}, (N, N))
+        return self._stencil_matrix[N]
+
+    def slice(self):
+        return slice(0, self.N-6)
+
 class Phi4(CompositeBase):
-    r"""Function space with 4 Dirichlet and 4 Neumann boundary conditions
+    r"""Function space with 2 Dirichlet and 6 Neumann boundary conditions
 
     The 8 boundary conditions are
 
@@ -746,6 +827,14 @@ class Phi4(CompositeBase):
     where :math:`L^{(4)}_k` is the 4'th derivative of :math:`L_k`.
     The boundary basis for inhomogeneous boundary conditions is too
     messy to print, but can be obtained using :func:`~shenfun.utilities.findbasis.get_bc_basis`.
+    We have
+
+    .. math::
+        u(x) &= \sum_{k=0}^{N-1} \hat{u}_k \phi_k(x), \\
+        u(-1) &= a, u'(-1)=b, u''(-1)=c, u'''(-1)=d, u(1)=e u'(1)=f, u''(1)=g, u'''(1)=h.
+
+    The last 8 basis functions are for boundary conditions and only used if there
+    are nonzero boundary conditions.
 
     Parameters
     ----------
@@ -753,9 +842,8 @@ class Phi4(CompositeBase):
         Number of quadrature points
     quad : str, optional
         Type of quadrature
-
-        - GL - Chebyshev-Gauss-Lobatto
-        - GC - Chebyshev-Gauss
+        - GL - Legendre-Gauss-Lobatto
+        - GC - Legendre-Gauss
     bc : 8-tuple of numbers
     domain : 2-tuple of floats, optional
         The computational domain
@@ -775,7 +863,6 @@ class Phi4(CompositeBase):
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
-        from shenfun.jacobi.recursions import n
         #self.b0n = sp.simplify(matpow(b, 4, 0, 0, n+4, n) / h(0, 0, n, 0))
         #self.b2n = sp.simplify(matpow(b, 4, 0, 0, n+4, n+2) / h(0, 0, n+2, 0))
         #self.b4n = sp.simplify(matpow(b, 4, 0, 0, n+4, n+4) / h(0, 0, n+4, 0))
@@ -797,7 +884,6 @@ class Phi4(CompositeBase):
         return 'P4'
 
     def stencil_matrix(self, N=None):
-        from shenfun.jacobi.recursions import n
         N = self.N if N is None else N
         k = np.arange(N)
         d0, d2, d4, d6, d8 = np.zeros(N), np.zeros(N-2), np.zeros(N-4), np.zeros(N-6), np.zeros(N-8)

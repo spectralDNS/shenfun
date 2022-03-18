@@ -51,11 +51,13 @@ from shenfun.spectralbase import SpectralBase, Transform, FuncWrap, \
 from shenfun.matrixbase import SparseMatrix
 from shenfun.optimization import optimizer
 from shenfun.config import config
+from shenfun.jacobi.recursions import n
 
 __all__ = ['Orthogonal',
            'ShenDirichlet',
            'Phi1',
            'Phi2',
+           'Phi3',
            'Phi4',
            'Heinrichs',
            'ShenNeumann',
@@ -1080,6 +1082,87 @@ class Phi2(CompositeBase):
 
     def slice(self):
         return slice(0, self.N-4)
+
+class Phi3(CompositeBase):
+    r"""Function space for 6'th order equation
+
+    The basis functions are
+
+    .. math::
+
+        \phi_k &= \frac{(1-x^2)^3}{h^{(3)}_{k+3}} T^{(3)}_{k+3} \\
+        h^{(3)}_{k+3} &= \frac{\pi (k+3) \Gamma (k+6)}{2k!} = \int_{-1}^1 T^{(3)}_k T^{(3)}_k \frac{1}{\sqrt{1-x^2}} dx.
+
+    where :math:`T^{(3)}_k` is the 3rd derivative of :math:`T_k`. The boundary
+    basis for inhomogeneous boundary conditions is too messy to print, but can
+    be obtained using :func:`~shenfun.utilities.findbasis.get_bc_basis`. We have
+
+    .. math::
+        u(x) &= \sum_{k=0}^{N-1} \hat{u}_k \phi_k(x), \\
+        u(-1) &= a, u'(-1)=b, u''(-1)=c, u(1)=d u'(1)=e, u''(1)=f.
+
+    The last 6 basis functions are for boundary conditions and only used if there
+    are nonzero boundary conditions.
+
+    Parameters
+    ----------
+    N : int, optional
+        Number of quadrature points
+    quad : str, optional
+        Type of quadrature
+
+        - GL - Chebyshev-Gauss-Lobatto
+        - GC - Chebyshev-Gauss
+    bc : 6-tuple of numbers
+    domain : 2-tuple of floats, optional
+        The computational domain
+    dtype : data-type, optional
+        Type of input data in real physical space. Will be overloaded when
+        basis is part of a :class:`.TensorProductSpace`.
+    padding_factor : float, optional
+        Factor for padding backward transforms.
+    dealias_direct : bool, optional
+        Set upper 1/3 of coefficients to zero before backward transform
+    coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
+        Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
+
+    """
+    def __init__(self, N, quad="GC", bc=(0,)*6, domain=(-1, 1), dtype=float,
+                 padding_factor=1, dealias_direct=False, coordinates=None, **kw):
+        CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
+                               padding_factor=padding_factor, dealias_direct=dealias_direct,
+                               coordinates=coordinates)
+        from shenfun.jacobi.recursions import half, cn, b, h, matpow, n
+        #self.b0n = sp.simplify(matpow(b, 3, -half, -half, n+3, n, cn) / h(-half, -half, n, 0, cn))
+        #self.b2n = sp.simplify(matpow(b, 3, -half, -half, n+3, n+2, cn) / h(-half, -half, n+2, 0, cn))
+        #self.b4n = sp.simplify(matpow(b, 3, -half, -half, n+3, n+4, cn) / h(-half, -half, n+4, 0, cn))
+        #self.b6n = sp.simplify(matpow(b, 3, -half, -half, n+3, n+6, cn) / h(-half, -half, n+6, 0, cn))
+        # Below are the same but faster since already simplified
+        self.b0n = 1/(4*sp.pi*(n + 1)*(n + 2)*(n + 3))
+        self.b2n = -3/(4*sp.pi*(n + 1)*(n + 3)*(n + 4))
+        self.b4n = 3/(4*sp.pi*(n + 2)*(n + 3)*(n + 5))
+        self.b6n = -1/(4*sp.pi*(n + 3)*(n + 4)*(n + 5))
+
+    @staticmethod
+    def boundary_condition():
+        return '6th order'
+
+    @staticmethod
+    def short_name():
+        return 'P3'
+
+    def stencil_matrix(self, N=None):
+        N = self.N if N is None else N
+        k = np.arange(N)
+        d0, d2, d4, d6 = np.zeros(N), np.zeros(N-2), np.zeros(N-4), np.zeros(N-6)
+        d0[:-6] = sp.lambdify(n, self.b0n)(k[:N-6])
+        d2[:-4] = sp.lambdify(n, self.b2n)(k[:N-6])
+        d4[:-2] = sp.lambdify(n, self.b4n)(k[:N-6])
+        d6[:] = sp.lambdify(n, self.b6n)(k[:N-6])
+        return SparseMatrix({0: d0, 2: d2, 4: d4, 6: d6}, (N, N))
+
+    def slice(self):
+        return slice(0, self.N-6)
 
 
 class Phi4(CompositeBase):

@@ -1393,7 +1393,7 @@ class BoundaryConditions(dict):
 
             {'left': {'N': a}, 'right': {'N': b}}
 
-        A mixture of 3 conditions:::
+        A mixture of 3 conditions::
 
             {'left': {'N': a}, 'right': {'D': b, 'N': c}}
 
