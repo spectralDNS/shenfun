@@ -26,7 +26,6 @@ shenfun.la module
 .. automodule:: shenfun.la
     :members:
     :special-members: __call__
-    :undoc-members:
     :show-inheritance:
 
 shenfun.matrixbase module
@@ -34,7 +33,6 @@ shenfun.matrixbase module
 
 .. automodule:: shenfun.matrixbase
     :members:
-    :undoc-members:
     :show-inheritance:
 
 shenfun.spectralbase module
@@ -42,7 +40,6 @@ shenfun.spectralbase module
 
 .. automodule:: shenfun.spectralbase
     :members:
-    :undoc-members:
     :show-inheritance:
 
 shenfun.tensorproductspace module
@@ -51,7 +48,6 @@ shenfun.tensorproductspace module
 .. automodule:: shenfun.tensorproductspace
     :members:
     :special-members: __call__
-    :undoc-members:
     :show-inheritance:
 
 shenfun.coordinates module
@@ -60,7 +56,6 @@ shenfun.coordinates module
 .. automodule:: shenfun.coordinates
     :members:
     :special-members: __call__
-    :undoc-members:
     :show-inheritance:
 
 
@@ -69,5 +64,4 @@ Module contents
 
 .. automodule:: shenfun
     :members:
-    :undoc-members:
     :show-inheritance:

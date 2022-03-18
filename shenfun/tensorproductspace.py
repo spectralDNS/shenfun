@@ -31,7 +31,7 @@ class ScalarTransform(Transform):
     pencil : list of two pencil objects
         The two pencils represent the input and final output configuration of
         the distributed global arrays
-    T : TensorProductSpace
+    T : :class:`.TensorProductSpace`
     """
     def __init__(self, xfftn, transfer, pencil, T=None):
         assert len(xfftn) == len(transfer) + 1 and len(pencil) == 2
@@ -48,12 +48,9 @@ class ScalarTransform(Transform):
 
     @property
     def local_mesh(self):
-        """Return local mesh"""
         return self._T.local_mesh(True)
 
     def get_measured_input_array(self):
-        """Weigh input array with integral measure
-        """
         dx = self.sg
         mesh = self.local_mesh
         if dx == 1:
@@ -81,14 +78,14 @@ class ScalarTransform(Transform):
         output_array : array, optional
         kw : dict
             parameters to serial transforms
-            Note in particular that the keyword 'normalize'=True/False can be
+            Note in particular that the keyword ``'normalize'=True/False`` can be
             used to turn normalization on or off. Default is to enable
             normalization for forward transforms and disable it for backward.
 
         Note
         ----
         If input_array/output_array are not given, then use predefined arrays
-        as planned with serial transform object _xfftn.
+        as planned with serial transform object ``_xfftn``.
 
         """
         if input_array is not None:
@@ -121,7 +118,7 @@ class ForwardTransform(ScalarTransform):
     pencil : list of two pencil objects
         The two pencils represent the input and final output configuration of
         the distributed global arrays
-    T : TensorProductSpace
+    T : :class:`.TensorProductSpace`
     """
     def __call__(self, input_array=None, output_array=None, **kw):
         if input_array is not None:
@@ -167,7 +164,7 @@ class TensorProductSpace(PFFT):
     ----------
     comm : MPI communicator
     bases : list
-        List of 1D bases
+        List of 1D bases (:class:`.SpectralBase`)
     axes : tuple of ints, optional
         A tuple containing the order of which to perform transforms.
         Last item is transformed first. Defaults to range(len(bases))
@@ -186,8 +183,8 @@ class TensorProductSpace(PFFT):
     coordinates : 2- or 3-tuple, optional
         Map for curvilinear coordinatesystem.
         First tuple are the coordinate variables in the new coordinate system
-        Second tuple are the Cartesian coordinates as functions of the variables
-        in the first tuple. Example::
+        Second tuple are the Cartesian coordinates as functions of the
+        variables in the first tuple. Example::
 
             psi = (theta, r) = sp.symbols('x,y', real=True, positive=True)
             rv = (r*sp.cos(theta), r*sp.sin(theta))
@@ -195,17 +192,17 @@ class TensorProductSpace(PFFT):
         where psi and rv are the first and second tuples, respectively.
         If a third item is provided with the tuple, then this third item
         is used as an additional assumption. For example, it is necessary
-        to provide the assumption `sympy.Q.positive(sympy.sin(theta))`, such
-        that sympy can evaluate `sqrt(sympy.sin(theta)**2)` to `sympy.sin(theta)`
-        and not `Abs(sympy.sin(theta))`. Different coordinates may require
-        different assumptions to help sympy when computing basis functions
-        etc. See :class:`~shenfun.coordinates.Coordinates`.
+        to provide the assumption ``sympy.Q.positive(sympy.sin(theta))``,
+        such that sympy can evaluate ``sqrt(sympy.sin(theta)**2)`` to
+        ``sympy.sin(theta)`` and not ``Abs(sympy.sin(theta))``. Different
+        coordinates may require different assumptions to help sympy when
+        computing basis functions etc. See :class:`~shenfun.coordinates.Coordinates`.
     modify_spaces_inplace : bool, optional
         Whether or not a copy should be made of the input functionspaces.
         If True, then the input spaces will be modified inplace.
     kw : dict, optional
         Dictionary that can be used to plan transforms. Input to method
-        `plan` for the bases.
+        ``plan`` for the bases.
 
     """
     def __init__(self, comm, bases, axes=None, dtype=None, slab=False,
@@ -369,12 +366,12 @@ class TensorProductSpace(PFFT):
 
         Parameters
         ----------
-            pencil : Pencil
-                The distribution in spectral space
-            dtype : Numpy dtype
-                The type of data in spectral space
-            kw : dict
-                Any parameters for planning transforms
+        pencil : :class:`.Pencil`
+            The distribution in spectral space
+        dtype : Numpy dtype
+            The type of data in spectral space
+        kw : dict
+            Any parameters for planning transforms
 
         Note
         ----
@@ -438,6 +435,14 @@ class TensorProductSpace(PFFT):
 
     def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
         """Return space (otherwise as self) to be used for dealiasing
+
+        Parameters
+        ----------
+        padding_factor : number, optional
+            Scale the number of quadrature points in self with this number
+        dealias_direct : bool, optional
+            Used only if ``padding_factor=1``. Sets the 1/3 highest frequencies
+            to zeros.
         """
         if isinstance(padding_factor, Number):
             padding_factor = (padding_factor,)*len(self)
@@ -509,7 +514,6 @@ class TensorProductSpace(PFFT):
         return TensorProductSpace(comm, bases)
 
     def dtype(self, forward_output=False):
-        """Return datatype function space is planned for"""
         if hasattr(self, 'forward'):
             return PFFT.dtype(self, forward_output)
         return self._dtype
@@ -734,7 +738,7 @@ class TensorProductSpace(PFFT):
         return output_array
 
     def wavenumbers(self, scaled=False, eliminate_highest_freq=False):
-        """Return list of wavenumbers of TensorProductSpace
+        """Return list of wavenumbers
 
         Parameters
         ----------
@@ -753,13 +757,13 @@ class TensorProductSpace(PFFT):
 
     def local_wavenumbers(self, broadcast=False, scaled=False,
                           eliminate_highest_freq=False):
-        """Return list of local wavenumbers of TensorProductSpace
+        """Return list of local wavenumbers
 
         Parameters
         ----------
         broadcast : bool, optional
             Broadcast returned wavenumber arrays to actual
-            dimensions of TensorProductSpace
+            dimensions of :class:`.TensorProductSpace`
         scaled : bool, optional
             Scale wavenumbers with size of box
         eliminate_highest_freq : bool, optional
@@ -779,7 +783,7 @@ class TensorProductSpace(PFFT):
 
     def mesh(self, uniform=False):
         """Return list of 1D physical meshes for each dimension of
-        TensorProductSpace
+        :class:`.TensorProductSpace`
 
         Parameters
         ----------
@@ -793,7 +797,7 @@ class TensorProductSpace(PFFT):
 
     def local_mesh(self, broadcast=False, uniform=False):
         """Return list of local 1D physical meshes for each dimension of
-        TensorProductSpace
+        :class:`.TensorProductSpace`
 
         Parameters
         ----------
@@ -814,7 +818,7 @@ class TensorProductSpace(PFFT):
         return lm
 
     def local_cartesian_mesh(self, uniform=False):
-        """Return Cartesian mesh
+        """Return local Cartesian mesh
 
         Parameters
         ----------
@@ -861,8 +865,8 @@ class TensorProductSpace(PFFT):
 
     @property
     def use_fixed_gauge(self):
-        """Return True if TensorProductSpace contains only spaces with Neumann
-        boundary conditions.
+        """Return True if :class:`.TensorProductSpace` contains only spaces
+        with Neumann boundary conditions.
         """
         for base in self.bases:
             if base.boundary_condition() != 'Neumann':
@@ -872,7 +876,7 @@ class TensorProductSpace(PFFT):
         return True
 
     def global_shape(self, forward_output=False):
-        """Return global shape of arrays for TensorProductSpace
+        """Return global shape of arrays for :class:`.TensorProductSpace`
 
         Parameters
         ----------
@@ -885,12 +889,12 @@ class TensorProductSpace(PFFT):
         return tuple([base.shape(forward_output) for base in self])
 
     def mask_nyquist(self, u_hat, mask=None):
-        """Return Function `u_hat` with zero Nyquist coefficients
+        """Return :class:`.Function` ``u_hat`` with zero Nyquist coefficients
 
         Parameters
         ----------
         u_hat : array
-            Function to be masked
+            :class:`.Function` to be masked
         mask : array or None, optional
             mask array, if not provided then get the mask by calling
             :func:`get_mask_nyquist`
@@ -930,7 +934,7 @@ class TensorProductSpace(PFFT):
         return mask
 
     def get_measured_array(self, u):
-        """Weigh Array `u` with integral measure
+        """Weigh Array ``u`` with integral measure
 
         Parameters
         ----------
@@ -959,7 +963,7 @@ class TensorProductSpace(PFFT):
 
     @property
     def rank(self):
-        """Return tensor rank of TensorProductSpace"""
+        """Return tensor rank of :class:`.TensorProductSpace`"""
         return 0
 
     @property
@@ -967,20 +971,19 @@ class TensorProductSpace(PFFT):
         return 0
 
     def __len__(self):
-        """Return dimension of TensorProductSpace"""
+        """Return dimension of :class:`.TensorProductSpace`"""
         return len(self.bases)
 
     def num_components(self):
-        """Return number of scalar spaces in TensorProductSpace"""
+        """Return number of scalar spaces in :class:`.TensorProductSpace`"""
         return 1
 
     @property
     def dimensions(self):
-        """Return dimension of TensorProductSpace"""
+        """Return dimension of :class:`.TensorProductSpace`"""
         return self.__len__()
 
     def get_nonperiodic_axes(self):
-        """Return list of axes that are not periodic"""
         axes = []
         for axis, base in enumerate(self):
             if not base.family() == 'fourier':
@@ -988,7 +991,7 @@ class TensorProductSpace(PFFT):
         return np.array(axes)
 
     def get_nondiagonal_axes(self):
-        """Return list of axes that **may** contain non-diagonal matrices"""
+        # Return list of axes that **may** contain non-diagonal matrices
         axes = []
         if isinstance(self.coors.hi.prod(), sp.Expr):
             x = 'xyzrs'
@@ -1006,7 +1009,6 @@ class TensorProductSpace(PFFT):
         return np.array(axes)
 
     def get_diagonal_axes(self):
-        """Return list of axes that contain diagonal matrices"""
         return np.setxor1d(self.get_nondiagonal_axes(), range(self.dimensions)).astype(int)
 
     def get_nonhomogeneous_axes(self):
@@ -1044,7 +1046,7 @@ class TensorProductSpace(PFFT):
 
         Returns
         -------
-        TensorProductSpace
+        :class:`.TensorProductSpace`
             A new space with adaptively found number of quadrature points
 
         Note
@@ -1114,7 +1116,7 @@ class TensorProductSpace(PFFT):
         Parameters
         ----------
 
-        space : TensorProductSpace
+        space : :class:`.TensorProductSpace`
             The space compared to
 
         Note
@@ -1143,7 +1145,7 @@ class TensorProductSpace(PFFT):
             return self.forward.input_pencil.subshape
         return self.forward.output_array.shape
 
-    def get_ndiag_cum_dofs(self):
+    def _get_ndiag_cum_dofs(self):
         """Return the cumulative sum of degrees of freedom along nondiagonal axes"""
         dims = np.array(self.dims())
         daxes = self.get_diagonal_axes()
@@ -1151,7 +1153,7 @@ class TensorProductSpace(PFFT):
             dims[daxes] = 1
         return np.array([0, np.prod(dims)], dtype=int)
 
-    def get_ndiag_slices(self, j=()):
+    def _get_ndiag_slices(self, j=()):
         """Return a sequence of slices for non-diagonal axes and integers for diagonal"""
         assert self.num_components() == 1
         sl = (0,)+self.slice()
@@ -1165,18 +1167,18 @@ class TensorProductSpace(PFFT):
             sa.T[daxes] = j if isinstance(j, int) else np.array(j)[:, None]
         return np.atleast_2d(sa)
 
-    def get_ndiag_slices_and_dims(self, j=()):
+    def _get_ndiag_slices_and_dims(self, j=()):
         """Return nondiagonal slices and their accumulated dimensions"""
-        sl = self.get_ndiag_slices(j)
-        dims = self.get_ndiag_cum_dofs()
+        sl = self._get_ndiag_slices(j)
+        dims = self._get_ndiag_cum_dofs()
         return sl, dims
 
 
 class CompositeSpace:
     """Class for composite tensorproductspaces.
 
-    The mixed spaces are Cartesian products of TensorProductSpaces or
-    other CompositeSpaces.
+    The mixed spaces are Cartesian products of :class:`.TensorProductSpace` or
+    other instances of :class:`.CompositeSpace`.
 
     Parameters
     ----------
@@ -1249,7 +1251,6 @@ class CompositeSpace:
 
     @property
     def dimensions(self):
-        """Return dimension of scalar space"""
         return self.flatten()[0].dimensions
 
     @property
@@ -1298,7 +1299,7 @@ class CompositeSpace:
         return np.concatenate((np.zeros((1, self.dimensions), dtype=int),
                                np.cumsum(self.dims_composite(), axis=0)))
 
-    def get_ndiag_cum_dofs(self):
+    def _get_ndiag_cum_dofs(self):
         """Return the cumulative sum of degrees of freedom along nondiagonal axes"""
         dc = self.dims_composite()
         daxes = self.get_diagonal_axes()
@@ -1307,7 +1308,7 @@ class CompositeSpace:
         dims = np.array([0]+np.cumsum(dci).tolist())
         return dims
 
-    def get_ndiag_slices(self, j=()):
+    def _get_ndiag_slices(self, j=()):
         sl = self.slice()
         daxes = self.get_diagonal_axes()
         if len(daxes) > 0:
@@ -1319,8 +1320,8 @@ class CompositeSpace:
             sa.T[daxes] = np.array(j)[:, None]
         return sa
 
-    def get_ndiag_slices_and_dims(self, j=()):
-        sl = self.get_ndiag_slices(j)
+    def _get_ndiag_slices_and_dims(self, j=()):
+        sl = self._get_ndiag_slices(j)
         dims = [0]
         for s in sl:
             d = np.prod([1 if isinstance(i, int) else i.stop-i.start for i in s])
@@ -1340,7 +1341,7 @@ class CompositeSpace:
             return np.prod(N)
 
     def shape(self, forward_output=False):
-        """Return shape of arrays for CompositeSpace
+        """Return shape of arrays for :class:`.CompositeSpace`
 
         Parameters
         ----------
@@ -1365,7 +1366,7 @@ class CompositeSpace:
         return s
 
     def global_shape(self, forward_output=False):
-        """Return global shape for CompositeSpace
+        """Return global shape for :class:`.CompositeSpace`
 
         Parameters
         ----------
@@ -1392,7 +1393,6 @@ class CompositeSpace:
         return (slice(None),) + s
 
     def num_components(self):
-        """Return number of spaces in mixed space"""
         f = self.flatten()
         return len(f)
 
@@ -1473,7 +1473,7 @@ class VectorSpace(CompositeSpace):
         return 1
 
     def shape(self, forward_output=False):
-        """Return shape of arrays for VectorSpace
+        """Return shape of arrays for :class:`.VectorSpace`
 
         Parameters
         ----------
@@ -1524,7 +1524,6 @@ class TensorSpace(VectorSpace):
         CompositeSpace.__init__(self, spaces)
 
     def num_components(self):
-        """Return number of spaces in mixed space"""
         return self.dimensions**2
 
     @property
@@ -1632,8 +1631,8 @@ class BoundaryValues:
 
     Parameters
     ----------
-    T : TensorProductSpace
-    bc : Instance of :class:`.BoundaryConditions`
+    T : :class:`.TensorProductSpace`
+    bc : :class:`.BoundaryConditions`
     """
     # pylint: disable=protected-access, redefined-outer-name, dangerous-default-value, unsubscriptable-object
 
@@ -1794,8 +1793,8 @@ class BoundaryValues:
                     ua[:] = b[this_base.si[-num_bcs+i]]
                     self.bcs_final[i] = project(ua, other_base)
 
-    def add_to_orthogonal(self, u, uh):
-        """Add contribution from boundary functions to `u`
+    def _add_to_orthogonal(self, u, uh):
+        """Add contribution from boundary functions to ``u``
 
         Parameters
         ----------
@@ -1815,7 +1814,7 @@ class BoundaryValues:
         for i, row in enumerate(M):
             u[self.base.si[i]] += np.sum(self.base.broadcast_to_ndims(row)*uh[sl], axis=self.base.axis)
 
-    def add_mass_rhs(self, u):
+    def _add_mass_rhs(self, u):
         """Add contribution of boundary functions to rhs before solving in forward transforms
 
         Parameters

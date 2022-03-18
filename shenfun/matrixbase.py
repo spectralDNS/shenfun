@@ -46,7 +46,7 @@ class SparseMatrix(MutableMapping):
     using the `diags` method. However, Scipy's matrices are not implemented to
     act along different axes of multidimensional arrays, which is required
     for tensor product matrices, see :class:`.TPMatrix`. Hence the need for
-    this SpectralMatrix class.
+    this SparseMatrix class.
 
     Examples
     --------
@@ -104,7 +104,7 @@ class SparseMatrix(MutableMapping):
              - cython - Cython implementation that may be implemented in subclass
              - numba - Numba implementation that may be implemented in subclass
 
-             Using config['matrix']['sparse']['matvec'] setting if format is None
+             Using ``config['matrix']['sparse']['matvec']`` setting if format is None
 
         axis : int, optional
             The axis over which to take the matrix vector product
@@ -154,7 +154,7 @@ class SparseMatrix(MutableMapping):
             - csr - Compressed sparse row
             - csc - Compressed sparse column
 
-            Using config['matrix']['sparse']['diags'] setting if format is None
+            Using ``config['matrix']['sparse']['diags']`` setting if format is None
 
         scaled : bool, optional
             Return matrix scaled by the constant self.scale if True
@@ -393,6 +393,7 @@ class SparseMatrix(MutableMapping):
             c *= sc
 
     def incorporate_scale(self):
+        """Modifies matrix such that self.scale = 1"""
         if abs(self.scale-1) < 1e-8:
             return
         if hasattr(self, '_keyscale'):
@@ -876,7 +877,13 @@ class BlockMatrix:
                         self.mats[i][j].append(m)
 
     def get_mats(self, return_first=False):
-        """Return flattened list of matrices in self"""
+        """Return flattened list of matrices in self
+
+        Parameters
+        ----------
+        return_first : bool, optional
+            Return just the first matrix in the loop if True
+        """
         tpmats = []
         for mi in self.mats:
             for mij in mi:
@@ -892,7 +899,12 @@ class BlockMatrix:
     def matvec(self, v, c, format=None, use_scipy=None):
         """Compute matrix vector product
 
-            c = self * v
+        .. math::
+
+            c = A v
+
+        where :math:`A` is the self block matrix and :math:`v,c` are flattened
+        instances of the class :class:`.Function`.
 
         Parameters
         ----------
@@ -905,7 +917,7 @@ class BlockMatrix:
         use_scipy : boolean, optional
             Whether to assemble and use scipy's bmat for the matvec, or to use
             the matvec methods of this BlockMatrix's TPMatrices.
-            Using config['matrix']['block']['use_scipy'] if use_scipy is None
+            Using ``config['matrix']['block']['use_scipy']`` if use_scipy is None
         Returns
         -------
         c : :class:`.Function`
@@ -926,8 +938,8 @@ class BlockMatrix:
             daxes = self.testbase.get_diagonal_axes()
             if len(daxes) > 0:
                 daxes += 1
-            sl1, dims1 = self.trialbase.get_ndiag_slices_and_dims()
-            sl2, dims2 = self.testbase.get_ndiag_slices_and_dims()
+            sl1, dims1 = self.trialbase._get_ndiag_slices_and_dims()
+            sl2, dims2 = self.testbase._get_ndiag_slices_and_dims()
             gi = np.zeros(dims1[-1], dtype=v.dtype)
             go = np.zeros(dims2[-1], dtype=v.dtype)
             for key, val in self._Ai.items():
@@ -959,7 +971,6 @@ class BlockMatrix:
         return self.mats[ij[0]][ij[1]]
 
     def contains_bc_matrix(self):
-        """Return True if self contains a boundary TPMatrix"""
         for mi in self.mats:
             for mij in mi:
                 if isinstance(mij, (list, tuple)):
@@ -984,7 +995,7 @@ class BlockMatrix:
         ----------
         format : str or None, optional
             The format of the sparse scipy matrix. Using
-            config['matrix']['block']['assemble'] if None.
+            ``config['matrix']['block']['assemble']`` if None.
         """
         if self._Ai is not None:
             return
@@ -1020,7 +1031,7 @@ class BlockMatrix:
             axes, or the axes with Fourier bases.
         format : str or None, optional
             The format of the returned matrix. See `Scipy sparse matrices <https://docs.scipy.org/doc/scipy/reference/sparse.html>`_
-            If None, then use default for TPMatrix.
+            If None, then use default for :class:`.TPMatrix`.
 
         """
         from .spectralbase import MixedFunctionSpace
@@ -1165,8 +1176,6 @@ class TPMatrix:
         self._issimplified = False
 
     def get_simplified(self):
-        """Return a version of self simplified by putting diagonal matrices in a
-        scale array"""
         diagonal_axes = np.setxor1d(self.naxes, range(self.space.dimensions)).astype(int)
         if len(diagonal_axes) == 0 or self._issimplified:
             return self
@@ -1315,13 +1324,6 @@ class TPMatrix:
         return c
 
     def get_key(self):
-        """Return key of the one nondiagonal matrix in the TPMatrix
-
-        Note
-        ----
-        Raises an error of there are more than one single nondiagonal matrix
-        in TPMatrix.
-        """
         naxis = self.space.get_nondiagonal_axes()
         assert len(naxis) == 1
         return self.mats[naxis[0]].get_key()

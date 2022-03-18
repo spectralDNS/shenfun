@@ -19,7 +19,7 @@ def Solver(mats):
 
     Parameters
     ----------
-    mats : SparseMatrix or list of SparseMatrices
+    mats : :class:`.SparseMatrix` or list of :class:`.SparseMatrix` instances
 
     Returns
     -------
@@ -40,11 +40,11 @@ def Solver(mats):
     return mat.get_solver()([mat]+bc_mats)
 
 class SparseMatrixSolver:
-    """SparseMatrix solver
+    """Solver for :class:`.SparseMatrix` matrices.
 
     Parameters
     ----------
-    mat : SparseMatrix or list of SparseMatrices
+    mats : :class:`.SparseMatrix` or list of :class:`.SparseMatrix` instances
 
     Note
     ----
@@ -53,14 +53,14 @@ class SparseMatrixSolver:
     side of the equation system.
 
     """
-    def __init__(self, mat):
-        assert isinstance(mat, (SparseMatrix, list))
+    def __init__(self, mats):
+        assert isinstance(mats, (SparseMatrix, list))
         self.bc_mats = []
-        if isinstance(mat, list):
-            bc_mats = extract_bc_matrices([mat])
-            mat = sum(mat[1:], mat[0])
+        if isinstance(mats, list):
+            bc_mats = extract_bc_matrices([mats])
+            mats = sum(mats[1:], mats[0])
             self.bc_mats = bc_mats
-        self.mat = mat
+        self.mat = mats
         self._lu = None
         self._inner_arg = None # argument to inner_solve
         self.dtype = None
@@ -129,7 +129,6 @@ class SparseMatrixSolver:
         return b
 
     def perform_lu(self):
-        """Perform LU-decomposition"""
         if self._lu is None:
             if isinstance(self.mat, SparseMatrix):
                 self.mat = self.mat.diags('csc')
@@ -152,6 +151,7 @@ class SparseMatrixSolver:
         lu : LU-decomposition
             Can be either the output from splu, or a dia-matrix containing
             the L and U matrices. The latter is used in subclasses.
+
         """
         if axis > 0:
             u = np.moveaxis(u, axis, 0)
@@ -244,8 +244,8 @@ class SparseMatrixSolver:
         return u
 
 class BandedMatrixSolver(SparseMatrixSolver):
-    def __init__(self, mat):
-        SparseMatrixSolver.__init__(self, mat)
+    def __init__(self, mats):
+        SparseMatrixSolver.__init__(self, mats)
         self._lu = self.mat.diags('dia')
 
     def solve(self, b, u, axis, lu):
@@ -288,11 +288,11 @@ class DiagMA(BandedMatrixSolver):
 
     Parameters
     ----------
-    mat : Diagonal SparseMatrix or list of SparseMatrices
+    mats : Diagonal :class:`.SparseMatrix` or list of diagonal :class:`.SparseMatrix` instances
 
     """
-    def __init__(self, mat):
-        BandedMatrixSolver.__init__(self, mat)
+    def __init__(self, mats):
+        BandedMatrixSolver.__init__(self, mats)
         self.issymmetric = True
         self._inner_arg = self._lu.data
 
@@ -326,12 +326,12 @@ class TDMA(BandedMatrixSolver):
 
     Parameters
     ----------
-    mat : SparseMatrix or list of SparseMatrices
+    mats : :class:`.SparseMatrix` or list of :class:`.SparseMatrix` instances
         Tridiagonal matrix with diagonals in offsets -2, 0, 2
 
     """
-    def __init__(self, mat):
-        BandedMatrixSolver.__init__(self, mat)
+    def __init__(self, mats):
+        BandedMatrixSolver.__init__(self, mats)
         self.issymmetric = self.mat.issymmetric
 
     @staticmethod
@@ -388,14 +388,14 @@ class TDMA_O(BandedMatrixSolver):
 
     Parameters
     ----------
-    mat : SparseMatrix
+    mats : :class:`.SparseMatrix` or list of :class:`.SparseMatrix` instances
         Symmetric tridiagonal matrix with diagonals in offsets -1, 0, 1
 
     """
     # pylint: disable=too-few-public-methods
 
-    def __init__(self, mat):
-        BandedMatrixSolver.__init__(self, mat)
+    def __init__(self, mats):
+        BandedMatrixSolver.__init__(self, mats)
 
     def perform_lu(self):
         if self._inner_arg is None:
@@ -439,14 +439,13 @@ class PDMA(BandedMatrixSolver):
 
     Parameters
     ----------
-    mat : SparseMatrix or list of SparseMatrices
+    mats : :class:`.SparseMatrix` or list of :class:`.SparseMatrix` instances
         Pentadiagonal matrix with diagonals in offsets
         -4, -2, 0, 2, 4
 
     """
-
-    def __init__(self, mat):
-        BandedMatrixSolver.__init__(self, mat)
+    def __init__(self, mats):
+        BandedMatrixSolver.__init__(self, mats)
         assert len(self.mat) == 5
 
     def apply_constraints(self, b, constraints, axis=0):
@@ -468,7 +467,6 @@ class PDMA(BandedMatrixSolver):
     @staticmethod
     @optimizer
     def LU(data): # pragma: no cover
-        """LU decomposition"""
         a = data[0, :-4]
         b = data[1, :-2]
         d = data[2, :]
@@ -534,14 +532,13 @@ class FDMA(BandedMatrixSolver):
 
     Parameters
     ----------
-    mat : SparseMatrix or list of SparseMatrices
+    mats : :class:`.SparseMatrix` or list of :class:`.SparseMatrix` instances
         4-diagonal matrix with diagonals in offsets -2, 0, 2, 4
 
     """
     # pylint: disable=too-few-public-methods
-
-    def __init__(self, mat):
-        BandedMatrixSolver.__init__(self, mat)
+    def __init__(self, mats):
+        BandedMatrixSolver.__init__(self, mats)
 
     def perform_lu(self):
         if self._inner_arg is None:
@@ -602,12 +599,12 @@ class TwoDMA(BandedMatrixSolver):
 
     Parameters
     ----------
-    mat : SparseMatrix
+    mats : :class:`.SparseMatrix` or list of :class:`.SparseMatrix` instances
         2-diagonal matrix with diagonals in offsets 0, 2
 
     """
-    def __init__(self, mat):
-        BandedMatrixSolver.__init__(self, mat)
+    def __init__(self, mats):
+        BandedMatrixSolver.__init__(self, mats)
         self._inner_arg = self._lu.data
 
     def apply_constraints(self, b, constraints, axis=0):
@@ -645,12 +642,12 @@ class ThreeDMA(BandedMatrixSolver):
 
     Parameters
     ----------
-    mat : SparseMatrix
+    mats : :class:`.SparseMatrix` or list of :class:`.SparseMatrix` instances
         3-diagonal matrix with diagonals in offsets 0, 2, 4
 
     """
-    def __init__(self, mat):
-        BandedMatrixSolver.__init__(self, mat)
+    def __init__(self, mats):
+        BandedMatrixSolver.__init__(self, mats)
         self._inner_arg = self._lu.data
 
     def apply_constraints(self, b, constraints, axis=0):
@@ -688,16 +685,16 @@ class ThreeDMA(BandedMatrixSolver):
         raise NotImplementedError('Only optimized version')
 
 class Solve(SparseMatrixSolver):
-    """Generic solver class for SparseMatrix
+    """Generic solver class for ::class:`.SparseMatrix`
 
     Possibly with inhomogeneous boundary values
 
     Parameters
     ----------
-        mat : SparseMatrix or list of SparseMatrices
-        format : str, optional
-            The format of the scipy.sparse.spmatrix to convert into
-            before solving. Default is Compressed Sparse Column `csc`.
+    mats : :class:`.SparseMatrix` or list of :class:`.SparseMatrix` instances
+    format : str, optional
+        The format of the scipy.sparse.spmatrix to convert into
+        before solving. Default is Compressed Sparse Column `csc`.
 
     Note
     ----
@@ -705,9 +702,9 @@ class Solve(SparseMatrixSolver):
     uses `scipy.sparse` methods `splu` and `spsolve`.
 
     """
-    def __init__(self, mat, format=None):
+    def __init__(self, mats, format=None):
         format = config['matrix']['sparse']['solve'] if format is None else format
-        SparseMatrixSolver.__init__(self, mat)
+        SparseMatrixSolver.__init__(self, mats)
         self.mat = self.mat.diags(format)
 
 
@@ -751,7 +748,13 @@ class SolverGeneric2ND:
         return diagonal_axis[0]
 
     def diags(self, i):
-        """Return matrix for given index `i` in diagonal direction"""
+        """Return matrix for given index `i` in diagonal direction
+
+        Parameters
+        ----------
+        i : int
+            Fourier wavenumber
+        """
         if i in self.mats2D:
             return self.mats2D[i]
 
@@ -784,15 +787,6 @@ class SolverGeneric2ND:
         return M0
 
     def apply_constraints(self, b, constraints):
-        """Apply constraints to matrix and rhs vector `b`
-
-        Parameters
-        ----------
-        b : array
-        constraints : tuple of 2-tuples
-            The 2-tuples represent (row, val)
-            The constraint indents the matrix row and sets b[row] = val
-        """
         if len(constraints) > 0:
             if self._lu is None:
                 A = self.mats2D[0]
@@ -836,6 +830,17 @@ class SolverGeneric2ND:
         return self._lu
 
     def __call__(self, b, u=None, constraints=()):
+        """Solve generic problem
+
+        Parameters
+        ----------
+        b : array, right hand side
+        u : array, solution
+        constraints : tuple of 2-tuples
+            Each 2-tuple (row, value) is a constraint set for the non-periodic
+            direction, for Fourier index 0 in 2D and (0, 0) in 3D
+
+        """
         if u is None:
             u = b
         else:
@@ -894,6 +899,18 @@ class SolverDiagonal:
         self.mat = tpmats[0]
 
     def __call__(self, b, u=None, constraints=()):
+        """Solve problem with :class:`.TPMatrix` consisting only of diagonal
+        matrices
+
+        Parameters
+        ----------
+        b : array, right hand side
+        u : array, solution
+        constraints : tuple of 2-tuples
+            Each 2-tuple (row, value) is a constraint set for the non-periodic
+            direction, for Fourier index 0 in 2D and (0, 0) in 3D
+
+        """
         return self.mat.solve(b, u=u, constraints=constraints)
 
 class Solver2D:
@@ -934,16 +951,6 @@ class Solver2D:
 
     @staticmethod
     def apply_constraints(A, b, constraints):
-        """Apply constraints to matrix `A` and rhs vector `b`
-
-        Parameters
-        ----------
-        A : Sparse matrix
-        b : array
-        constraints : tuple of 2-tuples
-            The 2-tuples represent (row, val)
-            The constraint indents the matrix row and sets b[row] = val
-        """
         if len(constraints) > 0:
             A = A.tolil()
             for (row, val) in constraints:
@@ -955,7 +962,17 @@ class Solver2D:
         return A, b
 
     def __call__(self, b, u=None, constraints=()):
+        """Solve generic problem for sum of :class:`TPMatrix` instances
 
+        Parameters
+        ----------
+        b : array, right hand side
+        u : array, solution
+        constraints : tuple of 2-tuples
+            Each 2-tuple (row, value) is a constraint set for the non-periodic
+            direction, for Fourier index 0 in 2D and (0, 0) in 3D
+
+        """
         if u is None:
             u = b
         else:
@@ -1109,14 +1126,9 @@ class SolverGeneric1ND:
                     self.solvers1D[-1].append(Solver(sol))
 
     def apply_constraints(self, b, constraints=()):
-        """Apply constraints to solver
-
-        Note
-        ----
-        The SolverGeneric1ND solver can only constrain the first dofs of
-        the diagonal axes. For Fourier this is the zero dof with the
-        constant basis function exp(0).
-        """
+        #The SolverGeneric1ND solver can only constrain the first dofs of
+        #the diagonal axes. For Fourier this is the zero dof with the
+        #constant basis function exp(0).
         if constraints == ():
             return b
         ndim = self.mats[0].dimensions
@@ -1345,7 +1357,7 @@ class BlockMatrixSolver:
             self._lu = {}
 
         daxes = space.get_diagonal_axes()
-        sl, dims = space.get_ndiag_slices_and_dims()
+        sl, dims = space._get_ndiag_slices_and_dims()
         gi = np.zeros(dims[-1], dtype=b.dtype)
         for key, Ai in self.mat._Ai.items():
             if len(daxes) > 0:

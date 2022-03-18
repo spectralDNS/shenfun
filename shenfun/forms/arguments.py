@@ -1750,9 +1750,9 @@ class Function(ShenfunBaseArray, BasisFunction):
         This function does not copy the boundary dofs.
         """
         if dims is None:
-            dims = self.function_space().get_ndiag_cum_dofs()
+            dims = self.function_space()._get_ndiag_cum_dofs()
         if sl is None:
-            sl = self.function_space().get_ndiag_slices(j)
+            sl = self.function_space()._get_ndiag_slices(j)
         if f is None:
             f = np.zeros(dims[-1], dtype=self.dtype)
         for i, s in enumerate(sl):
@@ -1781,9 +1781,9 @@ class Function(ShenfunBaseArray, BasisFunction):
         This function does not copy the boundary dofs.
         """
         if dims is None:
-            dims = self.function_space().get_ndiag_cum_dofs()
+            dims = self.function_space()._get_ndiag_cum_dofs()
         if sl is None:
-            sl = self.function_space().get_ndiag_slices(j)
+            sl = self.function_space()._get_ndiag_slices(j)
         for i, s in enumerate(sl):
             si = tuple(s)
             self[si] = f[dims[i]:dims[i+1]].reshape(self[si].shape)

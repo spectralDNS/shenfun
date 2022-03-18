@@ -27,9 +27,6 @@ work = CachedArrayDict()
 
 class SpectralBase:
     """Abstract base class for all spectral function spaces
-
-    Should be subclassed.
-
     """
     # pylint: disable=method-hidden, too-many-instance-attributes
 
@@ -67,13 +64,13 @@ class SpectralBase:
 
         Parameters
         ----------
-            N : int, optional
-                Number of quadrature points
-            map_true_domain : bool, optional
-                Whether or not to map points to true domain
-            weighted : bool, optional
-                Whether to use quadrature weights for a weighted inner product
-                (default), or a regular, non-weighted inner product.
+        N : int, optional
+            Number of quadrature points
+        map_true_domain : bool, optional
+            Whether or not to map points to true domain
+        weighted : bool, optional
+            Whether to use quadrature weights for a weighted inner product
+            (default), or a regular, non-weighted inner product.
 
         Note
         ----
@@ -92,13 +89,13 @@ class SpectralBase:
 
         Parameters
         ----------
-            N : int, optional
-                Number of quadrature points
-            map_true_domain : bool, optional
-                Whether or not to map points to true domain
-            weighted : bool, optional
-                Whether to use quadrature weights for a weighted inner product
-                (default), or a regular, non-weighted inner product.
+        N : int, optional
+            Number of quadrature points
+        map_true_domain : bool, optional
+            Whether or not to map points to true domain
+        weighted : bool, optional
+            Whether to use quadrature weights for a weighted inner product
+            (default), or a regular, non-weighted inner product.
 
         Note
         ----
@@ -112,18 +109,18 @@ class SpectralBase:
 
         Parameters
         ----------
-            bcast : bool
-                Whether or not to broadcast to :meth:`.SpectralBase.dimensions`
-                if basis belongs to a :class:`.TensorProductSpace`
-            map_true_domain : bool, optional
-                Whether or not to map points to true domain
-            uniform : bool, optional
-                Use uniform mesh instead of quadrature if True
+        bcast : bool
+            Whether or not to broadcast to :meth:`.dimensions` if an instance
+            of this basis belongs to a :class:`.TensorProductSpace`
+        map_true_domain : bool, optional
+            Whether or not to map points to true domain
+        uniform : bool, optional
+            Use uniform mesh instead of quadrature if True
 
         Note
         ----
         For curvilinear problems this function returns the computational mesh.
-        For the corresponding Cartesian mesh, use :meth:`.SpectralBase.cartesian_mesh`
+        For the corresponding Cartesian mesh, use :meth:`.cartesian_mesh`
         """
         N = self.shape(False)
         if self.family() == 'fourier':
@@ -150,7 +147,7 @@ class SpectralBase:
 
         Note
         ----
-        For Cartesian problems this function returns the same mesh as :meth:`.SpectralBase.mesh`
+        For Cartesian problems this function returns the same mesh as :meth:`.mesh`
         """
         x = self.mesh(uniform=uniform)
         if self.coors.is_cartesian:
@@ -166,9 +163,9 @@ class SpectralBase:
 
         Parameters
         ----------
-            bcast : bool
-                Whether or not to broadcast to :meth:`.SpectralBase.dimensions`
-                if basis belongs to a :class:`.TensorProductSpace`
+        bcast : bool
+            Whether or not to broadcast to :meth:`.dimensions` if an instance
+            of this basis belongs to a :class:`.TensorProductSpace`
 
         """
         s = self.slice()
@@ -180,11 +177,11 @@ class SpectralBase:
     def broadcast_to_ndims(self, x):
         """Return 1D array ``x`` as an array of shape according to the
         :meth:`.dimensions` of the :class:`.TensorProductSpace` class
-        that this base (self) belongs to.
+        that the instance of this class belongs to.
 
         Parameters
         ----------
-            x : 1D array
+        x : 1D array
 
         Note
         ----
@@ -212,13 +209,13 @@ class SpectralBase:
 
         Parameters
         ----------
-            input_array : array, optional
-                Function values on quadrature mesh
-            output_array : array, optional
-                Expansion coefficients
-            fast_transform : bool, optional
-                If True use fast transforms, if False use
-                Vandermonde type
+        input_array : array, optional
+            Function values on quadrature mesh
+        output_array : array, optional
+            Expansion coefficients
+        fast_transform : bool, optional
+            If True use fast transforms, if False use
+            Vandermonde type
 
         Note
         ----
@@ -246,13 +243,13 @@ class SpectralBase:
 
         Parameters
         ----------
-            input_array : array, optional
-                Function values on quadrature mesh
-            output_array : array, optional
-                Expansion coefficients
-            fast_transform : bool, optional
-                If True use fast transforms, if False use
-                Vandermonde type
+        input_array : array, optional
+            Function values on quadrature mesh
+        output_array : array, optional
+            Expansion coefficients
+        fast_transform : bool, optional
+            If True use fast transforms, if False use
+            Vandermonde type
 
         Note
         ----
@@ -262,7 +259,7 @@ class SpectralBase:
         """
         self.scalar_product(input_array, fast_transform=fast_transform)
         if self.bc:
-            self.bc.add_mass_rhs(self.forward.output_array)
+            self.bc._add_mass_rhs(self.forward.output_array)
         self.apply_inverse_mass(self.forward.output_array)
         if output_array is not None:
             output_array[...] = self.forward.output_array
@@ -274,18 +271,19 @@ class SpectralBase:
 
         Parameters
         ----------
-            input_array : array, optional
-                Expansion coefficients
-            output_array : array, optional
-                Function values on quadrature mesh
-            fast_transform : bool, optional
-                If True use fast transforms (if implemented), if
-                False use Vandermonde type
-            kind : str or functionspace, optional
+        input_array : array, optional
+            Expansion coefficients
+        output_array : array, optional
+            Function values on quadrature mesh
+        fast_transform : bool, optional
+            If True use fast transforms (if implemented), if
+            False use Vandermonde type
+        kind : str or functionspace, optional
 
-                - normal - use regular quadrature points
-                - uniform - use uniform mesh
-                - instance of SpectralBase - use quadrature mesh of this space
+            - normal - use regular quadrature points
+            - uniform - use uniform mesh
+            - instance of :class:`.SpectralBase` - use quadrature mesh of this
+                space
 
         Note
         ----
@@ -336,8 +334,8 @@ class SpectralBase:
 
         Parameters
         ----------
-            x : array of floats
-                points for evaluation
+        x : array of floats
+            points for evaluation
 
         Note
         ----
@@ -354,16 +352,16 @@ class SpectralBase:
 
         Parameters
         ----------
-            x : float or array of floats
-            i : int, optional
-                Basis number
-            output_array : array, optional
-                Return result in output_array if provided
+        x : float or array of floats
+        i : int, optional
+            Basis number
+        output_array : array, optional
+            Return result in output_array if provided
 
         Returns
         -------
-            array
-                output_array
+        array
+            output_array
 
         """
         x = np.atleast_1d(x)
@@ -379,15 +377,15 @@ class SpectralBase:
 
         Parameters
         ----------
-            x : float or array of floats, optional
-                If not provided use quadrature points of self
-            argument : int
-                Zero for test and 1 for trialfunction
+        x : float or array of floats, optional
+            If not provided use quadrature points of self
+        argument : int
+            Zero for test and 1 for trialfunction
 
         Returns
         -------
-            array
-                Vandermonde matrix
+        array
+            Vandermonde matrix
         """
         if x is None:
             x = self.mesh(False, False)
@@ -398,19 +396,19 @@ class SpectralBase:
 
         Parameters
         ----------
-            x : float or array of floats, optional
-                If not provided use quadrature points of self
-            i : int, optional
-                Basis number
-            k : int, optional
-                k'th derivative
-            output_array : array, optional
-                return array
+        x : float or array of floats, optional
+            If not provided use quadrature points of self
+        i : int, optional
+            Basis number
+        k : int, optional
+            k'th derivative
+        output_array : array, optional
+            return array
 
         Returns
         -------
-            array
-                output_array
+        array
+            output_array
 
         """
         #warnings.warn('Using slow sympy evaluate_basis_derivative')
@@ -430,17 +428,17 @@ class SpectralBase:
 
         Parameters
         ----------
-            x : float or array of floats, optional
-                If not provided use quadrature points of self
-            k : int, optional
-                k'th derivative
-            argument : int
-                Zero for test and 1 for trialfunction
+        x : float or array of floats, optional
+            If not provided use quadrature points of self
+        k : int, optional
+            k'th derivative
+        argument : int
+            Zero for test and 1 for trialfunction
 
         Returns
         -------
-            array
-                Vandermonde matrix
+        array
+            Vandermonde matrix
         """
         if x is None:
             x = self.mesh(False, False)
@@ -459,14 +457,14 @@ class SpectralBase:
 
         Parameters
         ----------
-            input_array : :math:`\hat{u}_k`
-                Expansion coefficients, or instance of :class:`.Function`
-            output_array : :math:`u(x_j)`
-                Function values on quadrature mesh, instance of :class:`.Array`
-            x : points for evaluation, optional
-                If None, use entire quadrature mesh
-            fast_transform : bool, optional
-                Whether to use fast transforms (if implemented)
+        input_array : :math:`\hat{u}_k`
+            Expansion coefficients, or instance of :class:`.Function`
+        output_array : :math:`u(x_j)`
+            Function values on quadrature mesh, instance of :class:`.Array`
+        x : points for evaluation, optional
+            If None, use entire quadrature mesh
+        fast_transform : bool, optional
+            Whether to use fast transforms (if implemented)
 
         """
         P = self.evaluate_basis_all(x=x, argument=1)
@@ -485,16 +483,16 @@ class SpectralBase:
 
         Parameters
         ----------
-            x : float or array of floats
-            u : array
-                Expansion coefficients or instance of :class:`.Function`
-            output_array : array, optional
-                Function values at points
+        x : float or array of floats
+        u : array
+            Expansion coefficients or instance of :class:`.Function`
+        output_array : array, optional
+            Function values at points
 
         Returns
         -------
-            array
-                output_array
+        array
+            output_array
 
         """
         if output_array is None:
@@ -508,14 +506,14 @@ class SpectralBase:
 
         Parameters
         ----------
-            fast_transform : bool, optional
-                If True use fast transforms (if implemented), if
-                False use Vandermonde type
+        fast_transform : bool, optional
+            If True use fast transforms (if implemented), if
+            False use Vandermonde type
 
         Note
         ----
-        Using internal arrays: self.scalar_product.input_array and
-        self.scalar_product.output_array
+        Using internal arrays: ``self.scalar_product.input_array`` and
+        ``self.scalar_product.output_array``
 
         """
         # This is the slow Vandermonde type implementation
@@ -541,14 +539,13 @@ class SpectralBase:
 
         Parameters
         ----------
-            array : array (input/output)
-                Expansion coefficients. Overwritten by applying the inverse
-                mass matrix, and returned.
+        array : array (input/output)
+            Expansion coefficients. Overwritten by applying the inverse
+            mass matrix, and returned.
 
         Returns
         -------
-            array
-
+        array
         """
         if self._mass is None:
             B = self.get_mass_matrix()
@@ -561,15 +558,15 @@ class SpectralBase:
 
         Parameters
         ----------
-            input_array : array
-                Expansion coefficients of input basis
-            output_array : array, optional
-                Expansion coefficients in orthogonal basis
+        input_array : array
+            Expansion coefficients of input basis
+        output_array : array, optional
+            Expansion coefficients in orthogonal basis
 
         Returns
         -------
-            array
-                output_array
+        array
+            output_array
 
         """
         from shenfun import project
@@ -586,14 +583,14 @@ class SpectralBase:
 
         Parameters
         ----------
-            shape : array
-                Local shape of global array
-            axis : int
-                This base's axis in global TensorProductSpace
-            dtype : numpy.dtype
-                Type of array
-            options : dict
-                Options for planning transforms
+        shape : array
+            Local shape of global array
+        axis : int
+            This base's axis in global :class:`.TensorProductSpace`
+        dtype : numpy.dtype
+            Type of array
+        options : dict
+            Options for planning transforms
         """
         if shape in (0, (0,)):
             return
@@ -655,7 +652,12 @@ class SpectralBase:
         return self._M
 
     def map_reference_domain(self, x):
-        """Return true point `x` mapped to reference domain"""
+        """Return true point `x` mapped to reference domain
+
+        Parameters
+        ----------
+        x : coordinate or array of points
+        """
         if not self.domain == self.reference_domain():
             a = self.domain[0]
             c = self.reference_domain()[0]
@@ -663,7 +665,12 @@ class SpectralBase:
         return x
 
     def map_true_domain(self, x):
-        """Return reference point `x` mapped to true domain"""
+        """Return reference point `x` mapped to true domain
+
+        Parameters
+        ----------
+        x : coordinate or array of points
+        """
         if not self.domain == self.reference_domain():
             a = self.domain[0]
             c = self.reference_domain()[0]
@@ -686,19 +693,21 @@ class SpectralBase:
         return np.array([self.sympy_basis(i, x=x) for i in range(self.slice().start, self.slice().stop)])
 
     def weight(self, x=None):
-        """Weight of inner product space"""
+        """Weight of inner product space
+
+        Parameters
+        ----------
+        x : coordinate
+        """
         return 1
 
     def reference_domain(self):
-        """Return reference domain of space"""
         raise NotImplementedError
 
     def sympy_reference_domain(self):
-        """Return reference domain sympified"""
         return self.reference_domain()
 
     def domain_length(self):
-        """Return length of domain"""
         return self.domain[1]-self.domain[0]
 
     def slice(self):
@@ -732,7 +741,13 @@ class SpectralBase:
         return self.N
 
     def domain_factor(self):
-        """Return scaling factor for domain"""
+        """Return scaling factor for domain
+
+        Note
+        ----
+        The domain factor is the length of the reference domain over the
+        length of the true domain.
+        """
         a, b = self.domain
         c, d = self.reference_domain()
         L = b-a
@@ -803,7 +818,7 @@ class SpectralBase:
 
         Note
         ----
-        This is 1 for composite space and 0 otherwise
+        This is 1 for :class:`.MixedFunctionSpace` and 0 otherwise
         """
         return 0
 
@@ -821,11 +836,9 @@ class SpectralBase:
 
     @property
     def ndim(self):
-        """Return ndim of space"""
         return 1
 
     def num_components(self):
-        """Return number of components for function space"""
         return 1
 
     @staticmethod
@@ -890,13 +903,13 @@ class SpectralBase:
         return inner_product((self, 0), (self.get_bc_basis(), 0), msi)
 
     def get_measured_weights(self, N=None, measure=1):
-        """Return weights times `measure`
+        """Return weights times ``measure``
 
         Parameters
         ----------
         N : integer, optional
             The number of quadrature points
-        measure : 1 or `sympy.Expr`
+        measure : 1 or ``sympy.Expr``
         """
         if N is None:
             N = self.shape(False)
@@ -924,7 +937,7 @@ class SpectralBase:
 
         Note
         ----
-        If basis is part of a `TensorProductSpace`, then the
+        If basis is part of a :class:`.TensorProductSpace`, then the
         array will be measured there. So in that case, just return
         the array unchanged.
         """
@@ -968,7 +981,7 @@ class SpectralBase:
 
         Returns
         -------
-        SpectralBase
+        :class:`.SpectralBase`
             The space to be used for dealiasing
         """
         d = dict(quad=self.quad,
@@ -999,7 +1012,7 @@ class SpectralBase:
 
         Returns
         -------
-        SpectralBase
+        :class:`.SpectralBase`
             A new space with new number of quadrature points, otherwise as self.
         """
         d = dict(quad=self.quad,
@@ -1040,7 +1053,7 @@ class SpectralBase:
 
         Returns
         -------
-        SpectralBase
+        :class:`.SpectralBase`
             Space not planned for a :class:`.TensorProductSpace`
 
         """
@@ -1070,7 +1083,7 @@ class SpectralBase:
 
         Returns
         -------
-        SpectralBase
+        :class:`.SpectralBase`
             A new space with homogeneous boundary conditions, otherwise as self.
         """
         d = dict(quad=self.quad,
@@ -1094,7 +1107,7 @@ class SpectralBase:
 
         Returns
         -------
-        SpectralBase
+        :class:`.SpectralBase`
             A new space with adaptively found number of quadrature points
         """
         from shenfun import Function
@@ -1128,7 +1141,7 @@ class SpectralBase:
 
         Returns
         -------
-        SpectralBase
+        :class:`.SpectralBase`
             The orthogonal space in the same family, and otherwise as self.
         """
         raise NotImplementedError
@@ -1178,10 +1191,11 @@ def getCompositeBase(Orthogonal):
     Orthogonal : :class:`.SpectralBase`
         Dynamic inheritance, using base class as either one of
 
-            - :class:`.chebyshev.bases.Orthogonal`
-            - :class:`.chebyshevu.bases.Orthogonal`
-            - :class:`.legendre.bases.Orthogonal`
-            - :class:`.jacobi.bases.Orthogonal`
+        - :class:`.chebyshev.bases.Orthogonal`
+        - :class:`.chebyshevu.bases.Orthogonal`
+        - :class:`.legendre.bases.Orthogonal`
+        - :class:`.jacobi.bases.Orthogonal`
+        - :class:`.laguerre.bases.Orthogonal`
     Returns
     -------
     Either one of the classes
@@ -1190,6 +1204,7 @@ def getCompositeBase(Orthogonal):
         - :class:`.chebyshevu.bases.CompositeBase`
         - :class:`.legendre.bases.CompositeBase`
         - :class:`.jacobi.bases.CompositeBase`
+        - :class:`.laguerre.bases.CompositeBase`
 
     """
     class CompositeBase(Orthogonal):
@@ -1261,7 +1276,6 @@ def getCompositeBase(Orthogonal):
             return self.bc.has_nonhomogeneous_bcs()
 
         def is_scaled(self):
-            """Return True if scaled basis is used, otherwise False"""
             if not hasattr(self, '_scaled'):
                 return False
             return self._scaled
@@ -1318,7 +1332,7 @@ def getCompositeBase(Orthogonal):
                 s[self.axis] = slice(0, Q)
                 output_array[self.sl[s1]] += val[tuple(s)]*input_array[self.sl[s0]]
             if self.has_nonhomogeneous_bcs:
-                self.bc.add_to_orthogonal(output_array, input_array)
+                self.bc._add_to_orthogonal(output_array, input_array)
             return output_array
 
         def evaluate_basis(self, x, i=0, output_array=None):
@@ -1371,15 +1385,15 @@ class BoundaryConditions(dict):
         The dictionary must have keys 'left' and 'right', to describe boundary
         conditions on the left and right boundaries, and another dictionary on
         left or right to describe the condition. For example, specify Dirichlet
-        on both ends with
+        on both ends with::
 
             {'left': {'D': a}, 'right': {'D': b}}
 
-        for some values `a` and `b`. Specify Neumann as
+        for some values `a` and `b`. Specify Neumann as::
 
             {'left': {'N': a}, 'right': {'N': b}}
 
-        A mixture of 3 conditions:
+        A mixture of 3 conditions:::
 
             {'left': {'N': a}, 'right': {'D': b, 'N': c}}
 
@@ -1392,7 +1406,8 @@ class BoundaryConditions(dict):
             (a, None) - {'left': {'D': a}}
             (a, b) - {'left': {'D': a}, 'right': {'D': b}}
             (a, b, c, d) - {'left': {'D': a, 'N': b}, 'right': {'D': c, 'N': d}}
-            (a, b, c, d, e, f) - {'left': {'D': a, 'N': b, 'N2': c}, 'right': {'D': d, 'N': e, 'N2': f}}
+            (a, b, c, d, e, f) - {'left': {'D': a, 'N': b, 'N2': c},
+                                  'right': {'D': d, 'N': e, 'N2': f}}
             etc.
 
         If `bc` is a single string, then we assume the boundary conditions
@@ -1536,8 +1551,8 @@ class MixedFunctionSpace:
 
     Parameters
     ----------
-    spaces : list
-        List of bases
+    bases : list
+        List of instances of :class:`.SpectralBase`
 
     """
     def __init__(self, bases):
@@ -1619,7 +1634,6 @@ class MixedFunctionSpace:
 
     @property
     def dimensions(self):
-        """Return dimension of scalar space"""
         return self.bases[0].dimensions
 
     def slice(self):
@@ -1628,15 +1642,15 @@ class MixedFunctionSpace:
     def get_diagonal_axes(self):
         return np.array([])
 
-    def get_ndiag_cum_dofs(self):
+    def _get_ndiag_cum_dofs(self):
         return np.array([0]+np.cumsum(self.dims()).tolist())
 
-    def get_ndiag_slices(self, j=()):
+    def _get_ndiag_slices(self, j=()):
         return np.array(self.slice())
 
-    def get_ndiag_slices_and_dims(self, j=()):
-        sl = self.get_ndiag_slices(j)
-        dims = self.get_ndiag_cum_dofs()
+    def _get_ndiag_slices_and_dims(self, j=()):
+        sl = self._get_ndiag_slices(j)
+        dims = self._get_ndiag_cum_dofs()
         return sl, dims
 
 class VectorBasisTransform:

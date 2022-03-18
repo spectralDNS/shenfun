@@ -495,7 +495,7 @@ class ShenDirichlet(CompositeBase):
         s1 = self.sl[slice(2, self.N)]
         output_array[s0] = input_array[s0]
         output_array[s1] -= input_array[s0]
-        self.bc.add_to_orthogonal(output_array, input_array)
+        self.bc._add_to_orthogonal(output_array, input_array)
         return output_array
 
 class Phi1(CompositeBase):
