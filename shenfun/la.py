@@ -9,7 +9,7 @@ from scipy.sparse.linalg import splu
 from shenfun.config import config
 from shenfun.optimization import optimizer, get_optimized
 from shenfun.matrixbase import SparseMatrix, extract_bc_matrices, \
-    BlockMatrix, TPMatrix, get_simplified_tpmatrices
+    BlockMatrix, get_simplified_tpmatrices
 from mpi4py import MPI
 
 comm = MPI.COMM_WORLD

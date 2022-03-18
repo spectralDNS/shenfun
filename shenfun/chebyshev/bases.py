@@ -1054,7 +1054,6 @@ class Phi2(CompositeBase):
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
-        from shenfun.jacobi.recursions import n
         #self.b0n = sp.simplify(matpow(b, 2, -half, -half, n+2, n, cn) / h(-half, -half, n, 0, cn))
         #self.b2n = sp.simplify(matpow(b, 2, -half, -half, n+2, n+2, cn) / h(-half, -half, n+2, 0, cn))
         #self.b4n = sp.simplify(matpow(b, 2, -half, -half, n+2, n+4, cn) / h(-half, -half, n+4, 0, cn))
@@ -1071,7 +1070,6 @@ class Phi2(CompositeBase):
         return 'P2'
 
     def stencil_matrix(self, N=None):
-        from shenfun.jacobi.recursions import n
         N = self.N if N is None else N
         k = np.arange(N)
         d0, d2, d4 = np.zeros(N), np.zeros(N-2), np.zeros(N-4)
@@ -1132,7 +1130,6 @@ class Phi3(CompositeBase):
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
-        from shenfun.jacobi.recursions import half, cn, b, h, matpow, n
         #self.b0n = sp.simplify(matpow(b, 3, -half, -half, n+3, n, cn) / h(-half, -half, n, 0, cn))
         #self.b2n = sp.simplify(matpow(b, 3, -half, -half, n+3, n+2, cn) / h(-half, -half, n+2, 0, cn))
         #self.b4n = sp.simplify(matpow(b, 3, -half, -half, n+3, n+4, cn) / h(-half, -half, n+4, 0, cn))
@@ -1213,7 +1210,6 @@ class Phi4(CompositeBase):
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
-        from shenfun.jacobi.recursions import half, cn, b, h, matpow, n
         #self.b0n = sp.simplify(matpow(b, 4, -half, -half, n+4, n, cn) / h(-half, -half, n, 0, cn))
         #self.b2n = sp.simplify(matpow(b, 4, -half, -half, n+4, n+2, cn) / h(-half, -half, n+2, 0, cn))
         #self.b4n = sp.simplify(matpow(b, 4, -half, -half, n+4, n+4, cn) / h(-half, -half, n+4, 0, cn))
@@ -1235,7 +1231,6 @@ class Phi4(CompositeBase):
         return 'P4'
 
     def stencil_matrix(self, N=None):
-        from shenfun.jacobi.recursions import n
         N = self.N if N is None else N
         k = np.arange(N)
         d0, d2, d4, d6, d8 = np.zeros(N), np.zeros(N-2), np.zeros(N-4), np.zeros(N-6), np.zeros(N-8)
