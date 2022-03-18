@@ -322,4 +322,3 @@ class Coordinates:
             m += ' \\\\ '
         m += ' '
         return r'%s'%(m)
-

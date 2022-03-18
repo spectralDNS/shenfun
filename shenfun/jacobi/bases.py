@@ -34,7 +34,7 @@ from shenfun.config import config
 from shenfun.spectralbase import SpectralBase, Transform, islicedict, \
     slicedict, getCompositeBase, BoundaryConditions
 from shenfun.matrixbase import SparseMatrix
-from .recursions import b, h, matpow, n
+from .recursions import n
 
 try:
     import quadpy

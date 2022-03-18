@@ -789,7 +789,7 @@ class Expr:
         if config['basisvectors'] == 'normal':
             hi = self.function_space().coors.hi
             return self[i][j]*(1/(hi[i]*hi[j]))
-        assert config['basisvectors'] =='covariant'
+        assert config['basisvectors'] == 'covariant'
         return self[i][j]
 
     def __mul__(self, a):

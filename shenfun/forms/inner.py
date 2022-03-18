@@ -3,9 +3,8 @@ This module contains the inner function that computes the
 weighted inner product.
 """
 from numbers import Number
-from copy import copy
-import numpy as np
 import sympy as sp
+import numpy as np
 from shenfun.spectralbase import inner_product, SpectralBase, MixedFunctionSpace
 from shenfun.matrixbase import TPMatrix
 from shenfun.tensorproductspace import TensorProductSpace, CompositeSpace

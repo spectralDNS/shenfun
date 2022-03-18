@@ -254,8 +254,8 @@ class RayleighBenard:
                 self.im1.scale = np.linalg.norm(ub[1])
                 plt.pause(1e-6)
                 plt.figure(2)
-                self.im2.ax.clear()
-                self.im2.ax.contourf(self.X[1], self.X[0], T_b, 100)
+                self.im2.axes.clear()
+                self.im2.axes.contourf(self.X[1], self.X[0], T_b, 100)
                 self.im2.autoscale()
                 plt.pause(1e-6)
 
@@ -284,7 +284,7 @@ class RayleighBenard:
                 T_ = self.solverT[rk](rhs_T[1], self.T_)
                 T_.mask_nyquist(self.mask)
                 self.T_1 = T_
-
+            print(self.T0.bc.bcs_final)
             t += self.dt
             self.end_of_tstep()
             tstep += 1

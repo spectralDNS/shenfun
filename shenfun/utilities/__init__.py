@@ -583,6 +583,11 @@ def quiver3D(u, mesh=None, wrapaxes=(), slices=None, fig=None, kind='normal', **
 
     x, y, z = wrap_periodic([x, y, z], wrapaxes)
     u = wrap_periodic([u], np.array(wrapaxes)+1)
+    if slices:
+        x = x[slices]
+        y = y[slices]
+        z = z[slices]
+        u = u[slices]
     if fig is None:
         mlab.figure(bgcolor=(1, 1, 1), size=(400, 400))
     mlab.quiver3d(x, y, z, u[0], u[1], u[2], **par)

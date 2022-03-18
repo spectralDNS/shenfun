@@ -151,7 +151,6 @@ def grad(test):
 
         gt = coors.get_contravariant_metric_tensor()
         comp = test.get_contravariant_component
-        hi = coors.hi
 
         if test.num_components() > 1:
             ct = coors.get_christoffel_second()

@@ -1159,7 +1159,7 @@ class BSBTmat(SpectralMatrix):
         k = np.arange(Q, dtype=float)
         d = {0: ck[:Q]*np.pi/2,
              2: -np.pi*(k[:min(Q, M-2)]+2)/(k[:min(Q, M-2)]+3),
-             4: 0.5*np.pi*ck[4:min(Q+4,M)]*(k[:min(Q, M-4)]+1)/(k[:min(Q, M-4)]+3)}
+             4: 0.5*np.pi*ck[4:min(Q+4, M)]*(k[:min(Q, M-4)]+1)/(k[:min(Q, M-4)]+3)}
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
 class BCNCNmat(SpectralMatrix):

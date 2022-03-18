@@ -63,6 +63,7 @@ class SparseMatrixSolver:
         self.mat = mat
         self._lu = None
         self._inner_arg = None # argument to inner_solve
+        self.dtype = None
         assert self.mat.shape[0] == self.mat.shape[1]
 
     def apply_bcs(self, b, u, axis=0):
@@ -918,7 +919,7 @@ class Solver2D:
         self.bc_mats = bc_mats
         self._lu = None
         m = tpmats[0]
-        self.T = T = m.space
+        self.T = m.space
         assert m._issimplified is False, "Cannot use simplified matrices with this solver"
         mat = m.diags(format='csc')
         for m in tpmats[1:]:

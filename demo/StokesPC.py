@@ -2,27 +2,27 @@
 # Author: Shashank Jaiswal, jaiswal0@purdue.edu
 
 import numpy as np
-from sympy import symbols, sin, cos, lambdify
+import sympy as sp
 from shenfun import *
 import matplotlib.pyplot as plt
-from matplotlib.ticker import NullFormatter, ScalarFormatter
+from matplotlib.ticker import NullFormatter
 
 from mpltools import annotation
 pa = {'fill': False, 'edgecolor': 'black'}
 ta = {'fontsize': 10}
 
 pex = lambda *args: print(*args) + exit(0)
-x, y, t = symbols("x, y, t", real=True)
+x, y, t = sp.symbols("x, y, t", real=True)
 
 # Define the initial solution
-uex = (sin(np.pi*x)**2)*sin(2*np.pi*y)*sin(t)
-uey = -sin(2*np.pi*x)*(sin(np.pi*y)**2)*sin(t)
-pe = cos(np.pi*x)*cos(np.pi*y)*sin(t)
+uex = (sp.sin(sp.pi*x)**2)*sp.sin(2*sp.pi*y)*sp.sin(t)
+uey = -sp.sin(2*sp.pi*x)*(sp.sin(sp.pi*y)**2)*sp.sin(t)
+pe = sp.cos(sp.pi*x)*sp.cos(sp.pi*y)*sp.sin(t)
 fex = -uex.diff(x, 2) - uex.diff(y, 2) + pe.diff(x, 1) + uex.diff(t, 1)
 fey = -uey.diff(x, 2) - uey.diff(y, 2) + pe.diff(y, 1) + uey.diff(t, 1)
 he = uex.diff(x, 1) + uey.diff(y, 1)
 
-uexf, ueyf, pef, fexf, feyf = map(lambda v: lambdify((x, y, t), v),
+uexf, ueyf, pef, fexf, feyf = map(lambda v: sp.lambdify((x, y, t), v),
                                   (uex, uey, pe, fex, fey))
 
 def main(n):

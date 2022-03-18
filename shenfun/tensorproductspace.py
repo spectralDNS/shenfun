@@ -1650,13 +1650,14 @@ class BoundaryValues:
     def update_bcs_time(self, time):
         tt = sp.symbols('t', real=True)
         update_time = False
-        for key, val in self.bc.items():
-            for k, bci in val.items():
-                if isinstance(bci, sp.Expr):
-                    if tt in bci.free_symbols:
-                        self.bc_time = time
-                        val[k] = bci.subs(tt, time)
-                        update_time = True
+        self.bcs = self.bc.orderedvals()
+        self.bcs_final = self.bc.orderedvals()
+        for i, bci in enumerate(self.bcs):
+            if isinstance(bci, sp.Expr):
+                if tt in bci.free_symbols:
+                    self.bc_time = time
+                    self.bcs[i] = bci.subs(tt, time)
+                    update_time = True
 
         if update_time:
             self.bcs_final[:] = self.bcs
@@ -1669,7 +1670,6 @@ class BoundaryValues:
         To modify boundary conditions on the fly, modify first self.bc and then
         call this function. The boundary condition can then be applied as before.
         """
-        #from shenfun.utilities import split
         from shenfun import project
 
         self.axis = this_base.axis

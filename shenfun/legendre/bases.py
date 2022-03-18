@@ -1056,7 +1056,7 @@ class ShenBiPolar(CompositeBase):
         return SparseMatrix({-2: dm2, 0: d, 2: dp2, 4: dp4}, (N, N))
 
     def get_bc_basis(self):
-        if self._bc_basis:
+        if self._bc_basis != None:
             return self._bc_basis
         self._bc_basis = BCBiharmonic(self.N, domain=self.domain)
         return self._bc_basis

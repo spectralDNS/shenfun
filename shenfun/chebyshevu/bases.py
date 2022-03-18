@@ -840,7 +840,7 @@ class BCDirichlet(BCBase):
 
     def stencil_matrix(self, N=None):
         return sp.Rational(1, 4)*np.array([[2, -1],
-                                           [2,  1]])
+                                           [2, 1]])
 
 class BCNeumann(BCBase):
     r"""Basis for inhomogeneous Neumann boundary conditions

@@ -1052,7 +1052,7 @@ class Phi2(CompositeBase):
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
-        from shenfun.jacobi.recursions import half, cn, b, h, matpow, n
+        from shenfun.jacobi.recursions import n
         #self.b0n = sp.simplify(matpow(b, 2, -half, -half, n+2, n, cn) / h(-half, -half, n, 0, cn))
         #self.b2n = sp.simplify(matpow(b, 2, -half, -half, n+2, n+2, cn) / h(-half, -half, n+2, 0, cn))
         #self.b4n = sp.simplify(matpow(b, 2, -half, -half, n+2, n+4, cn) / h(-half, -half, n+4, 0, cn))

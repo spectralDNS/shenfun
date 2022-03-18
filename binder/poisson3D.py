@@ -1,9 +1,9 @@
-from sympy import symbols, sin, cos
+import sympy as sp
 from shenfun import *
 
 # Use sympy to compute manufactured solution
-x, y, z = symbols("x,y,z")
-ue = (cos(4*x) + sin(2*y) + sin(4*z))*(1-x**2)
+x, y, z = sp.symbols("x,y,z")
+ue = (sp.cos(4*x) + sp.sin(2*y) + sp.sin(4*z))*(1-x**2)
 fe = ue.diff(x, 2) + ue.diff(y, 2) + ue.diff(z, 2)
 
 C0 = FunctionSpace(32, 'Chebyshev', bc=(0, 0))
