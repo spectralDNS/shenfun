@@ -651,15 +651,15 @@ class ShenBiharmonic(CompositeBase):
 class Phi2(CompositeBase):
     r"""Function space for biharmonic equation
 
-    The basis :math:`\{\phi_k\}_{k=0}^{N-1}` is
+    The basis functions :math:`\{\phi_k\}_{k=0}^{N-5}` are
 
     .. math::
 
         \phi_k &= \frac{(1-x^2)^2 L''_{k+2}}{h^{(2)}_{k+2}}, \\
-        h^{(2)}_{k+2} &= \int_{-1}^1 L''_{k+2} L''_{k+2} dx, \\
+        h^{(2)}_{k+2} &= \int_{-1}^1 L''_{k+2} L''_{k+2} (1-x^2)^2 dx, \\
                &= \frac{2 \left(k + 1\right) \left(k + 2\right) \left(k + 3\right) \left(k + 4\right)}{2 k + 5},
 
-    which (along with boundary functions) becomes
+    which (along with boundary functions) becomes the basis
 
     .. math::
 
@@ -732,11 +732,11 @@ class Phi2(CompositeBase):
 class Phi3(CompositeBase):
     r"""Function space for 6th order equations
 
-    The basis :math:`\{\phi_k\}_{k=0}^{N-1}` is
+    The basis functions :math:`\{\phi_k\}_{k=0}^{N-7}` are
 
     .. math::
         \phi_k &= \frac{(1-x^2)^3}{h^{(3)}_{k+3}} L^{(3)}_{k+3}}, \, k=0, 1, \ldots, N-7, \\
-        h^{(3)}_{k+3} &= \frac{2\Gamma(k+7)}{\Gamma(k+1)(2k+7)} = \int_{-1}^1 L^{(3)}_{k+3} L^{(3)}_{k+3} dx,
+        h^{(3)}_{k+3} &= \frac{2\Gamma(k+7)}{\Gamma(k+1)(2k+7)} = \int_{-1}^1 L^{(3)}_{k+3} L^{(3)}_{k+3}(1-x^2)^3 dx,
 
     where :math:`L^{(3)}_k` is the 3'rd derivative of :math:`L_k`.
     The 6 boundary basis functions are computed using :func:`.jacobi.findbasis.get_bc_basis`,
@@ -822,7 +822,7 @@ class Phi4(CompositeBase):
     .. math::
 
         \phi_k &= \frac{(1-x^2)^4}{h^{(4)}_{k+4}} L^{(4)}_{k+4}, \\
-        h^{(4)}_{k+4} &= \frac{2\Gamma(k+9)}{\Gamma(k+1)(2k+9)} = \int_{-1}^1 L^{(4)}_{k+4} L^{(4)}_{k+4} dx,
+        h^{(4)}_{k+4} &= \frac{2\Gamma(k+9)}{\Gamma(k+1)(2k+9)} = \int_{-1}^1 L^{(4)}_{k+4} L^{(4)}_{k+4} (1-x^2)^4 dx,
 
     where :math:`L^{(4)}_k` is the 4'th derivative of :math:`L_k`.
     The boundary basis for inhomogeneous boundary conditions is too
@@ -1154,7 +1154,7 @@ class DirichletNeumann(CompositeBase):
 
     .. math::
 
-        \phi_k &= L_{k} + \frac{2n+3}{\left(n+2\right)^{2}}L_{k+1} - \frac{\left(n+1\right)^{2}}{\left(n+2\right)^{2}} L_{k+2}, \, k=0, 1, \ldots, N-2, \\
+        \phi_k &= L_{k} + \frac{2n+3}{\left(n+2\right)^{2}}L_{k+1} - \frac{\left(n+1\right)^{2}}{\left(n+2\right)^{2}} L_{k+2}, \, k=0, 1, \ldots, N-3, \\
         \phi_{N-2} &= L_0, \\
         \phi_{N-1} &= L_0+L_1,
 
@@ -1296,7 +1296,7 @@ class NeumannDirichlet(CompositeBase):
 
     .. math::
 
-        \phi_k &= L_{k} - \frac{2n+3}{\left(n+2\right)^{2}}L_{k+1} - \frac{\left(n+1\right)^{2}}{\left(n+2\right)^{2}}L_{k+2}, \, k=0, 1, \ldots, N-2, \\
+        \phi_k &= L_{k} - \frac{2n+3}{\left(n+2\right)^{2}}L_{k+1} - \frac{\left(n+1\right)^{2}}{\left(n+2\right)^{2}}L_{k+2}, \, k=0, 1, \ldots, N-3, \\
         \phi_{N-2} &= -L_0+L_1, \\
         \phi_{N-1} &= L_0,
 
@@ -1372,7 +1372,7 @@ class UpperDirichletNeumann(CompositeBase):
 
     .. math::
 
-        \phi_k &= L_{k} - \frac{2k+3}{k+2}L_{k+1} + \frac{k+1}{k+2}L_{k+2}, \, k=0, 1, \ldots, N-2, \\
+        \phi_k &= L_{k} - \frac{2k+3}{k+2}L_{k+1} + \frac{k+1}{k+2}L_{k+2}, \, k=0, 1, \ldots, N-3, \\
         \phi_{N-2} &= L_0, \\
         \phi_{N-1} &= -L_0+L_1,
 

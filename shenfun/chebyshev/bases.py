@@ -824,7 +824,7 @@ class CombinedShenNeumann(CompositeBase):
 class MikNeumann(CompositeBase):
     r"""Function space for Neumann boundary conditions
 
-    The basis :math:`\{\phi_k\}_{k=0}^{N-1}` is
+    The basis :math:`\{\phi_k\}_{k=0}^{N-3}` is
 
     .. math::
 
@@ -996,7 +996,7 @@ class ShenBiharmonic(CompositeBase):
 class Phi2(CompositeBase):
     r"""Function space for biharmonic equation.
 
-    The basis :math:`\{\phi_k\}_{k=0}^{N-1}` is
+    The basis functions :math:`\{\phi_k\}_{k=0}^{N-5}` are
 
     .. math::
 
@@ -1084,12 +1084,12 @@ class Phi2(CompositeBase):
 class Phi3(CompositeBase):
     r"""Function space for 6'th order equation
 
-    The basis functions are
+    The basis functions :math:`\{\phi_k\}_{k=0}^{N-7}` are
 
     .. math::
 
         \phi_k &= \frac{(1-x^2)^3}{h^{(3)}_{k+3}} T^{(3)}_{k+3} \\
-        h^{(3)}_{k+3} &= \frac{\pi (k+3) \Gamma (k+6)}{2k!} = \int_{-1}^1 T^{(3)}_k T^{(3)}_k \frac{1}{\sqrt{1-x^2}} dx.
+        h^{(3)}_{k+3} &= \frac{\pi (k+3) \Gamma (k+6)}{2k!} = \int_{-1}^1 T^{(3)}_k T^{(3)}_k (1-x^2)^{2.5} dx.
 
     where :math:`T^{(3)}_k` is the 3rd derivative of :math:`T_k`. The boundary
     basis for inhomogeneous boundary conditions is too messy to print, but can
@@ -1171,12 +1171,12 @@ class Phi4(CompositeBase):
 
         \frac{d^k}{dx^k}u(\pm 1) = 0, \quad \forall k \in (0,1,2,3)
 
-    and the basis functions are
+    and the basis functions :math:`\{\phi_k\}_{k=0}^{N-9}` are
 
     .. math::
 
         \phi_k &= \frac{(1-x^2)^4}{h^{(4)}_{k+4}} T^{(4)}_{k+4} \\
-        h^{(4)}_k &= \frac{\pi k \Gamma (k+4)}{2(k-4)!} = \int_{-1}^1 T^{(4)}_k T^{(4)}_k \frac{1}{\sqrt{1-x^2}} dx.
+        h^{(4)}_k &= \frac{\pi k \Gamma (k+4)}{2(k-4)!} = \int_{-1}^1 T^{(4)}_k T^{(4)}_k (1-x^2)^{3.5} dx,
 
     where :math:`T^{(4)}_k` is the 4th derivative of :math:`T_k`. The boundary
     basis for inhomogeneous boundary conditions is too messy to print, but can
@@ -1455,7 +1455,7 @@ class DirichletNeumann(CompositeBase):
 
     .. math::
 
-        \phi_k &= T_{k} + \frac{4(k+1)}{2k^2+6k+5}T_{k+1} - \frac{2k^2+2k+1}{2k^2+6k+5}T_{k+2}, \, k=0, 1, \ldots, N-2, \\
+        \phi_k &= T_{k} + \frac{4(k+1)}{2k^2+6k+5}T_{k+1} - \frac{2k^2+2k+1}{2k^2+6k+5}T_{k+2}, \, k=0, 1, \ldots, N-3, \\
         \phi_{N-2} &= T_0, \\
         \phi_{N-1} &= T_0+T_1,
 
@@ -1531,7 +1531,7 @@ class NeumannDirichlet(CompositeBase):
 
     .. math::
 
-        \phi_k &= T_{k} - \frac{4(k+1)}{2k^2+6k+5}T_{k+1} - \frac{2k^2+2k+1}{2k^2+6k+5}T_{k+2}, \, k=0, 1, \ldots, N-2, \\
+        \phi_k &= T_{k} - \frac{4(k+1)}{2k^2+6k+5}T_{k+1} - \frac{2k^2+2k+1}{2k^2+6k+5}T_{k+2}, \, k=0, 1, \ldots, N-3, \\
         \phi_{N-2} &= -T_0+T_1, \\
         \phi_{N-1} &= T_0,
 
@@ -1608,7 +1608,7 @@ class UpperDirichletNeumann(CompositeBase):
 
     .. math::
 
-        \phi_k &= T_{k} - \frac{4(k+1)}{2k+3}T_{k+1} + \frac{2k+1}{2k+3}T_{k+2}, \, k=0, 1, \ldots, N-2, \\
+        \phi_k &= T_{k} - \frac{4(k+1)}{2k+3}T_{k+1} + \frac{2k+1}{2k+3}T_{k+2}, \, k=0, 1, \ldots, N-3, \\
         \phi_{N-2} &= T_0, \\
         \phi_{N-1} &= -T_0+T_1,
 
@@ -1685,7 +1685,7 @@ class LowerDirichletNeumann(CompositeBase):
 
     .. math::
 
-        \phi_k &= T_{k} + \frac{4(k+1)}{2k+3}T_{k+1} + \frac{2k+1}{2k+3}T_{k+2}, \, k=0, 1, \ldots, N-2, \\
+        \phi_k &= T_{k} + \frac{4(k+1)}{2k+3}T_{k+1} + \frac{2k+1}{2k+3}T_{k+2}, \, k=0, 1, \ldots, N-3, \\
         \phi_{N-2} &= T_0, \\
         \phi_{N-1} &= T_0+T_1,
 

@@ -376,10 +376,10 @@ class Phi1(CompositeBase):
 class Phi2(CompositeBase):
     r"""Function space for biharmonic equations
 
-    The basis :math:`\{\phi_k\}_{k=0}^{N-1}` is
+    The basis functions :math:`\{\phi_k\}_{k=0}^{N-5}` are
 
     .. math::
-        \phi_k &= \frac{(1-x^2)^2}{h^{(2,\alpha,\beta)}_{k+2}} \frac{d^$P^{(\alpha,\beta)}_{k+4}}{dx}, \, k=0, 1, \ldots, N-5, \\
+        \phi_k &= \frac{(1-x^2)^2}{h^{(2,\alpha,\beta)}_{k+2}} \frac{d^$P^{(\alpha,\beta)}_{k+4}}{dx},
 
     where
 
@@ -475,17 +475,16 @@ class Phi2(CompositeBase):
 class Phi3(CompositeBase):
     r"""Function space for 6th order equations
 
-    The basis :math:`\{\phi_k\}_{k=0}^{N-1}` is
+    The basis functions :math:`\{\phi_k\}_{k=0}^{N-7}` are
 
     .. math::
-        \phi_k &= \frac{(1-x^2)^3}{h^{(3,\alpha,\beta)}_{k+3}} \frac{d^3P^{(\alpha,\beta)}_{k+3}}{dx^3}, \, k=0, 1, \ldots, N-7, \\
+        \phi_k &= \frac{(1-x^2)^3}{h^{(3,\alpha,\beta)}_{k+3}} \frac{d^3P^{(\alpha,\beta)}_{k+3}}{dx^3}, \\
 
     where
 
     .. math::
 
         h^{(3,\alpha,\beta)}_k&=\int_{-1}^1 \left(\frac{d^3P^{(\alpha,\beta)}_{k}}{dx^3}\right)^2 (1-x)^{\alpha+3}(1+x)^{\beta+3}dx, \\
-            &=,
 
     The 6 boundary basis functions are computed using :func:`.jacobi.findbasis.get_bc_basis`,
     but they are too messy to print here. We have
@@ -581,10 +580,10 @@ class Phi3(CompositeBase):
 class Phi4(CompositeBase):
     r"""Function space for 8th order equations
 
-    The basis :math:`\{\phi_k\}_{k=0}^{N-1}` is
+    The basis functions :math:`\{\phi_k\}_{k=0}^{N-9}` are
 
     .. math::
-        \phi_k &= \frac{(1-x^2)^4}{h^{(4,\alpha,\beta)}_{k+4}} \frac{d^4P^{(\alpha,\beta)}_{k+4}}{dx}, \, k=0, 1, \ldots, N-9, \\
+        \phi_k &= \frac{(1-x^2)^4}{h^{(4,\alpha,\beta)}_{k+4}} \frac{d^4P^{(\alpha,\beta)}_{k+4}}{dx}, \\
 
     where
 
