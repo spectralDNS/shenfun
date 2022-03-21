@@ -372,17 +372,12 @@ class Phi1(CompositeBase):
     coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
         Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
 
-    Note
-    ----
-    A test function is always using homogeneous boundary conditions.
-
     """
     def __init__(self, N, quad="GU", bc=(0., 0.), domain=(-1., 1.), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None, scaled=False, **kw):
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates, scaled=scaled)
-        from shenfun.jacobi.recursions import n
         #self.b0n = sp.simplify(b(half, half, n+1, n, un) / (h(half, half, n, 0, un)))
         #self.b2n = sp.simplify(b(half, half, n+1, n+2, un) / (h(half, half, n+2, 0, un)))
         self.b0n = 1/(np.pi*(n+1))
@@ -412,19 +407,17 @@ class Phi1(CompositeBase):
 class Phi2(CompositeBase):
     r"""Function space for biharmonic equation.
 
-    The basis for :math:`\{\phi_k\}_{k=0}^{N-5}` is
+    The basis functions :math:`\phi_k` for :math:`k=0, \ldots, N-5` are
 
     .. math::
 
         \phi_k &= \frac{(1-x^2)^2 U''_{k+2}}{h^{(2)}_{k+2}} \\
-               &= \frac{1}{2\pi(k+1)(k+2)}\left(U_k- \frac{2(k+1)}{k+4}U_{k+2} + \frac{(k+1)(k+2)}{(k+3)(k+4)}U_{k+4} \right)
+               &= \frac{1}{2\pi(k+1)(k+2)}\left(U_k- \frac{2(k+1)}{k+4}U_{k+2} + \frac{(k+1)(k+2)}{(k+4)(k+5)}U_{k+4} \right)
 
-    where :math:`h^{(2)}_n = \frac{\pi (n+3)(n+2)n(n-1)}{2}`. Along with
-    boundary functions we get
+    where :math:`h^{(2)}_n = \frac{\pi (n+3)(n+2)n(n-1)}{2}`. The 4 boundary
+    functions are
 
     .. math::
-
-        \phi_k &= \frac{1}{2 \pi (k+1)(k+2)}(T_k - \frac{2(k+2)}{k+3}T_{k+2} + \frac{k+1}{k+3}T_{k+4}), \, k=0, 1, \ldots, N-5, \\
         \phi_{N-4} &= \tfrac{1}{2}U_0-\tfrac{5}{6}U_1+\tfrac{1}{32}U_3, \\
         \phi_{N-3} &= \tfrac{3}{16}U_0-\tfrac{1}{16}U_1-\tfrac{1}{16}U_2+\tfrac{1}{32}U_3, \\
         \phi_{N-2} &= \tfrac{1}{2}U_0+\tfrac{5}{16}U_1-\tfrac{1}{32}U_3), \\
@@ -463,10 +456,6 @@ class Phi2(CompositeBase):
     coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
          Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
 
-    Note
-    ----
-    A test function is always using homogeneous boundary conditions.
-
     """
     def __init__(self, N, quad="GU", bc=(0, 0, 0, 0), domain=(-1, 1), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None, **kw):
@@ -503,7 +492,7 @@ class Phi2(CompositeBase):
 class Phi3(CompositeBase):
     r"""Function space for 6'th order equation
 
-    The basis functions for :math:`\{\phi_k\}_{k=0}^{N-7}` are
+    The basis functions :math:`\phi_k` for :math:`k=0, \ldots, N-7` are
 
     .. math::
 
@@ -583,7 +572,7 @@ class Phi3(CompositeBase):
 class Phi4(CompositeBase):
     r"""Function space for 8th order equation
 
-    The basis functions :math:`\{\phi_k\}_{k=0}^{N-9}`
+    The basis functions :math:`\phi_k` for :math:`k=0, \ldots, N-9` are
 
     .. math::
 
@@ -710,7 +699,6 @@ class CompactDirichlet(CompositeBase):
 
     Note
     ----
-    A test function is always using homogeneous boundary conditions.
     This basis function is a scaled version of :class:`Phi1`.
 
     """
@@ -784,10 +772,6 @@ class CompactNeumann(CompositeBase):
     coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
          Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
 
-    Note
-    ----
-    A test function is always using homogeneous boundary conditions.
-
     """
     def __init__(self, N, quad="GU", bc=(0, 0), domain=(-1, 1), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None, **kw):
@@ -859,10 +843,6 @@ class Generic(CompositeBase):
         Set upper 1/3 of coefficients to zero before backward transform
     coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
         Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
-
-    Note
-    ----
-    A test function is always using homogeneous boundary conditions.
 
     """
     def __init__(self, N, quad="GC", bc={}, domain=(-1., 1.), dtype=float,

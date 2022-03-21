@@ -16,7 +16,7 @@ class Orthogonal(SpectralBase):
 
     .. math::
 
-        \phi_k = H_k \cdot \frac{1}{\pi^{0.25} \sqrt{2^n n!}} \exp(-x^2/2), \quad k = 0, 1, \ldots, N-1,
+        \phi_k = H_k \frac{1}{\pi^{0.25} \sqrt{2^n n!}} \exp(-x^2/2), \quad k = 0, 1, \ldots, N-1,
 
     where :math:`\phi_k` and :math:`H_k` are the Hermite function and Hermite
     polynomials of order k, respectively.

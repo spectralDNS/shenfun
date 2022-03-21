@@ -445,10 +445,6 @@ class ShenDirichlet(CompositeBase):
     coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
         Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
 
-    Note
-    ----
-    A test function is always using homogeneous boundary conditions.
-
     """
 
     def __init__(self, N, quad="GC", bc=(0, 0), domain=(-1., 1.), dtype=float,
@@ -545,10 +541,6 @@ class Phi1(CompositeBase):
     coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
         Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
 
-    Note
-    ----
-    A test function is always using homogeneous boundary conditions.
-
     """
     def __init__(self, N, quad="GC", bc=(0, 0), domain=(-1., 1.), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None, **kw):
@@ -622,10 +614,6 @@ class Heinrichs(CompositeBase):
         Set upper 1/3 of coefficients to zero before backward transform
     coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
         Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
-
-    Note
-    ----
-    A test function is always using homogeneous boundary conditions.
 
     """
 
@@ -824,13 +812,13 @@ class CombinedShenNeumann(CompositeBase):
 class MikNeumann(CompositeBase):
     r"""Function space for Neumann boundary conditions
 
-    The basis :math:`\{\phi_k\}_{k=0}^{N-3}` is
+    The basis funcitons :math:`\phi_k`  for :math:`k=0,1, \ldots, N-3` are
 
     .. math::
 
-        \phi_k &= \frac{2}{k+1}\int (T_{k-1}-T_{k+1}) \\
+        \phi_k &= \frac{2}{k+1}\int (T_{k-1}-T_{k+1}),
 
-    which (with also boundary bases) becomes
+    which (with also boundary functions) leads to the basis
 
     .. math::
 
@@ -996,13 +984,13 @@ class ShenBiharmonic(CompositeBase):
 class Phi2(CompositeBase):
     r"""Function space for biharmonic equation.
 
-    The basis functions :math:`\{\phi_k\}_{k=0}^{N-5}` are
+    The basis functions :math:`\phi_k` for :math:`k=0, 1, \ldots, N-5` are
 
     .. math::
 
         \phi_k = \frac{2(1-x^2)^2 T''_{k+2}}{\pi (k+1)(k+2)^2(k+3)} ,
 
-    which (along with boundary functions) becomes
+    which (along with boundary functions) gives the basis
 
     .. math::
 
@@ -1084,7 +1072,7 @@ class Phi2(CompositeBase):
 class Phi3(CompositeBase):
     r"""Function space for 6'th order equation
 
-    The basis functions :math:`\{\phi_k\}_{k=0}^{N-7}` are
+    The basis functions :math:`\phi_k` for :math:`k=0, 1, \ldots, N-7` are
 
     .. math::
 
@@ -1165,13 +1153,7 @@ class Phi3(CompositeBase):
 class Phi4(CompositeBase):
     r"""Function space with 4 Dirichlet and 4 Neumann boundary conditions
 
-    The 8 boundary conditions are
-
-    .. math::
-
-        \frac{d^k}{dx^k}u(\pm 1) = 0, \quad \forall k \in (0,1,2,3)
-
-    and the basis functions :math:`\{\phi_k\}_{k=0}^{N-9}` are
+    The basis functions :math:`\phi_k` for :math:`k=0, 1, \ldots, N-9` are
 
     .. math::
 
@@ -1396,10 +1378,6 @@ class ShenBiPolar(CompositeBase):
         - GC - Chebyshev-Gauss
 
     bc : 4-tuple of numbers
-        The values of the 4 boundary conditions at x=(-1, 1).
-        The two conditions at x=-1 first and then x=1.
-        With (a, b, c, d) corresponding to
-        bc = {'left': [('D', a), ('N', b)], 'right': [('D', c), ('N', d)]}
     domain : 2-tuple of floats, optional
         The computational domain
     dtype : data-type, optional

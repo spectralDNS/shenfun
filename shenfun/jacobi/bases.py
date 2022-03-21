@@ -1,13 +1,13 @@
 """
 Module for function spaces of generalized Jacobi type
 
-Note the configuration setting
+Note the configuration setting::
 
     from shenfun.config import config
     config['bases']['jacobi']['mode']
 
 Setting this to 'mpmath' can make use of extended precision.
-The precision can also be set in the configuration.
+The precision can also be set in the configuration.::
 
     from mpmath import mp
     mp.dps = config['jacobi'][precision]
@@ -72,13 +72,14 @@ __all__ = ['Orthogonal',
 class Orthogonal(SpectralBase):
     r"""Function space for regular (orthogonal) Jacobi functions
 
-    The orthogonal basis function is
+    The orthogonal basis is
 
     .. math::
 
         \phi_k = P^{(\alpha,\beta)}_k, \quad k = 0, 1, \ldots, N-1,
 
     where :math:`P^{(\alpha,\beta)}_k` is the `Jacobi polynomial <https://en.wikipedia.org/wiki/Jacobi_polynomials>`_.
+    The basis is orthogonal with weight :math:`(1-x)^{\alpha}(1+x)^{\beta}`.
 
     Parameters
     ----------
@@ -376,7 +377,7 @@ class Phi1(CompositeBase):
 class Phi2(CompositeBase):
     r"""Function space for biharmonic equations
 
-    The basis functions :math:`\{\phi_k\}_{k=0}^{N-5}` are
+    The basis functions :math:`\phi_k` for :math:`k=0, 1, \ldots, N-5` are
 
     .. math::
         \phi_k &= \frac{(1-x^2)^2}{h^{(2,\alpha,\beta)}_{k+2}} \frac{d^$P^{(\alpha,\beta)}_{k+4}}{dx},
@@ -475,7 +476,7 @@ class Phi2(CompositeBase):
 class Phi3(CompositeBase):
     r"""Function space for 6th order equations
 
-    The basis functions :math:`\{\phi_k\}_{k=0}^{N-7}` are
+    The basis functions :math:`\phi_k` for :math:`k=0, 1, \ldots, N-7` are
 
     .. math::
         \phi_k &= \frac{(1-x^2)^3}{h^{(3,\alpha,\beta)}_{k+3}} \frac{d^3P^{(\alpha,\beta)}_{k+3}}{dx^3}, \\
@@ -580,7 +581,7 @@ class Phi3(CompositeBase):
 class Phi4(CompositeBase):
     r"""Function space for 8th order equations
 
-    The basis functions :math:`\{\phi_k\}_{k=0}^{N-9}` are
+    The basis functions :math:`\phi_k` for :math:`k=0, 1, \ldots, N-9` are
 
     .. math::
         \phi_k &= \frac{(1-x^2)^4}{h^{(4,\alpha,\beta)}_{k+4}} \frac{d^4P^{(\alpha,\beta)}_{k+4}}{dx}, \\
@@ -870,10 +871,7 @@ class Generic(CompositeBase):
         Number of quadrature points
     quad : str, optional
         Type of quadrature
-
-        - GL - Chebyshev-Gauss-Lobatto
-        - GC - Chebyshev-Gauss
-
+        - JG - Jacobi-Gauss
     bc : dict, optional
         The dictionary must have keys 'left' and 'right', to describe boundary
         conditions on the left and right boundaries, and a list of 2-tuples to

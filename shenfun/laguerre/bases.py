@@ -242,7 +242,7 @@ class CompactDirichlet(CompositeBase):
     .. math::
 
         \phi_k &= (La_k - La_{k+1})\exp(-x/2), \, k=0, 1, \ldots, N-2, \\
-        \phi_{N-'} &= L_0\exp(-x/2),
+        \phi_{N-1} &= L_0\exp(-x/2),
 
     such that
 
@@ -298,7 +298,19 @@ class CompactDirichlet(CompositeBase):
         return slice(0, self.N-1)
 
 class CompactNeumann(CompositeBase):
-    """Laguerre function space for Dirichlet boundary conditions
+    r"""Laguerre function space for Dirichlet boundary conditions
+
+    The basis :math:`\{\phi_k\}_{k=0}^{N-1}` is
+
+    .. math::
+        \phi_k &= (La_k - \frac{2k+1}{2k+3}La_{k+1})\exp(-x/2), \, k=0, 1, \ldots, N-2, \\
+        \phi_{N-1} &= La_0\exp(-x/2),
+
+    such that
+
+    .. math::
+        u(x) &= \sum_{k=0}^{N-1} \hat{u}_k \phi_k(x), \\
+        u'(0) &= a
 
     Parameters
     ----------
@@ -385,10 +397,6 @@ class Generic(CompositeBase):
         Set upper 1/3 of coefficients to zero before backward transform
     coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
         Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
-
-    Note
-    ----
-    A test function is always using homogeneous boundary conditions.
 
     """
     def __init__(self, N, quad="LG", bc={}, domain=(0, np.inf), dtype=float,

@@ -1,5 +1,40 @@
-"""
-Module for defining function spaces in the Fourier family
+r"""
+Module for function spaces using Fourier exponentials.
+
+A basis function :math:`\phi_k` is given as
+
+.. math::
+    \phi_k(x) = \exp(ikx)
+
+and an expansion is given as
+
+.. math::
+    :label: u
+
+    u(x) = \sum_{k=-N/2}^{N/2-1} \hat{u}_k \exp(ikx)
+
+However, since :math:`\exp(ikx) = \exp(i(k \pm N)x)` this expansion can
+also be written as an interpolator
+
+.. math::
+    :label: u2
+
+    u(x) = \sum_{k=-N/2}^{N/2} \frac{\hat{u}_k}{c_k} \exp(ikx)
+
+where :math:`c_{N/2} = c_{-N/2} = 2`, whereas :math:`c_k = 1` for
+:math:`k=-N/2+1, ..., N/2-1`. Furthermore,
+:math:`\hat{u}_{N/2} = \hat{u}_{-N/2}`.
+
+The interpolator form is used for computing odd derivatives. Otherwise,
+it makes no difference and therefore :eq:`u` is used in transforms, since
+this is the form expected by fftw.
+The inner product is defined as
+
+.. math::
+    (u, v) = \frac{1}{L} \int_{0}^{L} u \overline{v} dx
+
+where :math:`\overline{v}` is the complex conjugate of :math:`v`, and
+:math:`L` is the length of the (periodic) domain.
 """
 import sympy as sp
 import numpy as np
@@ -14,87 +49,15 @@ __all__ = ['FourierBase', 'R2C', 'C2C']
 
 
 class FourierBase(SpectralBase):
-    r"""Fourier base class
-
-    A basis function :math:`\phi_k` is given as
-
-    .. math::
-
-        \phi_k(x) = \exp(ikx)
-
-    and an expansion is given as
-
-    .. math::
-       :label: u
-
-        u(x) = \sum_k \hat{u}_k \exp(ikx)
-
-    where
-
-    .. math::
-
-        k = -N/2, -N/2+1, ..., N/2-1
-
-    However, since :math:`\exp(ikx) = \exp(i(k \pm N)x)` this expansion can
-    also be written as an interpolator
-
-    .. math::
-       :label: u2
-
-        u(x) = \sum_k \frac{\hat{u}_k}{c_k} \exp(ikx)
-
-    where
-
-    .. math::
-
-        k = -N/2, -N/2+1, ..., N/2-1, N/2
-
-    and :math:`c_{N/2} = c_{-N/2} = 2`, whereas :math:`c_k = 1` for
-    :math:`k=-N/2+1, ..., N/2-1`. Furthermore,
-    :math:`\hat{u}_{N/2} = \hat{u}_{-N/2}`.
-
-    The interpolator form is used for computing odd derivatives. Otherwise,
-    it makes no difference and therefore :eq:`u` is used in transforms, since
-    this is the form expected by fftw.
-
-    The inner product is defined as
-
-    .. math::
-
-        (u, v) = \frac{1}{L} \int_{0}^{L} u \overline{v} dx
-
-    where :math:`\overline{v}` is the complex conjugate of :math:`v`, and
-    :math:`L` is the length of the (periodic) domain.
-
-    Parameters
-    ----------
-        N : int
-            Number of quadrature points. Should be even for efficiency, but
-            this is not required.
-        padding_factor : float, optional
-            Factor for padding backward transforms. padding_factor=1.5
-            corresponds to a 3/2-rule for dealiasing.
-        domain : 2-tuple of floats, optional
-            The computational domain.
-        dtype : data-type, optional
-        dealias_direct : bool, optional
-            True for dealiasing using 2/3-rule. Must be used with
-            padding_factor = 1.
-        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
-            Map for curvilinear coordinatesystem.
-            The new coordinate variable in the new coordinate system is the first item.
-            Second item is a tuple for the Cartesian position vector as function of the
-            new variable in the first tuple. Example::
-
-                theta = sp.Symbols('x', real=True, positive=True)
-                rv = (sp.cos(theta), sp.sin(theta))
+    r"""Abstract base class for Fourier exponentials
     """
-
     def __init__(self, N, padding_factor=1, domain=(0, 2*np.pi), dtype=float,
                  dealias_direct=False, coordinates=None):
         self._k = None
         self._planned_axes = None  # Collapsing of axes means that this base can be used to plan transforms over several collapsed axes. Store the axes planned for here.
-        SpectralBase.__init__(self, N, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct, domain=domain, coordinates=coordinates)
+        SpectralBase.__init__(self, N, dtype=dtype, padding_factor=padding_factor,
+                              dealias_direct=dealias_direct, domain=domain,
+                              coordinates=coordinates)
 
     @staticmethod
     def family():
@@ -311,27 +274,39 @@ class FourierBase(SpectralBase):
 class R2C(FourierBase):
     """Fourier function space for real to complex transforms
 
+    A basis function :math:`\phi_k` is given as
+
+    .. math::
+        \phi_k(x) = \exp(ikx), \quad k =-N/2, -N/2+1, \ldots, N/2-1
+
+    An expansion is given as
+
+    .. math::
+        u(x) = \sum_{k=-N/2}^{N/2-1} \hat{u}_k \exp(ikx).
+
+    Howewer, due to Hermitian symmetry :math:`\hat{u}_k = \overline{\hat{u}_{-k}}`,
+    which is taken advantage of in this function space. Specifically, Fourier
+    transforms make use of real-to-complex and complex-to-real algorithms, see
+    `FFTW <https://www.fftw.org/fftw3_doc/One_002dDimensional-DFTs-of-Real-Data.html>`_
+    and `rfftn <https://mpi4py-fft.readthedocs.io/en/latest/mpi4py_fft.fftw.html#mpi4py_fft.fftw.xfftn.rfftn>`_
+    of `mpi4py-fft <https://github.com/mpi4py/mpi4py-fft>`_.
+
     Parameters
     ----------
-        N : int
-            Number of quadrature points. Should be even for efficiency, but
-            this is not required.
-        padding_factor : float, optional
-            Factor for padding backward transforms. padding_factor=1.5
-            corresponds to a 3/2-rule for dealiasing.
-        domain : 2-tuple of floats, optional
-            The computational domain.
-        dealias_direct : bool, optional
-            True for dealiasing using 2/3-rule. Must be used with
-            padding_factor = 1.
-        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
-            Map for curvilinear coordinatesystem.
-            The new coordinate variable in the new coordinate system is the first item.
-            Second item is a tuple for the Cartesian position vector as function of the
-            new variable in the first tuple. Example::
+    N : int
+        Number of quadrature points. Should be even for efficiency, but
+        this is not required.
+    padding_factor : float, optional
+        Factor for padding backward transforms. padding_factor=1.5
+        corresponds to a 3/2-rule for dealiasing.
+    domain : 2-tuple of floats, optional
+        The computational domain.
+    dealias_direct : bool, optional
+        True for dealiasing using 2/3-rule. Must be used with
+        padding_factor = 1.
+    coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
+        Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
 
-                theta = sp.Symbols('x', real=True, positive=True)
-                rv = (sp.cos(theta), sp.sin(theta))
     """
 
     def __init__(self, N, padding_factor=1., domain=(0., 2.*np.pi),
@@ -455,11 +430,11 @@ class R2C(FourierBase):
 
         Parameters
         ----------
-            u : array
-            v : array
-            uv : array, optional
-            fast : bool, optional
-                   Whether to use fast transforms in computing convolution
+        u : array
+        v : array
+        uv : array, optional
+        fast : bool, optional
+               Whether to use fast transforms in computing convolution
 
         Note
         ----
@@ -494,27 +469,32 @@ class R2C(FourierBase):
 class C2C(FourierBase):
     """Fourier function space for complex to complex transforms
 
+    A basis function :math:`\phi_k` is given as
+
+    .. math::
+        \phi_k(x) = \exp(ikx), \quad k =-N/2, -N/2+1, \ldots, N/2-1
+
+    An expansion is given as
+
+    .. math::
+        u(x) = \sum_{k=-N/2}^{N/2-1} \hat{u}_k \exp(ikx).
+
     Parameters
     ----------
-        N : int
-            Number of quadrature points. Should be even for efficiency, but
-            this is not required.
-        padding_factor : float, optional
-            Factor for padding backward transforms. padding_factor=1.5
-            corresponds to a 3/2-rule for dealiasing.
-        domain : 2-tuple of floats, optional
-            The computational domain.
-        dealias_direct : bool, optional
-            True for dealiasing using 2/3-rule. Must be used with
-            padding_factor = 1.
-        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
-            Map for curvilinear coordinatesystem.
-            The new coordinate variable in the new coordinate system is the first item.
-            Second item is a tuple for the Cartesian position vector as function of the
-            new variable in the first tuple. Example::
+    N : int
+        Number of quadrature points. Should be even for efficiency, but
+        this is not required.
+    padding_factor : float, optional
+        Factor for padding backward transforms. padding_factor=1.5
+        corresponds to a 3/2-rule for dealiasing.
+    domain : 2-tuple of floats, optional
+        The computational domain.
+    dealias_direct : bool, optional
+        True for dealiasing using 2/3-rule. Must be used with
+        padding_factor = 1.
+    coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
+        Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
 
-                theta = sp.Symbols('x', real=True, positive=True)
-                rv = (sp.cos(theta), sp.sin(theta))
     """
 
     def __init__(self, N, padding_factor=1, domain=(0., 2.*np.pi),

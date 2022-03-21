@@ -651,13 +651,13 @@ class ShenBiharmonic(CompositeBase):
 class Phi2(CompositeBase):
     r"""Function space for biharmonic equation
 
-    The basis functions :math:`\{\phi_k\}_{k=0}^{N-5}` are
+    The basis functions :math:`\phi_k` for :math:`k=0, 1, \ldots, N-5` are
 
     .. math::
 
         \phi_k &= \frac{(1-x^2)^2 L''_{k+2}}{h^{(2)}_{k+2}}, \\
         h^{(2)}_{k+2} &= \int_{-1}^1 L''_{k+2} L''_{k+2} (1-x^2)^2 dx, \\
-               &= \frac{2 \left(k + 1\right) \left(k + 2\right) \left(k + 3\right) \left(k + 4\right)}{2 k + 5},
+               &= \frac{2 (k+1)(k+2)(k+3)(k+4)}{2k+5},
 
     which (along with boundary functions) becomes the basis
 
@@ -732,7 +732,7 @@ class Phi2(CompositeBase):
 class Phi3(CompositeBase):
     r"""Function space for 6th order equations
 
-    The basis functions :math:`\{\phi_k\}_{k=0}^{N-7}` are
+    The basis functions :math:`\phi_k` for :math:`k=0, 1, \ldots, N-7` are
 
     .. math::
         \phi_k &= \frac{(1-x^2)^3}{h^{(3)}_{k+3}} L^{(3)}_{k+3}}, \, k=0, 1, \ldots, N-7, \\
@@ -811,13 +811,7 @@ class Phi3(CompositeBase):
 class Phi4(CompositeBase):
     r"""Function space with 2 Dirichlet and 6 Neumann boundary conditions
 
-    The 8 boundary conditions are
-
-    .. math::
-
-        \frac{d^k}{dx^k}u(\pm 1) = 0, \quad \forall k \in (0,1,2,3)
-
-    and the basis functions are
+    The basis functions :math:`\phi_k` for :math:`k=0, 1, \ldots, N-9` are
 
     .. math::
 
@@ -842,8 +836,8 @@ class Phi4(CompositeBase):
         Number of quadrature points
     quad : str, optional
         Type of quadrature
+        - LG - Legendre-Gauss
         - GL - Legendre-Gauss-Lobatto
-        - GC - Legendre-Gauss
     bc : 8-tuple of numbers
     domain : 2-tuple of floats, optional
         The computational domain
@@ -901,7 +895,7 @@ class Phi4(CompositeBase):
 class BeamFixedFree(CompositeBase):
     r"""Function space for fixed free beams
 
-    The basis functions are
+    The basis :math:`\{\phi_k\}_{k=0}^{N-1}` is
 
     .. math::
 
@@ -1015,7 +1009,6 @@ class UpperDirichlet(CompositeBase):
 
         - LG - Legendre-Gauss
         - GL - Legendre-Gauss-Lobatto
-
     domain : 2-tuple of floats, optional
         The computational domain
     padding_factor : float, optional
@@ -1056,7 +1049,7 @@ class UpperDirichlet(CompositeBase):
 class ShenBiPolar(CompositeBase):
     r"""Function space for the Biharmonic equation
 
-    The basis function is
+    The basis :math:`\{\phi_k\}_{k=0}^{N-1}` is
 
     .. math::
 
@@ -1678,7 +1671,6 @@ class BCUpperDirichlet(BCBase):
 
     def stencil_matrix(self, N=None):
         return sp.Rational(1, 2)*np.array([[1, 1]])
-
 
 class BCGeneric(BCBase):
 
