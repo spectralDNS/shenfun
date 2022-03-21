@@ -8,7 +8,7 @@ This demo explores how to use sparse Chebyshev-Petrov-Galerkin methods for findi
 the derivatives of smooth functions. We will compare the methods to the more commonly adopted
 recursion methods that are found in most spectral textbooks.
 
-TOC: on
+TOC: off
 
 # #include "../preprocesser.py"
 

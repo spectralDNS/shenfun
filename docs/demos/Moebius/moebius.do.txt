@@ -13,7 +13,7 @@ is shown in the figure below, read on to see how it was computed.
 
 FIGURE: [https://cdn.jsdelivr.net/gh/spectralDNS/spectralutilities@master/figures/moebius8_trans.png]
 
-TOC: on
+TOC: off
 
 # #include "../preprocesser.py"
 

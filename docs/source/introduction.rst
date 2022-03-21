@@ -21,7 +21,7 @@ Consider the Poisson equation with a right hand side function :math:`f(\boldsymb
 
 To solve this equation, we will eventually need to supplement
 appropriate boundary conditions. However, for now just assume that any valid
-boundary conditions (Dirichlet, Neumann, periodic).
+boundary conditions (Dirichlet, Neumann, periodic) apply.
 
 With the method of weighted residuals we attempt to find :math:`u(\boldsymbol{x})`
 using an approximation, :math:`u_N`, to the solution
@@ -71,9 +71,9 @@ Note that this is a regular linear system of algebra equations
 
 .. math::
 
-    A_{kj} \hat{u}_{j} = \tilde{f}_k,
+    a_{kj} \hat{u}_{j} = \tilde{f}_k,
 
-where the matrix :math:`A \in \mathbb{R}^{N \times N}`.
+where the matrix :math:`A=(a_kj) \in \mathbb{R}^{N \times N}`.
 
 The choice of basis functions :math:`v(\boldsymbol{x})` (or function space :math:`V_N`)
 is highly central to the method.
@@ -111,21 +111,6 @@ domain (e.g., :math:`[-1, 1]`), and a weighted inner product. The weights
 Chebyshev functions use the weight :math:`1/\sqrt{1-x^2}`, whereas Legendre
 and Fourier functions use a constant weight.
 
-Complete demonstration programs that solves the Poisson equation
-:eq:`eq:poisson1`, and some other problems can be found by following these
-links
-
-    * :ref:`Demo - 1D Poisson's equation`
-    * :ref:`Demo - Working with Functions`
-    * :ref:`Demo - Integration of functions`
-    * :ref:`Demo - 3D Poisson's equation`
-    * :ref:`Demo - Helmholtz equation in polar coordinates`
-    * :ref:`Demo - Helmholtz equation on the unit sphere`
-    * :ref:`Demo - Cubic nonlinear Klein-Gordon equation`
-    * :ref:`Demo - Kuramato-Sivashinsky equation`
-    * :ref:`Demo - Stokes equations`
-    * :ref:`Demo - Lid driven cavity`
-    * :ref:`Demo - Rayleigh Benard`
 
 Tensor products
 ---------------

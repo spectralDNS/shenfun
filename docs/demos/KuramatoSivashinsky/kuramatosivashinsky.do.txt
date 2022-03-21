@@ -10,7 +10,7 @@ a single Python file "KuramatoSivashinsky.py":
 "https://github.com/spectralDNS/shenfun/blob/master/demo/Kuramato_Sivashinsky.py", and it may be run
 in parallel using MPI.
 
-TOC: on
+TOC: off
 
 # #include "../preprocesser.py"
 

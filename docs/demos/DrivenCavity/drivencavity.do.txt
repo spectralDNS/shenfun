@@ -18,7 +18,7 @@ for this reason we will also look at a regularized lid driven cavity,
 where the top lid moves according to $(1-x)^2(1+x)^2$, thus removing
 the corner discontinuities.
 
-TOC: on
+TOC: off
 
 # #include "../preprocesser.py"
 

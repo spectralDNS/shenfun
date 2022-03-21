@@ -9,7 +9,7 @@ This is a demonstration of how the Python module "shenfun":
 global spectral functions in one and several dimensions.
 
 
-TOC: on
+TOC: off
 
 # #include "../preprocesser.py"
 

@@ -21,7 +21,7 @@ of this demo, where you may play with the code interactively.
 
 FIGURE: [https://rawgit.com/spectralDNS/spectralutilities/master/figures/poisson1D_errornorm.png] Convergence of 1D Poisson solvers for both Legendre and Chebyshev modified basis function. label{fig:ct0}
 
-TOC: on
+TOC: off
 
 # #include "../preprocesser.py"
 

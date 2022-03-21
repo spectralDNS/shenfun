@@ -26,7 +26,7 @@ FIGURE: [https://raw.githack.com/spectralDNS/spectralutilities/master/movies/RB_
 
 FIGURE: [https://raw.githack.com/spectralDNS/spectralutilities/master/figures/RB_40x128_100_fire.png, width=800] Convection cells for a laminar flow. The simulation is run at *Ra* =100, *Pr* =0.7 with 40 and 128 quadrature points in *x* and *y*-directions, respectively. label{fig:RB_lam}
 
-TOC: on
+TOC: off
 
 # #include "../preprocesser.py"
 

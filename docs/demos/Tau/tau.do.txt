@@ -27,7 +27,7 @@ of this demo, where you may play with the code interactively.
 
 % endif
 
-TOC: on
+TOC: off
 
 # #include "../preprocesser.py"
 

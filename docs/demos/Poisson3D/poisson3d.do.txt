@@ -15,7 +15,7 @@ The demo is implemented in slightly more generic terms (more boundary conditions
 
 FIGURE: [https://rawgit.com/spectralDNS/spectralutilities/master/figures/poisson3D_errornorm.png] Convergence of 3D Poisson solvers for both Legendre and Chebyshev modified basis function. label{fig:3d:ct0}
 
-TOC: on
+TOC: off
 
 # #include "../preprocesser.py"
 

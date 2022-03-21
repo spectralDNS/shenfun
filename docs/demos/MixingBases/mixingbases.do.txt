@@ -9,7 +9,7 @@ bases for test and trial spaces. The use of different bases leads for
 some optimal combinations to highly sparse and well-conditioned
 coefficient matrices.
 
-TOC: on
+TOC: off
 
 # #include "../preprocesser.py"
 

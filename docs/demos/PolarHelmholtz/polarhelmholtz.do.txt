@@ -12,7 +12,7 @@ and the numerical method is described in more detail by J. Shen cite{shen3}.
 
 FIGURE: [https://rawgit.com/spectralDNS/spectralutilities/master/figures/Helmholtzdisc.png, width=700 frac=1] Helmholtz on the unit disc. label{fig:helmholtz}
 
-TOC: on
+TOC: off
 
 # #include "../preprocesser.py"
 

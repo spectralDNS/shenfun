@@ -15,7 +15,7 @@ for the Legendre basis.
 
 FIGURE: [https://rawgit.com/spectralDNS/spectralutilities/master/figures/BlockMat.png] Coupled block matrix for Stokes equations. label{fig:BlockMat}
 
-TOC: on
+TOC: off
 
 # #include "../preprocesser.py"
 

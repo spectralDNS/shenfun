@@ -13,7 +13,7 @@ formulation. The discretization, and some background on the spectral Galerkin
 method is given first, before we turn to the actual details of the `shenfun`
 implementation.
 
-TOC: on
+TOC: off
 
 # #include "../preprocesser.py"
 

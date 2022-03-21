@@ -6,7 +6,7 @@ Getting started
 Basic usage
 -----------
 
-Shenfun consists of classes and functions whoose purpose are to make it easier
+Shenfun consists of classes and functions whoose purpose it is to make it easier
 to implement PDE's with spectral methods in simple tensor product domains. The
 most important everyday tools are
 
@@ -22,9 +22,9 @@ most important everyday tools are
 	* :func:`.project`
 	* :func:`.FunctionSpace`
 
-A good place to get started is by creating a :func:`.FunctionSpace`. There are six families of
-function spaces: Fourier, Chebyshev, Legendre, Laguerre, Hermite and Jacobi. All spaces are
-defined on a one-dimensional
+A good place to get started is by creating a :func:`.FunctionSpace`. There are seven families of
+function spaces: Fourier, Chebyshev (first and second kind), Legendre, Laguerre, Hermite and Jacobi.
+All spaces are defined on a one-dimensional reference
 domain, with their own basis functions and quadrature points. For example, we have
 the regular orthogonal Chebyshev space :math:`\text{span}\{T_k\}_{k=0}^{N-1}`, where :math:`T_k` is the
 :math:`k`'th Chebyshev polynomial of the first kind. To create such a function space with

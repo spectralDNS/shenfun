@@ -8,7 +8,7 @@ This demo will show how to compute fast forward transforms for the three
 different Dirichlet bases that are implemented for Chebyshev
 polynomials in Shenfun.
 
-TOC: on
+TOC: off
 
 # #include "../preprocesser.py"
 

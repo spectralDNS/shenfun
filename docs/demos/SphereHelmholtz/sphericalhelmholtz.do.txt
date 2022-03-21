@@ -13,7 +13,7 @@ If requested the solver will run in parallel using MPI.
 
 FIGURE: [https://rawgit.com/spectralDNS/spectralutilities/master/figures/spherewhite4.png, width=700 frac=1] Helmholtz on the unit sphere. label{fig:helmholtz}
 
-TOC: on
+TOC: off
 
 # #include "../preprocesser.py"
 
