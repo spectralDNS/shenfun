@@ -170,7 +170,7 @@ def test_padding_neumann(family):
     uc = Tp.forward(up)
     assert np.linalg.norm(u-uc) < 1e-8
 
-@pytest.mark.parametrize('family', ('C','L','J','F','H','La'))
+@pytest.mark.parametrize('family', ('C','L','J','Q','F','H','La'))
 def test_padding_orthogonal(family):
     N = 8
     B = FunctionSpace(N, family)

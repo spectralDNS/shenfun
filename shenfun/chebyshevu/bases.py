@@ -362,6 +362,8 @@ class Phi1(CompositeBase):
         Boundary conditions at, respectively, x=(-1, 1).
     domain : 2-tuple of floats, optional
         The computational domain
+    scaled : boolean, optional
+        Whether or not to scale basis function n by 1/(n+2)
     dtype : data-type, optional
         Type of input data in real physical space. Will be overloaded when
         basis is part of a :class:`.TensorProductSpace`.
@@ -397,7 +399,7 @@ class Phi1(CompositeBase):
         d0, d2 = np.zeros(N), np.zeros(N-2)
         d0[:-2] = sp.lambdify(n, self.b0n)(k[:N-2])
         d2[:] = sp.lambdify(n, self.b2n)(k[:N-2])
-        if self.is_scaled:
+        if self.is_scaled():
             return SparseMatrix({0: d0/(k+2), 2: d2/(k[:-2]+2)}, (N, N))
         return SparseMatrix({0: d0, 2: d2}, (N, N))
 
@@ -674,6 +676,12 @@ class CompactDirichlet(CompositeBase):
     different from 0. In one dimension :math:`\hat{u}_{N-2}=a` and
     :math:`\hat{u}_{N-1}=b`.
 
+    If the parameter `scaled=True`, then the first N-2 basis functions are
+
+    .. math::
+
+        \phi_k &= \frac{U_k}{k+1} - \frac{U_{k+2}}{k+3}, \, k=0, 1, \ldots, N-3, \\
+
     Parameters
     ----------
     N : int, optional
@@ -690,6 +698,8 @@ class CompactDirichlet(CompositeBase):
     dtype : data-type, optional
         Type of input data in real physical space. Will be overloaded when
         basis is part of a :class:`.TensorProductSpace`.
+    scaled : boolean, optional
+        Whether or not to use scaled basis function.
     padding_factor : float, optional
         Factor for padding backward transforms.
     dealias_direct : bool, optional
@@ -703,10 +713,11 @@ class CompactDirichlet(CompositeBase):
 
     """
     def __init__(self, N, quad="GU", bc=(0, 0), domain=(-1, 1), dtype=float,
-                 padding_factor=1, dealias_direct=False, coordinates=None, **kw):
+                 padding_factor=1, dealias_direct=False, coordinates=None,
+                 scaled= False, **kw):
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
-                               coordinates=coordinates)
+                               coordinates=coordinates, scaled=scaled)
 
     @staticmethod
     def boundary_condition():
@@ -720,8 +731,12 @@ class CompactDirichlet(CompositeBase):
         N = self.N if N is None else N
         k = np.arange(N)
         d0, d2 = np.zeros(N), np.zeros(N-2)
-        d0[:-2] = 1
-        d2[:] = -(k[:-2]+1)/(k[:-2]+3)
+        if not self.is_scaled():
+            d0[:-2] = 1
+            d2[:] = -(k[:-2]+1)/(k[:-2]+3)
+        else:
+            d0[:-2] = (k[:-2]+3)/(k[:-2]+1)
+            d2[:] = -1
         return SparseMatrix({0: d0, 2: d2}, (N, N))
 
     def slice(self):

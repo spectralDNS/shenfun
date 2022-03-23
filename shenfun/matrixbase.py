@@ -532,6 +532,7 @@ class SpectralMatrix(SparseMatrix):
         - :mod:`.legendre.bases`
         - :mod:`.chebyshev.bases`
         - :mod:`.chebyshevu.bases`
+        - :mod:`.ultraspherical.bases`
         - :mod:`.fourier.bases`
         - :mod:`.laguerre.bases`
         - :mod:`.hermite.bases`
@@ -1534,6 +1535,7 @@ def check_sanity(A, test, trial, measure=1):
         - :mod:`.legendre.bases`
         - :mod:`.chebyshev.bases`
         - :mod:`.chebyshevu.bases`
+        - :mod:`.ultraspherical.bases`
         - :mod:`.fourier.bases`
         - :mod:`.laguerre.bases`
         - :mod:`.hermite.bases`
@@ -1565,6 +1567,7 @@ def get_dense_matrix(test, trial, measure=1):
         - :mod:`.legendre.bases`
         - :mod:`.chebyshev.bases`
         - :mod:`.chebyshevu.bases`
+        - :mod:`.ultraspherical.bases`
         - :mod:`.fourier.bases`
         - :mod:`.laguerre.bases`
         - :mod:`.hermite.bases`
@@ -1624,6 +1627,7 @@ def get_denser_matrix(test, trial, measure=1):
         - :mod:`.legendre.bases`
         - :mod:`.chebyshev.bases`
         - :mod:`.chebyshevu.bases`
+        - :mod:`.ultraspherical.bases`
         - :mod:`.fourier.bases`
         - :mod:`.laguerre.bases`
         - :mod:`.hermite.bases`
@@ -1739,6 +1743,7 @@ def get_dense_matrix_sympy(test, trial, measure=1):
         - :mod:`.legendre.bases`
         - :mod:`.chebyshev.bases`
         - :mod:`.chebyshevu.bases`
+        - :mod:`.ultraspherical.bases`
         - :mod:`.fourier.bases`
         - :mod:`.laguerre.bases`
         - :mod:`.hermite.bases`
@@ -1819,6 +1824,7 @@ def get_dense_matrix_quadpy(test, trial, measure=1):
         - :mod:`.legendre.bases`
         - :mod:`.chebyshev.bases`
         - :mod:`.chebyshevu.bases`
+        - :mod:`.ultraspherical.bases`
         - :mod:`.fourier.bases`
         - :mod:`.laguerre.bases`
         - :mod:`.hermite.bases`

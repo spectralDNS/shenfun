@@ -22,14 +22,15 @@ def get_stencil_matrix(bcs, family, alpha=None, beta=None):
     family : str
         Choose one of
 
-        - ``Chebyshev`` or ``C``,
-        - ``Chebyshevu`` or ``U``,
-        - ``Legendre`` or ``L``,
+        - ``Chebyshev`` or ``C``
+        - ``Chebyshevu`` or ``U``
+        - ``Legendre`` or ``L``
+        - ``Ultraspherical`` or ``Q``
         - ``Jacobi`` or ``J``
         - ``Laguerre`` or ``La``
 
     alpha, beta : numbers, optional
-        The Jacobi parameters, used only for `family=Jacobi`
+        The Jacobi parameters, used only for ``Jacobi`` or ``Ultraspherical``
     """
     from shenfun.spectralbase import BoundaryConditions
     base = importlib.import_module('.'.join(('shenfun', family.lower())))
@@ -60,14 +61,15 @@ def get_bc_basis(bcs, family, alpha=None, beta=None):
     family : str
         Choose one of
 
-        - ``Chebyshev`` or ``C``,
-        - ``Chebyshevu`` or ``U``,
-        - ``Legendre`` or ``L``,
+        - ``Chebyshev`` or ``C``
+        - ``Chebyshevu`` or ``U``
+        - ``Legendre`` or ``L``
+        - ``Ultraspherical`` or ``Q``
         - ``Jacobi`` or ``J``
         - ``Laguerre`` or ``La``
 
     alpha, beta : numbers, optional
-        The Jacobi parameters, used only for `family=Jacobi`
+        The Jacobi parameters, used only for ``Jacobi`` or ``Ultraspherical``
     """
     from shenfun.spectralbase import BoundaryConditions
     base = importlib.import_module('.'.join(('shenfun', family.lower())))

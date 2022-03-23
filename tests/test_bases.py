@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 import sympy as sp
 from shenfun import chebyshev, chebyshevu, legendre, fourier, hermite, \
-    laguerre, jacobi
+    laguerre, jacobi, ultraspherical
 
 bases = (
     chebyshev.Orthogonal,
@@ -42,6 +42,13 @@ bases = (
     chebyshevu.Phi2,
     chebyshevu.Phi3,
     chebyshevu.Phi4,
+    ultraspherical.Orthogonal,
+    ultraspherical.CompactDirichlet,
+    ultraspherical.CompactNeumann,
+    ultraspherical.Phi1,
+    ultraspherical.Phi2,
+    ultraspherical.Phi3,
+    ultraspherical.Phi4,
     fourier.R2C,
     fourier.C2C,
     hermite.Orthogonal,
@@ -70,7 +77,8 @@ bcbases = (
     legendre.BCLowerDirichlet,
     legendre.BCUpperDirichlet,
     legendre.BCGeneric,
-    chebyshevu.BCGeneric
+    chebyshevu.BCGeneric,
+    ultraspherical.BCGeneric
 )
 
 nonBC = (

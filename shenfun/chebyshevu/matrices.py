@@ -125,7 +125,7 @@ class BP1SDmat(SpectralMatrix):
         K.shape = (N, N+2)
         K = K.diags('csr')
         B2 = Lmat(2, 0, 2, N, N+2, -half, -half, cn) # B^{(2)_{(2)}}
-        if not test[0].is_scaled:
+        if not test[0].is_scaled():
             k = np.arange(N+2)
             B2 = SparseMatrix({0: (k[:-2]+2)}, (N, N)).diags('csr')*B2
         M = B2 * K.T
@@ -139,7 +139,7 @@ class AP1SDmat(SpectralMatrix):
 
         a_{kj}=(\psi''_j, \phi_k)_w,
 
-    where the test function :math:`\phi_k \in` :class:`.chebyshevu.bases.Phi2`, the trial
+    where the test function :math:`\phi_k \in` :class:`.chebyshevu.bases.Phi1`, the trial
     function :math:`\psi_j \in` :class:`.chebyshev.bases.ShenDirichlet`, and test and
     trial spaces have dimensions of M and N, respectively.
 
@@ -148,7 +148,7 @@ class AP1SDmat(SpectralMatrix):
         assert isinstance(test[0], P1)
         assert isinstance(trial[0], SD)
         d = {0: -1, 2: 1}
-        if not test[0].is_scaled:
+        if not test[0].is_scaled():
             k = np.arange(test[0].N-2)
             d = {0: -(k+2), 2: k[:-2]+2}
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
@@ -177,7 +177,7 @@ class BP1SNmat(SpectralMatrix):
         K.shape = (N, N+2)
         K = K.diags('csr')
         B2 = Lmat(2, 0, 2, N, N+2, -half, -half, cn) # B^{(2)_{(2)}}
-        if not test[0].is_scaled:
+        if not test[0].is_scaled():
             k = np.arange(test[0].N)
             B2 = SparseMatrix({0: (k[:-2]+2)}, (N, N)).diags('csr')*B2
         M = B2 * K.T
@@ -201,7 +201,7 @@ class AP1SNmat(SpectralMatrix):
         assert isinstance(trial[0], SN)
         k = np.arange(test[0].N-2)
         d = {0: -(k/(k+2))**2, 2: 1}
-        if not test[0].is_scaled:
+        if not test[0].is_scaled():
             d = {0: -k**2/(k+2), 2: k[:-2]+2}
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 

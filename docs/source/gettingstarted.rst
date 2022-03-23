@@ -22,8 +22,9 @@ most important everyday tools are
 	* :func:`.project`
 	* :func:`.FunctionSpace`
 
-A good place to get started is by creating a :func:`.FunctionSpace`. There are seven families of
-function spaces: Fourier, Chebyshev (first and second kind), Legendre, Laguerre, Hermite and Jacobi.
+A good place to get started is by creating a :func:`.FunctionSpace`. There are eight families of
+function spaces: Fourier, Chebyshev (first and second kind), Legendre, Laguerre, Hermite, Ultraspherical
+and Jacobi.
 All spaces are defined on a one-dimensional reference
 domain, with their own basis functions and quadrature points. For example, we have
 the regular orthogonal Chebyshev space :math:`\text{span}\{T_k\}_{k=0}^{N-1}`, where :math:`T_k` is the

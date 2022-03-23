@@ -258,6 +258,46 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
 
         return B(N, **par)
 
+    elif family.lower() in ('ultraspherical', 'q'):
+        from shenfun import ultraspherical
+        if quad is not None:
+            assert quad == 'QG'
+            par['quad'] = quad
+
+        if scaled is not None:
+            assert isinstance(scaled, bool)
+            par['scaled'] = scaled
+
+        bases = defaultdict(lambda: ultraspherical.bases.Generic,
+                            {
+                                '': ultraspherical.bases.Orthogonal,
+                                'LDRD': ultraspherical.bases.CompactDirichlet,
+                                'LNRN': ultraspherical.bases.CompactNeumann,
+                                'LDLNRDRN': ultraspherical.bases.Phi2,
+                                'LDLNLN2RDRNRN2': ultraspherical.bases.Phi3,
+                                'LDLNLN2N3RDRNRN2N3': ultraspherical.bases.Phi4
+                            })
+
+        if basis is not None:
+            assert isinstance(basis, str)
+            B = getattr(ultraspherical.bases, basis)
+            if isinstance(bc, tuple):
+                par['bc'] = bc
+        else:
+            if isinstance(bc, (str, tuple, dict)):
+                domain = (-1, 1) if domain is None else domain
+                bcs = BoundaryConditions(bc, domain=domain)
+                key = bcs.orderednames()
+                par['bc'] = bcs
+
+            elif bc is None:
+                key = ''
+            else:
+                raise NotImplementedError
+            B = bases[''.join(key)]
+
+        return B(N, **par)
+
     elif family.lower() in ('laguerre', 'la'):
         from shenfun import laguerre
         if quad is not None:

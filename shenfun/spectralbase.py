@@ -1193,6 +1193,7 @@ def getCompositeBase(Orthogonal):
 
         - :class:`.chebyshev.bases.Orthogonal`
         - :class:`.chebyshevu.bases.Orthogonal`
+        - :class:`.ultraspherical.bases.Orthogonal`
         - :class:`.legendre.bases.Orthogonal`
         - :class:`.jacobi.bases.Orthogonal`
         - :class:`.laguerre.bases.Orthogonal`
@@ -1203,6 +1204,7 @@ def getCompositeBase(Orthogonal):
         - :class:`.chebyshev.bases.CompositeBase`
         - :class:`.chebyshevu.bases.CompositeBase`
         - :class:`.legendre.bases.CompositeBase`
+        - :class:`.ultraspherical.bases.CompositeBase`
         - :class:`.jacobi.bases.CompositeBase`
         - :class:`.laguerre.bases.CompositeBase`
 
@@ -1757,6 +1759,7 @@ def inner_product(test, trial, measure=1):
             - :mod:`.chebyshev.bases`
             - :mod:`.chebyshevu.bases`
             - :mod:`.legendre.bases`
+            - :mod:`.ultraspherical.bases`
             - :mod:`.fourier.bases`
             - :mod:`.laguerre.bases`
             - :mod:`.hermite.bases`
