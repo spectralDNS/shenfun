@@ -26,6 +26,7 @@ according to
     - DN = DirichletNeumann
     - P1 = Phi1
     - P2 = Phi2
+    - P3 = Phi3
     - P4 = Phi4
     - BD = BCDirichlet
     - BB = BCBiharmonic
@@ -78,10 +79,12 @@ import functools
 import numpy as np
 import sympy as sp
 from shenfun.optimization import cython, numba
-from shenfun.matrixbase import SpectralMatrix, extract_diagonal_matrix
+from shenfun.matrixbase import SpectralMatrix, SparseMatrix, extract_diagonal_matrix
 from shenfun.la import TDMA as generic_TDMA
 from shenfun.la import PDMA as generic_PDMA
 from shenfun.la import TwoDMA, FDMA
+from shenfun.utilities import split
+from shenfun import config
 from .la import ADDSolver, ANNSolver
 from . import bases
 
@@ -99,35 +102,76 @@ MN = bases.MikNeumann
 UD = bases.UpperDirichlet
 LD = bases.LowerDirichlet
 DN = bases.DirichletNeumann
+ND = bases.NeumannDirichlet
+CB = bases.CompositeBase
 P1 = bases.Phi1
 P2 = bases.Phi2
+P3 = bases.Phi3
 P4 = bases.Phi4
 
-BCD = bases.BCDirichlet
-BCB = bases.BCBiharmonic
+BCG = bases.BCGeneric
 
-def get_ck(N, quad):
+def get_ck(M, N, quad):
     """Return array ck, parameter in Chebyshev expansions
 
     Parameters
     ----------
-        N : int
-            Number of quadrature points
-        quad : str
-               Type of quadrature
+    M : int
+        The number of quadrature points in the test function
+    N : int
+        The number of quadrature points in the trial function
+    quad : str
+        Type of quadrature
 
-               - GL - Chebyshev-Gauss-Lobatto
-               - GC - Chebyshev-Gauss
+        - GL - Chebyshev-Gauss-Lobatto
+        - GC - Chebyshev-Gauss
     """
-    ck = np.ones(N, int)
+    ck = np.ones(min(M, N), int)
     ck[0] = 2
-    if quad == "GL":
+    if quad == "GL" and N >= M:
         ck[-1] = 2
     return ck
 
 def dmax(N, M, d):
     Z = min(N, M)
     return Z-abs(d)+min(max((M-N)*int(d/abs(d)), 0), abs(d))
+
+class BTTmat(SpectralMatrix):
+    r"""Mass matrix :math:`B=(b_{kj}) \in \mathbb{R}^{M \times N}`, where
+
+    .. math::
+
+        b_{kj}=(T_j, T_k)_w,
+
+    where :math:`T_k \in` :class:`.chebyshev.bases.Orthogonal`, and test
+    and trial spaces have dimensions of M and N, respectively.
+
+    """
+    def __init__(self, test, trial, scale=1, measure=1):
+        assert isinstance(test[0], T)
+        assert isinstance(trial[0], T)
+        ck = get_ck(test[0].N, trial[0].N, test[0].quad)
+        SpectralMatrix.__init__(self, {0: np.pi/2*ck}, test, trial, scale=scale, measure=measure)
+        self._matvec_methods += ['self']
+
+    def matvec(self, v, c, format='csr', axis=0):
+        c.fill(0)
+        N, M = self.shape
+        if not M == N:
+            format = 'csr'
+        if format == 'self':
+            s = [np.newaxis,]*v.ndim # broadcasting
+            d = tuple(slice(0, m) for m in v.shape)
+            N, M = self.shape
+            s[axis] = slice(0, M)
+            s = tuple(s)
+            c[d] = self[0][s]*v[d]
+            self.scale_array(c, self.scale)
+        else:
+            format = None if format in self._matvec_methods else format
+            c = super(BTTmat, self).matvec(v, c, format=format, axis=axis)
+
+        return c
 
 
 class BSDSDmat(SpectralMatrix):
@@ -144,7 +188,7 @@ class BSDSDmat(SpectralMatrix):
     def __init__(self, test, trial, scale=1, measure=1):
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], SD)
-        ck = get_ck(test[0].N, test[0].quad)
+        ck = get_ck(test[0].N, trial[0].N, test[0].quad)
         d = {0: np.pi/2*(ck[:-2]+ck[2:]),
              2: np.array([-np.pi/2])}
         d[-2] = d[2].copy()
@@ -207,7 +251,7 @@ class BSDSDmatW(SpectralMatrix):
     def __init__(self, test, trial, scale=1, measure=1):
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], SD)
-        ck = get_ck(test[0].N, test[0].quad)
+        ck = get_ck(test[0].N, trial[0].N, test[0].quad)
         dk = np.ones(test[0].N)
         dk[:2] = 0
         d = {0: np.pi*((ck[:-2]+1)**2+1+dk[:-2])/8,
@@ -219,486 +263,6 @@ class BSDSDmatW(SpectralMatrix):
 
     def get_solver(self):
         return generic_PDMA
-
-class BP1LDmat(SpectralMatrix):
-    r"""Mass matrix :math:`B=(b_{kj}) \in \mathbb{R}^{M \times N}`, where
-
-    .. math::
-
-        b_{kj}=(\psi_j, x^n \phi_k)_w,
-
-    where the test function :math:`\phi_k \in` :class:`.chebyshev.bases.Phi1`, the
-    trial :math:`\psi_j \in` :class:`.chebyshev.bases.LowerDirichlet` or
-    :class:`.chebyshev.bases.UpperDirichlet`, and test and
-    trial spaces have dimensions of M and N, respectively.
-
-    """
-    def __init__(self, test, trial, scale=1, measure=1):
-        assert isinstance(test[0], P1)
-        assert isinstance(trial[0], (LD, UD))
-        from shenfun.jacobi.recursions import Lmat, half, cn
-        M = test[0].dim()
-        N = trial[0].dim()
-        q = sp.degree(measure)
-        D = Lmat(1, q, 1, M, N+1, -half, -half, cn)
-        K = trial[0].stencil_matrix()
-        K.shape = (N, N+1)
-        D = extract_diagonal_matrix(D*K.diags('csr').T, lowerband=q+1, upperband=q+2)
-        SpectralMatrix.__init__(self, dict(D), test, trial, scale=scale, measure=measure)
-
-class BP1Tmat(SpectralMatrix):
-    r"""Matrix :math:`B=(b_{kj}) \in \mathbb{R}^{M \times N}`, where
-
-    .. math::
-
-        b_{kj}=(T_j, x^n \phi_k)_w,
-
-    where the test function :math:`\phi_k \in` :class:`.chebyshev.bases.Phi1`, the trial
-    function :math:`T_j \in` :class:`.chebyshev.bases.Orthogonal`, and test and
-    trial spaces have dimensions of M and N, respectively.
-
-    """
-    def __init__(self, test, trial, scale=1, measure=1):
-        assert isinstance(test[0], P1)
-        assert isinstance(trial[0], T)
-        from shenfun.jacobi.recursions import Lmat, half, cn
-        M = test[0].dim()
-        N = trial[0].dim()
-        q = sp.degree(measure)
-        D = Lmat(1, q, 1, M, N, -half, -half, cn)
-        D = extract_diagonal_matrix(D, lowerband=q+1, upperband=q+2)
-        SpectralMatrix.__init__(self, dict(D), test, trial, scale=scale, measure=measure)
-
-class CP1LDmat(SpectralMatrix):
-    r"""Derivative matrix :math:`C=(c_{kj}) \in \mathbb{R}^{M \times N}`, where
-
-    .. math::
-
-        C_{kj}=(\psi'_j, x^n \phi_k)_w,
-
-    where the test function :math:`\phi_k \in` :class:`.chebyshev.bases.Phi1`, the trial
-    function :math:`\psi_j \in` :class:`.chebyshev.bases.LowerDirichlet` or
-    :class:`.chebyshev.bases.UpperDirichlet`, and test and
-    trial spaces have dimensions of M and N, respectively.
-
-    """
-    def __init__(self, test, trial, scale=1, measure=1):
-        assert isinstance(test[0], P1)
-        assert isinstance(trial[0], (LD, UD))
-        from shenfun.jacobi.recursions import Lmat, half, cn
-        M = test[0].dim()
-        N = trial[0].dim()
-        q = sp.degree(measure)
-        D = Lmat(1, q, 0, M, N+1, -half, -half, cn)
-        K = trial[0].stencil_matrix()
-        K.shape = (N, N+1)
-        D = extract_diagonal_matrix(D*K.diags('csr').T, lowerband=q, upperband=q+1)
-        SpectralMatrix.__init__(self, dict(D), test, trial, scale=scale, measure=measure)
-
-class CP1Tmat(SpectralMatrix):
-    r"""Derivative matrix :math:`C=(c_{kj}) \in \mathbb{R}^{M \times N}`, where
-
-    .. math::
-
-        C_{kj}=(T'_j, x^n \phi_k)_w,
-
-    where the test function :math:`\phi_k \in` :class:`.chebyshev.bases.Phi1`, the trial
-    function :math:`T_j \in` :class:`.chebyshev.bases.Orthogonal`, and test and
-    trial spaces have dimensions of M and N, respectively.
-
-    """
-    def __init__(self, test, trial, scale=1, measure=1):
-        assert isinstance(test[0], P1)
-        assert isinstance(trial[0], T)
-        from shenfun.jacobi.recursions import Lmat, half, cn
-        M = test[0].dim()
-        N = trial[0].dim()
-        q = sp.degree(measure)
-        D = Lmat(1, q, 0, M, N, -half, -half, cn)
-        D = extract_diagonal_matrix(D, lowerband=q, upperband=q+1)
-        SpectralMatrix.__init__(self, dict(D), test, trial, scale=scale, measure=measure)
-
-class BP2Tmat(SpectralMatrix):
-    r"""Matrix :math:`B=(b_{kj}) \in \mathbb{R}^{M \times N}`, where
-
-    .. math::
-
-        b_{kj} = (T_j, x^n \phi_k)_w
-
-    where the test function :math:`\phi_k \in` :class:`.chebyshev.bases.Phi2`, the trial
-    function :math:`T_j \in` :class:`.chebyshev.bases.Orthogonal`, and test and
-    trial spaces have dimensions of M and N, respectively.
-    """
-    def __init__(self, test, trial, scale=1, measure=1):
-        assert isinstance(test[0], P2)
-        assert isinstance(trial[0], T)
-        from shenfun.jacobi.recursions import Lmat, half, cn
-        M = test[0].dim()
-        N = trial[0].dim()
-        q = sp.degree(measure)
-        D = Lmat(2, q, 2, M, N, -half, -half, cn)
-        D = extract_diagonal_matrix(D, lowerband=q, upperband=q+8)
-        SpectralMatrix.__init__(self, dict(D), test, trial, scale=scale, measure=measure)
-
-class BP4Tmat(SpectralMatrix):
-    r"""Matrix :math:`B=(b_{kj}) \in \mathbb{R}^{M \times N}`, where
-
-    .. math::
-
-        b_{kj} = (T_j, x^n \phi_k)_w
-
-    where the test function :math:`\phi_k \in` :class:`.chebyshev.bases.Phi4`, the trial
-    function :math:`T_j \in` :class:`.chebyshev.bases.Orthogonal`, and test and
-    trial spaces have dimensions of M and N, respectively.
-
-    """
-    def __init__(self, test, trial, scale=1, measure=1):
-        assert isinstance(test[0], P4)
-        assert isinstance(trial[0], T)
-        from shenfun.jacobi.recursions import Lmat, half, cn
-        M = test[0].dim()
-        N = trial[0].dim()
-        q = sp.degree(measure)
-        D = Lmat(4, q, 4, M, N, -half, -half, cn)
-        D = extract_diagonal_matrix(D, lowerband=q, upperband=q+8)
-        SpectralMatrix.__init__(self, dict(D), test, trial, scale=scale, measure=measure)
-
-class BP2SDmat(SpectralMatrix):
-    r"""Matrix :math:`B=(b_{kj}) \in \mathbb{R}^{M \times N}`, where
-
-    .. math::
-
-        b_{kj} = (\psi_j, x^n \phi_k)_w
-
-    where the test function :math:`\phi_k \in` :class:`.chebyshev.bases.Phi2`, the trial
-    function :math:`\psi_j \in` :class:`.chebyshev.bases.ShenDirichlet`, and test and
-    trial spaces have dimensions of M and N, respectively.
-
-    """
-    def __init__(self, test, trial, scale=1, measure=1):
-        assert isinstance(test[0], P2)
-        assert isinstance(trial[0], SD)
-        from shenfun.jacobi.recursions import Lmat, half, cn
-        M = test[0].dim()
-        N = trial[0].dim()
-        q = sp.degree(measure)
-        D = Lmat(2, q, 2, M, N+2, -half, -half, cn)
-        K = trial[0].stencil_matrix()
-        K.shape = (N, N+2)
-        D = extract_diagonal_matrix(D*K.diags('csr').T, lowerband=q+2, upperband=q+4)
-        SpectralMatrix.__init__(self, dict(D), test, trial, scale=scale, measure=measure)
-
-class BP4SBmat(SpectralMatrix):
-    r"""Matrix :math:`B=(b_{kj}) \in \mathbb{R}^{M \times N}`, where
-
-    .. math::
-
-        b_{kj} = (\psi_j, x^n \phi_k)_w
-
-    where the test function :math:`\phi_k \in` :class:`.chebyshev.bases.Phi4`, the trial
-    function :math:`\psi_j \in` :class:`.chebyshev.bases.ShenBiharmonic`, and test and
-    trial spaces have dimensions of M and N, respectively.
-
-
-    """
-    def __init__(self, test, trial, scale=1, measure=1):
-        assert isinstance(test[0], P4)
-        assert isinstance(trial[0], SB)
-        from shenfun.jacobi.recursions import Lmat, half, cn
-        M = test[0].dim()
-        N = trial[0].dim()
-        q = sp.degree(measure)
-        D = Lmat(4, q, 4, M, N+4, -half, -half, cn)
-        K = trial[0].stencil_matrix()
-        K.shape = (N, N+4)
-        D = extract_diagonal_matrix(D*K.diags('csr').T, lowerband=q+4, upperband=q+8)
-        SpectralMatrix.__init__(self, dict(D), test, trial, scale=scale, measure=measure)
-
-class CP2Tmat(SpectralMatrix):
-    r"""Derivative matrix :math:`C=(c_{kj}) \in \mathbb{R}^{M \times N}`, where
-
-    .. math::
-
-        c_{kj} = (T'_j, x^n \phi_k)_w
-
-    where the test function :math:`\phi_k \in` :class:`.chebyshev.bases.Phi2`, the trial
-    function :math:`T_j \in` :class:`.chebyshev.bases.Orthogonal`, and test and
-    trial spaces have dimensions of M and N, respectively.
-
-    """
-    def __init__(self, test, trial, scale=1, measure=1):
-        assert isinstance(test[0], P2)
-        assert isinstance(trial[0], T)
-        from shenfun.jacobi.recursions import Lmat, half, cn
-        M = test[0].dim()
-        N = trial[0].dim()
-        q = sp.degree(measure)
-        D = Lmat(2, q, 1, M, N, -half, -half, cn)
-        D = extract_diagonal_matrix(D, lowerband=q-1, upperband=q+3)
-        SpectralMatrix.__init__(self, dict(D), test, trial, scale=scale, measure=measure)
-
-class AP2Tmat(SpectralMatrix):
-    r"""Stiffness matrix :math:`A=(a_{kj}) \in \mathbb{R}^{M \times N}`, where
-
-    .. math::
-
-        a_{kj}=(T''_j, x^n \phi_k)_w,
-
-    where the test function :math:`\phi_k \in` :class:`.chebyshev.bases.Phi2`, the trial
-    function :math:`T_j \in` :class:`.chebyshev.bases.Orthogonal`, and test and
-    trial spaces have dimensions of M and N, respectively.
-
-    """
-    def __init__(self, test, trial, scale=1, measure=1):
-        assert isinstance(test[0], P2)
-        assert isinstance(trial[0], T)
-        from shenfun.jacobi.recursions import Lmat, half, cn
-        M = test[0].dim()
-        N = trial[0].dim()
-        q = sp.degree(measure)
-        D = Lmat(2, q, 0, M, N, -half, -half, cn)
-        D = extract_diagonal_matrix(D, lowerband=q-2, upperband=q+2)
-        SpectralMatrix.__init__(self, dict(D), test, trial, scale=scale, measure=measure)
-
-class CP4Tmat(SpectralMatrix):
-    r"""Derivative matrix :math:`C=(c_{kj}) \in \mathbb{R}^{M \times N}`, where
-
-    .. math::
-
-        c_{kj} = (T'_j, x^n \phi_k)_w
-
-    where the test function :math:`\phi_k \in` :class:`.chebyshev.bases.Phi4`, the trial
-    function :math:`T_j \in` :class:`.chebyshev.bases.Orthogonal`, and test and
-    trial spaces have dimensions of M and N, respectively.
-
-    """
-    def __init__(self, test, trial, scale=1, measure=1):
-        assert isinstance(test[0], P4)
-        assert isinstance(trial[0], T)
-        from shenfun.jacobi.recursions import Lmat, half, cn
-        M = test[0].dim()
-        N = trial[0].dim()
-        q = sp.degree(measure)
-        D = Lmat(4, q, 3, M, N, -half, -half, cn)
-        D = extract_diagonal_matrix(D, lowerband=q-1, upperband=q+7)
-        SpectralMatrix.__init__(self, dict(D), test, trial, scale=scale, measure=measure)
-
-class AP4Tmat(SpectralMatrix):
-    r"""Stiffness matrix :math:`A=(a_{kj}) \in \mathbb{R}^{M \times N}`, where
-
-    .. math::
-
-        a_{kj}=(T''_j, x^n \phi_k)_w,
-
-    where the test function :math:`\phi_k \in` :class:`.chebyshev.bases.Phi4`, the trial
-    function :math:`T_j \in` :class:`.chebyshev.bases.Orthogonal`, and test and
-    trial spaces have dimensions of M and N, respectively.
-    """
-    def __init__(self, test, trial, scale=1, measure=1):
-        assert isinstance(test[0], P4)
-        assert isinstance(trial[0], T)
-        from shenfun.jacobi.recursions import Lmat, half, cn
-        M = test[0].dim()
-        N = trial[0].dim()
-        q = sp.degree(measure)
-        D = Lmat(4, q, 2, M, N, -half, -half, cn)
-        D = extract_diagonal_matrix(D, lowerband=q-2, upperband=q+6)
-        SpectralMatrix.__init__(self, dict(D), test, trial, scale=scale, measure=measure)
-
-class CP2SDmat(SpectralMatrix):
-    r"""Derivative matrix :math:`C=(c_{kj}) \in \mathbb{R}^{M \times N}`, where
-
-    .. math::
-
-        c_{kj} = (\psi'_j, x^n \phi_k)_w
-
-    where the test function :math:`\phi_k \in` :class:`.chebyshev.bases.Phi2`, the trial
-    function :math:`\psi_j \in` :class:`.chebyshev.bases.ShenDirichlet`, and test and
-    trial spaces have dimensions of M and N, respectively.
-
-    """
-    def __init__(self, test, trial, scale=1, measure=1):
-        assert isinstance(test[0], P2)
-        assert isinstance(trial[0], SD)
-        from shenfun.jacobi.recursions import Lmat, half, cn
-        M = test[0].dim()
-        N = trial[0].dim()
-        q = sp.degree(measure)
-        D = Lmat(2, q, 1, M, N+2, -half, -half, cn)
-        K = trial[0].stencil_matrix()
-        K.shape = (N, N+2)
-        D = extract_diagonal_matrix(D*K.diags('csr').T, lowerband=q+1, upperband=q+3)
-        SpectralMatrix.__init__(self, dict(D), test, trial, scale=scale, measure=measure)
-
-class AP2SDmat(SpectralMatrix):
-    r"""Stiffness matrix :math:`A=(a_{kj}) \in \mathbb{R}^{M \times N}`, where
-
-    .. math::
-
-        a_{kj} = (\psi''_j, x^n \phi_k)_w
-
-    where the test function :math:`\phi_k \in` :class:`.chebyshev.bases.Phi2`, the trial
-    function :math:`\psi_j \in` :class:`.chebyshev.bases.ShenDirichlet`, and test and
-    trial spaces have dimensions of M and N, respectively.
-
-    """
-    def __init__(self, test, trial, scale=1, measure=1):
-        assert isinstance(test[0], P2)
-        assert isinstance(trial[0], SD)
-        from shenfun.jacobi.recursions import Lmat, half, cn
-        M = test[0].dim()
-        N = trial[0].dim()
-        q = sp.degree(measure)
-        D = Lmat(2, q, 0, M, N+2, -half, -half, cn)
-        K = trial[0].stencil_matrix()
-        K.shape = (N, N+2)
-        D = extract_diagonal_matrix(D*K.diags('csr').T, lowerband=q, upperband=q+2)
-        SpectralMatrix.__init__(self, dict(D), test, trial, scale=scale, measure=measure)
-
-class AP4SBmat(SpectralMatrix):
-    r"""Stiffness matrix :math:`A=(a_{kj}) \in \mathbb{R}^{M \times N}`, where
-
-    .. math::
-
-        a_{kj} = (\psi''_j, x^n \phi_k)_w
-
-    where the test function :math:`\phi_k \in` :class:`.chebyshev.bases.Phi4`, the trial
-    function :math:`\psi_j \in` :class:`.chebyshev.bases.ShenBiharmonic`, and test and
-    trial spaces have dimensions of M and N, respectively.
-
-    """
-    def __init__(self, test, trial, scale=1, measure=1):
-        assert isinstance(test[0], P4)
-        assert isinstance(trial[0], SB)
-        from shenfun.jacobi.recursions import Lmat, half, cn
-        M = test[0].dim()
-        N = trial[0].dim()
-        q = sp.degree(measure)
-        D = Lmat(4, q, 2, M, N+4, -half, -half, cn)
-        K = trial[0].stencil_matrix()
-        K.shape = (N, N+4)
-        D = extract_diagonal_matrix(D*K.diags('csr').T, lowerband=q+2, upperband=q+6)
-        SpectralMatrix.__init__(self, dict(D), test, trial, scale=scale, measure=measure)
-
-class CP4SBmat(SpectralMatrix):
-    r"""Derivative matrix :math:`C=(c_{kj}) \in \mathbb{R}^{M \times N}`, where
-
-    .. math::
-
-        c_{kj} = (\psi'_j, x^n \phi_k)_w
-
-    where the test function :math:`\phi_k \in` :class:`.chebyshev.bases.Phi4`, the trial
-    function :math:`\psi_j \in` :class:`.chebyshev.bases.ShenBiharmonic`, and test and
-    trial spaces have dimensions of M and N, respectively.
-
-    """
-    def __init__(self, test, trial, scale=1, measure=1):
-        assert isinstance(test[0], P4)
-        assert isinstance(trial[0], SB)
-        from shenfun.jacobi.recursions import Lmat, half, cn
-        M = test[0].dim()
-        N = trial[0].dim()
-        q = sp.degree(measure)
-        D = Lmat(4, q, 3, M, N+4, -half, -half, cn)
-        K = trial[0].stencil_matrix()
-        K.shape = (N, N+4)
-        D = extract_diagonal_matrix(D*K.diags('csr').T, lowerband=q+3, upperband=q+7)
-        SpectralMatrix.__init__(self, dict(D), test, trial, scale=scale, measure=measure)
-
-class SP4Tmat(SpectralMatrix):
-    r"""Biharmonic matrix :math:`S=(s_{kj}) \in \mathbb{R}^{M \times N}`, where
-
-    .. math::
-
-        s_{kj}=(T''''_j, x^n \phi_k)_w,
-
-    where the test function :math:`\phi_k \in` :class:`.chebyshev.bases.Phi4`, the trial
-    function :math:`T_j \in` :class:`.chebyshev.bases.Orthogonal`, and test and
-    trial spaces have dimensions of M and N, respectively.
-    """
-    def __init__(self, test, trial, scale=1, measure=1):
-        assert isinstance(test[0], P4)
-        assert isinstance(trial[0], T)
-        from shenfun.jacobi.recursions import Lmat, half, cn
-        M = test[0].dim()
-        N = trial[0].N
-        q = sp.degree(measure)
-        D = Lmat(4, q, 0, M, N, -half, -half, cn)
-        D = extract_diagonal_matrix(D, lowerband=q-4, upperband=q+4)
-        SpectralMatrix.__init__(self, dict(D), test, trial, scale=scale, measure=measure)
-
-class GP4Tmat(SpectralMatrix):
-    r"""Matrix :math:`G=(g_{kj}) \in \mathbb{R}^{M \times N}`, where
-
-    .. math::
-
-        g_{kj}=(T''''_j, x^n \phi_k)_w,
-
-    where the test function :math:`\phi_k \in` :class:`.chebyshev.bases.Phi4`, the trial
-    function :math:`T_j \in` :class:`.chebyshev.bases.Orthogonal`, and test and
-    trial spaces have dimensions of M and N, respectively.
-
-    """
-    def __init__(self, test, trial, scale=1, measure=1):
-        assert isinstance(test[0], P4)
-        assert isinstance(trial[0], T)
-        from shenfun.jacobi.recursions import Lmat, half, cn
-        M = test[0].dim()
-        N = trial[0].N
-        q = sp.degree(measure)
-        D = Lmat(4, q, 1, M, N, -half, -half, cn)
-        D = extract_diagonal_matrix(D, lowerband=q-3, upperband=q+5)
-        SpectralMatrix.__init__(self, dict(D), test, trial, scale=scale, measure=measure)
-
-class SP4SBmat(SpectralMatrix):
-    r"""Biharmonic matrix :math:`S=(s_{kj}) \in \mathbb{R}^{M \times N}`, where
-
-    .. math::
-
-        s_{kj}=(\psi'''_j, x^n \phi_k)_w,
-
-    where the test function :math:`\phi_k \in` :class:`.chebyshev.bases.Phi4`, the trial
-    function :math:`\psi_j \in` :class:`.chebyshev.bases.ShenBiharmonic`, and test and
-    trial spaces have dimensions of M and N, respectively.
-
-    """
-    def __init__(self, test, trial, scale=1, measure=1):
-        assert isinstance(test[0], P4)
-        assert isinstance(trial[0], SB)
-        from shenfun.jacobi.recursions import Lmat, half, cn
-        M = test[0].dim()
-        N = trial[0].dim()
-        q = sp.degree(measure)
-        D = Lmat(4, q, 0, M, N+4, -half, -half, cn)
-        K = trial[0].stencil_matrix()
-        K.shape = (N, N+4)
-        D = extract_diagonal_matrix(D*K.diags('csr').T, lowerband=q, upperband=q+4)
-        SpectralMatrix.__init__(self, dict(D), test, trial, scale=scale, measure=measure)
-
-class GP4SBmat(SpectralMatrix):
-    r"""Matrix :math:`G=(g_{kj}) \in \mathbb{R}^{M \times N}`, where
-
-    .. math::
-
-        g_{kj}=(\psi'''_j, x^n \phi_k)_w,
-
-    where the test function :math:`\phi_k \in` :class:`.chebyshev.bases.Phi4`, the trial
-    function :math:`\psi_j \in` :class:`.chebyshev.bases.ShenBiharmonic`, and test and
-    trial spaces have dimensions of M and N, respectively.
-
-    """
-    def __init__(self, test, trial, scale=1, measure=1):
-        assert isinstance(test[0], P4)
-        assert isinstance(trial[0], SB)
-        from shenfun.jacobi.recursions import Lmat, half, cn
-        M = test[0].dim()
-        N = trial[0].dim()
-        q = sp.degree(measure)
-        D = Lmat(4, q, 1, M, N+4, -half, -half, cn)
-        K = trial[0].stencil_matrix()
-        K.shape = (N, N+4)
-        D = extract_diagonal_matrix(D*K.diags('csr').T, lowerband=q-1, upperband=q+5)
-        SpectralMatrix.__init__(self, dict(D), test, trial, scale=scale, measure=measure)
 
 class BSNSDmat(SpectralMatrix):
     r"""Mass matrix :math:`B=(b_{kj}) \in \mathbb{R}^{M \times N}`, where
@@ -718,7 +282,7 @@ class BSNSDmat(SpectralMatrix):
         N = test[0].N
         M = trial[0].N
         Q = min(N, M)
-        ck = get_ck(Q, test[0].quad)
+        ck = get_ck(N, M, test[0].quad)
         k = np.arange(Q-2, dtype=float)
         d = {-2: -np.pi/2,
               0: np.pi/2.*(ck[:-2]+ck[2:]*(k/(k+2))**2)}
@@ -745,7 +309,7 @@ class BSDSNmat(SpectralMatrix):
         N = test[0].N
         M = trial[0].N
         Q = min(N, M)
-        ck = get_ck(Q, test[0].quad)
+        ck = get_ck(N, M, test[0].quad)
         k = np.arange(Q-2, dtype=float)
         d = {0:  np.pi/2.*(ck[:-2]+ck[2:]*(k/(k+2))**2),
              2: -np.pi/2}
@@ -787,7 +351,7 @@ class BLDLDmat(SpectralMatrix):
     def __init__(self, test, trial, scale=1, measure=1):
         assert isinstance(test[0], LD)
         assert isinstance(trial[0], LD)
-        ck = get_ck(test[0].N, test[0].quad)
+        ck = get_ck(test[0].N, trial[0].N, test[0].quad)
         d = {0: np.pi/2*(ck[:-1]+ck[1:]),
              1: np.array([np.pi/2]),
             -1: np.array([np.pi/2])}
@@ -828,58 +392,6 @@ class BSNSBmat(SpectralMatrix):
         assert isinstance(trial[0], SB)
         SpectralMatrix.__init__(self, {}, test, trial, scale=scale, measure=measure)
 
-
-class BTTmat(SpectralMatrix):
-    r"""Mass matrix :math:`B=(b_{kj}) \in \mathbb{R}^{M \times N}`, where
-
-    .. math::
-
-        b_{kj}=(T_j, T_k)_w,
-
-    where :math:`T_k \in` :class:`.chebyshev.bases.Orthogonal`, and test
-    and trial spaces have dimensions of M and N, respectively.
-
-    """
-    def __init__(self, test, trial, scale=1, measure=1):
-        assert isinstance(test[0], T)
-        assert isinstance(trial[0], T)
-        ck = get_ck(min(test[0].N, trial[0].N), test[0].quad)
-        SpectralMatrix.__init__(self, {0: np.pi/2*ck}, test, trial, scale=scale, measure=measure)
-        self._matvec_methods += ['self']
-
-    def matvec(self, v, c, format='csr', axis=0):
-        c.fill(0)
-        N, M = self.shape
-        if not M == N:
-            format = 'csr'
-        if format == 'self':
-            s = [np.newaxis,]*v.ndim # broadcasting
-            d = tuple(slice(0, m) for m in v.shape)
-            N, M = self.shape
-            s[axis] = slice(0, M)
-            s = tuple(s)
-            c[d] = self[0][s]*v[d]
-            self.scale_array(c, self.scale)
-        else:
-            format = None if format in self._matvec_methods else format
-            c = super(BTTmat, self).matvec(v, c, format=format, axis=axis)
-
-        return c
-
-    def solve(self, b, u=None, axis=0, constraints=()):
-        s = self.trialfunction[0].slice()
-        if u is None:
-            u = b
-        else:
-            assert u.shape == b.shape
-        sl = [np.newaxis]*u.ndim
-        sl[axis] = s
-        sl = tuple(sl)
-        ss = self.trialfunction[0].sl[s]
-        d = (1./self.scale)/self[0]
-        u[ss] = b[ss]*d[sl]
-        return u
-
 class BSNSNmat(SpectralMatrix):
     r"""Mass matrix :math:`B=(b_{kj}) \in \mathbb{R}^{M \times N}`, where
 
@@ -897,7 +409,7 @@ class BSNSNmat(SpectralMatrix):
         N = test[0].N
         M = trial[0].N
         Q = min(N, M)
-        ck = get_ck(Q, test[0].quad)
+        ck = get_ck(N, M, test[0].quad)
         k = np.arange(Q-2, dtype=float)
         d = {0: np.pi/2*(ck[:-2]+ck[2:]*(k[:]/(k[:]+2))**4)}
         dp = dmax(N-2, M-2, 2)
@@ -950,7 +462,7 @@ class BSDTmat(SpectralMatrix):
         N = test[0].N-2
         M = trial[0].N
         Q = min(N, M)
-        ck = get_ck(Q+2, test[0].quad)
+        ck = get_ck(test[0].N, trial[0].N, test[0].quad)
         d = {0: np.pi/2*ck[:Q],
              2: -np.pi/2*ck[2:(dmax(N, M, 2)+2)]}
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
@@ -973,7 +485,7 @@ class BTSDmat(SpectralMatrix):
         N = test[0].N
         M = trial[0].N-2
         Q = min(N, M)
-        ck = get_ck(N, test[0].quad)
+        ck = get_ck(test[0].N, trial[0].N, test[0].quad)
         d = {0: np.pi/2*ck[:Q]}
         d[-2] = -np.pi/2
         if test[0].quad == 'GL':
@@ -996,7 +508,7 @@ class BTSNmat(SpectralMatrix):
         assert isinstance(test[0], T)
         assert isinstance(trial[0], SN)
         N = test[0].N
-        ck = get_ck(N, test[0].quad)
+        ck = get_ck(N, trial[0].N, test[0].quad)
         k = np.arange(N, dtype=float)
         d = {-2: -np.pi/2*ck[2:]*((k[2:]-2)/k[2:])**2,
               0: np.pi/2*ck[:-2]}
@@ -1018,7 +530,7 @@ class BSBSBmat(SpectralMatrix):
         N = test[0].N
         M = trial[0].N
         Q = min(N, M)
-        ck = get_ck(Q, test[0].quad)
+        ck = get_ck(N, M, test[0].quad)
         k = np.arange(Q-4, dtype=float)
         d = {0: (ck[:Q-4] + 4*((k+2)/(k+3))**2 + ck[4:]*((k+1)/(k+3))**2)*np.pi/2.}
         d4 = (k+1)/(k+3)*np.pi/2
@@ -1094,7 +606,7 @@ class BSBSDmat(SpectralMatrix):
         N = test[0].N-4
         M = trial[0].N-2
         Q = min(M, N)
-        ck = get_ck(test[0].N, test[0].quad)
+        ck = get_ck(test[0].N, trial[0].N, test[0].quad)
         k = np.arange(Q, dtype=float)
         a = 2*(k+2)/(k+3)
         b = (k+1)/(k+3)
@@ -1155,7 +667,7 @@ class BSBTmat(SpectralMatrix):
         assert isinstance(trial[0], T)
         N, M = test[0].N-4, trial[0].N
         Q = min(M, N)
-        ck = get_ck(test[0].N, test[0].quad)
+        ck = get_ck(test[0].N, trial[0].N, test[0].quad)
         k = np.arange(Q, dtype=float)
         d = {0: ck[:Q]*np.pi/2,
              2: -np.pi*(k[:min(Q, M-2)]+2)/(k[:min(Q, M-2)]+3),
@@ -1214,11 +726,11 @@ class BSDHHmat(SpectralMatrix):
     def __init__(self, test, trial, scale=1, measure=1):
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], HH)
-        ck = get_ck(test[0].N, test[0].quad)
+        ck = get_ck(test[0].N, trial[0].N, test[0].quad)
         cp = np.ones(test[0].N); cp[2] = 2
         dk = np.ones(test[0].N); dk[:2] = 0
         d = {-2: -(np.pi/8)*ck[:-4],
-             0: (np.pi/8)*(ck[:-2]*(ck[:-2]+1)+dk[:-2]),
+             0: (np.pi/8)*(ck[:-2]*(ck[:-2]+ck[2:])+dk[:-2]),
              2: -(np.pi/8)*(ck[:-4]+2),
              4: (np.pi/8)}
 
@@ -1917,7 +1429,7 @@ class ASDHHmat(SpectralMatrix):
         assert isinstance(trial[0], HH)
         N = test[0].N
         k = np.arange(N)
-        ck = get_ck(N, test[0].quad)
+        ck = get_ck(N, trial[0].N, test[0].quad)
 
         if trial[0].is_scaled():
             d = {0: -np.pi/2*ck[:-2],
@@ -1947,12 +1459,12 @@ class AHHHHmat(SpectralMatrix):
         assert test[0].is_scaled() == trial[0].is_scaled()
         N = test[0].N
         k = np.arange(N-2, dtype=float)
-        ck = get_ck(N-2, test[0].quad)
+        ck = get_ck(N, trial[0].N, test[0].quad)
         dk = ck.copy()
         dk[:2] = 0
-        d = {0: -np.pi/8*ck**2*((k+1)*(k+2)+dk*(k-2)*(k-1)),
-             2: np.pi/8*ck[:-2]*k[:-2]*k[1:-1],
-            -2: np.pi/8*ck[:-2]*k[2:]*k[1:-1]}
+        d = {0: -np.pi/8*ck[:-2]**2*((k+1)*(k+2)+dk[:-2]*(k-2)*(k-1)),
+             2: np.pi/8*ck[:-4]*k[:-2]*k[1:-1],
+            -2: np.pi/8*ck[:-4]*k[2:]*k[1:-1]}
         if test[0].is_scaled() and trial[0].is_scaled():
             d[0] *= 1/((k+2)**2*(k+1)**2)
             d[2] *= 1/((k[:-2]+1)*(k[:-2]+2)*(k[:-2]+3)*(k[:-2]+4))
@@ -1974,12 +1486,12 @@ class BHHHHmat(SpectralMatrix):
     def __init__(self, test, trial, scale=1, measure=1):
         assert isinstance(test[0], HH)
         assert isinstance(trial[0], HH)
-        ck = get_ck(test[0].N-2, test[0].quad)
+        ck = get_ck(test[0].N, trial[0].N, test[0].quad)
         cp = np.ones(test[0].N-2); cp[2] = 2
         dk = np.ones(test[0].N-2); dk[:2] = 0
-        d = {0: np.pi/16*(ck**2*(ck+1)/2 + dk*(cp+3)/2),
-             2: -np.pi/16*(ck[:-2]+ck[:-2]**2/2+dk[:-2]/2),
-             4: np.pi*ck[:-4]/32}
+        d = {0: np.pi/16*(ck[:-2]**2*(ck[:-2]+ck[2:])/2 + dk*(cp+3)/2),
+             2: -np.pi/16*(ck[:-4]+ck[:-4]**2/2+dk[:-2]/2),
+             4: np.pi*ck[:-6]/32}
 
         if test[0].is_scaled() and trial[0].is_scaled():
             k = np.arange(test[0].N-2)
@@ -2010,6 +1522,7 @@ class BSDMNmat(SpectralMatrix):
         assert isinstance(trial[0], MN)
         N = test[0].N
         k = np.arange(N, dtype=float)
+        ck = get_ck(test[0].N, trial[0].N, test[0].quad)
         kp = k.copy(); kp[0] = 1
         qk = np.ones(N)
         qk[0] = 0
@@ -2017,48 +1530,13 @@ class BSDMNmat(SpectralMatrix):
         dk = np.ones(N)
         dk[0] = 0
         d = {-2: -np.pi/2/k[2:-2]/k[1:-3],
-              0: (np.pi/2)*((2*qk[:-2]/kp[:-2] + 1/k[2:]))/k[1:-1],
+              0: (np.pi/2)*((2*qk[:-2]/kp[:-2] + ck[2:]/k[2:]))/k[1:-1],
               2: -(np.pi/2)*((1/kp[:-4] + 2/k[2:-2]))/k[3:-1],
               4: (np.pi/2)/k[2:-4]/k[5:-1]}
         d[-2][0] = 0
         d[0][0] = np.pi
         d[2][0] = -np.pi/6
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
-
-class BSNCNmat(SpectralMatrix):
-    r"""Mass matrix :math:`B=(b_{kj}) \in \mathbb{R}^{M \times N}`, where
-
-    .. math::
-
-        b_{kj}=(\psi_j, \phi_k)_w,
-
-    where the test function :math:`\phi_k \in` :class:`.chebyshev.bases.ShenNeumann`, the
-    trial :math:`\psi_j \in` :class:`.chebyshev.bases.CombinedShenNeumann`, and test and
-    trial spaces have dimensions of M and N, respectively.
-
-    """
-    def __init__(self, test, trial, scale=1, measure=1):
-        assert isinstance(test[0], SN)
-        assert isinstance(trial[0], CN)
-        N = test[0].N
-        k = np.arange(N, dtype=float)
-        kp = k.copy(); kp[0] = 1
-        qk = np.ones(N)
-        qk[0] = 0
-        qk[1] = 1.5
-        dk = np.ones(N)
-        dk[:3] = 0
-        d = {-2: -np.pi/2/k[2:-2]**2,
-              0: (np.pi/2)*((1+dk[:-2])/kp[:-2]**2+ (k[:-2]/k[2:])**2/k[2:]**2),
-              2: -(np.pi/2)*(1/kp[:-4]**2+2*(k[:-4]/k[2:-2])**2/k[2:-2]**2),
-              4: (np.pi/2)*(k[:-6]/k[2:-4])**2/k[2:-4]**2}
-        d[-2][0] = 0
-        d[0][0] = np.pi
-        d[2][0] = 0
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
-
-    def get_solver(self):
-        return FDMA
 
 class ASDMNmat(SpectralMatrix):
     r"""Stiffness matrix :math:`A=(a_{kj}) \in \mathbb{R}^{M \times N}`, where
@@ -2163,27 +1641,176 @@ class SSBSBmat(SpectralMatrix):
 
         return c
 
-
-class BSDBCDmat(SpectralMatrix):
+class BGBCGmat(SpectralMatrix):
     r"""Mass matrix :math:`B=(b_{kj}) \in \mathbb{R}^{M \times N}`, where
 
     .. math::
 
         b_{kj}=(\psi_j, \phi_k)_w,
 
-    where the test function :math:`\phi_k \in` :class:`.chebyshev.bases.ShenDirichlet`, the
-    trial :math:`\psi_j \in` :class:`.chebyshev.bases.BCDirichlet`, and test and
+    where the test function :math:`\phi_k` is a subclass of
+    :class:`.chebyshev.bases.CompositeBase`, the
+    trial :math:`\psi_j \in` :class:`.chebyshev.bases.BCGeneric`, and test and
     trial spaces have dimensions of M and N, respectively.
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
-        assert isinstance(test[0], SD)
-        assert isinstance(trial[0], BCD)
-        d = {0: np.array([np.pi/2, np.pi/4]),
-             1: np.array([np.pi/2]),
-            -1: np.array([-np.pi/4, 0])}
+        assert isinstance(test[0], CB)
+        assert isinstance(trial[0], BCG)
+        B = BTTmat((test[0].get_orthogonal(domain=(-1, 1)), 0), (trial[0].get_orthogonal(domain=(-1, 1)), 0))
+        K = test[0].stencil_matrix()
+        K.shape = (test[0].dim(), test[0].N)
+        S = extract_diagonal_matrix(trial[0].stencil_matrix().T).diags('csr')
+        q = sp.degree(measure)
+        if measure != 1:
+            from shenfun.jacobi.recursions import pmat, half, cn, a
+            assert sp.sympify(measure).is_polynomial()
 
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
+            A = sp.S(0)
+            for dv in split(measure, expand=True):
+                sc = dv['coeff']
+                msi = dv['x']
+                qi = sp.degree(msi)
+                Ax = pmat(a, qi, -half, -half, test[0].N, test[0].N, cn)
+                A = A + sc*Ax.diags('csr')
+            A = K.diags('csr') * A.T * B.diags('csr') * S
+        else:
+            A = K.diags('csr') * B.diags('csr') * S
+
+        M = B.shape[1]
+        K.shape = (test[0].N, test[0].N)
+        d = extract_diagonal_matrix(A, lowerband=M+q, upperband=M)
+        SpectralMatrix.__init__(self, dict(d), test, trial, scale=scale, measure=measure)
+
+class BGGmat(SpectralMatrix):
+    r"""Mass matrix :math:`B=(b_{kj}) \in \mathbb{R}^{M \times N}`, where
+
+    .. math::
+
+        b_{kj}=(\psi_j, x^q \phi_k)_w,
+
+    where the test and trial functions :math:`\phi_k` and :math:`\psi_j` are
+    any subclasses of :class:`.chebyshev.bases.CompositeBase` and :math:`q \ge 0`
+    is an integer. Test and trial spaces have dimensions of M and N, respectively.
+
+    Note
+    ----
+    Creating mass matrices this way is efficient in terms of memory since the
+    mass matrix of the orthogonal basis is diagonal.
+
+    """
+    def __init__(self, test, trial, scale=1, measure=1):
+        assert isinstance(test[0], CB)
+        assert isinstance(trial[0], CB)
+        B = BTTmat((test[0].get_orthogonal(domain=(-1, 1)), 0), (trial[0].get_orthogonal(domain=(-1, 1)), 0))
+        K = test[0].stencil_matrix()
+        K.shape = (test[0].dim(), test[0].N)
+        S = trial[0].stencil_matrix()
+        S.shape = (trial[0].dim(), trial[0].N)
+        q = sp.degree(measure)
+        if measure != 1:
+            from shenfun.jacobi.recursions import pmat, half, cn, a
+            assert sp.sympify(measure).is_polynomial()
+            A = sp.S(0)
+            for dv in split(measure, expand=True):
+                sc = dv['coeff']
+                msi = dv['x']
+                qi = sp.degree(msi)
+                Ax = pmat(a, qi, -half, -half, test[0].N, test[0].N, cn)
+                A = A + sc*Ax.diags('csr')
+            A = K.diags('csr') * B.diags('csr') * A * S.diags('csr').T
+
+        else:
+            A = K.diags('csr') * B.diags('csr') * S.diags('csr').T
+
+        K.shape = (test[0].N, test[0].N)
+        S.shape = (trial[0].N, trial[0].N)
+        ub = test[0].N-test[0].dim()+q
+        lb = trial[0].N-trial[0].dim()+q
+        d = extract_diagonal_matrix(A, lowerband=lb, upperband=ub)
+        SpectralMatrix.__init__(self, dict(d), test, trial, scale=scale, measure=measure)
+
+class PXGmat(SpectralMatrix):
+    r"""Matrix :math:`D=(d_{ij}) \in \mathbb{R}^{M \times N}`, where
+
+    .. math::
+
+        d_{ij}=(\partial^{k-l} \psi_j, x^q \phi_i)_w,
+
+    where the test function :math:`\phi_i` is in one of :class:`.chebyshev.bases.Phi1`,
+    :class:`.chebyshev.bases.Phi2`, :class:`.chebyshev.bases.Phi3`, :class:`.chebyshev.bases.Phi4`,
+    the trial :math:`\psi_j` any class in :class:`.chebyshev.bases`,
+    The three parameters k, q and l are integers, and test and trial spaces
+    have dimensions of M and N, respectively.
+
+    """
+    def __init__(self, test, trial, scale=1, measure=1):
+        assert isinstance(test[0], (P1, P2, P3, P4))
+        assert test[0].quad == 'GC'
+        from shenfun.jacobi.recursions import Lmat, half, cn
+        q = sp.degree(measure)
+        k = (test[0].N-test[0].dim())//2
+        l = k-trial[1]
+        if q > 0 and test[0].domain != test[0].reference_domain():
+            D = sp.S(0)
+            for dv in split(measure, expand=True):
+                sc = dv['coeff']
+                msi = dv['x']
+                qi = sp.degree(msi)
+                Ax = Lmat(k, qi, l, test[0].dim(), trial[0].N, -half, -half, cn)
+                D = D + sc*Ax
+        else:
+            D = Lmat(k, q, l, test[0].dim(), trial[0].N, -half, -half, cn)
+
+        if trial[0].is_orthogonal:
+            D = extract_diagonal_matrix(D, lowerband=q-k+l, upperband=q+k+l)
+        else:
+            K = trial[0].stencil_matrix()
+            K.shape = (trial[0].dim(), trial[0].N)
+            keys = np.sort(np.array(list(K.keys())))
+            lb, ub = -keys[0], keys[-1]
+            D = extract_diagonal_matrix(D*K.diags('csr').T, lowerband=q-k+l+ub, upperband=q+k+l+lb)
+            K.shape = (trial[0].N, trial[0].N)
+        SpectralMatrix.__init__(self, dict(D), test, trial, scale=scale, measure=measure)
+
+class PXBCGmat(SpectralMatrix):
+    r"""Matrix :math:`D=(d_{ij}) \in \mathbb{R}^{M \times N}`, where
+
+    .. math::
+
+        d_{ij}=(\partial^{k-l}\psi_j, x^q \phi_i)_w,
+
+    where the test function :math:`\phi_i` is in one of :class:`.chebyshev.bases.Phi1`,
+    :class:`.chebyshev.bases.Phi2`, :class:`.chebyshev.bases.Phi3`, :class:`.chebyshev.bases.Phi4`,
+    trial :math:`\psi_j \in` :class:`.chebyshev.bases.BCGeneric`.
+    The three parameters k, q, l are integers and test and trial spaces have
+    dimensions of M and N, respectively.
+
+    """
+    def __init__(self, test, trial, scale=1, measure=1):
+        assert isinstance(test[0], (P1, P2, P3, P4))
+        assert isinstance(trial[0], BCG)
+        from shenfun.jacobi.recursions import Lmat, half, cn
+        M = test[0].dim()
+        N = trial[0].dim_ortho
+        q = sp.degree(measure)
+        k = (test[0].N-test[0].dim())//2
+        l = k-trial[1]
+        if q > 0 and test[0].domain != test[0].reference_domain():
+            D = sp.S(0)
+            for dv in split(measure, expand=True):
+                sc = dv['coeff']
+                msi = dv['x']
+                qi = sp.degree(msi)
+                Ax = Lmat(k, qi, l, M, N, -half, -half, cn)
+                D = D + sc*Ax
+        else:
+            D = Lmat(k, q, l, M, N, -half, -half, cn)
+
+        K = trial[0].stencil_matrix()
+        D = extract_diagonal_matrix(D*extract_diagonal_matrix(K).diags('csr').T, lowerband=N+q, upperband=N)
+        SpectralMatrix.__init__(self, dict(D), test, trial, scale=scale, measure=measure)
+
 
 class _Chebmatrix(SpectralMatrix):
     def __init__(self, test, trial, scale=1, measure=1):
@@ -2199,15 +1826,35 @@ class _ChebMatDict(dict):
     """
 
     def __missing__(self, key):
-        measure = 1 if len(key) == 2 else key[3]
-        c = functools.partial(_Chebmatrix, measure=measure)
+        measure = 1 if len(key) == 2 else key[2]
+        if key[0][1]+key[1][1] == 0 and sp.sympify(measure).is_polynomial():
+            if key[1][0] == BCG:
+                c = functools.partial(BGBCGmat, measure=measure)
+            else:
+                c = functools.partial(BGGmat, measure=measure)
+        else:
+            c = functools.partial(_Chebmatrix, measure=measure)
         self[key] = c
         return c
 
     def __getitem__(self, key):
-        if len(key) == 4:
+        measure = 1 if len(key) == 2 else key[2]
+        if key[0][0] in (P1, P2, P3, P4):
+            if key[1][0] == BCG:
+                k = ('PX', 1)
+            else:
+                k = ('PX', 0)
+            if key[1][1] > int(key[0][0].short_name()[1]) or key[1][0] in (P1, P2, P3, P4):
+                # If the number of derivatives is larger than 1 for P1, 2 for P2 etc,
+                # then we need to use quadrature. But it should not be larger if you
+                # have designed the scheme appropriately, so perhaps we should throw
+                # a warning
+                k = key
+            matrix = functools.partial(dict.__getitem__(self, k),
+                                       measure=measure)
+        elif len(key) == 3:
             matrix = functools.partial(dict.__getitem__(self, key),
-                                       measure=key[3])
+                                       measure=key[2])
         else:
             matrix = dict.__getitem__(self, key)
         #assert key[0][1] == 0, 'Test cannot be differentiated (weighted space)'
@@ -2219,8 +1866,7 @@ class _ChebMatDict(dict):
 mat = _ChebMatDict({
     ((T,  0), (T , 0)): BTTmat,
     ((SD, 0), (SD, 0)): BSDSDmat,
-    ((SD, 0), (SD, 0), (-1, 1), (x**2-1)): functools.partial(BSDSDmatW, scale=-1),
-    ((SD, 0), (SD, 0), (-1, 1), (1-x**2)): BSDSDmatW,
+    ((SD, 0), (SD, 0), (1-x**2)): BSDSDmatW,
     ((SB, 0), (SB, 0)): BSBSBmat,
     ((SN, 0), (SN, 0)): BSNSNmat,
     ((CN, 0), (CN, 0)): BCNCNmat,
@@ -2235,8 +1881,7 @@ mat = _ChebMatDict({
     ((T,  0), (SD, 0)): BTSDmat,
     ((SD, 0), (T,  0)): BSDTmat,
     ((SD, 0), (SD, 2)): ASDSDmat,
-    ((SD, 0), (SD, 2), (-1, 1), (x**2-1)): functools.partial(ASDSDmatW, scale=-1),
-    ((SD, 0), (SD, 2), (-1, 1), (1-x**2)): ASDSDmatW,
+    ((SD, 0), (SD, 2), (1-x**2)): ASDSDmatW,
     ((T,  0), (T , 2)): ATTmat,
     ((T,  0), (SD, 2)): ATSDmat,
     ((T,  0), (SN, 2)): ATSNmat,
@@ -2249,7 +1894,7 @@ mat = _ChebMatDict({
     ((SD, 0), (MN, 0)): BSDMNmat,
     ((SD, 0), (MN, 2)): ASDMNmat,
     ((SN, 0), (CN, 2)): ASNCNmat,
-    ((SN, 0), (CN, 0)): BSNCNmat,
+    ((SN, 0), (CN, 0)): BGGmat,
     ((SD, 0), (HH, 0)): BSDHHmat,
     ((SD, 0), (HH, 2)): ASDHHmat,
     ((SB, 0), (SB, 4)): SSBSBmat,
@@ -2262,117 +1907,18 @@ mat = _ChebMatDict({
     ((SN, 0), (SD, 1)): CSNSDmat,
     ((SD, 0), (SB, 1)): CSDSBmat,
     ((SD, 0), (T,  1)): CSDTmat,
-    ((SD, 0), (BCD, 0)): BSDBCDmat,
-    ((P1, 0), (T, 0)): BP1Tmat,
-    ((P1, 0), (T, 0), (-1, 1), x): BP1Tmat,
-    ((P1, 0), (T, 0), (-1, 1), x**2): BP1Tmat,
-    ((P1, 0), (T, 0), (-1, 1), x**3): BP1Tmat,
-    ((P1, 0), (T, 0), (-1, 1), x**4): BP1Tmat,
-    ((P1, 0), (T, 1)): CP1Tmat,
-    ((P1, 0), (T, 1), (-1, 1), x): CP1Tmat,
-    ((P1, 0), (T, 1), (-1, 1), x**2): CP1Tmat,
-    ((P1, 0), (T, 1), (-1, 1), x**3): CP1Tmat,
-    ((P1, 0), (T, 1), (-1, 1), x**4): CP1Tmat,
-    ((P1, 0), (LD, 0)): BP1LDmat,
-    ((P1, 0), (LD, 0), (-1, 1), x): BP1LDmat,
-    ((P1, 0), (LD, 0), (-1, 1), x**2): BP1LDmat,
-    ((P1, 0), (LD, 0), (-1, 1), x**3): BP1LDmat,
-    ((P1, 0), (LD, 0), (-1, 1), x**4): BP1LDmat,
-    ((P1, 0), (LD, 1)): CP1LDmat,
-    ((P1, 0), (LD, 1), (-1, 1), x): CP1LDmat,
-    ((P1, 0), (LD, 1), (-1, 1), x**2): CP1LDmat,
-    ((P1, 0), (LD, 1), (-1, 1), x**3): CP1LDmat,
-    ((P1, 0), (LD, 1), (-1, 1), x**4): CP1LDmat,
-    ((P1, 0), (UD, 0)): BP1LDmat,
-    ((P1, 0), (UD, 0), (-1, 1), x): BP1LDmat,
-    ((P1, 0), (UD, 0), (-1, 1), x**2): BP1LDmat,
-    ((P1, 0), (UD, 0), (-1, 1), x**3): BP1LDmat,
-    ((P1, 0), (UD, 0), (-1, 1), x**4): BP1LDmat,
-    ((P1, 0), (UD, 1)): CP1LDmat,
-    ((P1, 0), (UD, 1), (-1, 1), x): CP1LDmat,
-    ((P1, 0), (UD, 1), (-1, 1), x**2): CP1LDmat,
-    ((P1, 0), (UD, 1), (-1, 1), x**3): CP1LDmat,
-    ((P1, 0), (UD, 1), (-1, 1), x**4): CP1LDmat,
-    ((P2, 0), (T, 0)) : BP2Tmat,
-    ((P2, 0), (T, 0), (-1, 1), x): BP2Tmat,
-    ((P2, 0), (T, 0), (-1, 1), x**2): BP2Tmat,
-    ((P2, 0), (T, 0), (-1, 1), x**3): BP2Tmat,
-    ((P2, 0), (T, 0), (-1, 1), x**4): BP2Tmat,
-    ((P2, 0), (T, 1)) : CP2Tmat,
-    ((P2, 0), (T, 1), (-1, 1), x): CP2Tmat,
-    ((P2, 0), (T, 1), (-1, 1), x**2): CP2Tmat,
-    ((P2, 0), (T, 1), (-1, 1), x**3): CP2Tmat,
-    ((P2, 0), (T, 1), (-1, 1), x**4): CP2Tmat,
-    ((P2, 0), (T, 2)) : AP2Tmat,
-    ((P2, 0), (T, 2), (-1, 1), x): AP2Tmat,
-    ((P2, 0), (T, 2), (-1, 1), x**2): AP2Tmat,
-    ((P2, 0), (T, 2), (-1, 1), x**3): AP2Tmat,
-    ((P2, 0), (T, 2), (-1, 1), x**4): AP2Tmat,
-    ((P2, 0), (SD, 0)) : BP2SDmat,
-    ((P2, 0), (SD, 0), (-1, 1), x): BP2SDmat,
-    ((P2, 0), (SD, 0), (-1, 1), x**2): BP2SDmat,
-    ((P2, 0), (SD, 0), (-1, 1), x**3): BP2SDmat,
-    ((P2, 0), (SD, 0), (-1, 1), x**4): BP2SDmat,
-    ((P2, 0), (SD, 1)) : CP2SDmat,
-    ((P2, 0), (SD, 1), (-1, 1), x): CP2SDmat,
-    ((P2, 0), (SD, 1), (-1, 1), x**2): CP2SDmat,
-    ((P2, 0), (SD, 1), (-1, 1), x**3): CP2SDmat,
-    ((P2, 0), (SD, 1), (-1, 1), x**4): CP2SDmat,
-    ((P2, 0), (SD, 2)) : AP2SDmat,
-    ((P2, 0), (SD, 2), (-1, 1), x): AP2SDmat,
-    ((P2, 0), (SD, 2), (-1, 1), x**2): AP2SDmat,
-    ((P2, 0), (SD, 2), (-1, 1), x**3): AP2SDmat,
-    ((P2, 0), (SD, 2), (-1, 1), x**4): AP2SDmat,
-    ((P4, 0), (T, 0)) : BP4Tmat,
-    ((P4, 0), (T, 0), (-1, 1), x): BP4Tmat,
-    ((P4, 0), (T, 0), (-1, 1), x**2): BP4Tmat,
-    ((P4, 0), (T, 0), (-1, 1), x**3): BP4Tmat,
-    ((P4, 0), (T, 0), (-1, 1), x**4): BP4Tmat,
-    ((P4, 0), (SB, 0)) : BP4SBmat,
-    ((P4, 0), (SB, 0), (-1, 1), x): BP4SBmat,
-    ((P4, 0), (SB, 0), (-1, 1), x**2): BP4SBmat,
-    ((P4, 0), (SB, 0), (-1, 1), x**3): BP4SBmat,
-    ((P4, 0), (SB, 0), (-1, 1), x**4): BP4SBmat,
-    ((P4, 0), (T, 1)) : CP4SBmat,
-    ((P4, 0), (T, 1), (-1, 1), x): CP4Tmat,
-    ((P4, 0), (T, 1), (-1, 1), x**2): CP4Tmat,
-    ((P4, 0), (T, 1), (-1, 1), x**3): CP4Tmat,
-    ((P4, 0), (T, 1), (-1, 1), x**4): CP4Tmat,
-    ((P4, 0), (SB, 1)) : CP4SBmat,
-    ((P4, 0), (SB, 1), (-1, 1), x): CP4SBmat,
-    ((P4, 0), (SB, 1), (-1, 1), x**2): CP4SBmat,
-    ((P4, 0), (SB, 1), (-1, 1), x**3): CP4SBmat,
-    ((P4, 0), (SB, 1), (-1, 1), x**4): CP4SBmat,
-    ((P4, 0), (T, 2)) : AP4Tmat,
-    ((P4, 0), (T, 2), (-1, 1), x): AP4Tmat,
-    ((P4, 0), (T, 2), (-1, 1), x**2): AP4Tmat,
-    ((P4, 0), (T, 2), (-1, 1), x**3): AP4Tmat,
-    ((P4, 0), (T, 2), (-1, 1), x**4): AP4Tmat,
-    ((P4, 0), (SB, 2)) : AP4SBmat,
-    ((P4, 0), (SB, 2), (-1, 1), x): AP4SBmat,
-    ((P4, 0), (SB, 2), (-1, 1), x**2): AP4SBmat,
-    ((P4, 0), (SB, 2), (-1, 1), x**3): AP4SBmat,
-    ((P4, 0), (SB, 2), (-1, 1), x**4): AP4SBmat,
-    ((P4, 0), (T, 3)) : GP4Tmat,
-    ((P4, 0), (T, 3), (-1, 1), x): GP4Tmat,
-    ((P4, 0), (T, 3), (-1, 1), x**2): GP4Tmat,
-    ((P4, 0), (T, 3), (-1, 1), x**3): GP4Tmat,
-    ((P4, 0), (T, 3), (-1, 1), x**4): GP4Tmat,
-    ((P4, 0), (SB, 3)) : GP4SBmat,
-    ((P4, 0), (SB, 3), (-1, 1), x): GP4SBmat,
-    ((P4, 0), (SB, 3), (-1, 1), x**2): GP4SBmat,
-    ((P4, 0), (SB, 3), (-1, 1), x**3): GP4SBmat,
-    ((P4, 0), (SB, 3), (-1, 1), x**4): GP4SBmat,
-    ((P4, 0), (T, 4)) : SP4Tmat,
-    ((P4, 0), (T, 4), (-1, 1), x): SP4Tmat,
-    ((P4, 0), (T, 4), (-1, 1), x**2): SP4Tmat,
-    ((P4, 0), (T, 4), (-1, 1), x**3): SP4Tmat,
-    ((P4, 0), (T, 4), (-1, 1), x**4): SP4Tmat,
-    ((P4, 0), (SB, 4)) : SP4SBmat,
-    ((P4, 0), (SB, 4), (-1, 1), x): SP4SBmat,
-    ((P4, 0), (SB, 4), (-1, 1), x**2): SP4SBmat,
-    ((P4, 0), (SB, 4), (-1, 1), x**3): SP4SBmat,
-    ((P4, 0), (SB, 4), (-1, 1), x**4): SP4SBmat,
+    ((SD, 0), (BCG, 0)): BGBCGmat,
+    ((HH, 0), (BCG, 0)): BGBCGmat,
+    ((SN, 0), (BCG, 0)): BGBCGmat,
+    ((SB, 0), (BCG, 0)): BGBCGmat,
+    ((CN, 0), (BCG, 0)): BGBCGmat,
+    ((MN, 0), (BCG, 0)): BGBCGmat,
+    ((UD, 0), (BCG, 0)): BGBCGmat,
+    ((LD, 0), (BCG, 0)): BGBCGmat,
+    ((DN, 0), (BCG, 0)): BGBCGmat,
+    ((ND, 0), (BCG, 0)): BGBCGmat,
+    ('PX', 0): PXGmat,
+    ('PX', 1): PXBCGmat,
     })
 
 #mat = _ChebMatDict({})

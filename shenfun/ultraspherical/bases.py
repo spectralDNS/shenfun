@@ -5,7 +5,7 @@ The ultraspherical polynomial :math:`Q^{(\alpha)}_k` is here defined as
 
 .. math::
 
-        Q^{(\alpha)}_k = \frac{1}{P^{(\alpha,\alpha)}_k(1)} P^{(\alpha,\alpha)}_k
+    Q^{(\alpha)}_k = \frac{1}{P^{(\alpha,\alpha)}_k(1)} P^{(\alpha,\alpha)}_k
 
 where :math:`P^{(\alpha,\alpha)}_k` is the regular Jacobi polynomial with two
 equal parameters. The scaling with :math:`(P^{(\alpha,\alpha)}_k(1))^{-1}` is
@@ -41,17 +41,15 @@ m, n, k = sp.symbols('m,n,k', real=True, integer=True)
 
 #pylint: disable=method-hidden,no-else-return,not-callable,abstract-method,no-member,cyclic-import
 
-__all__ = ['Orthogonal',
-           'Phi1',
-           'Phi2',
-           'Phi3',
-           'Phi4',
+bases = ['Orthogonal',
            'CompactDirichlet',
            'CompactNeumann',
-           'CompositeBase',
-           'Generic',
-           'BCBase',
-           'BCGeneric']
+           'UpperDirichlet',
+           'LowerDirichlet',
+           'Generic']
+bcbases = ['BCGeneric']
+testbases = ['Phi1', 'Phi2', 'Phi3', 'Phi4']
+__all__ = bases + bcbases + testbases
 
 
 class Orthogonal(SpectralBase):
@@ -730,6 +728,143 @@ class CompactNeumann(CompositeBase):
     def slice(self):
         return slice(0, self.N-2)
 
+class UpperDirichlet(CompositeBase):
+    r"""Function space with single Dirichlet on upper edge
+
+    The basis :math:`\{\phi_k\}_{k=0}^{N-1}` is
+
+    .. math::
+
+        \phi_k &= Q^{(\alpha)}_{k} - Q^{(\alpha)}_{k+1}, \, k=0, 1, \ldots, N-2, \\
+        \phi_{N-1} &= Q^{(\alpha)}_0,
+
+    such that
+
+    .. math::
+        u(x) &= \sum_{k=0}^{N-1} \hat{u}_k \phi_k(x), \\
+        u(1) &= a.
+
+    The last basis function is for boundary condition and only used if a is
+    different from 0. In one dimension :math:`\hat{u}_{N-1}=a`.
+
+    Parameters
+    ----------
+    N : int
+        Number of quadrature points
+    quad : str, optional
+        Type of quadrature
+
+        - QG - Jacobi-Gauss
+    bc : 2-tuple of (None, number), optional
+        The number is the boundary condition value
+    alpha : number, optional
+        Parameter of the ultraspherical polynomial
+    domain : 2-tuple of floats, optional
+        The computational domain
+    padding_factor : float, optional
+        Factor for padding backward transforms.
+    dealias_direct : bool, optional
+        Set upper 1/3 of coefficients to zero before backward transform
+    dtype : data-type, optional
+        Type of input data in real physical space. Will be overloaded when
+        basis is part of a :class:`.TensorProductSpace`.
+    coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
+        Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
+
+    """
+    def __init__(self, N, quad="QG", bc=(None, 0), domain=(-1., 1.), dtype=float,
+                 padding_factor=1, dealias_direct=False, coordinates=None,
+                 alpha=0, **kw):
+        assert quad == "QG"
+        CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
+                               padding_factor=padding_factor, dealias_direct=dealias_direct,
+                               alpha=alpha, coordinates=coordinates)
+
+    @staticmethod
+    def boundary_condition():
+        return 'UpperDirichlet'
+
+    @staticmethod
+    def short_name():
+        return 'UD'
+
+    def stencil_matrix(self, N=None):
+        N = self.N if N is None else N
+        d = np.ones(N)
+        d[-1] = 0
+        return SparseMatrix({0: d, 1: -d[:-1]}, (N, N))
+
+    def slice(self):
+        return slice(0, self.N-1)
+
+class LowerDirichlet(CompositeBase):
+    r"""Function space with single Dirichlet on left edge
+
+    The basis :math:`\{\phi_k\}_{k=0}^{N-1}` is
+
+    .. math::
+
+        \phi_k &= Q^{(\alpha)}_{k} + Q^{(\alpha)}_{k+1}, \, k=0, 1, \ldots, N-2, \\
+        \phi_{N-1} &= Q^{(\alpha)}_0,
+
+    such that
+
+    .. math::
+        u(x) &= \sum_{k=0}^{N-1} \hat{u}_k \phi_k(x), \\
+        u(1) &= a.
+
+    The last basis function is for boundary condition and only used if a is
+    different from 0. In one dimension :math:`\hat{u}_{N-1}=a`.
+
+    Parameters
+    ----------
+    N : int
+        Number of quadrature points
+    quad : str, optional
+        Type of quadrature
+
+        - QG - Jacobi-Gauss
+    bc : 2-tuple of (None, number), optional
+        The number is the boundary condition value
+    alpha : number, optional
+        Parameter of the ultraspherical polynomial
+    domain : 2-tuple of floats, optional
+        The computational domain
+    padding_factor : float, optional
+        Factor for padding backward transforms.
+    dealias_direct : bool, optional
+        Set upper 1/3 of coefficients to zero before backward transform
+    dtype : data-type, optional
+        Type of input data in real physical space. Will be overloaded when
+        basis is part of a :class:`.TensorProductSpace`.
+    coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
+        Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
+
+    """
+    def __init__(self, N, quad="QG", bc=(None, 0), domain=(-1., 1.), dtype=float,
+                 padding_factor=1, dealias_direct=False, coordinates=None,
+                 alpha=0, **kw):
+        assert quad == "QG"
+        CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
+                               padding_factor=padding_factor, dealias_direct=dealias_direct,
+                               alpha=alpha, coordinates=coordinates)
+
+    @staticmethod
+    def boundary_condition():
+        return 'UpperDirichlet'
+
+    @staticmethod
+    def short_name():
+        return 'LD'
+
+    def stencil_matrix(self, N=None):
+        N = self.N if N is None else N
+        d = np.ones(N)
+        d[-1] = 0
+        return SparseMatrix({0: d, 1: d[:-1]}, (N, N))
+
+    def slice(self):
+        return slice(0, self.N-1)
 
 class Generic(CompositeBase):
     r"""Function space for space with any boundary conditions
@@ -852,24 +987,24 @@ class BCBase(CompositeBase):
             return self.N
 
     @property
-    def num_T(self):
+    def dim_ortho(self):
         return self.stencil_matrix().shape[1]
 
     def slice(self):
         return slice(self.N-self.shape(), self.N)
 
     def vandermonde(self, x):
-        return self.jacobiQ(x, self.alpha, self.num_T)
+        return self.jacobiQ(x, self.alpha, self.dim_ortho)
 
     def _composite(self, V, argument=1):
         N = self.shape()
         P = np.zeros(V[:, :N].shape)
-        P[:] = np.tensordot(V[:, :self.num_T], self.stencil_matrix(), (1, 1))
+        P[:] = np.tensordot(V[:, :self.dim_ortho], self.stencil_matrix(), (1, 1))
         return P
 
     def sympy_basis(self, i=0, x=xp):
         M = self.stencil_matrix()
-        return np.sum(M[i]*np.array([cn(self.alpha, self.alpha, i)*sp.jacobi(j, self.alpha, self.alpha, x) for j in range(self.num_T)]))
+        return np.sum(M[i]*np.array([cn(self.alpha, self.alpha, i)*sp.jacobi(j, self.alpha, self.alpha, x) for j in range(self.dim_ortho)]))
 
     def evaluate_basis(self, x, i=0, output_array=None):
         x = np.atleast_1d(x)
@@ -899,6 +1034,13 @@ class BCBase(CompositeBase):
         v = self.to_ortho(u)
         output_array = v.eval(x, output_array=output_array)
         return output_array
+
+    def get_orthogonal(self, **kwargs):
+        d = dict(quad=self.quad,
+                 domain=self.domain,
+                 dtype=self.dtype)
+        d.update(kwargs)
+        return Orthogonal(self.dim_ortho, **d)
 
 class BCGeneric(BCBase):
 

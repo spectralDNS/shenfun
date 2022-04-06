@@ -1,5 +1,6 @@
 from copy import copy, deepcopy
 import functools
+from importlib import import_module
 from itertools import product
 import numpy as np
 import sympy as sp
@@ -10,6 +11,10 @@ import mpi4py_fft
 import shenfun
 from shenfun.chebyshev import matrices as cmatrices
 from shenfun.chebyshev import bases as cbases
+from shenfun.chebyshevu import matrices as cumatrices
+from shenfun.chebyshevu import bases as cubases
+from shenfun.ultraspherical import matrices as umatrices
+from shenfun.ultraspherical import bases as ubases
 from shenfun.legendre import matrices as lmatrices
 from shenfun.legendre import bases as lbases
 from shenfun.laguerre import matrices as lagmatrices
@@ -19,69 +24,51 @@ from shenfun.hermite import bases as hbases
 from shenfun.jacobi import matrices as jmatrices
 from shenfun.jacobi import bases as jbases
 from shenfun.chebyshev import la as cla
-from shenfun.legendre import la as lla
 from shenfun import div, grad, inner, TensorProductSpace, FunctionSpace, SparseMatrix, \
     Function, comm, VectorSpace, BlockMatrix, CompositeSpace
 from shenfun.spectralbase import inner_product
 from shenfun.config import config
 
-cBasis = (cbases.Orthogonal,
-          cbases.ShenDirichlet,
-          cbases.ShenNeumann,
-          cbases.ShenBiharmonic,
-          cbases.DirichletNeumann,
-          cbases.NeumannDirichlet,
-          cbases.UpperDirichlet,
-          cbases.LowerDirichlet,
-          cbases.UpperDirichletNeumann,
-          cbases.LowerDirichletNeumann
-          )
+x = sp.symbols('x', real=True)
+xp = sp.symbols('x', real=True, positive=True)
 
-# Bases with only GC quadrature
-cBasisGC = (cbases.ShenBiPolar,
-            cbases.Heinrichs,
-            cbases.MikNeumann,
-            cbases.CombinedShenNeumann,
-            cbases.Phi1,
-            cbases.Phi2,
-            cbases.Phi3,
-            cbases.Phi4
-            )
+ctrialBasis = [cbases.__dict__.get(base) for base in cbases.bases[:-1]]
+ctestBasis = ctrialBasis + [cbases.__dict__.get(base) for base in cbases.testbases]
+cutrialBasis = [cubases.__dict__.get(base) for base in cubases.bases[:-1]]
+cutestBasis = cutrialBasis + [cubases.__dict__.get(base) for base in cubases.testbases]
 
-lBasis = (lbases.Orthogonal,
-          lbases.ShenDirichlet,
-          functools.partial(lbases.ShenDirichlet, scaled=True),
-          lbases.ShenBiharmonic,
-          lbases.ShenNeumann)
+utrialBasis = [ubases.__dict__.get(base) for base in ubases.bases[:-1]]
+utestBasis = utrialBasis + [ubases.__dict__.get(base) for base in ubases.testbases]
+ltrialBasis = [lbases.__dict__.get(base) for base in lbases.bases[:-1]]
+ltestBasis = ltrialBasis + [lbases.__dict__.get(base) for base in lbases.testbases]
+latrialBasis = [lagbases.__dict__.get(base) for base in lagbases.bases[:-1]]
+htrialBasis = [hbases.__dict__.get(base) for base in hbases.bases]
+jtrialBasis = [jbases.__dict__.get(base) for base in jbases.bases[:-1]]
+jtestBasis = jtrialBasis + [jbases.__dict__.get(base) for base in jbases.testbases]
 
-# Bases with only LG quadrature
-lBasisLG = (lbases.UpperDirichlet,
-            lbases.LowerDirichlet,
-            lbases.ShenBiPolar,
-            lbases.Phi1,
-            lbases.Phi2,
-            lbases.Phi3,
-            lbases.Phi4)
-
-lagBasis = (lagbases.Orthogonal,
-            lagbases.CompactDirichlet,
-            lagbases.CompactNeumann)
-
-hBasis = (hbases.Orthogonal,)
-
-jBasis = (jbases.Orthogonal,
-          jbases.CompactDirichlet,
-          jbases.CompactNeumann,
-          jbases.Phi1,
-          jbases.Phi2,
-          jbases.Phi3,
-          jbases.Phi4)
+bcbases = (
+    cbases.BCGeneric,
+    lbases.BCGeneric,
+    cubases.BCGeneric,
+    ubases.BCGeneric
+)
 
 cquads = ('GC', 'GL')
+cuquads = ('GC', 'GU')
+uquads = ('QG',)
 lquads = ('LG', 'GL')
 lagquads = ('LG',)
 hquads = ('HG',)
 jquads = ('JG',)
+
+bcs = {
+    0: {'left': {'D': 1}, 'right': {'D': 1}},
+    1: {'left': {'N': 1}, 'right': {'N': 1}},
+    2: {'left': {'D': 1}, 'right': {'N': 1}},
+    3: {'left': {'N': 1}, 'right': {'D': 1}},
+    4: {'left': {'D': 1, 'N': 1}},
+    5: {'right': {'D': 1, 'N': 1}},
+}
 
 for f in ['dct', 'dst', 'fft', 'ifft', 'rfft', 'irfft']:
     config['fftw'][f]['planner_effort'] = 'FFTW_ESTIMATE'
@@ -103,27 +90,34 @@ work = {
      np.zeros((N, N)))
     }
 
-cbases2 = list(product(cBasis, cBasis))+list(product(cBasisGC, cBasisGC))
-lbases2 = list(product(lBasis, lBasis))+list(product(lBasisLG, lBasisLG))
-lagbases2 = list(product(lagBasis, lagBasis))
-hbases2 = list(product(hBasis, hBasis))
-jbases2 = list(product(jBasis, jBasis))
-bases2 = cbases2+lbases2+lagbases2+hbases2+jbases2
+cbases2 = list(product(ctestBasis, ctrialBasis))
+cubases2 = list(product(cutestBasis, cutrialBasis))
+ubases2 = list(product(utestBasis, utrialBasis))
+lbases2 = list(product(ltestBasis, ltrialBasis))
+lagbases2 = list(product(latrialBasis, latrialBasis))
+hbases2 = list(product(htrialBasis, htrialBasis))
+jbases2 = list(product(jtestBasis, jtrialBasis))
+bases2 = cbases2+lbases2+lagbases2+hbases2+jbases2+cubases2+ubases2
 
 cmats_and_quads = [list(k[0])+[k[1]] for k in product([(k, v) for k, v in cmatrices.mat.items()], cquads)]
+cumats_and_quads = [list(k[0])+[k[1]] for k in product([(k, v) for k, v in cumatrices.mat.items()], cuquads)]
+umats_and_quads = [list(k[0])+[k[1]] for k in product([(k, v) for k, v in umatrices.mat.items()], uquads)]
 lmats_and_quads = [list(k[0])+[k[1]] for k in product([(k, v) for k, v in lmatrices.mat.items()], lquads)]
 lagmats_and_quads = [list(k[0])+[k[1]] for k in product([(k, v) for k, v in lagmatrices.mat.items()], lagquads)]
 hmats_and_quads = [list(k[0])+[k[1]] for k in product([(k, v) for k, v in hmatrices.mat.items()], hquads)]
 jmats_and_quads = [list(k[0])+[k[1]] for k in product([(k, v) for k, v in jmatrices.mat.items()], jquads)]
-mats_and_quads = cmats_and_quads+lmats_and_quads+lagmats_and_quads+hmats_and_quads+jmats_and_quads
+mats_and_quads = cmats_and_quads+lmats_and_quads+lagmats_and_quads+hmats_and_quads+jmats_and_quads+umats_and_quads+cumats_and_quads
 
 #cmats_and_quads_ids = ['-'.join(i) for i in product([v.__name__ for v in cmatrices.mat.values()], cquads)]
 #lmats_and_quads_ids = ['-'.join(i) for i in product([v.__name__ for v in lmatrices.mat.values()], lquads)]
 
-x = sp.symbols('x', real=True)
-xp = sp.symbols('x', real=True, positive=True)
+num_tests = 10
+some_mats_and_quads = [mats_and_quads[i] for i in np.random.randint(0, len(mats_and_quads), num_tests)]
+some_cbases2 = [cbases2[i] for i in np.random.randint(0, len(cbases2), num_tests)]
+some_cubases2 = [cubases2[i] for i in np.random.randint(0, len(cubases2), num_tests)]
+some_lbases2 = [lbases2[i] for i in np.random.randint(0, len(lbases2), num_tests)]
+some_jbases2 = [jbases2[i] for i in np.random.randint(0, len(jbases2), num_tests)]
 
-some_mats_and_quads = [mats_and_quads[i] for i in np.random.randint(0, len(mats_and_quads), 10)]
 
 @pytest.mark.parametrize('key, mat, quad', mats_and_quads)
 def test_mat(key, mat, quad):
@@ -140,14 +134,24 @@ def test_mat(key, mat, quad):
             # Way too time-consuming. Test when adding new matrices.
             return
 
-    if (trial[0] in lBasisLG+cBasisGC) or (test[0] in lBasisLG+cBasisGC)  and quad == 'GL':
-        return
+    if test == 'PX':
+        if quad == 'GL':
+            return
+        module = import_module(mat.__module__)
+        test = ((module.P1, module.P2)[np.random.randint(0, 2)], 0)
+        trial = (module.UD, (0, 1)[np.random.randint(0, 2)])
+        measure = (1, x, x**2)[np.random.randint(0, 3)]
 
     t0 = test[0]
     t1 = trial[0]
     if len(key) == 4:
         t0 = functools.partial(t0, domain=domain)
         t1 = functools.partial(t1, domain=domain)
+
+    if trial[0] in bcbases:
+        # Just use some random boundary condition
+        t1 = functools.partial(t1, bc=bcs[np.random.randint(0, 6)])
+
     testfunction = (t0(N, quad=quad), test[1])
     trialfunction = (t1(N, quad=quad), trial[1])
     try:
@@ -161,14 +165,12 @@ def test_mat(key, mat, quad):
         mat = mat(testfunction, trialfunction)
         shenfun.check_sanity(mat, testfunction, trialfunction, measure)
 
-@pytest.mark.parametrize('b0,b1', cbases2)
+@pytest.mark.parametrize('b0,b1', some_cbases2)
 @pytest.mark.parametrize('quad', cquads)
 @pytest.mark.parametrize('k', range(5))
 def test_cmatvec(b0, b1, quad, k):
     """Test matrix-vector product"""
     global c, c1
-    if quad == 'GL' and (b0 in cBasisGC or b1 in cBasisGC):
-        return
     b0 = b0(N, quad=quad)
     b1 = b1(N, quad=quad)
     mat = inner_product((b0, 0), (b1, k))
@@ -185,8 +187,29 @@ def test_cmatvec(b0, b1, quad, k):
                 d1 = mat.matvec(b, d1, format=format, axis=axis)
                 assert np.allclose(d, d1)
 
+@pytest.mark.parametrize('b0,b1', some_cubases2)
+@pytest.mark.parametrize('quad', cuquads)
+@pytest.mark.parametrize('k', range(5))
+def test_cumatvec(b0, b1, quad, k):
+    """Test matrix-vector product"""
+    global c, c1
+    b0 = b0(N, quad=quad)
+    b1 = b1(N, quad=quad)
+    mat = inner_product((b0, 0), (b1, k))
+    formats = mat._matvec_methods + ['python', 'csr']
+    c = mat.matvec(a, c, format='csr')
+    for format in formats:
+        c1 = mat.matvec(a, c1, format=format)
+        assert np.allclose(c, c1)
+    for dim in (2, 3):
+        b, d, d1 = work[dim]
+        for axis in range(0, dim):
+            d = mat.matvec(b, d, format='csr', axis=axis)
+            for format in formats:
+                d1 = mat.matvec(b, d1, format=format, axis=axis)
+                assert np.allclose(d, d1)
 
-@pytest.mark.parametrize('b0,b1', lbases2)
+@pytest.mark.parametrize('b0,b1', some_lbases2)
 @pytest.mark.parametrize('quad', ('LG',))
 @pytest.mark.parametrize('k0,k1', product((0, 1, 2), (0, 1, 2)))
 def test_lmatvec(b0, b1, quad, k0, k1):
@@ -256,7 +279,7 @@ def test_hmatvec(b0, b1, quad, format, k0, k1):
                 d1 = mat.matvec(b, d1, format=format, axis=axis)
                 assert np.allclose(d, d1)
 
-@pytest.mark.parametrize('b0,b1', jbases2)
+@pytest.mark.parametrize('b0,b1', some_jbases2)
 @pytest.mark.parametrize('quad', jquads)
 @pytest.mark.parametrize('format', ('dia', 'python'))
 @pytest.mark.parametrize('k0,k1', product((0, 1, 2), (0, 1, 2)))
@@ -298,6 +321,13 @@ def test_imul(key, mat, quad):
         measure = key[3]
         if quad == 'GL':
             return
+
+    if test == 'PX':
+        module = import_module(mat.__module__)
+        test = ((module.P1, module.P2)[np.random.randint(0, 2)], 0)
+        trial = (module.UD, (0, 1)[np.random.randint(0, 2)])
+        measure = (1, x, x**2)[np.random.randint(0, 3)]
+
     if (trial[0] in lBasisLG+cBasisGC or test[0] in lBasisLG+cBasisGC)  and quad == 'GL':
         return
 
@@ -306,6 +336,9 @@ def test_imul(key, mat, quad):
     if len(key) == 4:
         t0 = functools.partial(t0, domain=domain)
         t1 = functools.partial(t1, domain=domain)
+    if trial[0] in bcbases:
+        # Just use some random boundary condition
+        t1 = functools.partial(t1, bc=bcs[np.random.randint(0, 6)])
     testfunction = (t0(N, quad=quad), test[1])
     trialfunction = (t1(N, quad=quad), trial[1])
     try:
@@ -331,6 +364,13 @@ def test_mul(key, mat, quad):
         measure = key[3]
         if quad == 'GL':
             return
+
+    if test == 'PX':
+        module = import_module(mat.__module__)
+        test = ((module.P1, module.P2)[np.random.randint(0, 2)], 0)
+        trial = (module.UD, (0, 1)[np.random.randint(0, 2)])
+        measure = (1, x, x**2)[np.random.randint(0, 3)]
+
     if (trial[0] in lBasisLG+cBasisGC or test[0] in lBasisLG+cBasisGC)  and quad == 'GL':
         return
 
@@ -339,6 +379,9 @@ def test_mul(key, mat, quad):
     if len(key) == 4:
         t0 = functools.partial(t0, domain=domain)
         t1 = functools.partial(t1, domain=domain)
+    if trial[0] in bcbases:
+        # Just use some random boundary condition
+        t1 = functools.partial(t1, bc=bcs[np.random.randint(0, 6)])
     testfunction = (t0(N, quad=quad), test[1])
     trialfunction = (t1(N, quad=quad), trial[1])
     try:
@@ -378,6 +421,13 @@ def test_rmul(key, mat, quad):
         measure = key[3]
         if quad == 'GL':
             return
+
+    if test == 'PX':
+        module = import_module(mat.__module__)
+        test = ((module.P1, module.P2)[np.random.randint(0, 2)], 0)
+        trial = (module.UD, (0, 1)[np.random.randint(0, 2)])
+        measure = (1, x, x**2)[np.random.randint(0, 3)]
+
     if (trial[0] in lBasisLG+cBasisGC or test[0] in lBasisLG+cBasisGC)  and quad == 'GL':
         return
     t0 = test[0]
@@ -385,6 +435,9 @@ def test_rmul(key, mat, quad):
     if len(key) == 4:
         t0 = functools.partial(t0, domain=domain)
         t1 = functools.partial(t1, domain=domain)
+    if trial[0] in bcbases:
+        # Just use some random boundary condition
+        t1 = functools.partial(t1, bc=bcs[np.random.randint(0, 6)])
     testfunction = (t0(N, quad=quad), test[1])
     trialfunction = (t1(N, quad=quad), trial[1])
     try:
@@ -408,6 +461,11 @@ def test_div(key, mat, quad):
         measure = key[3]
         if quad == 'GL':
             return
+    if test == 'PX':
+        module = import_module(mat.__module__)
+        test = ((module.P1, module.P2)[np.random.randint(0, 2)], 0)
+        trial = (module.UD, (0, 1)[np.random.randint(0, 2)])
+        measure = (1, x, x**2)[np.random.randint(0, 3)]
     if (trial[0] in lBasisLG+cBasisGC or test[0] in lBasisLG+cBasisGC)  and quad == 'GL':
         return
     t0 = test[0]
@@ -415,6 +473,9 @@ def test_div(key, mat, quad):
     if len(key) == 4:
         t0 = functools.partial(t0, domain=domain)
         t1 = functools.partial(t1, domain=domain)
+    if trial[0] in bcbases:
+        # Just use some random boundary condition
+        t1 = functools.partial(t1, bc=bcs[np.random.randint(0, 6)])
     testfunction = (t0(N, quad=quad), test[1])
     trialfunction = (t1(N, quad=quad), trial[1])
     try:
@@ -429,8 +490,8 @@ def test_div(key, mat, quad):
     mc = mat/2.
     assert mc.scale == 0.5
 
-@pytest.mark.parametrize('basis, quad', list(product(cBasis, cquads))+
-                         list(product(lBasis, lquads))+list(product(lagBasis, lagquads)))
+@pytest.mark.parametrize('basis, quad', list(product(ctrialBasis, cquads))+
+                         list(product(ltrialBasis, lquads))+list(product(latrialBasis, lagquads)))
 def test_div2(basis, quad):
     B = basis(8, quad=quad)
     u = shenfun.TrialFunction(B)
@@ -455,6 +516,11 @@ def test_add(key, mat, quad):
         measure = key[3]
         if quad == 'GL':
             return
+    if test == 'PX':
+        module = import_module(mat.__module__)
+        test = ((module.P1, module.P2)[np.random.randint(0, 2)], 0)
+        trial = (module.UD, (0, 1)[np.random.randint(0, 2)])
+        measure = (1, x, x**2)[np.random.randint(0, 3)]
     if (trial[0] in lBasisLG+cBasisGC or test[0] in lBasisLG+cBasisGC)  and quad == 'GL':
         return
     t0 = test[0]
@@ -462,6 +528,9 @@ def test_add(key, mat, quad):
     if len(key) == 4:
         t0 = functools.partial(t0, domain=domain)
         t1 = functools.partial(t1, domain=domain)
+    if trial[0] in bcbases:
+        # Just use some random boundary condition
+        t1 = functools.partial(t1, bc=bcs[np.random.randint(0, 6)])
     testfunction = (t0(N, quad=quad), test[1])
     trialfunction = (t1(N, quad=quad), trial[1])
     try:
@@ -486,6 +555,11 @@ def test_iadd(key, mat, quad):
         measure = key[3]
         if quad == 'GL':
             return
+    if test == 'PX':
+        module = import_module(mat.__module__)
+        test = ((module.P1, module.P2)[np.random.randint(0, 2)], 0)
+        trial = (module.UD, (0, 1)[np.random.randint(0, 2)])
+        measure = (1, x, x**2)[np.random.randint(0, 3)]
     if (trial[0] in lBasisLG+cBasisGC or test[0] in lBasisLG+cBasisGC)  and quad == 'GL':
         return
     t0 = test[0]
@@ -493,6 +567,9 @@ def test_iadd(key, mat, quad):
     if len(key) == 4:
         t0 = functools.partial(t0, domain=domain)
         t1 = functools.partial(t1, domain=domain)
+    if trial[0] in bcbases:
+        # Just use some random boundary condition
+        t1 = functools.partial(t1, bc=bcs[np.random.randint(0, 6)])
     testfunction = (t0(N, quad=quad), test[1])
     trialfunction = (t1(N, quad=quad), trial[1])
     try:
@@ -515,6 +592,11 @@ def test_isub(key, mat, quad):
         measure = key[3]
         if quad == 'GL':
             return
+    if test == 'PX':
+        module = import_module(mat.__module__)
+        test = ((module.P1, module.P2)[np.random.randint(0, 2)], 0)
+        trial = (module.UD, (0, 1)[np.random.randint(0, 2)])
+        measure = (1, x, x**2)[np.random.randint(0, 3)]
     if (trial[0] in lBasisLG+cBasisGC or test[0] in lBasisLG+cBasisGC)  and quad == 'GL':
         return
     t0 = test[0]
@@ -522,6 +604,9 @@ def test_isub(key, mat, quad):
     if len(key) == 4:
         t0 = functools.partial(t0, domain=domain)
         t1 = functools.partial(t1, domain=domain)
+    if trial[0] in bcbases:
+        # Just use some random boundary condition
+        t1 = functools.partial(t1, bc=bcs[np.random.randint(0, 6)])
     testfunction = (t0(N, quad=quad), test[1])
     trialfunction = (t1(N, quad=quad), trial[1])
     try:
@@ -547,6 +632,11 @@ def test_sub(key, mat, quad):
         measure = key[3]
         if quad == 'GL':
             return
+    if test == 'PX':
+        module = import_module(mat.__module__)
+        test = ((module.P1, module.P2)[np.random.randint(0, 2)], 0)
+        trial = (module.UD, (0, 1)[np.random.randint(0, 2)])
+        measure = (1, x, x**2)[np.random.randint(0, 3)]
     if (trial[0] in lBasisLG+cBasisGC or test[0] in lBasisLG+cBasisGC)  and quad == 'GL':
         return
     t0 = test[0]
@@ -554,6 +644,9 @@ def test_sub(key, mat, quad):
     if len(key) == 4:
         t0 = functools.partial(t0, domain=domain)
         t1 = functools.partial(t1, domain=domain)
+    if trial[0] in bcbases:
+        # Just use some random boundary condition
+        t1 = functools.partial(t1, bc=bcs[np.random.randint(0, 6)])
     testfunction = (t0(N, quad=quad), test[1])
     trialfunction = (t1(N, quad=quad), trial[1])
     try:
@@ -751,13 +844,13 @@ if __name__ == '__main__':
     x = sp.symbols('x', real=True)
     xp = sp.Symbol('x', real=True, positive=True)
 
-    #test_mat(((cbases.ShenBiharmonic, 0), (cbases.ShenDirichlet, 0)), cmatrices.BSBSDmat, 'GL')
+    test_mat(('PX', 0), cmatrices.PXGmat, 'GC')
     #test_mat(*cmats_and_quads[12])
     #test_cmatvec(cBasis[2], cBasis[2], 'GC', 2)
     #test_lmatvec(lBasis[0], lBasis[0], 'LG', 2, 0)
     #test_lagmatvec(lagBasis[0], lagBasis[1], 'LG', 'python', 3, 2, 0)
     #test_hmatvec(hBasis[0], hBasis[0], 'HG', 'self', 3, 1, 1)
-    test_jmatvec(jBasis[5], jBasis[5], 'JG', 'self', 1, 1)
+    #test_jmatvec(jBasis[5], jBasis[5], 'JG', 'self', 1, 1)
     #test_isub(((cbases.ShenNeumann, 0), (cbases.ShenDirichlet, 1)), cmatrices.CSNSDmat, 'GC')
     #test_add(((cbases.Orthogonal, 0), (cbases.ShenDirichlet, 1)), cmatrices.CTSDmat, 'GC')
     #test_blockmatrix((D, F2, F))

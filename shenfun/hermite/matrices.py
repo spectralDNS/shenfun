@@ -117,7 +117,7 @@ class _HerMatDict(dict):
     """
 
     def __missing__(self, key):
-        measure = 1 if len(key) == 2 else key[3]
+        measure = 1 if len(key) == 2 else key[2]
         c = functools.partial(_Hermatrix, measure=measure)
         self[key] = c
         return c

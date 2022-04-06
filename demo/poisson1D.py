@@ -83,12 +83,14 @@ def main(N, family, bc):
 
     # Compare with analytical solution
     ua = Array(SD, buffer=ue)
-    print('L2 error = ', np.sqrt(inner(1, (uj-ua)**2)))
+    error = np.sqrt(inner(1, (uj-ua)**2))
+    print('L2 error = ', error)
     if 'pytest 'in os.environ:
         assert np.sqrt(inner(1, (uj-ua)**2)) < 1e-5
+    return error
 
 if __name__ == '__main__':
     N = 36
     for family in ('legendre', 'chebyshev', 'chebyshevu', 'jacobi'):
         for bc in range(6):
-            main(N, family, bc)
+            error = main(N, family, bc)

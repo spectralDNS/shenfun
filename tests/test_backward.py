@@ -95,7 +95,7 @@ def test_backward_uniform(family):
 @pytest.mark.parametrize('family', 'CL')
 def test_padding(family):
     N = 8
-    B = FunctionSpace(N, family, bc=(-1, 1), domain=(-2, 2))
+    B = FunctionSpace(N, family, bc=(-1, 1), domain=(-1, 1))
     Bp = B.get_dealiased(1.5)
     u = Function(B).set_boundary_dofs()
     #u[:(N-2)] = np.random.random(N-2)
@@ -251,8 +251,8 @@ def test_padding_biharmonic(family):
 if __name__ == '__main__':
     #test_backward()
     #test_backward2D()
-    #test_padding('L')
-    test_padding_biharmonic('J')
+    test_padding('C')
+    #test_padding_biharmonic('J')
     #test_padding_neumann('C')
     #test_padding_orthogonal('F')
     #test_padding_orthogonal('C')

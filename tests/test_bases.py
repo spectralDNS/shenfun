@@ -65,17 +65,7 @@ bases = (
 )
 
 bcbases = (
-    chebyshev.BCDirichlet,
-    chebyshev.BCNeumann,
-    chebyshev.BCBiharmonic,
-    chebyshev.BCUpperDirichlet,
     chebyshev.BCGeneric,
-    legendre.BCDirichlet,
-    legendre.BCBiharmonic,
-    legendre.BCNeumann,
-    legendre.BCBeamFixedFree,
-    legendre.BCLowerDirichlet,
-    legendre.BCUpperDirichlet,
     legendre.BCGeneric,
     chebyshevu.BCGeneric,
     ultraspherical.BCGeneric

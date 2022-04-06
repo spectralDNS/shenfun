@@ -588,14 +588,20 @@ class SpectralMatrix(SparseMatrix):
         shape = (test[0].dim(), trial[0].dim())
         if d == {}:
             if config['matrix']['sparse']['construct'] == 'dense':
-                D = get_dense_matrix(test, trial, measure)[:shape[0], :shape[1]]
+                D = get_dense_matrix(test, trial, measure)
             elif config['matrix']['sparse']['construct'] == 'denser':
-                D = get_denser_matrix(test, trial, measure)[:shape[0], :shape[1]]
+                D = get_denser_matrix(test, trial, measure)
             elif config['matrix']['sparse']['construct'] == 'sympy':
-                D = get_dense_matrix_sympy(test, trial, measure)[:shape[0], :shape[1]]
+                D = get_dense_matrix_sympy(test, trial, measure)
             elif config['matrix']['sparse']['construct'] == 'quadpy':
-                D = get_dense_matrix_quadpy(test, trial, measure)[:shape[0], :shape[1]]
-            d = extract_diagonal_matrix(D)
+                D = get_dense_matrix_quadpy(test, trial, measure)
+            if isinstance(D, Number):
+                assert D == 0
+                scale = 0
+                d = {0: 0}
+            else:
+                D = D[:shape[0], :shape[1]]
+                d = extract_diagonal_matrix(D)
         else:
             if isinstance(measure, Number):
                 scale *= measure
@@ -1546,13 +1552,19 @@ def check_sanity(A, test, trial, measure=1):
     trial : 2-tuple of (basis, int)
         As test, but representing matrix column.
     measure : sympy function of coordinate, optional
+
+    Note
+    ----
+    Set `config['matrix']['sparse']['construct']` to determine how the matrix
+    is computed. Options
+
+        - `dense` quadrature N points
+        - `denser` quadrature 3N/2 points
+        - `sympy` use exact sympy integration
+        - `quadpy` use quadpy adaptive numerical integration
     """
-    N, M = A.shape
-    if measure == 1:
-        D = get_dense_matrix(test, trial, measure)[:N, :M]
-    else:
-        D = get_denser_matrix(test, trial, measure)
-    Dsp = extract_diagonal_matrix(D)
+    Dsp = SpectralMatrix({}, test, trial, measure=measure)
+    Dsp.incorporate_scale()
     for key, val in A.items():
         assert np.allclose(val*A.scale, Dsp[key])
 
@@ -1603,8 +1615,12 @@ def get_dense_matrix(test, trial, measure=1):
     N = test[0].N
     x = test[0].mpmath_points_and_weights(N, map_true_domain=False)[0]
     ws = test[0].get_measured_weights(N, measure)
-    v = test[0].evaluate_basis_derivative_all(x=x, k=test[1])[:, :K0]
     u = trial[0].evaluate_basis_derivative_all(x=x, k=trial[1])[:, :K1]
+    if trial[0].boundary_condition() == 'Apply':
+        if np.linalg.norm(u) < 1e-14:
+            return 0
+
+    v = test[0].evaluate_basis_derivative_all(x=x, k=test[1])[:, :K0]
     A = np.dot(np.conj(v.T)*ws[np.newaxis, :], u)
     if A.dtype.char in 'FDG':
         ni = np.linalg.norm(A.imag)
@@ -1664,8 +1680,11 @@ def get_denser_matrix(test, trial, measure=1):
     N = test2.N
     x = test2.mpmath_points_and_weights(N, map_true_domain=False)[0]
     ws = test2.get_measured_weights(N, measure)
-    v = test[0].evaluate_basis_derivative_all(x=x, k=test[1])[:, :K0]
     u = trial[0].evaluate_basis_derivative_all(x=x, k=trial[1])[:, :K1]
+    if trial[0].boundary_condition() == 'Apply':
+        if np.linalg.norm(u) < 1e-14:
+            return 0
+    v = test[0].evaluate_basis_derivative_all(x=x, k=test[1])[:, :K0]
     A = np.dot(np.conj(v.T)*ws[np.newaxis, :], u)
     if A.dtype.char in 'FDG':
         ni = np.linalg.norm(A.imag)

@@ -1,6 +1,6 @@
 from __future__ import print_function
 from time import time
-import copy
+import functools
 from itertools import product
 import pytest
 import numpy as np
@@ -9,6 +9,8 @@ from sympy import symbols, cos, sin, lambdify, exp
 from shenfun.config import config
 from shenfun.fourier import bases as fbases
 from shenfun.chebyshev import bases as cbases
+from shenfun.chebyshevu import bases as cubases
+from shenfun.ultraspherical import bases as ubases
 from shenfun.legendre import bases as lbases
 from shenfun.laguerre import bases as lagbases
 from shenfun.hermite import bases as hbases
@@ -125,20 +127,62 @@ cBasis = (cbases.Orthogonal,
           cbases.ShenNeumann,
           cbases.ShenBiharmonic,
           cbases.DirichletNeumann,
-          cbases.NeumannDirichlet)
+          cbases.NeumannDirichlet,
+          cbases.UpperDirichlet,
+          cbases.LowerDirichlet
+          )
+
+cuBasis = (cubases.Orthogonal,
+           cubases.CompactDirichlet,
+           cubases.CompactNeumann,
+           cubases.UpperDirichlet,
+           cubases.LowerDirichlet,
+           cubases.Phi1,
+           cubases.Phi2,
+           #cubases.Phi3,
+           #cubases.Phi4
+           )
+
+uBasis = (ubases.Orthogonal,
+          ubases.CompactDirichlet,
+          ubases.CompactNeumann,
+          ubases.UpperDirichlet,
+          ubases.LowerDirichlet,
+          ubases.Phi1,
+          ubases.Phi2,
+          ubases.Phi3,
+          ubases.Phi4,
+          )
 
 # Bases with only GC quadrature
-cBasisGC = (cbases.UpperDirichlet,
-            cbases.ShenBiPolar)
+cBasisGC = (cbases.ShenBiPolar,
+            cbases.Heinrichs,
+            cbases.MikNeumann,
+            cbases.CombinedShenNeumann,
+            cbases.Phi1,
+            cbases.Phi2,
+            cbases.Phi3,
+            cbases.Phi4
+            )
 
 lBasis = (lbases.Orthogonal,
           lbases.ShenDirichlet,
-          lbases.ShenNeumann,
-          lbases.ShenBiharmonic)
+          lbases.ShenDirichlet,
+          lbases.ShenBiharmonic,
+          lbases.ShenNeumann)
 
 # Bases with only LG quadrature
 lBasisLG = (lbases.UpperDirichlet,
-            lbases.ShenBiPolar)
+            lbases.LowerDirichlet,
+            lbases.ShenBiPolar,
+            lbases.NeumannDirichlet,
+            lbases.DirichletNeumann,
+            #lbases.BeamFixedFree,
+            lbases.Phi1,
+            lbases.Phi2,
+            lbases.Phi3,
+            lbases.Phi4
+            )
 
 lagBasis = (lagbases.Orthogonal,
             lagbases.CompactDirichlet,
@@ -149,30 +193,43 @@ hBasis = (hbases.Orthogonal,)
 jBasis = (jbases.Orthogonal,
           jbases.CompactDirichlet,
           jbases.CompactNeumann,
+          jbases.UpperDirichlet,
+          jbases.LowerDirichlet,
           jbases.Phi1,
           jbases.Phi2,
-          jbases.Phi3,
-          jbases.Phi4)
+          #jbases.Phi3, #too expensive
+          #jbases.Phi4
+          )
 
 cquads = ('GC', 'GL')
 lquads = ('LG', 'GL')
 lagquads = ('LG',)
 hquads = ('HG',)
 jquads = ('JG',)
+uquads = ('QG',)
+cuquads = ('GU', 'GC')
 
-all_bases_and_quads = list(product(lBasis, lquads))+list(product(cBasis, cquads))+list(product(lBasisLG, ('LG',)))+list(product(cBasisGC, ('GC',)))
+all_bases_and_quads = (list(product(cuBasis, cuquads))
+                       +list(product(uBasis, uquads))
+                       +list(product(lBasis, lquads))
+                       +list(product(cBasis, cquads))
+                       +list(product(lBasisLG, ('LG',)))
+                       +list(product(cBasisGC, ('GC',)))
+                       +list(product(jBasis, jquads))
+                       )
 lag_bases_and_quads = list(product(lagBasis, lagquads))
 h_bases_and_quads = list(product(hBasis, hquads))
-j_bases_and_quads = list(product(jBasis, jquads))
+
+num_tests = 20
+some_bases_and_quads = [all_bases_and_quads[i] for i in np.random.randint(0, len(all_bases_and_quads), num_tests)]
 
 @pytest.mark.parametrize('typecode', 'dD')
 @pytest.mark.parametrize('dim', (1, 2))
-@pytest.mark.parametrize('ST,quad', all_bases_and_quads
+@pytest.mark.parametrize('ST,quad', some_bases_and_quads
                                     +lag_bases_and_quads
-                                    +h_bases_and_quads
-                                    +j_bases_and_quads)
+                                    +h_bases_and_quads)
 def test_shentransform(typecode, dim, ST, quad):
-    sizes = (6, 5)
+    sizes = (16, 15)
     for shape in product(*([sizes]*dim)):
         bases = []
         for n in shape[:-1]:
@@ -188,7 +245,6 @@ def test_shentransform(typecode, dim, ST, quad):
             Fc = F.copy()
             V = fft.backward(F)
             F = fft.forward(U)
-            #from IPython import embed; embed()
             assert allclose(F, Fc)
             bases.pop(axis)
             fft.destroy()
@@ -367,12 +423,12 @@ def test_project_2dirichlet(quad):
 
 @pytest.mark.parametrize('typecode', 'dD')
 @pytest.mark.parametrize('dim', (1, 2))
-@pytest.mark.parametrize('ST,quad', all_bases_and_quads+j_bases_and_quads)
+@pytest.mark.parametrize('ST,quad', some_bases_and_quads)
 def test_eval_tensor(typecode, dim, ST, quad):
     # Using sympy to compute an analytical solution
     # Testing for Dirichlet and regular basis
     x, y, z = symbols("x,y,z")
-    sizes = (8, 7)
+    sizes = (18, 17)
 
     funcx = {'': (1-x**2)*sin(np.pi*x),
              'Dirichlet': (1-x**2)*sin(np.pi*x),
@@ -383,6 +439,7 @@ def test_eval_tensor(typecode, dim, ST, quad):
              'BiPolar': (1-x**2)*sin(np.pi*x),
              'BiPolar0': (1-x**2)*sin(np.pi*x),
              'UpperDirichlet': (1-x)*sin(np.pi*x),
+             'LowerDirichlet': (1+x)*sin(np.pi*x),
              'DirichletNeumann': (1-x**2)*sin(np.pi*x),
              'NeumannDirichlet': (1-x**2)*sin(np.pi*x)}
     funcy = {'': (1-y**2)*sin(np.pi*y),
@@ -394,6 +451,7 @@ def test_eval_tensor(typecode, dim, ST, quad):
              'BiPolar': (1-y**2)*sin(np.pi*y),
              'BiPolar0': (1-y**2)*sin(np.pi*y),
              'UpperDirichlet': (1-y)*sin(np.pi*y),
+             'LowerDirichlet': (1+y)*sin(np.pi*y),
              'DirichletNeumann': (1-y**2)*sin(np.pi*y),
              'NeumannDirichlet': (1-y**2)*sin(np.pi*y)}
     funcz = {'': (1-z**2)*sin(np.pi*z),
@@ -405,6 +463,7 @@ def test_eval_tensor(typecode, dim, ST, quad):
              'BiPolar': (1-z**2)*sin(np.pi*z),
              'BiPolar0': (1-z**2)*sin(np.pi*z),
              'UpperDirichlet': (1-z)*sin(np.pi*z),
+             'LowerDirichlet': (1+z)*sin(np.pi*z),
              'DirichletNeumann': (1-z**2)*sin(np.pi*z),
              'NeumannDirichlet': (1-z**2)*sin(np.pi*z)}
 
@@ -653,7 +712,7 @@ def test_eval_expression2(fam):
 if __name__ == '__main__':
     #test_transform('f', 3)
     #test_transform('d', 2)
-    #test_shentransform('d', 2, lbases.UpperDirichlet, 'LG')
+    #test_shentransform('d', 2, jbases.Phi4, 'JG')
     #test_eval_expression()
     #test_eval_expression2('L')
     #test_project('d', 1, cBasis[3], 'GC')
@@ -661,7 +720,7 @@ if __name__ == '__main__':
     #test_project_hermite('d', 2)
     #test_project2('d', 2, lbases.ShenNeumann, 'LG')
     #test_project_2dirichlet('GL')
-    test_eval_tensor('d', 1, jbases.Phi4, 'JG')
+    test_eval_tensor('D', 1, cubases.Phi4, 'GU')
     #test_eval_fourier('D', 3)
     #test_inner('C', 'F')
     #test_refine()

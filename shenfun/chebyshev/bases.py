@@ -53,33 +53,25 @@ from shenfun.optimization import optimizer
 from shenfun.config import config
 from shenfun.jacobi.recursions import n
 
-__all__ = ['Orthogonal',
-           'ShenDirichlet',
-           'Phi1',
-           'Phi2',
-           'Phi3',
-           'Phi4',
-           'Heinrichs',
-           'ShenNeumann',
-           'CombinedShenNeumann',
-           'MikNeumann',
-           'ShenBiharmonic',
-           'UpperDirichlet',
-           'LowerDirichlet',
-           'UpperDirichletNeumann',
-           'LowerDirichletNeumann',
-           'ShenBiPolar',
-           'DirichletNeumann',
-           'NeumannDirichlet',
-           'Generic',
-           'BCGeneric',
-           'BCDirichlet',
-           'BCBiharmonic',
-           'BCNeumann',
-           'BCUpperDirichlet',
-           'BCLowerDirichlet',
-           'CompositeBase']
+bases = ['Orthogonal',
+         'ShenDirichlet',
+         'Heinrichs',
+         'ShenNeumann',
+         'CombinedShenNeumann',
+         'MikNeumann',
+         'ShenBiharmonic',
+         'UpperDirichlet',
+         'LowerDirichlet',
+         'UpperDirichletNeumann',
+         'LowerDirichletNeumann',
+         'ShenBiPolar',
+         'DirichletNeumann',
+         'NeumannDirichlet',
+         'Generic']
+bcbases = ['BCGeneric']
+testbases = ['Phi1', 'Phi2', 'Phi3', 'Phi4']
 
+__all__ = bases + bcbases + testbases
 
 #pylint: disable=abstract-method, not-callable, method-hidden, no-self-use, cyclic-import
 
@@ -152,12 +144,12 @@ class Orthogonal(SpectralBase):
         SpectralBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
                               coordinates=coordinates)
-        assert quad in ('GC', 'GL')
+        assert quad in ('GC', 'GL', 'GU')
         if quad == 'GC':
             self._xfftn_fwd = functools.partial(fftw.dctn, type=2)
             self._xfftn_bck = functools.partial(fftw.dctn, type=3)
             self._xfftn_fwd.opts = self._xfftn_bck.opts = config['fftw']['dct']
-        elif quad == 'GL':
+        elif quad in ('GL', 'GU'):
             self._xfftn_fwd = functools.partial(fftw.dctn, type=1)
             self._xfftn_bck = functools.partial(fftw.dctn, type=1)
             self._xfftn_fwd.opts = self._xfftn_bck.opts = config['fftw']['dct']
@@ -331,7 +323,7 @@ class Orthogonal(SpectralBase):
             return output_array
         return input_array
 
-    def get_orthogonal(self):
+    def get_orthogonal(self, **kwargs):
         return self
 
     def get_bc_basis(self):
@@ -1362,6 +1354,7 @@ class LowerDirichlet(CompositeBase):
     def slice(self):
         return slice(0, self.N-1)
 
+
 class ShenBiPolar(CompositeBase):
     """Function space for the Biharmonic equation in polar coordinates
 
@@ -1854,24 +1847,25 @@ class BCBase(CompositeBase):
             return self.N
 
     @property
-    def num_T(self):
+    def dim_ortho(self):
+        """Dimension of orthogonal space"""
         return self.stencil_matrix().shape[1]
 
     def slice(self):
         return slice(self.N-self.shape(), self.N)
 
     def vandermonde(self, x):
-        return n_cheb.chebvander(x, self.num_T-1)
+        return n_cheb.chebvander(x, self.dim_ortho-1)
 
     def _composite(self, V, argument=1):
         N = self.shape()
         P = np.zeros(V[:, :N].shape)
-        P[:] = np.tensordot(V[:, :self.num_T], self.stencil_matrix(), (1, 1))
+        P[:] = np.tensordot(V[:, :self.dim_ortho], self.stencil_matrix(), (1, 1))
         return P
 
     def sympy_basis(self, i=0, x=xp):
         M = self.stencil_matrix()
-        return np.sum(M[i]*np.array([sp.chebyshevt(j, x) for j in range(self.num_T)]))
+        return np.sum(M[i]*np.array([sp.chebyshevt(j, x) for j in range(self.dim_ortho)]))
 
     def evaluate_basis(self, x, i=0, output_array=None):
         x = np.atleast_1d(x)
@@ -1893,7 +1887,7 @@ class BCBase(CompositeBase):
         else:
             output_array.fill(0)
         M = self.stencil_matrix().T
-        output_array[:self.num_T] = np.dot(M, input_array[self.sl[self.slice()]])
+        output_array[:self.dim_ortho] = np.dot(M, input_array[self.sl[self.slice()]])
         return output_array
 
     def eval(self, x, u, output_array=None):
@@ -1901,55 +1895,13 @@ class BCBase(CompositeBase):
         output_array = v.eval(x, output_array=output_array)
         return output_array
 
-class BCDirichlet(BCBase):
+    def get_orthogonal(self, **kwargs):
+        d = dict(quad=self.quad,
+                 domain=self.domain,
+                 dtype=self.dtype)
+        d.update(kwargs)
+        return Orthogonal(self.dim_ortho, **d)
 
-    @staticmethod
-    def short_name():
-        return 'BCD'
-
-    def stencil_matrix(self, N=None):
-        return sp.Rational(1, 2)*np.array([[1, -1],
-                                           [1, 1]])
-
-class BCNeumann(BCBase):
-
-    @staticmethod
-    def short_name():
-        return 'BCN'
-
-    def stencil_matrix(self, N=None):
-        return sp.Rational(1, 8)*np.array([[0, 4, -1],
-                                           [0, 4, 1]])
-
-class BCBiharmonic(BCBase):
-
-    @staticmethod
-    def short_name():
-        return 'BCB'
-
-    def stencil_matrix(self, N=None):
-        return sp.Rational(1, 16)*np.array([[8, -9, 0, 1],
-                                            [2, -1, -2, 1],
-                                            [8, 9, 0, -1],
-                                            [-2, -1, 2, 1]])
-
-class BCUpperDirichlet(BCBase):
-
-    @staticmethod
-    def short_name():
-        return 'BCUD'
-
-    def stencil_matrix(self, N=None):
-        return sp.Rational(1, 2)*np.array([[1, 1]])
-
-class BCLowerDirichlet(BCBase):
-
-    @staticmethod
-    def short_name():
-        return 'BCLD'
-
-    def stencil_matrix(self, N=None):
-        return sp.Rational(1, 2)*np.array([[1, -1]])
 
 class BCGeneric(BCBase):
 

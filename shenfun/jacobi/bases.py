@@ -49,19 +49,15 @@ m, n, k = sp.symbols('m,n,k', real=True, integer=True)
 
 #pylint: disable=method-hidden,no-else-return,not-callable,abstract-method,no-member,cyclic-import
 
-__all__ = ['Orthogonal',
-           'Phi1',
-           'Phi2',
-           'Phi3',
-           'Phi4',
-           'CompactDirichlet',
-           'CompactNeumann',
-           'CompositeBase',
-           'Generic',
-           'BCBase',
-           'BCGeneric',
-           'has_quadpy',
-           'mp']
+bases = ['Orthogonal',
+         'CompactDirichlet',
+         'CompactNeumann',
+         'UpperDirichlet',
+         'LowerDirichlet',
+         'Generic']
+bcbases = ['BCGeneric']
+testbases = ['Phi1', 'Phi2', 'Phi3', 'Phi4']
+__all__ = bases + bcbases + testbases
 
 
 class Orthogonal(SpectralBase):
@@ -118,7 +114,7 @@ class Orthogonal(SpectralBase):
     def reference_domain(self):
         return (-1, 1)
 
-    def get_orthogonal(self):
+    def get_orthogonal(self, **kwargs):
         return self
 
     def points_and_weights(self, N=None, map_true_domain=False, weighted=True, **kw):
@@ -341,10 +337,10 @@ class Phi1(CompositeBase):
         #self.b1n = sp.simplify(b(alpha, beta, n+1, n+1) / h(alpha, beta, n+1, 0))
         #self.b2n = sp.simplify(b(alpha, beta, n+1, n+2) / h(alpha, beta, n+2, 0))
         a, b = alpha, beta
-        self.b0n = 2**(-a - b)*sp.gamma(n + 1)*sp.gamma(a + b + n + 2)/((a + b + 2*n + 2)*sp.gamma(a + n + 1)*sp.gamma(b + n + 1))
+        self.b0n = 2**(-a-b)*sp.gamma(n+1)*sp.gamma(a+b+n+2)/((a+b+2*n+2)*sp.gamma(a+n+1)*sp.gamma(b+n+1))
         if alpha != beta:
-            self.b1n = 2**(-a - b)*(a - b)*(a + b + 2*n + 3)*sp.gamma(n + 2)*sp.gamma(a + b + n + 2)/((a + b + 2*n + 2)*(a + b + 2*n + 4)*sp.gamma(a + n + 2)*sp.gamma(b + n + 2))
-        self.b2n = -2**(-a - b)*sp.gamma(n + 3)*sp.gamma(a + b + n + 2)/((a + b + 2*n + 4)*sp.gamma(a + n + 2)*sp.gamma(b + n + 2))
+            self.b1n = 2**(-a-b)*(a-b)*(a+b+2*n+3)*sp.gamma(n+2)*sp.gamma(a+b+n+2)/((a+b+2*n+2)*(a+b+2*n+4)*sp.gamma(a+n+2)*sp.gamma(b+n+2))
+        self.b2n = -2**(-a-b)*sp.gamma(n+3)*sp.gamma(a+b+n+2)/((a+b+2*n+4)*sp.gamma(a+n+2)*sp.gamma(b+n+2))
 
     @staticmethod
     def boundary_condition():
@@ -860,6 +856,142 @@ class CompactNeumann(CompositeBase):
     def slice(self):
         return slice(0, self.N-2)
 
+class UpperDirichlet(CompositeBase):
+    r"""Function space for Dirichlet boundary conditions at right edge
+
+    The basis :math:`\{\phi_k\}_{k=0}^{N-1}` is
+
+    .. math::
+        \phi_k &= P^{(\alpha, \beta)}_k - \frac{(k+1)}{\alpha+k+1} P^{(\alpha,\beta)}_{k+1}  \quad k=0, 1, \ldots, N-2, \\
+        \phi_{N-1} &= 1
+
+    and the expansion is
+
+    .. math::
+        u(x) &= \sum_{k=0}^{N-1} \hat{u}_k \phi_k(x), \\
+        u(1) = a.
+
+    The last basis function is for boundary condition and only used if a is
+    different from 0. In one dimension :math:`\hat{u}_{N-1}=a`.
+
+    Parameters
+    ----------
+    N : int
+        Number of quadrature points
+    quad : str, optional
+        Type of quadrature
+
+        - JG - Jacobi-Gauss
+    bc : 2-tuple of (None, number), optional
+        Boundary condition at x=1.
+    alpha : number, optional
+        Parameter of the Jacobi polynomial
+    beta : number, optional
+        Parameter of the Jacobi polynomial
+    padding_factor : float, optional
+        Factor for padding backward transforms.
+    dealias_direct : bool, optional
+        Set upper 1/3 of coefficients to zero before backward transform
+    dtype : data-type, optional
+        Type of input data in real physical space. Will be overloaded when
+        basis is part of a :class:`.TensorProductSpace`.
+    coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
+        Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
+    """
+    def __init__(self, N, quad="JG", bc=(None, 0), domain=(-1, 1), dtype=float,
+                 padding_factor=1, dealias_direct=False, alpha=0, beta=0,
+                 coordinates=None, **kw):
+        CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
+                               padding_factor=padding_factor, dealias_direct=dealias_direct,
+                               alpha=alpha, beta=beta, coordinates=coordinates)
+
+    @staticmethod
+    def boundary_condition():
+        return 'UpperDirichlet'
+
+    @staticmethod
+    def short_name():
+        return 'UD'
+
+    def stencil_matrix(self, N=None):
+        N = self.N if N is None else N
+        k = np.arange(N)
+        d0, d1 = np.ones(N), np.zeros(N-1)
+        d0[-1] = 0
+        d1[:] = -(k[:N-1]+1)/(self.alpha+k[:N-1]+1)
+        return SparseMatrix({0: d0, 1: d1}, (N, N))
+
+    def slice(self):
+        return slice(0, self.N-1)
+
+class LowerDirichlet(CompositeBase):
+    r"""Function space for Dirichlet boundary condition at left edge
+
+    The basis :math:`\{\phi_k\}_{k=0}^{N-1}` is
+
+    .. math::
+        \phi_k &= P^{(\alpha, \beta)}_k + \frac{(k+1)}{\beta+k+1} P^{(\alpha,\beta)}_{k+1}  \quad k=0, 1, \ldots, N-2, \\
+        \phi_{N-1} &= 1
+
+    and the expansion is
+
+    .. math::
+        u(x) &= \sum_{k=0}^{N-1} \hat{u}_k \phi_k(x), \\
+        u(-1) = a.
+
+    The last basis function is for boundary condition and only used if a is
+    different from 0. In one dimension :math:`\hat{u}_{N-1}=a`.
+
+    Parameters
+    ----------
+    N : int
+        Number of quadrature points
+    quad : str, optional
+        Type of quadrature
+
+        - JG - Jacobi-Gauss
+    bc : 2-tuple of (number, None), optional
+        Boundary condition at x=-1.
+    alpha : number, optional
+        Parameter of the Jacobi polynomial
+    beta : number, optional
+        Parameter of the Jacobi polynomial
+    padding_factor : float, optional
+        Factor for padding backward transforms.
+    dealias_direct : bool, optional
+        Set upper 1/3 of coefficients to zero before backward transform
+    dtype : data-type, optional
+        Type of input data in real physical space. Will be overloaded when
+        basis is part of a :class:`.TensorProductSpace`.
+    coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
+        Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
+    """
+    def __init__(self, N, quad="JG", bc=(0, None), domain=(-1, 1), dtype=float,
+                 padding_factor=1, dealias_direct=False, alpha=0, beta=0,
+                 coordinates=None, **kw):
+        CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
+                               padding_factor=padding_factor, dealias_direct=dealias_direct,
+                               alpha=alpha, beta=beta, coordinates=coordinates)
+
+    @staticmethod
+    def boundary_condition():
+        return 'LowerDirichlet'
+
+    @staticmethod
+    def short_name():
+        return 'LD'
+
+    def stencil_matrix(self, N=None):
+        N = self.N if N is None else N
+        k = np.arange(N)
+        d0, d1 = np.ones(N), np.zeros(N-1)
+        d0[-1] = 0
+        d1[:] = (k[:N-1]+1)/(self.beta+k[:N-1]+1)
+        return SparseMatrix({0: d0, 1: d1}, (N, N))
+
+    def slice(self):
+        return slice(0, self.N-1)
+
 
 class Generic(CompositeBase):
     r"""Function space for space with any boundary conditions
@@ -986,25 +1118,25 @@ class BCBase(CompositeBase):
             return self.N
 
     @property
-    def num_T(self):
+    def dim_ortho(self):
         return self.stencil_matrix().shape[1]
 
     def slice(self):
         return slice(self.N-self.shape(), self.N)
 
     def vandermonde(self, x):
-        return self.jacobi(x, self.alpha, self.beta, self.num_T)
+        return self.jacobi(x, self.alpha, self.beta, self.dim_ortho)
         #return Orthogonal.vandermonde(self, x)
 
     def _composite(self, V, argument=1):
         N = self.shape()
         P = np.zeros(V[:, :N].shape)
-        P[:] = np.tensordot(V[:, :self.num_T], self.stencil_matrix(), (1, 1))
+        P[:] = np.tensordot(V[:, :self.dim_ortho], self.stencil_matrix(), (1, 1))
         return P
 
     def sympy_basis(self, i=0, x=xp):
         M = self.stencil_matrix()
-        return np.sum(M[i]*np.array([sp.jacobi(j, self.alpha, self.beta, x) for j in range(self.num_T)]))
+        return np.sum(M[i]*np.array([sp.jacobi(j, self.alpha, self.beta, x) for j in range(self.dim_ortho)]))
 
     def evaluate_basis(self, x, i=0, output_array=None):
         x = np.atleast_1d(x)
@@ -1034,6 +1166,13 @@ class BCBase(CompositeBase):
         v = self.to_ortho(u)
         output_array = v.eval(x, output_array=output_array)
         return output_array
+
+    def get_orthogonal(self, **kwargs):
+        d = dict(quad=self.quad,
+                 domain=self.domain,
+                 dtype=self.dtype)
+        d.update(kwargs)
+        return Orthogonal(self.dim_ortho, **d)
 
 class BCGeneric(BCBase):
 

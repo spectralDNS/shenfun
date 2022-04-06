@@ -1,4 +1,5 @@
 from itertools import product
+import functools
 import pytest
 from scipy.linalg import solve
 import scipy.sparse.linalg as la
@@ -9,6 +10,7 @@ from shenfun.chebyshev import bases as cbases
 from shenfun.chebyshevu import bases as cubases
 from shenfun.legendre import bases as lbases
 from shenfun.laguerre import bases as labases
+from shenfun.ultraspherical import bases as ubases
 from shenfun.fourier import bases as fbases
 from shenfun.jacobi import bases as jbases
 from shenfun.la import TDMA
@@ -24,27 +26,66 @@ x, y = symbols("x,y", real=True)
 cBasis = (cbases.Orthogonal,
           cbases.ShenDirichlet,
           cbases.ShenNeumann,
-          cbases.ShenBiharmonic)
+          cbases.ShenBiharmonic,
+          cbases.DirichletNeumann,
+          cbases.NeumannDirichlet,
+          cbases.UpperDirichlet,
+          cbases.LowerDirichlet,
+          cbases.UpperDirichletNeumann,
+          cbases.LowerDirichletNeumann
+          )
 
 cuBasis = (cubases.Orthogonal,
            cubases.CompactDirichlet,
-           cubases.CompactNeumann)
+           cubases.CompactNeumann,
+           cubases.UpperDirichlet,
+           cubases.LowerDirichlet,
+           cubases.Phi1,
+           cubases.Phi2,
+           cubases.Phi3,
+           cubases.Phi4
+           )
+
+uBasis = (ubases.Orthogonal,
+          ubases.CompactDirichlet,
+          ubases.CompactNeumann,
+          ubases.UpperDirichlet,
+          ubases.LowerDirichlet,
+          ubases.Phi1,
+          ubases.Phi2,
+          ubases.Phi3,
+          ubases.Phi4,
+          )
 
 # Bases with only GC quadrature
-cBasisGC = (cbases.Heinrichs,
+cBasisGC = (cbases.ShenBiPolar,
+            cbases.Heinrichs,
             cbases.MikNeumann,
-            cbases.UpperDirichlet,
             cbases.CombinedShenNeumann,
-            cbases.ShenBiPolar)
+            cbases.Phi1,
+            cbases.Phi2,
+            cbases.Phi3,
+            cbases.Phi4
+            )
 
 lBasis = (lbases.Orthogonal,
+          lbases.ShenDirichlet,
           lbases.ShenDirichlet,
           lbases.ShenBiharmonic,
           lbases.ShenNeumann)
 
 # Bases with only LG quadrature
 lBasisLG = (lbases.UpperDirichlet,
-            lbases.ShenBiPolar)
+            lbases.LowerDirichlet,
+            lbases.ShenBiPolar,
+            lbases.NeumannDirichlet,
+            lbases.DirichletNeumann,
+            lbases.BeamFixedFree,
+            lbases.Phi1,
+            lbases.Phi2,
+            lbases.Phi3,
+            lbases.Phi4
+            )
 
 laBasis = (labases.Orthogonal,
            labases.CompactDirichlet,
@@ -56,6 +97,8 @@ fBasis = (fbases.R2C,
 jBasis = (jbases.Orthogonal,
           jbases.CompactDirichlet,
           jbases.CompactNeumann,
+          jbases.UpperDirichlet,
+          jbases.LowerDirichlet,
           jbases.Phi1,
           jbases.Phi2,
           jbases.Phi3,
@@ -71,6 +114,7 @@ all_bases_and_quads = (list(product(laBasis, laquads))
                      +list(product(cBasis, cquads))
                      +list(product(cuBasis, ('GU',)))
                      +list(product(cBasisGC, ('GC',)))
+                     +list(product(uBasis, ('QG',)))
                      +list(product(fBasis, ('',)))
                      +list(product(jBasis, ('JG',))))
 
@@ -225,14 +269,10 @@ def test_to_ortho(basis, quad):
 def test_massmatrices(test, trial, quad):
     test = test(N, quad=quad)
     trial = trial(N, quad=quad)
-
     f_hat = np.zeros(N)
     fj = np.random.random(N)
-
     f_hat = trial.forward(fj, f_hat)
-
     fj = trial.backward(f_hat, fj)
-
     BBD = inner_product((test, 0), (trial, 0))
     f_hat = trial.forward(fj, f_hat)
     u2 = np.zeros_like(f_hat)
@@ -241,7 +281,6 @@ def test_massmatrices(test, trial, quad):
     u0 = test.scalar_product(fj, u0)
     s = test.slice()
     assert np.allclose(u0[s], u2[s], rtol=1e-5, atol=1e-6)
-
     del BBD
 
 @pytest.mark.parametrize('basis', cBasis[:2])
@@ -251,7 +290,6 @@ def test_project_1D(basis):
     u = shenfun.TrialFunction(T)
     v = shenfun.TestFunction(T)
     u_tilde = shenfun.Function(T)
-    X = T.mesh()
     ua = shenfun.Array(T, buffer=ue)
     u_tilde = shenfun.inner(v, ua, output_array=u_tilde)
     M = shenfun.inner(u, v)
@@ -556,10 +594,11 @@ if __name__ == '__main__':
     #test_ASDSDmat(cbases.ShenNeumann, "GC")
     #test_ASBSBmat(cbases.ShenBiharmonic, "GC")
     #test_CDDmat("GL")
-    #test_massmatrices(cBasis[3], cBasis[1], 'GL')
+    for i in range(len(cBasis)):
+        test_massmatrices(cBasis[1], cBasis[i], 'GL')
     #test_CXXmat(cBasis[2], cBasis[1])
     #test_transforms(cBasisGC[3], 'GC')
     #test_project_1D(cBasis[0])
     #test_scalarproduct(cBasis[2], 'GC')
-    test_eval(jBasis[4], 'JG')
+    #test_eval(jBasis[4], 'JG')
     #test_axis(laBasis[1], 'LG', 1)

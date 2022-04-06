@@ -386,7 +386,34 @@ def integrate_sympy(f, d):
         #return sp.Integral(f, d).evalf()
         return sp.integrate(f, d).evalf()
 
-def split(measures):
+def rsplit(measures):
+    d = []
+    def _split(ms):
+        ms = sp.sympify(ms)
+        if isinstance(ms, Number):
+            d = {'coeff': ms}
+        elif len(ms.free_symbols) == 0:
+            d = {'coeff': ms.evalf()}
+        else:
+            d = sp.separatevars(ms.factor(), dict=True)
+        if d is None:
+            return d
+        d = defaultdict(lambda: 1, {str(k): v for k, v in d.items()})
+        dc = d['coeff']
+        d['coeff'] = int(dc) if isinstance(dc, (sp.Integer, int)) else float(dc)
+        return d
+
+    ms = sp.sympify(measures)
+    di = _split(ms)
+    if di is not None:
+        d += [di]
+    else:
+        ms = ms.expand()
+        for arg in ms.args:
+            d += split(arg)
+    return d
+
+def split(measures, expand=False):
 
     def _split(ms):
         ms = sp.sympify(ms)
@@ -404,9 +431,10 @@ def split(measures):
         return d
 
     ms = sp.sympify(measures)
-    if not config['assembly']['splitmeasure']:
-        if len(ms.free_symbols) <= 1:
-            return [_split(ms)]
+    if not expand:
+        di = _split(ms)
+        if di is not None:
+            return [di]
 
     ms = ms.expand()
     result = []

@@ -8,6 +8,10 @@ from shenfun.spectralbase import SpectralBase, Transform, islicedict, slicedict
 
 #pylint: disable=method-hidden,no-else-return,not-callable,abstract-method,no-member,cyclic-import
 
+bases = ['Orthogonal']
+bcbases = []
+testbases = []
+__all__ = bases
 
 class Orthogonal(SpectralBase):
     r"""Function space for Hermite functions
@@ -190,5 +194,5 @@ class Orthogonal(SpectralBase):
     def is_orthogonal(self):
         return True
 
-    def get_orthogonal(self):
+    def get_orthogonal(self, **kwargs):
         return self

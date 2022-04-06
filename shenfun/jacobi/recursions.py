@@ -12,11 +12,32 @@ half = sp.Rational(1, 2)
 m, n, k = sp.symbols('m,n,k', real=True, integer=True)
 alfa, beta = sp.symbols('a,b', real=True)
 
-# Jacobi Jn
-jt = lambda alf, bet, n: sp.jacobi(n, alf, bet, x)
-djt = lambda alf, bet, n, k: sp.diff(jt(alf, bet, n), x, k)
+def jt(alf, bet, n):
+    """Jacobi polynomial
 
-# Scaled Qn = gn*Jn
+    Parameters
+    ----------
+    alf, bet : numbers
+        Jacobi parameters
+    n : int
+        Index
+    """
+    return sp.jacobi(n, alf, bet, x)
+
+def djt(alf, bet, n, k):
+    """k'th derivative of Jacobi polynomial
+
+    Parameters
+    ----------
+    alf, bet : numbers
+        Jacobi parameters
+    n : int
+        Index
+    k : int
+        The k'th derivative
+    """
+    return sp.diff(jt(alf, bet, n), x, k)
+
 def cn(alf, bet, n):
     r"""Scaling function
 
@@ -58,7 +79,11 @@ def un(alf, bet, n):
     return (n+1)/sp.jacobi(n, alf, bet, 1)
 
 def qn(alf, bet, n, gn=cn):
-    """Specialized Jacobi polynomial
+    r"""Specialized Jacobi polynomial
+
+    .. math::
+
+        Q_n^{(\alpha, \beta)} = g_n^{(\alpha, \beta)} P^{(\alpha, \beta)}_n
 
     Parameters
     ----------
@@ -70,10 +95,16 @@ def qn(alf, bet, n, gn=cn):
         Chebyshev of first and second kind use cn and un, respectively.
         Legendre uses gn=1.
     """
+    if gn == 1:
+        return jt(alf, bet, n)
     return gn(alf, bet, n)*jt(alf, bet, n)
 
 def dqn(alf, bet, n, k, gn=cn):
-    """Derivative of specialized Jacobi polynomial
+    r"""Derivative of specialized Jacobi polynomial
+
+    .. math::
+
+        \frac{d^k Q_n^{(\alpha, \beta)}}{dx^k} = g_n^{(\alpha, \beta)} \frac{d^k P^{(\alpha, \beta)}_n}{dx^k}
 
     Parameters
     ----------
@@ -87,6 +118,8 @@ def dqn(alf, bet, n, k, gn=cn):
         Chebyshev of first and second kind use cn and un, respectively.
         Legendre uses gn=1.
     """
+    if gn == 1:
+        return djt(alf, bet, n, k)
     return gn(alf, bet, n)*djt(alf, bet, n, k)
 
 def bnd_values(alf, bet, k=0, gn=1):
@@ -400,8 +433,10 @@ def pmat(mat, q, alf, bet, M, N, gn=1):
                 d[i] = np.zeros(Z)
                 if mat == b:
                     d[i][:q] = 0
-                    d[i][q] = f.subs(m, q).subs([(alfa, alf), (beta, bet)])
-                    d[i][q+1:] = fz(np.arange(q+1, Z))
+                    if len(d[i]) > q:
+                        d[i][q] = f.subs(m, q).subs([(alfa, alf), (beta, bet)])
+                    if len(d[i]) > q+1:
+                        d[i][q+1:] = fz(np.arange(q+1, Z))
                 else:
                     d[i][:q] = [f.subs(m, z).subs([(alfa, alf), (beta, bet)]) for z in np.arange(0, q)]
                     d[i][q:] = fz(np.arange(q, Z))
@@ -450,14 +485,18 @@ def a_mat(mat, k, q, alf, bet, M, N, gn=1):
             fz = sp.lambdify(m, fz)
             if i >= 0:
                 Z = min(N-abs(i), M)
-                d[i] = np.zeros(Z)
-                d[i][k:k+q] = [f.subs(m, z).subs([(alfa, alf), (beta, bet)]) for z in np.arange(k, k+q)]
-                d[i][k+q:] = fz(np.arange(k+q, Z))
+                if Z > 0:
+                    d[i] = np.zeros(Z)
+                    if len(d[i]) > k:
+                        d[i][k:k+q] = [f.subs(m, z).subs([(alfa, alf), (beta, bet)]) for z in np.arange(k, min(k+q, len(d[i])))]
+                    if len(d[i]) > k+q:
+                        d[i][k+q:] = fz(np.arange(k+q, Z))
             else:
                 Z = min(M-abs(i), N)
-                d[i] = np.zeros(Z)
-                d[i][k] = sp.simplify(f.subs(m, -i+k)).subs([(alfa, alf), (beta, bet)])
-                d[i][k+1:] = fz(np.arange(-i+k+1, Z-i))
+                if Z > 0:
+                    d[i] = np.zeros(Z)
+                    d[i][k] = sp.simplify(f.subs(m, -i+k)).subs([(alfa, alf), (beta, bet)])
+                    d[i][k+1:] = fz(np.arange(-i+k+1, Z-i))
 
     return SparseMatrix(d, (M, N))
 
@@ -512,6 +551,8 @@ def ShiftedMatrix(mat, q, r, s, M=0, N=0, k=None, alf=0, bet=0, gn=1):
             d[nkey] = val[j:min(N-nkey, M)+j].copy()
         else:
             d[nkey] = val[j:min(M+nkey, N)+j].copy()
+        if len(d[nkey]) == 0:
+            del d[nkey]
     return SparseMatrix(d, (M, N))
 
 def Lmat(k, q, l, M, N, alf=0, bet=0, gn=1):

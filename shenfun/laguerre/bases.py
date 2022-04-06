@@ -10,13 +10,16 @@ from shenfun.spectralbase import SpectralBase, Transform, islicedict, \
 
 #pylint: disable=method-hidden,no-else-return,not-callable,abstract-method,no-member,cyclic-import
 
-__all__ = ['Orthogonal',
-           'CompactDirichlet',
-           'CompactNeumann',
-           'Generic',
-           'CompositeBase']
+bases = ['Orthogonal',
+         'CompactDirichlet',
+         'CompactNeumann',
+         'Generic']
+bcbases = ['BCGeneric']
+testbases = []
+__all__ = bases + bcbases
 
 xp = sp.Symbol('x', real=True)
+
 
 class Orthogonal(SpectralBase):
     r"""Function space for a regular Laguerre series
@@ -188,7 +191,7 @@ class Orthogonal(SpectralBase):
     def is_orthogonal(self):
         return True
 
-    def get_orthogonal(self):
+    def get_orthogonal(self, **kwargs):
         return self
 
     @staticmethod
@@ -471,26 +474,26 @@ class BCBase(CompositeBase):
             return self.N
 
     @property
-    def num_T(self):
+    def dim_ortho(self):
         return self.stencil_matrix().shape[1]
 
     def slice(self):
         return slice(self.N-self.shape(), self.N)
 
     def vandermonde(self, x):
-        V = lag.lagvander(x, self.num_T-1)
+        V = lag.lagvander(x, self.dim_ortho-1)
         V *= np.exp(-x/2)[:, None]
         return V
 
     def _composite(self, V, argument=1):
         N = self.shape()
         P = np.zeros(V[:, :N].shape)
-        P[:] = np.tensordot(V[:, :self.num_T], self.stencil_matrix(), (1, 1))
+        P[:] = np.tensordot(V[:, :self.dim_ortho], self.stencil_matrix(), (1, 1))
         return P
 
     def sympy_basis(self, i=0, x=xp):
         M = self.stencil_matrix()
-        return np.sum(M[i]*np.array([sp.laguerre(j, x)*sp.exp(-x/2) for j in range(self.num_T)]))
+        return np.sum(M[i]*np.array([sp.laguerre(j, x)*sp.exp(-x/2) for j in range(self.dim_ortho)]))
 
     def evaluate_basis(self, x, i=0, output_array=None):
         x = np.atleast_1d(x)
@@ -520,6 +523,13 @@ class BCBase(CompositeBase):
         v = self.to_ortho(u)
         output_array = v.eval(x, output_array=output_array)
         return output_array
+
+    def get_orthogonal(self, **kwargs):
+        d = dict(quad=self.quad,
+                 domain=self.domain,
+                 dtype=self.dtype)
+        d.update(kwargs)
+        return Orthogonal(self.dim_ortho, **d)
 
 class BCGeneric(BCBase):
 

@@ -43,7 +43,7 @@ from shenfun.spectralbase import SpectralBase, Transform, islicedict, slicedict
 from shenfun.optimization.cython import convolve
 from shenfun.config import config
 
-__all__ = ['FourierBase', 'R2C', 'C2C']
+__all__ = ['R2C', 'C2C']
 
 #pylint: disable=method-hidden, no-member, line-too-long, arguments-differ
 

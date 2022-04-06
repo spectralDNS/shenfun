@@ -16,18 +16,19 @@ from shenfun.jacobi.recursions import n
 
 #pylint: disable=abstract-method, not-callable, method-hidden, no-self-use, cyclic-import
 
-__all__ = ['Orthogonal',
-           'Phi1',
-           'Phi2',
-           'Phi3',
-           'Phi4',
-           'CompactDirichlet',
-           'CompactNeumann',
-           'CompositeBase',
-           'BCBase',
-           'BCGeneric']
+bases = ['Orthogonal',
+         'CompactDirichlet',
+         'CompactNeumann',
+         'UpperDirichlet',
+         'LowerDirichlet',
+         'CompositeBase']
+bcbases = ['BCGeneric']
+testbases = ['Phi1', 'Phi2', 'Phi3', 'Phi4']
+
+__all__ = bases + bcbases + testbases
 
 xp = sp.Symbol('x', real=True)
+
 
 class DCTWrap(FuncWrap):
     """DCT for complex input"""
@@ -153,7 +154,7 @@ class Orthogonal(SpectralBase):
     def reference_domain(self):
         return (-1, 1)
 
-    def get_orthogonal(self):
+    def get_orthogonal(self, **kwargs):
         return self
 
     def sympy_basis(self, i=0, x=xp):
@@ -397,8 +398,10 @@ class Phi1(CompositeBase):
         N = self.N if N is None else N
         k = np.arange(N)
         d0, d2 = np.zeros(N), np.zeros(N-2)
-        d0[:-2] = sp.lambdify(n, self.b0n)(k[:N-2])
-        d2[:] = sp.lambdify(n, self.b2n)(k[:N-2])
+        #d0[:-2] = sp.lambdify(n, self.b0n)(k[:N-2])
+        #d2[:] = sp.lambdify(n, self.b2n)(k[:N-2])
+        d0[:-2] = 1/(np.pi*(k[:N-2]+1))
+        d2[:] = -1/(np.pi*(k[:N-2]+3))
         if self.is_scaled():
             return SparseMatrix({0: d0/(k+2), 2: d2/(k[:-2]+2)}, (N, N))
         return SparseMatrix({0: d0, 2: d2}, (N, N))
@@ -451,6 +454,8 @@ class Phi2(CompositeBase):
     dtype : data-type, optional
         Type of input data in real physical space. Will be overloaded when
         basis is part of a :class:`.TensorProductSpace`.
+    scaled : boolean, optional
+        Whether or not to scale basis function n by 1/(n+3)
     padding_factor : float, optional
         Factor for padding backward transforms.
     dealias_direct : bool, optional
@@ -460,10 +465,10 @@ class Phi2(CompositeBase):
 
     """
     def __init__(self, N, quad="GU", bc=(0, 0, 0, 0), domain=(-1, 1), dtype=float,
-                 padding_factor=1, dealias_direct=False, coordinates=None, **kw):
+                 padding_factor=1, dealias_direct=False, coordinates=None, scaled=False, **kw):
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
-                               coordinates=coordinates)
+                               scaled=scaled, coordinates=coordinates)
         #self.b0n = sp.simplify(matpow(b, 2, half, half, n+2, n, un) / (h(half, half, n, 0, un)))
         #self.b2n = sp.simplify(matpow(b, 2, half, half, n+2, n+2, un) / (h(half, half, n+2, 0, un)))
         #self.b4n = sp.simplify(matpow(b, 2, half, half, n+2, n+4, un) / (h(half, half, n+4, 0, un)))
@@ -486,6 +491,8 @@ class Phi2(CompositeBase):
         d0[:-4] = sp.lambdify(n, self.b0n)(k[:N-4])
         d2[:-2] = sp.lambdify(n, self.b2n)(k[:N-4])
         d4[:] = sp.lambdify(n, self.b4n)(k[:N-4])
+        if self.is_scaled():
+            return SparseMatrix({0: d0/(k+3), 2: d2/(k[:-2]+3), 4: d4/(k[:-4]+3)}, (N, N))
         return SparseMatrix({0: d0, 2: d2, 4: d4}, (N, N))
 
     def slice(self):
@@ -735,8 +742,8 @@ class CompactDirichlet(CompositeBase):
             d0[:-2] = 1
             d2[:] = -(k[:-2]+1)/(k[:-2]+3)
         else:
-            d0[:-2] = (k[:-2]+3)/(k[:-2]+1)
-            d2[:] = -1
+            d0[:-2] = 1/(k[:-2]+1)
+            d2[:] = -1/(k[:-2]+3)
         return SparseMatrix({0: d0, 2: d2}, (N, N))
 
     def slice(self):
@@ -814,6 +821,140 @@ class CompactNeumann(CompositeBase):
 
     def slice(self):
         return slice(0, self.N-2)
+
+class UpperDirichlet(CompositeBase):
+    r"""Function space with single Dirichlet on upper edge
+
+    The basis :math:`\{\phi_k\}_{k=0}^{N-1}` is
+
+    .. math::
+
+        \phi_k &= U_{k} - \frac{k+1}{k+2} U_{k+1}, \, k=0, 1, \ldots, N-2, \\
+        \phi_{N-1} &= U_0,
+
+    such that
+
+    .. math::
+        u(x) &= \sum_{k=0}^{N-1} \hat{u}_k \phi_k(x), \\
+        u(1) &= a.
+
+    The last basis function is for boundary condition and only used if a is
+    different from 0. In one dimension :math:`\hat{u}_{N-1}=a`.
+
+    Parameters
+    ----------
+    N : int, optional
+        Number of quadrature points
+    quad : str, optional
+        Type of quadrature
+
+        - GC - Chebyshev-Gauss
+        - GU - Chebyshevu-Gauss
+    bc : 2-tuple of (None, number), optional
+        Boundary condition at x=1.
+    domain : 2-tuple of floats, optional
+        The computational domain
+    dtype : data-type, optional
+        Type of input data in real physical space. Will be overloaded when
+        basis is part of a :class:`.TensorProductSpace`.
+    padding_factor : float, optional
+        Factor for padding backward transforms.
+    dealias_direct : bool, optional
+        Set upper 1/3 of coefficients to zero before backward transform
+    coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
+         Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
+
+    """
+    def __init__(self, N, quad="GU", bc=(None, 0), domain=(-1., 1.), dtype=float,
+                 padding_factor=1, dealias_direct=False, coordinates=None, **kw):
+        CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
+                               padding_factor=padding_factor, dealias_direct=dealias_direct,
+                               coordinates=coordinates)
+
+    @staticmethod
+    def boundary_condition():
+        return 'UpperDirichlet'
+
+    @staticmethod
+    def short_name():
+        return 'UD'
+
+    def stencil_matrix(self, N=None):
+        N = self.N if N is None else N
+        d = np.ones(N, dtype=int)
+        k = np.arange(N)
+        d[-1:] = 0
+        return SparseMatrix({0: d, 1: -(k[:-1]+1)/(k[:-1]+2)*d[:-1]}, (N, N))
+
+    def slice(self):
+        return slice(0, self.N-1)
+
+class LowerDirichlet(CompositeBase):
+    r"""Function space with single Dirichlet on left edge
+
+    The basis :math:`\{\phi_k\}_{k=0}^{N-1}` is
+
+    .. math::
+
+        \phi_k &= U_{k} + \frac{k+1}{k+2} U_{k+1}, \, k=0, 1, \ldots, N-2, \\
+        \phi_{N-1} &= U_0,
+
+    such that
+
+    .. math::
+        u(x) &= \sum_{k=0}^{N-1} \hat{u}_k \phi_k(x), \\
+        u(1) &= a.
+
+    The last basis function is for boundary condition and only used if a is
+    different from 0. In one dimension :math:`\hat{u}_{N-1}=a`.
+
+    Parameters
+    ----------
+    N : int, optional
+        Number of quadrature points
+    quad : str, optional
+        Type of quadrature
+
+        - GC - Chebyshev-Gauss
+        - GU - Chebyshevu-Gauss
+    bc : 2-tuple of (number, None), optional
+        Boundary condition at x=-1.
+    domain : 2-tuple of floats, optional
+        The computational domain
+    dtype : data-type, optional
+        Type of input data in real physical space. Will be overloaded when
+        basis is part of a :class:`.TensorProductSpace`.
+    padding_factor : float, optional
+        Factor for padding backward transforms.
+    dealias_direct : bool, optional
+        Set upper 1/3 of coefficients to zero before backward transform
+    coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
+         Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
+
+    """
+    def __init__(self, N, quad="GU", bc=(None, 0), domain=(-1., 1.), dtype=float,
+                 padding_factor=1, dealias_direct=False, coordinates=None, **kw):
+        CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
+                               padding_factor=padding_factor, dealias_direct=dealias_direct,
+                               coordinates=coordinates)
+
+    @staticmethod
+    def boundary_condition():
+        return 'LowerDirichlet'
+
+    @staticmethod
+    def short_name():
+        return 'LD'
+
+    def stencil_matrix(self, N=None):
+        N = self.N if N is None else N
+        d = np.ones(N, dtype=int)
+        k = np.arange(N)
+        d[-1:] = 0
+        return SparseMatrix({0: d, 1: (k[:-1]+1)/(k[:-1]+2)*d[:-1]}, (N, N))
+
+    def slice(self):
+        return slice(0, self.N-1)
 
 class Generic(CompositeBase):
     r"""Function space for space with any boundary conditions
@@ -932,24 +1073,24 @@ class BCBase(CompositeBase):
             return self.N
 
     @property
-    def num_T(self):
+    def dim_ortho(self):
         return self.stencil_matrix().shape[1]
 
     def slice(self):
         return slice(self.N-self.shape(), self.N)
 
     def vandermonde(self, x):
-        return chebvanderU(x, self.num_T-1)
+        return chebvanderU(x, self.dim_ortho-1)
 
     def _composite(self, V, argument=1):
         N = self.shape()
         P = np.zeros(V[:, :N].shape)
-        P[:] = np.tensordot(V[:, :self.num_T], self.stencil_matrix(), (1, 1))
+        P[:] = np.tensordot(V[:, :self.dim_ortho], self.stencil_matrix(), (1, 1))
         return P
 
     def sympy_basis(self, i=0, x=xp):
         M = self.stencil_matrix()
-        return np.sum(M[i]*np.array([sp.chebyshevu(j, x) for j in range(self.num_T)]))
+        return np.sum(M[i]*np.array([sp.chebyshevu(j, x) for j in range(self.dim_ortho)]))
 
     def evaluate_basis(self, x, i=0, output_array=None):
         x = np.atleast_1d(x)
@@ -980,59 +1121,12 @@ class BCBase(CompositeBase):
         output_array = v.eval(x, output_array=output_array)
         return output_array
 
-class BCDirichlet(BCBase):
-    r"""Basis for inhomogeneous Dirichlet boundary conditions
-
-    .. math::
-
-        \phi_0 &= \frac{1}{2}U_0 - \frac{1}{4}U_1 \\
-        \phi_1 &= \frac{1}{2}U_0 + \frac{1}{4}U_1
-    """
-    @staticmethod
-    def short_name():
-        return 'BCD'
-
-    def stencil_matrix(self, N=None):
-        return sp.Rational(1, 4)*np.array([[2, -1],
-                                           [2, 1]])
-
-class BCNeumann(BCBase):
-    r"""Basis for inhomogeneous Neumann boundary conditions
-
-    .. math::
-
-        \phi_0 &= \frac{1}{16}(4U_1 - U_2) \\
-        \phi_1 &= \frac{1}{16}(4U_1 + U_2)
-    """
-
-    @staticmethod
-    def short_name():
-        return 'BCN'
-
-    def stencil_matrix(self, N=None):
-        return sp.Rational(1, 16)*np.array([[0, 4, -1],
-                                            [0, 4, 1]])
-
-class BCBiharmonic(BCBase):
-    r"""Basis for inhomogeneous Biharmonic boundary conditions
-
-    .. math::
-
-        \phi_0 &= \frac{1}{32}(16U_0 - 10U_1 + U_3 \\
-        \phi_1 &= \frac{1}{32}(6U_0 - 2U_1 - 2U_2 + U_3) \\
-        \phi_2 &= \frac{1}{32}(16U_0 + 10U_1 - U_3) \\
-        \phi_3 &= \frac{1}{32}(-6U_0 - 2U_1 + 2U_2 + U_3)
-    """
-
-    @staticmethod
-    def short_name():
-        return 'BCB'
-
-    def stencil_matrix(self, N=None):
-        return sp.Rational(1, 32)*np.array([[16, -10, 0, 1],
-                                            [6, -2, -2, 1],
-                                            [16, 10, 0, -1],
-                                            [-6, -2, 2, 1]])
+    def get_orthogonal(self, **kwargs):
+        d = dict(quad=self.quad,
+                 domain=self.domain,
+                 dtype=self.dtype)
+        d.update(kwargs)
+        return Orthogonal(self.dim_ortho, **d)
 
 class BCGeneric(BCBase):
 

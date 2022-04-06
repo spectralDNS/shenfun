@@ -52,30 +52,22 @@ from shenfun.jacobi.recursions import n
 from .lobatto import legendre_lobatto_nodes_and_weights
 from . import fastgl
 
-__all__ = ['Orthogonal',
-           'CompositeBase',
-           'ShenDirichlet',
-           'Phi1',
-           'Phi2',
-           'Phi3',
-           'Phi4',
-           'ShenNeumann',
-           'ShenBiharmonic',
-           'ShenBiPolar',
-           'LowerDirichlet',
-           'NeumannDirichlet',
-           'DirichletNeumann',
-           'UpperDirichlet',
-           'UpperDirichletNeumann',
-           'BeamFixedFree',
-           'Generic',
-           'BCDirichlet',
-           'BCBiharmonic',
-           'BCNeumann',
-           'BCBeamFixedFree',
-           'BCLowerDirichlet',
-           'BCUpperDirichlet',
-           'BCGeneric']
+bases = ['Orthogonal',
+         'CompositeBase',
+         'ShenDirichlet',
+         'ShenNeumann',
+         'ShenBiharmonic',
+         'ShenBiPolar',
+         'LowerDirichlet',
+         'NeumannDirichlet',
+         'DirichletNeumann',
+         'UpperDirichlet',
+         'UpperDirichletNeumann',
+         'BeamFixedFree',
+         'Generic']
+bcbases = ['BCGeneric']
+testbases = ['Phi1', 'Phi2', 'Phi3', 'Phi4']
+__all__ = bases + bcbases + testbases
 
 #pylint: disable=method-hidden,no-else-return,not-callable,abstract-method,no-member,cyclic-import
 
@@ -210,7 +202,7 @@ class Orthogonal(SpectralBase):
         self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
-    def get_orthogonal(self):
+    def get_orthogonal(self, **kwargs):
         return self
 
     def sympy_basis(self, i=0, x=xp):
@@ -1009,6 +1001,8 @@ class UpperDirichlet(CompositeBase):
 
         - LG - Legendre-Gauss
         - GL - Legendre-Gauss-Lobatto
+    bc : 2-tuple of (None, number), optional
+        The number is the boundary condition value
     domain : 2-tuple of floats, optional
         The computational domain
     padding_factor : float, optional
@@ -1024,7 +1018,6 @@ class UpperDirichlet(CompositeBase):
     """
     def __init__(self, N, quad="LG", bc=(None, 0), domain=(-1., 1.), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None, **kw):
-        assert quad == "LG"
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
@@ -1133,12 +1126,6 @@ class ShenBiPolar(CompositeBase):
         dp4[0] = 8/35
         dp4[1] = 8/21
         return SparseMatrix({-2: dm2, 0: d, 2: dp2, 4: dp4}, (N, N))
-
-    def get_bc_basis(self):
-        if self._bc_basis != None:
-            return self._bc_basis
-        self._bc_basis = BCBiharmonic(self.N, domain=self.domain)
-        return self._bc_basis
 
 class DirichletNeumann(CompositeBase):
     r"""Function space for mixed Dirichlet/Neumann boundary conditions
@@ -1260,7 +1247,6 @@ class LowerDirichlet(CompositeBase):
     """
     def __init__(self, N, quad="LG", bc=(0, None), domain=(-1., 1.), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None, **kw):
-        assert quad == "LG"
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
@@ -1560,24 +1546,24 @@ class BCBase(CompositeBase):
             return self.N
 
     @property
-    def num_T(self):
+    def dim_ortho(self):
         return self.stencil_matrix().shape[1]
 
     def slice(self):
         return slice(self.N-self.shape(), self.N)
 
     def vandermonde(self, x):
-        return leg.legvander(x, self.num_T-1)
+        return leg.legvander(x, self.dim_ortho-1)
 
     def _composite(self, V, argument=1):
         N = self.shape()
         P = np.zeros(V[:, :N].shape)
-        P[:] = np.tensordot(V[:, :self.num_T], self.stencil_matrix(), (1, 1))
+        P[:] = np.tensordot(V[:, :self.dim_ortho], self.stencil_matrix(), (1, 1))
         return P
 
     def sympy_basis(self, i=0, x=xp):
         M = self.stencil_matrix()
-        return np.sum(M[i]*np.array([sp.legendre(j, x) for j in range(self.num_T)]))
+        return np.sum(M[i]*np.array([sp.legendre(j, x) for j in range(self.dim_ortho)]))
 
     def evaluate_basis(self, x, i=0, output_array=None):
         x = np.atleast_1d(x)
@@ -1608,69 +1594,12 @@ class BCBase(CompositeBase):
         output_array = v.eval(x, output_array=output_array)
         return output_array
 
-class BCDirichlet(BCBase):
-
-    @staticmethod
-    def short_name():
-        return 'BCD'
-
-    def stencil_matrix(self, N=None):
-        return sp.Rational(1, 2)*np.array([[1, -1],
-                                           [1, 1]])
-
-class BCNeumann(BCBase):
-
-    @staticmethod
-    def short_name():
-        return 'BCN'
-
-    def stencil_matrix(self, N=None):
-        return sp.Rational(1, 6)*np.array([[0, 3, -1],
-                                           [0, 3, 1]])
-
-class BCBiharmonic(BCBase):
-
-    @staticmethod
-    def short_name():
-        return 'BCB'
-
-    def stencil_matrix(self, N=None):
-        return sp.Rational(1, 30)*np.array([[15, -18, 0, 3],
-                                            [5, -3, -5, 3],
-                                            [15, 18, 0, -3],
-                                            [-5, -3, 5, 3]])
-
-class BCBeamFixedFree(BCBase):
-
-    # u(-1), u'(-1), u''(1), u'''(1)
-
-    @staticmethod
-    def short_name():
-        return 'BCBF'
-
-    def stencil_matrix(self, N=None):
-        return sp.Rational(1, 15)*np.array([[15, 0, 0, 0],
-                                            [15, 15, 0, 0],
-                                            [10, 15, 5, 0],
-                                            [-15, -21, -5, 1]])
-
-class BCLowerDirichlet(BCBase):
-
-    @staticmethod
-    def short_name():
-        return 'BCLD'
-
-    def stencil_matrix(self, N=None):
-        return sp.Rational(1, 2)*np.array([[1, -1]])
-
-class BCUpperDirichlet(BCBase):
-
-    @staticmethod
-    def short_name():
-        return 'BCUD'
-
-    def stencil_matrix(self, N=None):
-        return sp.Rational(1, 2)*np.array([[1, 1]])
+    def get_orthogonal(self, **kwargs):
+        d = dict(quad=self.quad,
+                 domain=self.domain,
+                 dtype=self.dtype)
+        d.update(kwargs)
+        return Orthogonal(self.dim_ortho, **d)
 
 class BCGeneric(BCBase):
 

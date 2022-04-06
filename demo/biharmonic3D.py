@@ -10,7 +10,7 @@ basis for the non-periodic direction.
 """
 import sys
 import os
-from sympy import symbols, cos, sin
+from sympy import symbols, cos, sin, diff
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Array, \
     FunctionSpace, TensorProductSpace, Function, comm, la, chebyshev
@@ -21,7 +21,8 @@ BiharmonicSolver = chebyshev.la.Biharmonic if family == 'chebyshev' else la.Solv
 
 # Use sympy to compute a rhs, given an analytical solution
 x, y, z = symbols("x,y,z", real=True)
-ue = (sin(4*np.pi*x)*sin(6*z)*cos(4*y))*(1-x**2)
+#ue = (sin(4*np.pi*x)*sin(6*z)*cos(4*y))*(1-x**2)
+ue = x*cos(4*np.pi*x)*sin(6*z)*cos(4*y)
 fe = ue.diff(x, 4) + ue.diff(y, 4) + ue.diff(z, 4) + 2*ue.diff(x, 2, y, 2) + 2*ue.diff(x, 2, z, 2) + 2*ue.diff(y, 2, z, 2)
 
 # Size of discretization
@@ -30,7 +31,9 @@ N = (36, 36, 36)
 if family == 'chebyshev':
     assert N[0] % 2 == 0, "Biharmonic solver only implemented for even numbers"
 
-SD = FunctionSpace(N[0], family=family, bc=(0, 0, 0, 0))
+#SD = FunctionSpace(N[0], family=family, bc=(0, 0, 0, 0))
+SD = FunctionSpace(N[0], family=family, bc={'left': {'D': ue.subs(x, -1), 'N': diff(ue, x, 1).subs(x, -1)},
+                                            'right': {'D': ue.subs(x, 1), 'N': diff(ue, x, 1).subs(x, 1)}})
 K1 = FunctionSpace(N[1], family='F', dtype='D')
 K2 = FunctionSpace(N[2], family='F', dtype='d')
 T = TensorProductSpace(comm, (SD, K1, K2), axes=(0, 1, 2))

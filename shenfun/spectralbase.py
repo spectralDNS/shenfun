@@ -873,7 +873,10 @@ class SpectralBase:
                 x0 = x0.pop()
                 x = sp.symbols('x', real=x0.is_real, positive=x0.is_positive)
                 dx = dx.subs(x0, x)
-            key = key + (self.domain, dx)
+                if self.domain != self.reference_domain():
+                    xm = self.map_true_domain(x)
+                    dx = dx.replace(x, xm)
+            key = key + (dx,)
 
         return mat[key]
 
@@ -1136,7 +1139,7 @@ class SpectralBase:
         T = T.get_refined(T.N - trailing_zeros)
         return T
 
-    def get_orthogonal(self):
+    def get_orthogonal(self, **kwargs):
         """Return orthogonal space (otherwise as self)
 
         Returns
@@ -1218,9 +1221,11 @@ def getCompositeBase(Orthogonal):
             Orthogonal.__init__(self, *args, **kwargs)
             if bc is not None:
                 from shenfun.tensorproductspace import BoundaryValues
-                from shenfun.forms.arguments import BoundaryConditions
+                if isinstance(bc, dict) and not isinstance(bc, BoundaryConditions):
+                    bc = BoundaryConditions(bc, domain=kwargs['domain'])
                 if isinstance(bc, (tuple, list)):
                     bc = BoundaryConditions(bc, domain=kwargs['domain'])
+
                 assert isinstance(bc, BoundaryConditions)
                 self.bcs = bc
                 self.bc = BoundaryValues(self, bc=bc)
@@ -1259,17 +1264,18 @@ def getCompositeBase(Orthogonal):
         def is_orthogonal(self):
             return False
 
-        def get_orthogonal(self):
-            kwargs = dict(quad=self.quad,
-                          domain=self.domain,
-                          dtype=self.dtype,
-                          padding_factor=self.padding_factor,
-                          dealias_direct=self.dealias_direct,
-                          coordinates=self.coors.coordinates)
+        def get_orthogonal(self, **kwargs):
+            d = dict(quad=self.quad,
+                     domain=self.domain,
+                     dtype=self.dtype,
+                     padding_factor=self.padding_factor,
+                     dealias_direct=self.dealias_direct,
+                     coordinates=self.coors.coordinates)
             for kw in ('alpha', 'beta'):
                 if hasattr(self, kw):
-                    kwargs[kw] = getattr(self, kw)
-            return Orthogonal(self.N, **kwargs)
+                    d[kw] = getattr(self, kw)
+            d.update(kwargs)
+            return Orthogonal(self.N, **d)
 
         @property
         def has_nonhomogeneous_bcs(self):
@@ -1753,23 +1759,24 @@ def inner_product(test, trial, measure=1):
 
     Parameters
     ----------
-        test : 2-tuple of (Basis, integer)
-            Basis is any of the classes from
+    test : 2-tuple of (Basis, integer)
+        Basis is any of the classes from
 
-            - :mod:`.chebyshev.bases`
-            - :mod:`.chebyshevu.bases`
-            - :mod:`.legendre.bases`
-            - :mod:`.ultraspherical.bases`
-            - :mod:`.fourier.bases`
-            - :mod:`.laguerre.bases`
-            - :mod:`.hermite.bases`
-            - :mod:`.jacobi.bases`
+        - :mod:`.chebyshev.bases`
+        - :mod:`.chebyshevu.bases`
+        - :mod:`.legendre.bases`
+        - :mod:`.ultraspherical.bases`
+        - :mod:`.fourier.bases`
+        - :mod:`.laguerre.bases`
+        - :mod:`.hermite.bases`
+        - :mod:`.jacobi.bases`
 
-            The integer determines the number of times the basis is
-            differentiated. The test represents the matrix row
-        trial : 2-tuple of (Basis, integer)
-            Like test
-        measure: function of coordinate, optional
+        The integer determines the number of times the basis is
+        differentiated. The test represents the matrix row
+    trial : 2-tuple of (Basis, integer)
+        Like test
+    measure: function of coordinate, optional
+        The measure is in physical coordinates, not in the reference domain.
 
     Note
     ----
@@ -1790,31 +1797,57 @@ def inner_product(test, trial, measure=1):
     >>> [np.all(B[k] == v) for k, v in d.items()]
     [True, True, True]
     """
-    #assert trial[0].__module__ == test[0].__module__
     key = ((test[0].__class__, test[1]), (trial[0].__class__, trial[1]))
-    sc = 1
+    mat = test[0]._get_mat()
+
+    #sc = 1
     if measure != 1:
         x0 = measure.free_symbols
         assert len(x0) == 1
         x0 = x0.pop()
         x = sp.symbols('x', real=x0.is_real, positive=x0.is_positive)
         measure = measure.subs(x0, x)
-        try:
-            if measure.subs(x, (test[0].domain[0]+test[0].domain[1])/2).evalf() < 0:
-                sc = -1
-                measure *= sc
-        except TypeError:
-            pass
+        #try:
+        #    if measure.subs(x, (test[0].domain[0]+test[0].domain[1])/2).evalf() < 0:
+        #        sc = -1
+        #        measure *= sc
+        #except TypeError:
+        #    pass
+        # Map measure, which is in true physical domain, to true domain.
+        # This way it returns the true physical measure, but now as a function
+        # of the reference coordinate.
+        # For example, in polar coordinates the measure is the radius r
+        # with domain [0, 1]. At this point we will have measure=x. As
+        # a function of the reference coordinate t in [-1, 1] we get
+        # x = (t+1)/2. The code below replaces x with (t+1)/2
+        # It also works for more complicated, nonlinear measures.
+
+        if test[0].domain != test[0].reference_domain():
+            xm = test[0].map_true_domain(x)
+            measure = measure.replace(x, xm)
+
         if measure.is_polynomial():
             measure = sp.simplify(measure)
 
-        key = key + (test[0].domain, measure)
+        if key + (measure,) in mat:
+            A = A = mat[key](test, trial)
 
-    mat = test[0]._get_mat()
-    A = mat[key](test, trial)
-    A.scale *= sc
-    #if not test[0].domain_factor() == 1:
-    #    A.scale *= test[0].domain_factor()**(test[1]+trial[1]-1)
+        else:
+            # Moving from physical to reference coordinates, the expression
+            # may be split (e.g., x = (t+1)/2)
+            B = []
+            for dv in split(measure, expand=False):
+                sci = dv['coeff']
+                msi = dv['x']
+                newkey = key + (msi,)
+                B.append(mat[newkey](test, trial))
+                B[-1].scale *= sci
+            A = B[0] if len(B) == 1 else np.sum(np.array(B, dtype=object))
+
+    else:
+        A = mat[key](test, trial)
+
+    #A.scale *= sc
     return A
 
 class FuncWrap:

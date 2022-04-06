@@ -340,7 +340,7 @@ def inner(expr0, expr1, output_array=None):
                                 BB = inner_product((tt, a), (tsc, b), msi)
                                 if not abs(BB.scale-1.) < 1e-8:
                                     BB.incorporate_scale()
-                                if BB:
+                                if BB.diags('csr').nnz > 0:
                                     DM.append(BB)
                                     has_bcs = True
                                 else:
