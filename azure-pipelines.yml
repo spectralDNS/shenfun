@@ -5,12 +5,12 @@ jobs:
     vmImage: 'macOS-latest'
   strategy:
     matrix:
-      Python36:
-        python.version: '3.6'
       Python37:
         python.version: '3.7'
       Python38:
         python.version: '3.8'
+      Python39:
+        python.version: '3.9'
 
   steps:
   - bash: echo "##vso[task.prependpath]$CONDA/bin"
@@ -35,12 +35,13 @@ jobs:
     vmImage: 'ubuntu-latest'
   strategy:
     matrix:
-      Python36:
-        python.version: '3.6'
       Python37:
         python.version: '3.7'
       Python38:
         python.version: '3.8'
+      Python39:
+        python.version: '3.9'
+
   steps:
   - bash: echo "##vso[task.prependpath]$CONDA/bin"
     displayName: Add conda to PATH
@@ -55,7 +56,7 @@ jobs:
       conda build --no-test --python $PYTHON_VERSION ./conf/conda
       conda create --name shenfun pip shenfun python=$PYTHON_VERSION --use-local
       source activate shenfun
-      pip install pytest-cov pytest quadpy>=0.16.9
+      pip install pytest-cov pytest quadpy
       pytest tests/ --junitxml=junit/test-results.xml --cov=$(python -c "import site; print(site.getsitepackages()[0]+'/shenfun')") --cov-report=xml --cov-report=html
     displayName: Build and test
 
@@ -72,7 +73,7 @@ jobs:
       reportDirectory: '$(System.DefaultWorkingDirectory)/**/htmlcov'
 
   - bash: |
-      if [ $PYTHON_VERSION == 3.7 ]; then
+      if [ $PYTHON_VERSION == 3.9 ]; then
         source activate shenfun
         pip install codecov
         bash <(curl -s https://codecov.io/bash)
