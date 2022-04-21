@@ -102,6 +102,7 @@ class Orthogonal(SpectralBase):
                               coordinates=coordinates)
         self.alpha = alpha
         self.beta = beta
+        self.gn = 1
         self.forward = functools.partial(self.forward, fast_transform=False)
         self.backward = functools.partial(self.backward, fast_transform=False)
         self.scalar_product = functools.partial(self.scalar_product, fast_transform=False)
@@ -111,11 +112,24 @@ class Orthogonal(SpectralBase):
     def family():
         return 'jacobi'
 
+    def stencil_matrix(self, N=None):
+        N = self.N if N is None else N
+        return SparseMatrix({0: 1}, (N, N))
+
     def reference_domain(self):
         return (-1, 1)
 
     def get_orthogonal(self, **kwargs):
-        return self
+        d = dict(quad=self.quad,
+                 domain=self.domain,
+                 dtype=self.dtype,
+                 alpha=self.alpha,
+                 beta=self.beta,
+                 padding_factor=self.padding_factor,
+                 dealias_direct=self.dealias_direct,
+                 coordinates=self.coors.coordinates)
+        d.update(kwargs)
+        return Orthogonal(self.N, **d)
 
     def points_and_weights(self, N=None, map_true_domain=False, weighted=True, **kw):
         if N is None:
@@ -1111,6 +1125,10 @@ class BCBase(CompositeBase):
     def boundary_condition():
         return 'Apply'
 
+    @property
+    def is_boundary_basis(self):
+        return True
+
     def shape(self, forward_output=True):
         if forward_output:
             return self.stencil_matrix().shape[0]
@@ -1170,6 +1188,8 @@ class BCBase(CompositeBase):
     def get_orthogonal(self, **kwargs):
         d = dict(quad=self.quad,
                  domain=self.domain,
+                 alpha=self.alpha,
+                 beta=self.beta,
                  dtype=self.dtype)
         d.update(kwargs)
         return Orthogonal(self.dim_ortho, **d)

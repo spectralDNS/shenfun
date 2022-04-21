@@ -195,4 +195,11 @@ class Orthogonal(SpectralBase):
         return True
 
     def get_orthogonal(self, **kwargs):
-        return self
+        d = dict(quad=self.quad,
+                 domain=self.domain,
+                 dtype=self.dtype,
+                 padding_factor=self.padding_factor,
+                 dealias_direct=self.dealias_direct,
+                 coordinates=self.coors.coordinates)
+        d.update(kwargs)
+        return Orthogonal(self.N, **d)

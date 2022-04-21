@@ -19,10 +19,11 @@ class BLLmat(SpectralMatrix):
     dimensions of M and N, respectively.
 
     """
-    def __init__(self, test, trial, scale=1, measure=1):
+    def assemble(self):
+        test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], L)
         assert isinstance(trial[0], L)
-        SpectralMatrix.__init__(self, {0:1}, test, trial, scale=scale, measure=measure)
+        return {0: 1}
 
     def solve(self, b, u=None, axis=0, constraints=()):
         if u is not None:
@@ -51,11 +52,12 @@ class BCDCDmat(SpectralMatrix):
     dimensions of M and N, respectively.
 
     """
-    def __init__(self, test, trial, scale=1, measure=1):
+    def assemble(self):
+        test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], CD)
         assert isinstance(trial[0], CD)
         d = {0:2., 1: -1., -1:-1.}
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
+        return d
 
     def get_solver(self):
         return TDMA_O
@@ -72,21 +74,21 @@ class ACDCDmat(SpectralMatrix):
     dimensions of M and N, respectively.
 
     """
-    def __init__(self, test, trial, scale=1, measure=1):
+    def assemble(self):
+        test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], CD)
         assert isinstance(trial[0], CD)
         d = {0: 0.5,
              1: 0.25,
              -1: 0.25}
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
+        return d
 
     def get_solver(self):
         return TDMA_O
 
 class _Lagmatrix(SpectralMatrix):
-    def __init__(self, test, trial, measure=1):
-        SpectralMatrix.__init__(self, {}, test, trial, measure=measure)
-
+    def __init__(self, test, trial, measure=1, assemble=None):
+        SpectralMatrix.__init__(self, test, trial, measure=measure, assemble=assemble)
 
 class _LagMatDict(dict):
     """Dictionary of inner product matrices
@@ -103,7 +105,11 @@ class _LagMatDict(dict):
         return c
 
     def __getitem__(self, key):
-        matrix = dict.__getitem__(self, key)
+        if len(key) == 3:
+            matrix = functools.partial(dict.__getitem__(self, key),
+                                       measure=key[2])
+        else:
+            matrix = dict.__getitem__(self, key)
         return matrix
 
 

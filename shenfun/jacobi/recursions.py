@@ -3,6 +3,7 @@ Recursions for Jacobi polynomials, or standardized Jacobi polynomials
 
 """
 from shenfun.matrixbase import SparseMatrix
+from copy import deepcopy
 import numpy as np
 import sympy as sp
 
@@ -404,6 +405,8 @@ def _matpow(mat, m2, q, alf, bet, i, j):
 
     return _matpow(mat, d2, q-1, alf, bet, i, j)
 
+_pmat = {}
+
 def pmat(mat, q, alf, bet, M, N, gn=1):
     r"""Return SparseMatrix of q'th matrix power of recursion matrix mat
 
@@ -422,6 +425,12 @@ def pmat(mat, q, alf, bet, M, N, gn=1):
         Legendre uses gn=1.
 
     """
+    try:
+        d = _pmat[(mat, q, alf, bet, M, N, gn)]
+        return SparseMatrix(deepcopy(d), (M, N))
+    except:
+        pass
+
     d = {}
     for i in range(-q, q+1):
         f = matpow(mat, q, alfa, beta, m, m+i, gn)
@@ -450,8 +459,10 @@ def pmat(mat, q, alf, bet, M, N, gn=1):
                 else:
                     d[i][:q] = [sp.simplify(f.subs(m, -i+z)).subs([(alfa, alf), (beta, bet)]) for z in np.arange(0, q)]
                     d[i][q:] = fz(np.arange(-i+q, Z-i))
-
+    _pmat[(mat, q, alf, bet, M, N, gn)] = d
     return SparseMatrix(d, (M, N))
+
+_amat = {}
 
 def a_mat(mat, k, q, alf, bet, M, N, gn=1):
     r"""Return SparseMatrix of recursion matrix
@@ -477,6 +488,11 @@ def a_mat(mat, k, q, alf, bet, M, N, gn=1):
         Legendre uses gn=1.
 
     """
+    try:
+        d = _amat[(mat, k, q, alf, bet, M, N, gn)]
+        return SparseMatrix(deepcopy(d), (M, N))
+    except:
+        pass
     d = {}
     for i in range(-q, q+1):
         f = mat(k, q, alfa, beta, m, m+i, gn)
@@ -497,7 +513,7 @@ def a_mat(mat, k, q, alf, bet, M, N, gn=1):
                     d[i] = np.zeros(Z)
                     d[i][k] = sp.simplify(f.subs(m, -i+k)).subs([(alfa, alf), (beta, bet)])
                     d[i][k+1:] = fz(np.arange(-i+k+1, Z-i))
-
+    _amat[(mat, k, q, alf, bet, M, N, gn)] = d
     return SparseMatrix(d, (M, N))
 
 def ShiftedMatrix(mat, q, r, s, M=0, N=0, k=None, alf=0, bet=0, gn=1):

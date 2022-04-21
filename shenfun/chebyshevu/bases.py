@@ -12,7 +12,7 @@ from shenfun.spectralbase import SpectralBase, Transform, FuncWrap, \
     islicedict, slicedict, getCompositeBase, BoundaryConditions
 from shenfun.matrixbase import SparseMatrix
 from shenfun.config import config
-from shenfun.jacobi.recursions import n
+from shenfun.jacobi.recursions import n, half, un
 
 #pylint: disable=abstract-method, not-callable, method-hidden, no-self-use, cyclic-import
 
@@ -21,7 +21,7 @@ bases = ['Orthogonal',
          'CompactNeumann',
          'UpperDirichlet',
          'LowerDirichlet',
-         'CompositeBase']
+         'Generic']
 bcbases = ['BCGeneric']
 testbases = ['Phi1', 'Phi2', 'Phi3', 'Phi4']
 
@@ -95,6 +95,9 @@ class Orthogonal(SpectralBase):
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
                               coordinates=coordinates)
         assert quad in ('GU', 'GC')
+        self.alpha = half
+        self.beta = half
+        self.gn = un
         if quad == 'GC':
             self._xfftn_fwd = functools.partial(fftw.dstn, type=2)
             self._xfftn_bck = functools.partial(fftw.dstn, type=3)
@@ -155,7 +158,14 @@ class Orthogonal(SpectralBase):
         return (-1, 1)
 
     def get_orthogonal(self, **kwargs):
-        return self
+        d = dict(quad=self.quad,
+                 domain=self.domain,
+                 dtype=self.dtype,
+                 padding_factor=self.padding_factor,
+                 dealias_direct=self.dealias_direct,
+                 coordinates=self.coors.coordinates)
+        d.update(kwargs)
+        return Orthogonal(self.N, **d)
 
     def sympy_basis(self, i=0, x=xp):
         return sp.chebyshevu(i, x)
@@ -622,22 +632,22 @@ class Phi4(CompositeBase):
         Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
 
     """
-    def __init__(self, N, quad="GC", bc=(0,)*8, domain=(-1, 1), dtype=float,
+    def __init__(self, N, quad="GU", bc=(0,)*8, domain=(-1, 1), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None, **kw):
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
-        #self.b0n = sp.simplify(matpow(b, 4, -half, -half, n+4, n, cn) / h(-half, -half, n, 0, cn))
-        #self.b2n = sp.simplify(matpow(b, 4, -half, -half, n+4, n+2, cn) / h(-half, -half, n+2, 0, cn))
-        #self.b4n = sp.simplify(matpow(b, 4, -half, -half, n+4, n+4, cn) / h(-half, -half, n+4, 0, cn))
-        #self.b6n = sp.simplify(matpow(b, 4, -half, -half, n+4, n+6, cn) / h(-half, -half, n+6, 0, cn))
-        #self.b8n = sp.simplify(matpow(b, 4, -half, -half, n+4, n+8, cn) / h(-half, -half, n+8, 0, cn))
+        #self.b0n = sp.simplify(matpow(b, 4, half, half, n+4, n, un) / h(half, half, n, 0, un)
+        #self.b2n = sp.simplify(matpow(b, 4, half, half, n+4, n+2, un) / h(half, half, n+2, 0, un))
+        #self.b4n = sp.simplify(matpow(b, 4, half, half, n+4, n+4, un) / h(half, half, n+4, 0, un))
+        #self.b6n = sp.simplify(matpow(b, 4, half, half, n+4, n+6, un) / h(half, half, n+6, 0, un))
+        #self.b8n = sp.simplify(matpow(b, 4, half, half, n+4, n+8, un) / h(half, half, n+8, 0, un))
         # Below are the same but faster since already simplified
         self.b0n = 1/(8*sp.pi*(n + 1)*(n + 2)*(n + 3)*(n + 4))
-        self.b2n = -1/(2*sp.pi*(n + 1)*(n + 3)*(n + 4)*(n + 5))
-        self.b4n = 3/(4*sp.pi*(n + 2)*(n + 3)*(n + 5)*(n + 6))
-        self.b6n = -1/(2*sp.pi*(n + 3)*(n + 4)*(n + 5)*(n + 7))
-        self.b8n = 1/(8*sp.pi*(n + 4)*(n + 5)*(n + 6)*(n + 7))
+        self.b2n = -1/(2*sp.pi*(n + 2)*(n + 3)*(n + 4)*(n + 6))
+        self.b4n = 3/(4*sp.pi*(n + 3)*(n + 4)*(n + 6)*(n + 7))
+        self.b6n = -1/(2*sp.pi*(n + 4)*(n + 6)*(n + 7)*(n + 8))
+        self.b8n = 1/(8*sp.pi*(n + 6)*(n + 7)*(n + 8)*(n + 9))
 
     @staticmethod
     def boundary_condition():
@@ -1065,6 +1075,10 @@ class BCBase(CompositeBase):
     @staticmethod
     def boundary_condition():
         return 'Apply'
+
+    @property
+    def is_boundary_basis(self):
+        return True
 
     def shape(self, forward_output=True):
         if forward_output:

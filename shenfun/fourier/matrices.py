@@ -29,7 +29,8 @@ class Acos2mat(SpectralMatrix):
     where test and trial spaces have dimensions of M and N, respectively.
 
     """
-    def __init__(self, test, trial, scale=1, measure=1):
+    def assemble(self):
+        test = self.testfunction
         k = test[0].wavenumbers(bcast=False, scaled=False, eliminate_highest_freq=False)
         N = test[0].N
         d = {0: -0.5*k**2,
@@ -37,7 +38,7 @@ class Acos2mat(SpectralMatrix):
              -2: -0.25*k[:-2]**2,
              N-2: -0.25*k[-2:]**2,
              -(N-2): -0.25*k[:2]**2}
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
+        return d
 
 
 class Acosmat(SpectralMatrix):
@@ -50,13 +51,14 @@ class Acosmat(SpectralMatrix):
     where test and trial spaces have dimensions of M and N, respectively.
 
     """
-    def __init__(self, test, trial, scale=1, measure=1):
+    def assemble(self):
+        test = self.testfunction
         k = test[0].wavenumbers(bcast=False, scaled=False, eliminate_highest_freq=False)
         N = test[0].N
         d = {1: -0.5*k[1:]**2,
              -1: -0.5*k[:-1]**2,
              N-1: -0.5*k[-1]**2}
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
+        return d
 
 
 class Csinmat(SpectralMatrix):
@@ -69,13 +71,14 @@ class Csinmat(SpectralMatrix):
     where test and trial spaces have dimensions of M and N, respectively.
 
     """
-    def __init__(self, test, trial, scale=1, measure=1):
+    def assemble(self):
+        test = self.testfunction
         k = test[0].wavenumbers(bcast=False, scaled=False, eliminate_highest_freq=False)
         N = test[0].N
         d = {1: -0.5*k[1:],
              -1: 0.5*k[:-1],
              N-1: -0.5}
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
+        return d
 
 
 class Csincosmat(SpectralMatrix):
@@ -88,15 +91,15 @@ class Csincosmat(SpectralMatrix):
     where test and trial spaces have dimensions of M and N, respectively.
 
     """
-    def __init__(self, test, trial, scale=1, measure=1):
+    def assemble(self):
+        test = self.testfunction
         k = test[0].wavenumbers(bcast=False, scaled=False, eliminate_highest_freq=False)
         N = test[0].N
         d = {2: -0.25*k[2:],
              -2: 0.25*k[:-2],
              N-2: 0.25*k[-2:],
              -(N-2): -0.25*k[:2]}
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
-
+        return d
 
 class Bcos2mat(SpectralMatrix):
     r"""Matrix for :math:`B=(b_{kj}) \in \mathbb{R}^{M \times N}`, where
@@ -108,14 +111,15 @@ class Bcos2mat(SpectralMatrix):
     where test and trial spaces have dimensions of M and N, respectively.
 
     """
-    def __init__(self, test, trial, scale=1, measure=1):
+    def assemble(self):
+        test = self.testfunction
         N = test[0].N
         d = {0: 0.5,
              2: 0.25,
              -2: 0.25,
              N-2: 0.25,
              -(N-2): 0.25}
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
+        return d
 
 
 class Bcosmat(SpectralMatrix):
@@ -128,20 +132,22 @@ class Bcosmat(SpectralMatrix):
     where test and trial spaces have dimensions of M and N, respectively.
 
     """
-    def __init__(self, test, trial, scale=1, measure=1):
+    def assemble(self):
+        test = self.testfunction
         N = test[0].N
         d = {1: 0.5,
              -1: 0.5,
              N-1: 0.5,
              -(N-1): 0.5}
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
+        return d
 
 
 class _Fouriermatrix(SpectralMatrix):
-    def __init__(self, test, trial, scale=1, measure=1):
+    def assemble(self):
+        test, trial = self.testfunction, self.trialfunction
         N = test[0].N
         d = {}
-        if isinstance(measure, Number):
+        if isinstance(self.measure, Number):
             k = test[0].wavenumbers(N, scaled=False)
             if isinstance(test[1], (int, np.integer)):
                 k_test, k_trial = test[1], trial[1]
@@ -162,7 +168,7 @@ class _Fouriermatrix(SpectralMatrix):
                 d = {0: val*test[0].domain_factor()}
             else:
                 d = {0: test[0].domain_factor()}
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
+        return d
 
     def solve(self, b, u=None, axis=0, constraints=()):
         if self.measure == 1:
@@ -207,7 +213,11 @@ class _FourierMatDict(dict):
         return c
 
     def __getitem__(self, key):
-        matrix = dict.__getitem__(self, key)
+        if len(key) == 3:
+            matrix = functools.partial(dict.__getitem__(self, key),
+                                       measure=key[2])
+        else:
+            matrix = dict.__getitem__(self, key)
         return matrix
 
 

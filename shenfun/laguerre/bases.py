@@ -124,6 +124,10 @@ class Orthogonal(SpectralBase):
             return (lambda i: -i-sp.S.Half, None)
         raise NotImplementedError
 
+    def stencil_matrix(self, N=None):
+        N = self.N if N is None else N
+        return SparseMatrix({0: 1}, (N, N))
+
     def evaluate_basis_derivative_all(self, x=None, k=0, argument=0):
         if x is None:
             x = self.mesh(False, False)
@@ -192,7 +196,14 @@ class Orthogonal(SpectralBase):
         return True
 
     def get_orthogonal(self, **kwargs):
-        return self
+        d = dict(quad=self.quad,
+                 domain=self.domain,
+                 dtype=self.dtype,
+                 padding_factor=self.padding_factor,
+                 dealias_direct=self.dealias_direct,
+                 coordinates=self.coors.coordinates)
+        d.update(kwargs)
+        return Orthogonal(self.N, **d)
 
     @staticmethod
     def short_name():
@@ -466,6 +477,10 @@ class BCBase(CompositeBase):
     @staticmethod
     def boundary_condition():
         return 'Apply'
+
+    @property
+    def is_boundary_basis(self):
+        return True
 
     def shape(self, forward_output=True):
         if forward_output:

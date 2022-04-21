@@ -122,84 +122,20 @@ def test_transform(typecode, dim):
             fftp.destroy()
             fft.destroy()
 
-cBasis = (cbases.Orthogonal,
-          cbases.ShenDirichlet,
-          cbases.ShenNeumann,
-          cbases.ShenBiharmonic,
-          cbases.DirichletNeumann,
-          cbases.NeumannDirichlet,
-          cbases.UpperDirichlet,
-          cbases.LowerDirichlet
-          )
+ctrialBasis = [cbases.__dict__.get(base) for base in cbases.bases[:-1]]
+ctestBasis = ctrialBasis + [cbases.__dict__.get(base) for base in cbases.testbases]
+cutrialBasis = [cubases.__dict__.get(base) for base in cubases.bases[:-1]]
+cutestBasis = cutrialBasis + [cubases.__dict__.get(base) for base in cubases.testbases]
 
-cuBasis = (cubases.Orthogonal,
-           cubases.CompactDirichlet,
-           cubases.CompactNeumann,
-           cubases.UpperDirichlet,
-           cubases.LowerDirichlet,
-           cubases.Phi1,
-           cubases.Phi2,
-           #cubases.Phi3,
-           #cubases.Phi4
-           )
+utrialBasis = [ubases.__dict__.get(base) for base in ubases.bases[:-1]]
+utestBasis = utrialBasis + [ubases.__dict__.get(base) for base in ubases.testbases]
+ltrialBasis = [lbases.__dict__.get(base) for base in lbases.bases[:-1]]
+ltestBasis = ltrialBasis + [lbases.__dict__.get(base) for base in lbases.testbases]
+latrialBasis = [lagbases.__dict__.get(base) for base in lagbases.bases[:-1]]
+htrialBasis = [hbases.__dict__.get(base) for base in hbases.bases]
+jtrialBasis = [jbases.__dict__.get(base) for base in jbases.bases[:-1]]
+jtestBasis = jtrialBasis + [jbases.__dict__.get(base) for base in jbases.testbases]
 
-uBasis = (ubases.Orthogonal,
-          ubases.CompactDirichlet,
-          ubases.CompactNeumann,
-          ubases.UpperDirichlet,
-          ubases.LowerDirichlet,
-          ubases.Phi1,
-          ubases.Phi2,
-          ubases.Phi3,
-          ubases.Phi4,
-          )
-
-# Bases with only GC quadrature
-cBasisGC = (cbases.ShenBiPolar,
-            cbases.Heinrichs,
-            cbases.MikNeumann,
-            cbases.CombinedShenNeumann,
-            cbases.Phi1,
-            cbases.Phi2,
-            cbases.Phi3,
-            cbases.Phi4
-            )
-
-lBasis = (lbases.Orthogonal,
-          lbases.ShenDirichlet,
-          lbases.ShenDirichlet,
-          lbases.ShenBiharmonic,
-          lbases.ShenNeumann)
-
-# Bases with only LG quadrature
-lBasisLG = (lbases.UpperDirichlet,
-            lbases.LowerDirichlet,
-            lbases.ShenBiPolar,
-            lbases.NeumannDirichlet,
-            lbases.DirichletNeumann,
-            #lbases.BeamFixedFree,
-            lbases.Phi1,
-            lbases.Phi2,
-            lbases.Phi3,
-            lbases.Phi4
-            )
-
-lagBasis = (lagbases.Orthogonal,
-            lagbases.CompactDirichlet,
-            lagbases.CompactNeumann)
-
-hBasis = (hbases.Orthogonal,)
-
-jBasis = (jbases.Orthogonal,
-          jbases.CompactDirichlet,
-          jbases.CompactNeumann,
-          jbases.UpperDirichlet,
-          jbases.LowerDirichlet,
-          jbases.Phi1,
-          jbases.Phi2,
-          #jbases.Phi3, #too expensive
-          #jbases.Phi4
-          )
 
 cquads = ('GC', 'GL')
 lquads = ('LG', 'GL')
@@ -209,16 +145,14 @@ jquads = ('JG',)
 uquads = ('QG',)
 cuquads = ('GU', 'GC')
 
-all_bases_and_quads = (list(product(cuBasis, cuquads))
-                       +list(product(uBasis, uquads))
-                       +list(product(lBasis, lquads))
-                       +list(product(cBasis, cquads))
-                       +list(product(lBasisLG, ('LG',)))
-                       +list(product(cBasisGC, ('GC',)))
-                       +list(product(jBasis, jquads))
+all_bases_and_quads = (list(product(cutrialBasis, cuquads))
+                       +list(product(utrialBasis, uquads))
+                       +list(product(ltrialBasis, lquads))
+                       +list(product(ctrialBasis, cquads))
+                       +list(product(jtrialBasis, jquads))
                        )
-lag_bases_and_quads = list(product(lagBasis, lagquads))
-h_bases_and_quads = list(product(hBasis, hquads))
+lag_bases_and_quads = list(product(latrialBasis, lagquads))
+h_bases_and_quads = list(product(htrialBasis, hquads))
 
 num_tests = 20
 some_bases_and_quads = [all_bases_and_quads[i] for i in np.random.randint(0, len(all_bases_and_quads), num_tests)]
@@ -249,8 +183,8 @@ def test_shentransform(typecode, dim, ST, quad):
             bases.pop(axis)
             fft.destroy()
 
-bases_and_quads = (list(product(lBasis[:2], lquads))
-                   +list(product(cBasis[:2], cquads)))
+bases_and_quads = (list(product(ltrialBasis[:2], lquads))
+                   +list(product(ctrialBasis[:2], cquads)))
                    #+list(product(jBasis[:2], jquads)))
 
 axes = {2: {0: [0, 1, 2],
@@ -332,7 +266,7 @@ def test_project_lag(typecode, dim):
         bases.append(FunctionSpace(shape[-1], 'F', dtype=typecode))
 
         for axis in range(dim+1):
-            ST1 = lagBasis[1](3*shape[-1])
+            ST1 = latrialBasis[1](3*shape[-1])
             bases.insert(axis, ST1)
             fft = TensorProductSpace(comm, bases, dtype=typecode, axes=axes[dim][axis])
             dfft = fft.get_orthogonal()
@@ -373,7 +307,7 @@ def test_project_hermite(typecode, dim):
         bases.append(FunctionSpace(shape[-1], 'F', dtype=typecode))
 
         for axis in range(dim+1):
-            ST0 = hBasis[0](3*shape[-1])
+            ST0 = htrialBasis[0](3*shape[-1])
             bases.insert(axis, ST0)
             fft = TensorProductSpace(comm, bases, dtype=typecode, axes=axes[dim][axis])
             X = fft.local_mesh(True)
@@ -428,51 +362,18 @@ def test_eval_tensor(typecode, dim, ST, quad):
     # Using sympy to compute an analytical solution
     # Testing for Dirichlet and regular basis
     x, y, z = symbols("x,y,z")
-    sizes = (18, 17)
+    sizes = (28, 27)
 
-    funcx = {'': (1-x**2)*sin(np.pi*x),
-             'Dirichlet': (1-x**2)*sin(np.pi*x),
-             'Neumann': (1-x**2)*sin(np.pi*x),
-             'Biharmonic': (1-x**2)*sin(np.pi*x),
-             '6th order': (1-x**2)**2*sin(np.pi*x),
-             'Biharmonic*2': (1-x**2)**3*sin(np.pi*x),
-             'BiPolar': (1-x**2)*sin(np.pi*x),
-             'BiPolar0': (1-x**2)*sin(np.pi*x),
-             'UpperDirichlet': (1-x)*sin(np.pi*x),
-             'LowerDirichlet': (1+x)*sin(np.pi*x),
-             'DirichletNeumann': (1-x**2)*sin(np.pi*x),
-             'NeumannDirichlet': (1-x**2)*sin(np.pi*x)}
-    funcy = {'': (1-y**2)*sin(np.pi*y),
-             'Dirichlet': (1-y**2)*sin(np.pi*y),
-             'Neumann': (1-y**2)*sin(np.pi*y),
-             'Biharmonic': (1-y**2)*sin(np.pi*y),
-             '6th order': (1-y**2)**2*sin(np.pi*y),
-             'Biharmonic*2': (1-y**2)**3*sin(np.pi*y),
-             'BiPolar': (1-y**2)*sin(np.pi*y),
-             'BiPolar0': (1-y**2)*sin(np.pi*y),
-             'UpperDirichlet': (1-y)*sin(np.pi*y),
-             'LowerDirichlet': (1+y)*sin(np.pi*y),
-             'DirichletNeumann': (1-y**2)*sin(np.pi*y),
-             'NeumannDirichlet': (1-y**2)*sin(np.pi*y)}
-    funcz = {'': (1-z**2)*sin(np.pi*z),
-             'Dirichlet': (1-z**2)*sin(np.pi*z),
-             'Neumann': (1-z**2)*sin(np.pi*z),
-             'Biharmonic': (1-z**2)*sin(np.pi*z),
-             '6th order': (1-z**2)**2*sin(np.pi*z),
-             'Biharmonic*2': (1-z**2)**3*sin(np.pi*z),
-             'BiPolar': (1-z**2)*sin(np.pi*z),
-             'BiPolar0': (1-z**2)*sin(np.pi*z),
-             'UpperDirichlet': (1-z)*sin(np.pi*z),
-             'LowerDirichlet': (1+z)*sin(np.pi*z),
-             'DirichletNeumann': (1-z**2)*sin(np.pi*z),
-             'NeumannDirichlet': (1-z**2)*sin(np.pi*z)}
+    funcx = (1-x**2)**3*sin(np.pi*x)
+    funcy = (1-y**2)**3*sin(np.pi*y)
+    funcz = (1-z**2)**3*sin(np.pi*z)
 
     funcs = {
-        (1, 0): cos(y)*funcx[ST.boundary_condition()],
-        (1, 1): cos(x)*funcy[ST.boundary_condition()],
-        (2, 0): sin(z)*cos(y)*funcx[ST.boundary_condition()],
-        (2, 1): sin(z)*cos(x)*funcy[ST.boundary_condition()],
-        (2, 2): sin(x)*cos(y)*funcz[ST.boundary_condition()]
+        (1, 0): cos(y)*funcx,
+        (1, 1): cos(x)*funcy,
+        (2, 0): sin(z)*cos(y)*funcx,
+        (2, 1): sin(z)*cos(x)*funcy,
+        (2, 2): sin(x)*cos(y)*funcz
         }
     syms = {1: (x, y), 2:(x, y, z)}
     points = None

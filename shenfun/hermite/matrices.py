@@ -19,10 +19,11 @@ class BHHmat(SpectralMatrix):
     dimensions of M and N, respectively.
 
     """
-    def __init__(self, test, trial, scale=1, measure=1):
+    def assemble(self):
+        test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], H)
         assert isinstance(trial[0], H)
-        SpectralMatrix.__init__(self, {0:1}, test, trial, scale=scale, measure=measure)
+        return {0: 1}
 
     def solve(self, b, u=None, axis=0, constraints=()):
         if u is not None:
@@ -54,7 +55,8 @@ class AHHmat(SpectralMatrix):
     dimensions of M and N, respectively.
 
     """
-    def __init__(self, test, trial, scale=1, measure=1):
+    def assemble(self):
+        test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], H)
         assert isinstance(trial[0], H)
         N = test[0].N
@@ -63,7 +65,7 @@ class AHHmat(SpectralMatrix):
              2: -np.sqrt((k[:-2]+1)*(k[:-2]+2))/2}
         d[0][-1] = (N-1)/2.
         d[-2] = d[2].copy()
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
+        return d
 
     def get_solver(self):
         return TDMA
@@ -104,8 +106,8 @@ class AHHmat(SpectralMatrix):
 
 
 class _Hermatrix(SpectralMatrix):
-    def __init__(self, test, trial, scale=1, measure=1):
-        SpectralMatrix.__init__(self, {}, test, trial, scale=scale, measure=measure)
+    def __init__(self, test, trial, scale=1, measure=1, assemble=None):
+        SpectralMatrix.__init__(self, test, trial, scale=scale, measure=measure, assemble=assemble)
 
 
 class _HerMatDict(dict):

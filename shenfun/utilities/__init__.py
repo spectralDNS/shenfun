@@ -426,15 +426,25 @@ def split(measures, expand=False):
         if d is None:
             raise RuntimeError('Could not split', ms)
         d = defaultdict(lambda: 1, {str(k): v for k, v in d.items()})
-        dc = d['coeff']
-        d['coeff'] = int(dc) if isinstance(dc, (sp.Integer, int)) else float(dc)
+        dc = sp.sympify(d['coeff'])
+        if dc.is_integer:
+            d['coeff'] = int(dc)
+        elif dc.is_real:
+            d['coeff'] = float(dc)
+        elif dc.is_complex:
+            d['coeff'] = complex(dc)
+        else:
+            raise RuntimeError
         return d
 
     ms = sp.sympify(measures)
     if not expand:
-        di = _split(ms)
-        if di is not None:
-            return [di]
+        try:
+            di = _split(ms)
+            if di is not None:
+                return [di]
+        except RuntimeError:
+            pass
 
     ms = ms.expand()
     result = []

@@ -5,6 +5,7 @@ This module contains classes for working with sparse matrices.
 from __future__ import division
 from copy import copy, deepcopy
 from collections.abc import Mapping, MutableMapping
+from collections import defaultdict
 from numbers import Number
 import numpy as np
 import sympy as sp
@@ -72,7 +73,6 @@ class SparseMatrix(MutableMapping):
 
     """
     # pylint: disable=redefined-builtin, missing-docstring
-
     def __init__(self, d, shape, scale=1.0):
         # sort d before storing
         sorted_dict = sorted(d.items())
@@ -523,10 +523,7 @@ class SpectralMatrix(SparseMatrix):
 
     Parameters
     ----------
-    d : dict
-        Dictionary, where keys are the diagonal offsets and values the
-        diagonals
-    trial : 2-tuple of (basis, int)
+    test : 2-tuple of (basis, int)
         The basis is an instance of a class for one of the bases in
 
         - :mod:`.legendre.bases`
@@ -538,12 +535,14 @@ class SpectralMatrix(SparseMatrix):
         - :mod:`.hermite.bases`
         - :mod:`.jacobi.bases`
 
-        The int represents the number of times the trial function
+        The int represents the number of times the test function
         should be differentiated. Representing matrix column.
-    test : 2-tuple of (basis, int)
-        As trial, but representing matrix row.
+    trial : 2-tuple of (basis, int)
+        As test, but representing matrix column.
     scale : number, optional
         Scale matrix with this number
+    measure : number or Sympy expression, optional
+        A function of the reference coordinate.
 
     Examples
     --------
@@ -565,50 +564,147 @@ class SpectralMatrix(SparseMatrix):
 
     >>> from shenfun import FunctionSpace, SpectralMatrix
     >>> SD = FunctionSpace(16, 'C', bc=(0, 0))
-    >>> M = SpectralMatrix({}, (SD, 0), (SD, 0))
+    >>> M = SpectralMatrix((SD, 0), (SD, 0))
 
     where the first (SD, 0) represents the test function and
     the second the trial function. The stiffness matrix can be obtained as::
 
-    >>> A = SpectralMatrix({}, (SD, 0), (SD, 2))
+    >>> A = SpectralMatrix((SD, 0), (SD, 2))
 
     where (SD, 2) signals that we use the second derivative of this trial
-    function.
+    function. A more natural way to do the same thing is to
 
-    The automatically created matrices may be overloaded with more exactly
-    computed diagonals.
+    >>> from shenfun import TrialFunction, TestFunction, inner, Dx
+    >>> u = TrialFunction(SD)
+    >>> v = TestFunction(SD)
+    >>> A = inner(v, Dx(u, 0, 2))
+
+    where :func:`Dx` is a partial (or ordinary) derivative.
+
+    Note
+    ----
+    Note that there are several implementations of the inner product integrals.
+    The different implementations can be chosen using the `assemble`
+    keyword, and `config['matrix']['assemble']['kind']`.
 
     """
-    def __init__(self, d, test, trial, scale=1.0, measure=1):
+    def __init__(self, test, trial, scale=1.0, measure=1, assemble=None):
         assert isinstance(test[1], (int, np.integer))
         assert isinstance(trial[1], (int, np.integer))
         self.testfunction = test
         self.trialfunction = trial
         self.measure = measure
+        assemble = config['matrix']['assemble']['kind'] if assemble is None else assemble
         shape = (test[0].dim(), trial[0].dim())
-        if d == {}:
-            if config['matrix']['sparse']['construct'] == 'dense':
+        if isinstance(measure, Number):
+            scale *= measure
+            self.measure = measure = 1
+        d = {}
+        if assemble is None:
+            # If nothing is specified then
+            # 1. Check for specific implementation
+            # 2. Try to use stencil-method. This may fail because it does not
+            #    cover all options, so
+            # 3. Fall back on quadrature in case the above fails.
+            d = self.assemble()
+            assembly = 'implemented'
+            if d is None:
+                #assemble = 'quadrature_vandermonde'
+                if test[0].short_name() in ('P1', 'P2', 'P3', 'P4'):
+                    try:
+                        d = assemble_phi(test, trial, measure)
+                        assembly = 'phi'
+                    except AssertionError:
+                        assemble = 'quadrature_vandermonde'
+                else:
+                    #if test[1]+trial[1] == 0 and sp.sympify(measure).is_polynomial():
+                    if test[1]+trial[1] == 0 and sp.sympify(measure).is_polynomial() and not (test[0].is_orthogonal and trial[0].is_orthogonal):
+                        d = assemble_stencil(test, trial, measure)
+                        assembly = 'stencil'
+                    else:
+                        assemble = 'quadrature_vandermonde'
+
+        if assemble is not None:
+            # Specified method of assembly, mainly for testing
+            D = None
+            if assemble == 'quadrature_stencil':
+                assert sp.sympify(measure).is_polynomial(), 'Cannot use `quadrature_stencil` with non-polynomial coefficients'
+                if test[0].short_name() in ('P1', 'P2', 'P3', 'P4'):
+                    d = assemble_phi(test, trial, measure)
+                    assembly = 'phi'
+                else:
+                    d = assemble_stencil(test, trial, measure)
+                    assembly = 'stencil'
+            elif assemble == 'quadrature_vandermonde':
                 D = get_dense_matrix(test, trial, measure)
-            elif config['matrix']['sparse']['construct'] == 'denser':
+            elif assemble == 'quadrature_fixed_resolution':
                 D = get_denser_matrix(test, trial, measure)
-            elif config['matrix']['sparse']['construct'] == 'sympy':
+            elif assemble == 'exact_sympy':
                 D = get_dense_matrix_sympy(test, trial, measure)
-            elif config['matrix']['sparse']['construct'] == 'quadpy':
+            elif assemble == 'exact_quadpy':
                 D = get_dense_matrix_quadpy(test, trial, measure)
-            if isinstance(D, Number):
-                assert D == 0
-                scale = 0
-                d = {0: 0}
-            else:
-                D = D[:shape[0], :shape[1]]
-                d = extract_diagonal_matrix(D)
-        else:
-            if isinstance(measure, Number):
-                scale *= measure
-                self.measure = 1
+
+            if D is not None:
+                assembly = assemble
+                if isinstance(D, Number):
+                    assert D == 0
+                    scale = 0
+                    d = {}
+                else:
+                    D = D[:shape[0], :shape[1]]
+                    d = extract_diagonal_matrix(D)
+
         if test[0].domain_factor() != 1:
             scale *= test[0].domain_factor()**(test[1]+trial[1]-1)
         SparseMatrix.__init__(self, d, shape, scale)
+        self._assembly_method = assembly
+        self.incorporate_scale()
+
+    def assemble(self):
+        r"""Return diagonals of :class:`.SpectralMatrix`
+
+        Note
+        ----
+        Subclass :class:`.SpectralMatrix` and overload this method in order
+        to provide a fast and accurate implementation of the matrix representing
+        an inner product. See the `matrix` modules in either one of
+
+        - :mod:`.legendre.matrix`
+        - :mod:`.chebyshev.matrix`
+        - :mod:`.chebyshevu.matrix`
+        - :mod:`.ultraspherical.matrix`
+        - :mod:`.fourier.matrix`
+        - :mod:`.laguerre.matrix`
+        - :mod:`.hermite.matrix`
+        - :mod:`.jacobi.matrix`
+
+        Example
+        -------
+        The mass matrix for Chebyshev polynomials is
+
+        .. math::
+
+            (T_j, T_i)_{\omega} = \frac{c_i \pi}{2}\delta_{ij},
+
+        where :math:`c_0=2` and :math:`c_i=1` for integer :math:`i>0`. We can
+        implement this as
+
+        >>> from shenfun import SpectralMatrix
+        >>> class Bmat(SpectralMatrix):
+        ...    def assemble(self):
+        ...        test, trial = self.testfunction, self.trialfunction
+        ...        ci = np.ones(test[0].N)
+        ...        ci[0] = 2
+        ...        return {0: ci*np.pi/2}
+
+        Here `{0: ci*np.pi/2}` is the 0'th diagonal of the matrix.
+        Note that `test` and `trial` are two-tuples of `(instance of :class:`.SpectralBase`, number)`,
+        where the number represents the number of derivatives. For the mass matrix
+        the number will be 0. Also note that the length of the diagonal must be
+        correct.
+
+        """
+        return None
 
     def matvec(self, v, c, format=None, axis=0):
         u = self.trialfunction[0]
@@ -663,7 +759,6 @@ class SpectralMatrix(SparseMatrix):
     def is_bc_matrix(self):
         return self.trialfunction[0].boundary_condition() == 'Apply'
 
-
 class Identity(SparseMatrix):
     """The identity matrix in :class:`.SparseMatrix` form
 
@@ -676,7 +771,7 @@ class Identity(SparseMatrix):
 
     """
     def __init__(self, shape, scale=1):
-        SparseMatrix.__init__(self, {0:1}, shape, scale)
+        SparseMatrix.__init__(self, {0: 1}, shape, scale)
         self.measure = 1
 
     def solve(self, b, u=None, axis=0, constraints=()):
@@ -1527,10 +1622,11 @@ def get_simplified_tpmatrices(tpmats):
     return B
 
 
-def check_sanity(A, test, trial, measure=1):
+def check_sanity(A, test, trial, measure=1, assemble='quadrature_vandermonde'):
     """Sanity check for matrix.
 
-    Test that automatically created matrix agrees with overloaded one
+    Test that created matrix agrees with quadrature computed using a
+    memory-consuming Vandermonde implementation.
 
     Parameters
     ----------
@@ -1552,19 +1648,18 @@ def check_sanity(A, test, trial, measure=1):
     trial : 2-tuple of (basis, int)
         As test, but representing matrix column.
     measure : sympy function of coordinate, optional
+        Function in the physical coordinate. Gets mapped to
+        reference domain.
+    assemble : str, optional
+        The type of assembly to compare with. See `config['matrix']['assemble']`
 
-    Note
-    ----
-    Set `config['matrix']['sparse']['construct']` to determine how the matrix
-    is computed. Options
-
-        - `dense` quadrature N points
-        - `denser` quadrature 3N/2 points
-        - `sympy` use exact sympy integration
-        - `quadpy` use quadpy adaptive numerical integration
     """
-    Dsp = SpectralMatrix({}, test, trial, measure=measure)
-    Dsp.incorporate_scale()
+    if len(sp.sympify(measure).free_symbols) == 1:
+        if test[0].domain != test[0].reference_domain():
+            x0 = measure.free_symbols.pop()
+            xm = test[0].map_true_domain(x0)
+            measure = measure.replace(x0, xm)
+    Dsp = SpectralMatrix(test, trial, measure=measure, assemble=assemble)
     for key, val in A.items():
         assert np.allclose(val*A.scale, Dsp[key])
 
@@ -1603,18 +1698,18 @@ def get_dense_matrix(test, trial, measure=1):
     wrapped in the SpectralMatrix class, like
 
     >>> from shenfun import config, SpectralMatrix, FunctionSpace
-    >>> config['matrix']['sparse']['construct'] = 'dense'
-    >>> L = FunctionSpace(8, 'L', domain=(-2, 2))
-    >>> D = SpectralMatrix({}, (L, 0), (L, 0))
-    >>> D.scale
-    2.0
+    >>> config['matrix']['assemble']['kind'] = 'quadrature_vandermonde'
+    >>> L = FunctionSpace(4, 'L', domain=(-2, 2))
+    >>> D = SpectralMatrix((L, 0), (L, 0))
+    >>> dict(D)
+    {0: array([4.        , 1.33333333, 0.8       , 0.57142857])}
 
     """
     K0 = test[0].slice().stop - test[0].slice().start
     K1 = trial[0].slice().stop - trial[0].slice().start
     N = test[0].N
     x = test[0].mpmath_points_and_weights(N, map_true_domain=False)[0]
-    ws = test[0].get_measured_weights(N, measure)
+    ws = test[0].get_measured_weights(N, measure, map_true_domain=False)
     u = trial[0].evaluate_basis_derivative_all(x=x, k=trial[1])[:, :K1]
     if trial[0].boundary_condition() == 'Apply':
         if np.linalg.norm(u) < 1e-14:
@@ -1667,21 +1762,25 @@ def get_denser_matrix(test, trial, measure=1):
     wrapped in the SpectralMatrix class, like
 
     >>> from shenfun import config, SpectralMatrix, FunctionSpace
-    >>> config['matrix']['sparse']['construct'] = 'denser'
-    >>> L = FunctionSpace(8, 'L', domain=(-2, 2))
-    >>> D = SpectralMatrix({}, (L, 0), (L, 0))
-    >>> D.scale
-    2.0
+    >>> config['matrix']['assemble']['kind'] = 'quadrature_fixed_resolution'
+    >>> config['quadrature']['resolution_factor'] = 2
+    >>> L = FunctionSpace(4, 'L', domain=(-2, 2))
+    >>> D = SpectralMatrix((L, 0), (L, 0))
+    >>> dict(D)
+    {0: array([4.        , 1.33333333, 0.8       , 0.57142857])}
 
     """
-    test2 = test[0].get_refined((test[0].N*3)//2)
+    M = config['quadrature']['fixed_resolution']
+    if M is None:
+        M = int(test[0].N*config['quadrature']['resolution_factor'])
+    test2 = test[0].get_refined(M)
     K0 = test[0].slice().stop - test[0].slice().start
     K1 = trial[0].slice().stop - trial[0].slice().start
     N = test2.N
     x = test2.mpmath_points_and_weights(N, map_true_domain=False)[0]
-    ws = test2.get_measured_weights(N, measure)
+    ws = test2.get_measured_weights(N, measure, map_true_domain=False)
     u = trial[0].evaluate_basis_derivative_all(x=x, k=trial[1])[:, :K1]
-    if trial[0].boundary_condition() == 'Apply':
+    if trial[0].is_boundary_basis:
         if np.linalg.norm(u) < 1e-14:
             return 0
     v = test[0].evaluate_basis_derivative_all(x=x, k=test[1])[:, :K0]
@@ -1699,7 +1798,7 @@ def extract_diagonal_matrix(M, lowerband=None, upperband=None, abstol=1e-10, rel
 
     Parameters
     ----------
-    M : Numpy array of ndim=2
+    M : Numpy array of ndim=2 or sparse scipy matrix
     lowerband : int or None
         Assumed lower bandwidth of M
     upperband : int or None
@@ -1786,12 +1885,12 @@ def get_dense_matrix_sympy(test, trial, measure=1):
     wrapped in the SpectralMatrix class, like
 
     >>> from shenfun import config, SpectralMatrix, FunctionSpace
-    >>> config['matrix']['sparse']['construct'] = 'sympy'
-    >>> L = FunctionSpace(8, 'L', domain=(-2, 2))
-    >>> D = SpectralMatrix({}, (L, 0), (L, 0))
-    >>> D.scale
-    2.0
-    >>> config['matrix']['sparse']['construct'] = 'dense' # reset for doctest
+    >>> config['matrix']['assemble']['kind'] = 'exact_sympy'
+    >>> L = FunctionSpace(4, 'L', domain=(-2, 2))
+    >>> D = SpectralMatrix((L, 0), (L, 0))
+    >>> dict(D)
+    {0: array([4.        , 1.33333333, 0.8       , 0.57142857])}
+    >>> config['matrix']['assemble']['kind'] = None # reset for doctest
 
     """
     N = test[0].slice().stop - test[0].slice().start
@@ -1867,11 +1966,11 @@ def get_dense_matrix_quadpy(test, trial, measure=1):
     wrapped in the SpectralMatrix class, like
 
     >>> from shenfun import config, SpectralMatrix, FunctionSpace
-    >>> config['matrix']['sparse']['construct'] = 'quadpy'
-    >>> L = FunctionSpace(8, 'L', domain=(-2, 2))
-    >>> D = SpectralMatrix({}, (L, 0), (L, 0))
-    >>> D.scale
-    2.0
+    >>> config['matrix']['assemble']['kind'] = 'exact_quadpy'
+    >>> L = FunctionSpace(4, 'L', domain=(-2, 2))
+    >>> D = SpectralMatrix((L, 0), (L, 0))
+    >>> dict(D)
+    {0: array([4.        , 1.33333333, 0.8       , 0.57142857])}
 
     """
     import quadpy
@@ -1911,3 +2010,171 @@ def get_dense_matrix_quadpy(test, trial, measure=1):
         elif np.linalg.norm(V.real) / ni > 1e14:
             V = V.real.copy()
     return V
+
+def assemble_stencil(test, trial, measure=1):
+    if trial[0].is_boundary_basis:
+        return _assemble_stencil_bc(test, trial, measure)
+    return _assemble_stencil(test, trial, measure)
+
+def _assemble_stencil_bc(test, trial, measure=1):
+    from shenfun.spectralbase import inner_product
+    Tv = test[0].get_orthogonal(domain=(-1, 1))
+    Tu = trial[0].get_orthogonal(domain=(-1, 1))
+    alpha = test[0].alpha
+    beta = test[0].beta
+    gn = test[0].gn
+    B = inner_product((Tv, test[1]), (Tu, trial[1]))
+    if len(B) == 0:
+        return {}
+    K = test[0].stencil_matrix()
+    q = sp.degree(measure)
+
+    K.shape = (test[0].dim(), test[0].N)
+    S = extract_diagonal_matrix(trial[0].stencil_matrix().T).diags('csr')
+    if measure != 1:
+        from shenfun.jacobi.recursions import pmat, a
+        from shenfun.utilities import split
+        assert sp.sympify(measure).is_polynomial()
+        A = sp.S(0)
+        for dv in split(measure, expand=True):
+            sc = dv['coeff']
+            msi = dv['x']
+            qi = sp.degree(msi)
+            Ax = pmat(a, qi, alpha, beta, test[0].N, test[0].N, gn)
+            A = A + sc*Ax.diags('csr')
+        A = K.diags('csr') * A.T * B.diags('csr') * S
+    else:
+        A = K.diags('csr') * B.diags('csr') * S
+    M = B.shape[1]
+    K.shape = (test[0].N, test[0].N)
+    d = extract_diagonal_matrix(A, lowerband=M+q, upperband=M)
+    d = d._storage
+    return d
+
+def _assemble_stencil(test, trial, measure=1):
+    from shenfun.spectralbase import inner_product
+    Tv = test[0].get_orthogonal(domain=(-1, 1))
+    Tu = trial[0].get_orthogonal(domain=(-1, 1))
+    alpha = test[0].alpha
+    beta = test[0].beta
+    gn = test[0].gn
+    # This needs to be either implemented or quadrature:
+    B = inner_product((Tv, test[1]), (Tu, trial[1]))
+    K = test[0].stencil_matrix()
+    q = sp.degree(measure)
+
+    K.shape = (test[0].dim(), test[0].N)
+    S = trial[0].stencil_matrix()
+    S.shape = (trial[0].dim(), trial[0].N)
+    if measure != 1:
+        from shenfun.jacobi.recursions import pmat, a
+        from shenfun.utilities import split
+        assert sp.sympify(measure).is_polynomial()
+        A = sp.S(0)
+        for dv in split(measure, expand=True):
+            sc = dv['coeff']
+            msi = dv['x']
+            qi = sp.degree(msi)
+            Ax = pmat(a, qi, alpha, beta, test[0].N, test[0].N, gn)
+            A = A + sc*Ax.diags('csr')
+        A = K.diags('csr') * A.T * B.diags('csr') * S.diags('csr').T
+    else:
+        A = K.diags('csr') * B.diags('csr') * S.diags('csr').T
+    K.shape = (test[0].N, test[0].N)
+    S.shape = (trial[0].N, trial[0].N)
+    if test[1]+trial[1] == 0:
+        keysK = np.sort(np.array(list(K.keys())))
+        keysS = np.sort(np.array(list(S.keys())))
+        lb = -keysK[0]+keysS[-1]+q
+        ub = keysK[-1]-keysS[0]+q
+        d = extract_diagonal_matrix(A, lowerband=lb, upperband=ub)
+    else:
+        Ac = A.tocsc()
+        ub = Ac.getrow(0).indices
+        ub2 = Ac.getrow(1).indices
+        if len(ub) == 0 and len(ub2) == 0:
+            ub = 0
+            ub2 = 0
+        else:
+            ub = trial[0].dim() if len(ub) == 0 else ub.max()
+            ub2 = trial[0].dim() if len(ub2) == 0 else ub2.max()-1
+            ub = max(ub, ub2)
+
+        lb = Ac.getcol(0).indices
+        lb2 = Ac.getcol(1).indices
+        if len(lb) == 0 and len(lb2) == 0:
+            lb = 0
+            lb2 = 0
+        else:
+            lb = test[0].dim() if len(lb) == 0 else lb.max()
+            lb2 = test[0].dim() if len(lb2) == 0 else lb2.max()-1
+            lb = max(lb, lb2)
+        d = extract_diagonal_matrix(A, lowerband=lb, upperband=ub)
+    d = d._storage
+    return d
+
+def assemble_phi(test, trial, measure=1):
+    assert test[0].short_name() in ('P1', 'P2', 'P3', 'P4')
+    if trial[0].is_boundary_basis:
+        return _assemble_phi_bc(test, trial, measure)
+    return _assemble_phi(test, trial, measure)
+
+def _assemble_phi(test, trial, measure=1):
+    from shenfun.jacobi.recursions import Lmat
+    from shenfun.utilities import split
+    assert test[0].quad != 'GL'
+    alpha = test[0].alpha
+    beta = test[0].beta
+    gn = test[0].gn
+    q = sp.degree(measure)
+    k = (test[0].N-test[0].dim())//2
+    l = k-trial[1]
+    assert l >= 0
+    D = sp.S(0)
+    for dv in split(measure, expand=True):
+        sc = dv['coeff']
+        msi = dv['x']
+        qi = sp.degree(msi)
+        Ax = Lmat(k, qi, l, test[0].dim(), trial[0].N, alpha, beta, gn)
+        D = D + sc*Ax
+    if trial[0].is_orthogonal:
+        d = extract_diagonal_matrix(D, lowerband=q-k+l, upperband=q+k+l)
+    else:
+        K = trial[0].stencil_matrix()
+        K.shape = (trial[0].dim(), trial[0].N)
+        keys = np.sort(np.array(list(K.keys())))
+        lb, ub = -keys[0], keys[-1]
+        d = extract_diagonal_matrix(D*K.diags('csr').T, lowerband=q-k+l+ub, upperband=q+k+l+lb)
+        K.shape = (trial[0].N, trial[0].N)
+    d = d._storage
+    return d
+
+def _assemble_phi_bc(test, trial, measure=1):
+    assert trial[0].short_name() == 'BG'
+    from shenfun.jacobi.recursions import Lmat
+    from shenfun.utilities import split
+    alpha = test[0].alpha
+    beta = test[0].beta
+    gn = test[0].gn
+    M = test[0].dim()
+    N = trial[0].dim_ortho
+    q = sp.degree(measure)
+    k = (test[0].N-test[0].dim())//2
+    l = k-trial[1]
+    assert l >= 0
+    D = sp.S(0)
+    if k <= N:
+        for dv in split(measure, expand=True):
+            sc = dv['coeff']
+            msi = dv['x']
+            qi = sp.degree(msi)
+            Ax = Lmat(k, qi, l, M, N, alpha, beta, gn)
+            D = D + sc*Ax
+    if D is sp.S.Zero:
+        scale = 0
+        d = {0: 1}
+    else:
+        K = trial[0].stencil_matrix()
+        d = extract_diagonal_matrix(D*extract_diagonal_matrix(K).diags('csr').T, lowerband=N+q, upperband=N)
+    d = d._storage
+    return d

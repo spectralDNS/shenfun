@@ -51,7 +51,7 @@ from shenfun.spectralbase import SpectralBase, Transform, FuncWrap, \
 from shenfun.matrixbase import SparseMatrix
 from shenfun.optimization import optimizer
 from shenfun.config import config
-from shenfun.jacobi.recursions import n
+from shenfun.jacobi.recursions import n, half, cn
 
 bases = ['Orthogonal',
          'ShenDirichlet',
@@ -145,6 +145,9 @@ class Orthogonal(SpectralBase):
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
                               coordinates=coordinates)
         assert quad in ('GC', 'GL', 'GU')
+        self.alpha = -half
+        self.beta = -half
+        self.gn = cn
         if quad == 'GC':
             self._xfftn_fwd = functools.partial(fftw.dctn, type=2)
             self._xfftn_bck = functools.partial(fftw.dctn, type=3)
@@ -316,6 +319,10 @@ class Orthogonal(SpectralBase):
     def short_name():
         return 'T'
 
+    def stencil_matrix(self, N=None):
+        N = self.N if N is None else N
+        return SparseMatrix({0: 1}, (N, N))
+
     def to_ortho(self, input_array, output_array=None):
         assert input_array.__class__.__name__ == 'Orthogonal'
         if output_array:
@@ -324,7 +331,14 @@ class Orthogonal(SpectralBase):
         return input_array
 
     def get_orthogonal(self, **kwargs):
-        return self
+        d = dict(quad=self.quad,
+                 domain=self.domain,
+                 dtype=self.dtype,
+                 padding_factor=self.padding_factor,
+                 dealias_direct=self.dealias_direct,
+                 coordinates=self.coors.coordinates)
+        d.update(kwargs)
+        return Orthogonal(self.N, **d)
 
     def get_bc_basis(self):
         if self._bc_basis:
@@ -1839,6 +1853,10 @@ class BCBase(CompositeBase):
     @staticmethod
     def boundary_condition():
         return 'Apply'
+
+    @property
+    def is_boundary_basis(self):
+        return True
 
     def shape(self, forward_output=True):
         if forward_output:

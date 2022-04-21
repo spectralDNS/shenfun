@@ -42,11 +42,11 @@ m, n, k = sp.symbols('m,n,k', real=True, integer=True)
 #pylint: disable=method-hidden,no-else-return,not-callable,abstract-method,no-member,cyclic-import
 
 bases = ['Orthogonal',
-           'CompactDirichlet',
-           'CompactNeumann',
-           'UpperDirichlet',
-           'LowerDirichlet',
-           'Generic']
+         'CompactDirichlet',
+         'CompactNeumann',
+         'UpperDirichlet',
+         'LowerDirichlet',
+         'Generic']
 bcbases = ['BCGeneric']
 testbases = ['Phi1', 'Phi2', 'Phi3', 'Phi4']
 __all__ = bases + bcbases + testbases
@@ -91,6 +91,8 @@ class Orthogonal(SpectralBase):
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
                               coordinates=coordinates)
         self.alpha = alpha
+        self.beta = alpha
+        self.gn = cn
         self.forward = functools.partial(self.forward, fast_transform=False)
         self.backward = functools.partial(self.backward, fast_transform=False)
         self.scalar_product = functools.partial(self.scalar_product, fast_transform=False)
@@ -103,8 +105,16 @@ class Orthogonal(SpectralBase):
     def reference_domain(self):
         return (-1, 1)
 
-    def get_orthogonal(self):
-        return self
+    def get_orthogonal(self, **kwargs):
+        d = dict(quad=self.quad,
+                 domain=self.domain,
+                 dtype=self.dtype,
+                 alpha=self.alpha,
+                 padding_factor=self.padding_factor,
+                 dealias_direct=self.dealias_direct,
+                 coordinates=self.coors.coordinates)
+        d.update(kwargs)
+        return Orthogonal(self.N, **d)
 
     def points_and_weights(self, N=None, map_true_domain=False, weighted=True, **kw):
         if N is None:
@@ -980,6 +990,10 @@ class BCBase(CompositeBase):
     def boundary_condition():
         return 'Apply'
 
+    @property
+    def is_boundary_basis(self):
+        return True
+
     def shape(self, forward_output=True):
         if forward_output:
             return self.stencil_matrix().shape[0]
@@ -1038,6 +1052,7 @@ class BCBase(CompositeBase):
     def get_orthogonal(self, **kwargs):
         d = dict(quad=self.quad,
                  domain=self.domain,
+                 alpha=self.alpha,
                  dtype=self.dtype)
         d.update(kwargs)
         return Orthogonal(self.dim_ortho, **d)

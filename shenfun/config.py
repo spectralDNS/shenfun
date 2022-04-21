@@ -13,20 +13,29 @@ config = {
         'verbose': False,
     },
     'basisvectors': 'normal',
-    'assembly':
+    'quadrature':
     {
-        'splitmeasure': False,
+        'fixed_resolution': None, # For using a fixed number of quadrature points. Used with quadrature_fixed_resolution.
+        'resolution_factor': 1.5, # Used if fixed_resolution is None
     },
     'matrix':
     {
+        'assemble':
+        {
+            'kind': None,
+            #'kind': 'quadrature_vandermonde',
+            #'kind': 'quadrature_stencil',
+            #'kind: ''quadrature_fixed_resolution',
+            #'kind': 'exact_quadpy',
+            #'kind': 'exact_sympy'
+        },
         'sparse':
         {
             #'permc_spec': 'NATURAL',
             'permc_spec': 'COLAMD',
             'solve': 'csc',
             'diags': 'csc',
-            'matvec': 'csr',
-            'construct': 'dense' # denser, sympy, quadpy - The method used to construct non-implemented matrices
+            'matvec': 'csr'
         },
         'block':
         {

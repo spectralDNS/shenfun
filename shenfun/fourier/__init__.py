@@ -38,7 +38,7 @@ def energy_fourier(u, T):
         return result
 
     comm = T.comm
-    assert np.all([isinstance(base, FourierBase) for base in T.bases])
+    assert np.all([base.family() == 'fourier' for base in T.bases])
     real = False
     for axis, base in enumerate(T.bases):
         if isinstance(base, R2C):

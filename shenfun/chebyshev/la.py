@@ -12,7 +12,7 @@ class ADDSolver(SparseMatrixSolver):
     def __init__(self, mats):
         SparseMatrixSolver.__init__(self, mats)
         assert self.mat.__class__.__name__ == 'ASDSDmat'
-        assert self.bc_mats == []
+        #assert self.bc_mats == []
 
     def solve(self, b, u, axis, lu):
         if u is not b:

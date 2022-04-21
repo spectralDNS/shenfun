@@ -52,8 +52,9 @@ def test_vector_laplace(space):
     dv = grad(div(u)) - curl(curl(u))
     u_hat = Function(V)
     u_hat[:] = np.random.random(u_hat.shape) + np.random.random(u_hat.shape)*1j
-    A0 = inner(v, du)
-    A1 = inner(v, dv)
+    g = T.coors.sg
+    A0 = inner(v*g, du)
+    A1 = inner(v*g, dv)
     a0 = BlockMatrix(A0)
     a1 = BlockMatrix(A1)
     b0 = Function(V)

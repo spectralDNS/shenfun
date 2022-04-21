@@ -79,12 +79,10 @@ import functools
 import numpy as np
 import sympy as sp
 from shenfun.optimization import cython, numba
-from shenfun.matrixbase import SpectralMatrix, SparseMatrix, extract_diagonal_matrix
+from shenfun.matrixbase import SpectralMatrix
 from shenfun.la import TDMA as generic_TDMA
 from shenfun.la import PDMA as generic_PDMA
 from shenfun.la import TwoDMA, FDMA
-from shenfun.utilities import split
-from shenfun import config
 from .la import ADDSolver, ANNSolver
 from . import bases
 
@@ -147,12 +145,16 @@ class BTTmat(SpectralMatrix):
     and trial spaces have dimensions of M and N, respectively.
 
     """
-    def __init__(self, test, trial, scale=1, measure=1):
+    def __init__(self, test, trial, scale=1, measure=1, assemble=None):
         assert isinstance(test[0], T)
         assert isinstance(trial[0], T)
-        ck = get_ck(test[0].N, trial[0].N, test[0].quad)
-        SpectralMatrix.__init__(self, {0: np.pi/2*ck}, test, trial, scale=scale, measure=measure)
+        SpectralMatrix.__init__(self, test, trial, scale=scale, measure=measure, assemble=assemble)
         self._matvec_methods += ['self']
+
+    def assemble(self):
+        test, trial = self.testfunction, self.trialfunction
+        ck = get_ck(test[0].N, trial[0].N, test[0].quad)
+        return {0: np.pi/2*ck}
 
     def matvec(self, v, c, format='csr', axis=0):
         c.fill(0)
@@ -185,15 +187,19 @@ class BSDSDmat(SpectralMatrix):
     and trial spaces have dimensions of M and N, respectively.
 
     """
-    def __init__(self, test, trial, scale=1, measure=1):
+    def __init__(self, test, trial, scale=1, measure=1, assemble=None):
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], SD)
+        SpectralMatrix.__init__(self, test, trial, scale=scale, measure=measure, assemble=assemble)
+        self._matvec_methods += ['cython', 'self']
+
+    def assemble(self):
+        test, trial = self.testfunction, self.trialfunction
         ck = get_ck(test[0].N, trial[0].N, test[0].quad)
         d = {0: np.pi/2*(ck[:-2]+ck[2:]),
              2: np.array([-np.pi/2])}
         d[-2] = d[2].copy()
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
-        self._matvec_methods += ['cython', 'self']
+        return d
 
     def get_solver(self):
         return generic_TDMA
@@ -237,33 +243,6 @@ class BSDSDmat(SpectralMatrix):
 
         return c
 
-class BSDSDmatW(SpectralMatrix):
-    r"""Mass matrix :math:`B=(b_{kj}) \in \mathbb{R}^{M \times N}`, where
-
-    .. math::
-
-        b_{kj}=(\phi_j, \phi_k (1-x^2))_w,
-
-    where :math:`\phi_j \in` :class:`.chebyshev.bases.ShenDirichlet`, and test
-    and trial spaces have dimensions of M and N, respectively.
-
-    """
-    def __init__(self, test, trial, scale=1, measure=1):
-        assert isinstance(test[0], SD)
-        assert isinstance(trial[0], SD)
-        ck = get_ck(test[0].N, trial[0].N, test[0].quad)
-        dk = np.ones(test[0].N)
-        dk[:2] = 0
-        d = {0: np.pi*((ck[:-2]+1)**2+1+dk[:-2])/8,
-             2: -np.pi*(ck[:-4]+3)/8,
-             4: np.pi/8}
-        d[-2] = d[2].copy()
-        d[-4] = d[4]
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
-
-    def get_solver(self):
-        return generic_PDMA
-
 class BSNSDmat(SpectralMatrix):
     r"""Mass matrix :math:`B=(b_{kj}) \in \mathbb{R}^{M \times N}`, where
 
@@ -276,7 +255,8 @@ class BSNSDmat(SpectralMatrix):
     trial spaces have dimensions of M and N, respectively.
 
     """
-    def __init__(self, test, trial, scale=1, measure=1):
+    def assemble(self):
+        test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], SN)
         assert isinstance(trial[0], SD)
         N = test[0].N
@@ -288,8 +268,7 @@ class BSNSDmat(SpectralMatrix):
               0: np.pi/2.*(ck[:-2]+ck[2:]*(k/(k+2))**2)}
         d2 = -np.pi/2*(k/(k+2))**2
         d[2] = d2[:dmax(N-2, M-2, 2)].copy()
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
-
+        return d
 
 class BSDSNmat(SpectralMatrix):
     r"""Mass matrix :math:`B=(b_{kj}) \in \mathbb{R}^{M \times N}`, where
@@ -303,9 +282,14 @@ class BSDSNmat(SpectralMatrix):
     trial spaces have dimensions of M and N, respectively.
 
     """
-    def __init__(self, test, trial, scale=1, measure=1):
+    def __init__(self, test, trial, scale=1, measure=1, assemble=None):
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], SN)
+        SpectralMatrix.__init__(self, test, trial, scale=scale, measure=measure, assemble=assemble)
+        self._matvec_methods += ['cython']
+
+    def assemble(self):
+        test, trial = self.testfunction, self.trialfunction
         N = test[0].N
         M = trial[0].N
         Q = min(N, M)
@@ -314,8 +298,7 @@ class BSDSNmat(SpectralMatrix):
         d = {0:  np.pi/2.*(ck[:-2]+ck[2:]*(k/(k+2))**2),
              2: -np.pi/2}
         d[-2] = (-np.pi/2*(k/(k+2))**2)[:dmax(N-2, M-2, -2)]
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
-        self._matvec_methods += ['cython']
+        return d
 
     def matvec(self, v, c, format='cython', axis=0):
         c.fill(0)
@@ -348,49 +331,15 @@ class BLDLDmat(SpectralMatrix):
     and test and trial spaces have dimensions of M and N, respectively.
 
     """
-    def __init__(self, test, trial, scale=1, measure=1):
+    def assemble(self):
+        test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], LD)
         assert isinstance(trial[0], LD)
         ck = get_ck(test[0].N, trial[0].N, test[0].quad)
         d = {0: np.pi/2*(ck[:-1]+ck[1:]),
              1: np.array([np.pi/2]),
             -1: np.array([np.pi/2])}
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
-
-class BSNTmat(SpectralMatrix):
-    r"""Mass matrix :math:`B=(b_{kj}) \in \mathbb{R}^{M \times N}`, where
-
-    .. math::
-
-        b_{kj}=(T_j, \phi_k)_w,
-
-    where the test function :math:`\phi_k \in` :class:`.chebyshev.bases.ShenNeumann`, the
-    trial :math:`T_j \in` :class:`.chebyshev.bases.Orthogonal`, and test and
-    trial spaces have dimensions of M and N, respectively.
-
-    """
-    def __init__(self, test, trial, scale=1, measure=1):
-        assert isinstance(test[0], SN)
-        assert isinstance(trial[0], T)
-        SpectralMatrix.__init__(self, {}, test, trial, scale=scale, measure=measure)
-
-
-class BSNSBmat(SpectralMatrix):
-    r"""Mass matrix :math:`B=(b_{kj}) \in \mathbb{R}^{M \times N}`, where
-
-    .. math::
-
-        b_{kj}=(\psi_j, \phi_k)_w,
-
-    where the test function :math:`\phi_k \in` :class:`.chebyshev.bases.ShenNeumann`, the
-    trial :math:`\psi_j \in` :class:`.chebyshev.bases.ShenBiharmonic`, and test and
-    trial spaces have dimensions of M and N, respectively.
-
-    """
-    def __init__(self, test, trial, scale=1, measure=1):
-        assert isinstance(test[0], SN)
-        assert isinstance(trial[0], SB)
-        SpectralMatrix.__init__(self, {}, test, trial, scale=scale, measure=measure)
+        return d
 
 class BSNSNmat(SpectralMatrix):
     r"""Mass matrix :math:`B=(b_{kj}) \in \mathbb{R}^{M \times N}`, where
@@ -403,7 +352,8 @@ class BSNSNmat(SpectralMatrix):
     trial spaces have dimensions of M and N, respectively.
 
     """
-    def __init__(self, test, trial, scale=1, measure=1):
+    def assemble(self):
+        test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], SN)
         assert isinstance(trial[0], SN)
         N = test[0].N
@@ -416,7 +366,7 @@ class BSNSNmat(SpectralMatrix):
         d[2] = -np.pi/2*(k[:dp]/(k[:dp]+2))**2
         dm = dmax(N-2, M-2, -2)
         d[-2] = -np.pi/2*(k[:dm]/(k[:dm]+2))**2
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
+        return d
 
     def get_solver(self):
         return generic_TDMA
@@ -456,7 +406,8 @@ class BSDTmat(SpectralMatrix):
     trial :math:`\psi_j \in` :class:`.chebyshev.bases.Orthogonal`, and test and
     trial spaces have dimensions of M and N, respectively.
     """
-    def __init__(self, test, trial, scale=1, measure=1):
+    def assemble(self):
+        test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], T)
         N = test[0].N-2
@@ -465,7 +416,7 @@ class BSDTmat(SpectralMatrix):
         ck = get_ck(test[0].N, trial[0].N, test[0].quad)
         d = {0: np.pi/2*ck[:Q],
              2: -np.pi/2*ck[2:(dmax(N, M, 2)+2)]}
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
+        return d
 
 
 class BTSDmat(SpectralMatrix):
@@ -479,7 +430,8 @@ class BTSDmat(SpectralMatrix):
     trial :math:`\psi_j \in` :class:`.chebyshev.bases.ShenDirichlet`, and test and
     trial spaces have dimensions of M and N, respectively.
     """
-    def __init__(self, test, trial, scale=1, measure=1):
+    def assemble(self):
+        test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], T)
         assert isinstance(trial[0], SD)
         N = test[0].N
@@ -491,7 +443,7 @@ class BTSDmat(SpectralMatrix):
         if test[0].quad == 'GL':
             d[-2] = -np.pi/2*np.ones(Q)
             d[-2][-1] *= 2
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
+        return d
 
 class BTSNmat(SpectralMatrix):
     r"""Mass matrix :math:`B=(b_{kj}) \in \mathbb{R}^{M \times N}`, where
@@ -504,7 +456,8 @@ class BTSNmat(SpectralMatrix):
     trial :math:`\psi_j \in` :class:`.chebyshev.bases.ShenNeumann`, and test and
     trial spaces have dimensions of M and N, respectively.
     """
-    def __init__(self, test, trial, scale=1, measure=1):
+    def assemble(self):
+        test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], T)
         assert isinstance(trial[0], SN)
         N = test[0].N
@@ -512,7 +465,7 @@ class BTSNmat(SpectralMatrix):
         k = np.arange(N, dtype=float)
         d = {-2: -np.pi/2*ck[2:]*((k[2:]-2)/k[2:])**2,
               0: np.pi/2*ck[:-2]}
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
+        return d
 
 class BSBSBmat(SpectralMatrix):
     r"""Mass matrix :math:`B=(b_{kj}) \in \mathbb{R}^{M \times N}`, where
@@ -524,7 +477,12 @@ class BSBSBmat(SpectralMatrix):
     where :math:`\phi_k \in` :class:`.chebyshev.bases.ShenBiharmonic`, and test and
     trial spaces have dimensions of M and N, respectively.
     """
-    def __init__(self, test, trial, scale=1, measure=1):
+    def __init__(self, test, trial, scale=1, measure=1, assemble=None):
+        SpectralMatrix.__init__(self, test, trial, scale=scale, measure=measure, assemble=assemble)
+        self._matvec_methods += ['cython', 'self']
+
+    def assemble(self):
+        test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], SB)
         assert isinstance(trial[0], SB)
         N = test[0].N
@@ -539,8 +497,7 @@ class BSBSBmat(SpectralMatrix):
         d[4] = d4[:dmax(N-4, M-4, 4)]
         d[-2] = d2[:dmax(N-4, M-4, -2)].copy()
         d[-4] = d4[:dmax(N-4, M-4, -4)].copy()
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
-        self._matvec_methods += ['cython', 'self']
+        return d
 
     def get_solver(self):
         return generic_PDMA
@@ -600,7 +557,12 @@ class BSBSDmat(SpectralMatrix):
     trial :math:`\psi_j \in` :class:`.chebyshev.bases.ShenDirichlet`, and test and
     trial spaces have dimensions of M and N, respectively.
     """
-    def __init__(self, test, trial, scale=1, measure=1):
+    def __init__(self, test, trial, scale=1, measure=1, assemble=None):
+        SpectralMatrix.__init__(self, test, trial, scale=scale, measure=measure, assemble=assemble)
+        self._matvec_methods += ['cython', 'self']
+
+    def assemble(self):
+        test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], SB)
         assert isinstance(trial[0], SD)
         N = test[0].N-4
@@ -614,9 +576,7 @@ class BSBSDmat(SpectralMatrix):
               0: (ck[:Q] + a)*np.pi/2,
               2: -(a[:min(Q, M-2)]+ck[4:min(Q+4, M+2)]*b[:min(Q, M-2)])*np.pi/2,
               4: b[:min(Q, M-4)]*ck[4:min(Q+4, M)]*np.pi/2}
-
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
-        self._matvec_methods += ['cython', 'self']
+        return d
 
     def matvec(self, v, c, format='cython', axis=0):
         c.fill(0)
@@ -662,7 +622,8 @@ class BSBTmat(SpectralMatrix):
     trial :math:`T_j \in` :class:`.chebyshev.bases.Orthogonal`, and test and
     trial spaces have dimensions of M and N, respectively.
     """
-    def __init__(self, test, trial, scale=1, measure=1):
+    def assemble(self):
+        test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], SB)
         assert isinstance(trial[0], T)
         N, M = test[0].N-4, trial[0].N
@@ -672,7 +633,7 @@ class BSBTmat(SpectralMatrix):
         d = {0: ck[:Q]*np.pi/2,
              2: -np.pi*(k[:min(Q, M-2)]+2)/(k[:min(Q, M-2)]+3),
              4: 0.5*np.pi*ck[4:min(Q+4, M)]*(k[:min(Q, M-4)]+1)/(k[:min(Q, M-4)]+3)}
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
+        return d
 
 class BCNCNmat(SpectralMatrix):
     r"""Mass matrix :math:`B=(b_{kj}) \in \mathbb{R}^{M \times N}`, where
@@ -684,7 +645,8 @@ class BCNCNmat(SpectralMatrix):
     where :math:`\phi_k \in` :class:`.chebyshev.bases.CombinedShenNeumann`, and test and
     trial spaces have dimensions of M and N, respectively.
     """
-    def __init__(self, test, trial, scale=1, measure=1):
+    def assemble(self):
+        test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], CN)
         assert isinstance(trial[0], CN)
         assert trial[0].quad == 'GC', 'Not implemented for GL'
@@ -705,8 +667,7 @@ class BCNCNmat(SpectralMatrix):
             d[4] = np.pi/2*dk[2:-4]/k[2:-4]**4
             d[-4] = d[4].copy()
             d[-2] = d[2].copy()
-
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
+        return d
 
     def get_solver(self):
         return generic_PDMA
@@ -723,7 +684,8 @@ class BSDHHmat(SpectralMatrix):
     trial spaces have dimensions of M and N, respectively.
 
     """
-    def __init__(self, test, trial, scale=1, measure=1):
+    def assemble(self):
+        test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], HH)
         ck = get_ck(test[0].N, trial[0].N, test[0].quad)
@@ -740,8 +702,7 @@ class BSDHHmat(SpectralMatrix):
             d[0] *= 1/(k[1:-1]*k[2:])
             d[2] *= 1/((k[:-4]+3)*(k[:-4]+4))
             d[4] *= 1/((k[:-6]+5)*(k[:-6]+6))
-
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
+        return d
 
     def get_solver(self):
         return FDMA
@@ -758,15 +719,19 @@ class CSDSNmat(SpectralMatrix):
     trial spaces have dimensions of M and N, respectively.
 
     """
-    def __init__(self, test, trial, scale=1, measure=1):
+    def __init__(self, test, trial, scale=1, measure=1, assemble=None):
+        SpectralMatrix.__init__(self, test, trial, scale=scale, measure=measure, assemble=assemble)
+        self._matvec_methods += ['cython']
+
+    def assemble(self):
+        test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], SN)
         N = test[0].N
         k = np.arange(N-2, dtype=float)
         d = {-1: -((k[1:]-1)/(k[1:]+1))**2*(k[1:]+1)*np.pi,
               1: (k[:-1]+1)*np.pi}
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
-        self._matvec_methods += ['cython']
+        return d
 
     def matvec(self, v, c, format='cython', axis=0):
         c.fill(0)
@@ -796,15 +761,19 @@ class CSDSDmat(SpectralMatrix):
     where :math:`\phi_k \in` :class:`.chebyshev.bases.ShenDirichlet`, and test and
     trial spaces have dimensions of M and N, respectively.
     """
-    def __init__(self, test, trial, scale=1, measure=1):
+    def __init__(self, test, trial, scale=1, measure=1, assemble=None):
+        SpectralMatrix.__init__(self, test, trial, scale=scale, measure=measure, assemble=assemble)
+        self._matvec_methods += ['cython', 'self']
+
+    def assemble(self):
+        test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], SD)
         N = test[0].N
         k = np.arange(N, dtype=float)
         d = {-1: -(k[1:N-2]+1)*np.pi,
               1: (k[:(N-3)]+1)*np.pi}
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
-        self._matvec_methods += ['cython', 'self']
+        return d
 
     def matvec(self, v, c, format='cython', axis=0):
         N = self.shape[0]
@@ -850,7 +819,8 @@ class CSNSDmat(SpectralMatrix):
     trial spaces have dimensions of M and N, respectively.
 
     """
-    def __init__(self, test, trial, scale=1, measure=1):
+    def assemble(self):
+        test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], SN)
         assert isinstance(trial[0], SD)
         N = test[0].N
@@ -868,8 +838,7 @@ class CSNSDmat(SpectralMatrix):
         #d = dict.fromkeys(np.arange(-1, N-1, 2), _getkey)
         #d[-1] = -(k[1:]+1)*np.pi
         #d[1] = -(2-k[:-1]**2/(k[:-1]+2)**2*(k[:-1]+3))*np.pi
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
-
+        return d
 
 class CTSDmat(SpectralMatrix):
     r"""Derivative matrix :math:`C=(c_{kj}) \in \mathbb{R}^{M \times N}`, where
@@ -882,14 +851,15 @@ class CTSDmat(SpectralMatrix):
     trial :math:`\psi_j \in` :class:`.chebyshev.bases.ShenDirichlet`, and test and
     trial spaces have dimensions of M and N, respectively.
     """
-    def __init__(self, test, trial, scale=1, measure=1):
+    def assemble(self):
+        test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], T)
         assert isinstance(trial[0], SD)
         N = test[0].N
         k = np.arange(N, dtype=float)
         d = dict.fromkeys(np.arange(-1, N-2, 2), -2*np.pi)
         d[-1] = -(k[1:N-1]+1)*np.pi
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
+        return d
 
 
 class ASBTmat(SpectralMatrix):
@@ -904,14 +874,15 @@ class ASBTmat(SpectralMatrix):
     trial spaces have dimensions of M and N, respectively.
 
     """
-    def __init__(self, test, trial, scale=1, measure=1):
+    def assemble(self):
+        test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], SB)
         assert isinstance(trial[0], T)
         N, M = test[0].N-4, trial[0].N
         Q = min(N, M)
         k = np.arange(Q, dtype=float)
         d = {2: 2*np.pi*(k[:min(Q, M-2)]+2)*(k[:min(Q, M-2)]+1)}
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
+        return d
 
 
 class CSDTmat(SpectralMatrix):
@@ -925,13 +896,14 @@ class CSDTmat(SpectralMatrix):
     trial :math:`T_j \in` :class:`.chebyshev.bases.Orthogonal`, and test and
     trial spaces have dimensions of M and N, respectively.
     """
-    def __init__(self, test, trial, scale=1, measure=1):
+    def assemble(self):
+        test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], T)
         N = test[0].N
         k = np.arange(N, dtype=float)
         d = {1: np.pi*(k[:N-2]+1)}
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
+        return d
 
 class CTTmat(SpectralMatrix):
     r"""Derivative matrix :math:`C=(c_{kj}) \in \mathbb{R}^{M \times N}`, where
@@ -943,17 +915,21 @@ class CTTmat(SpectralMatrix):
     where :math:`T_j \in` :class:`.chebyshev.bases.Orthogonal`, and test and
     trial spaces have dimensions of M and N, respectively.
     """
-    def __init__(self, test, trial, scale=1, measure=1):
+    def __init__(self, test, trial, scale=1, measure=1, assemble=None):
+        SpectralMatrix.__init__(self, test, trial, scale=scale, measure=measure, assemble=assemble)
+        self._matvec_methods += ['cython']
+
+    def assemble(self):
+        test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], T)
         assert isinstance(trial[0], T)
-        N = test[0].N
-        k = np.arange(N, dtype=float)
+        M, N = test[0].N, trial[0].N
+        k = np.arange(min(M, N), dtype=float)
         self._keyscale = 1
         def _getkey(i):
             return np.pi*self._keyscale*k[i:]
         d = dict.fromkeys(np.arange(1, N, 2), _getkey)
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
-        self._matvec_methods += ['cython']
+        return d
 
     def matvec(self, v, c, format='cython', axis=0):
         c.fill(0)
@@ -983,7 +959,12 @@ class CSBSDmat(SpectralMatrix):
     trial :math:`\psi_j \in` :class:`.chebyshev.bases.ShenDirichlet`, and test and
     trial spaces have dimensions of M and N, respectively.
     """
-    def __init__(self, test, trial, scale=1, measure=1):
+    def __init__(self, test, trial, scale=1, measure=1, assemble=None):
+        SpectralMatrix.__init__(self, test, trial, scale=scale, measure=measure, assemble=assemble)
+        self._matvec_methods += ['cython', 'self']
+
+    def assemble(self):
+        test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], SB)
         assert isinstance(trial[0], SD)
         N = test[0].N
@@ -991,8 +972,7 @@ class CSBSDmat(SpectralMatrix):
         d = {-1: -(k[1:N-4]+1)*np.pi,
               1: 2*(k[:N-4]+1)*np.pi,
               3: -(k[:N-5]+1)*np.pi}
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
-        self._matvec_methods += ['cython', 'self']
+        return d
 
     def matvec(self, v, c, format='cython', axis=0):
         N, M = self.shape
@@ -1035,7 +1015,12 @@ class CSDSBmat(SpectralMatrix):
     trial :math:`\psi_j \in` :class:`.chebyshev.bases.ShenBiharmonic`, and test and
     trial spaces have dimensions of M and N, respectively.
     """
-    def __init__(self, test, trial, scale=1, measure=1):
+    def __init__(self, test, trial, scale=1, measure=1, assemble=None):
+        SpectralMatrix.__init__(self, test, trial, scale=scale, measure=measure, assemble=assemble)
+        self._matvec_methods += ['cython', 'self']
+
+    def assemble(self):
+        test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], SB)
         N = test[0].N
@@ -1043,8 +1028,7 @@ class CSDSBmat(SpectralMatrix):
         d = {-3: (k[3:-2]-2)*(k[3:-2]+1)/k[3:-2]*np.pi,
              -1: -2*(k[1:-3]+1)**2/(k[1:-3]+2)*np.pi,
               1: (k[:-5]+1)*np.pi}
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
-        self._matvec_methods += ['cython', 'self']
+        return d
 
     def matvec(self, v, c, format='cython', axis=0):
         N, M = self.shape
@@ -1089,7 +1073,12 @@ class ASBSBmat(SpectralMatrix):
     where :math:`\phi_k \in` :class:`.chebyshev.bases.ShenBiharmonic`, and test and
     trial spaces have dimensions of M and N, respectively.
     """
-    def __init__(self, test, trial, scale=1, measure=1):
+    def __init__(self, test, trial, scale=1, measure=1, assemble=None):
+        SpectralMatrix.__init__(self, test, trial, scale=scale, measure=measure, assemble=assemble)
+        self._matvec_methods += ['cython', 'self']
+
+    def assemble(self):
+        test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], SB)
         assert isinstance(trial[0], SB)
         N = test[0].N
@@ -1097,8 +1086,7 @@ class ASBSBmat(SpectralMatrix):
         d = {-2: 2*(k[2:]-1)*(k[2:]+2)*np.pi,
               0: -4*((k+1)*(k+2)**2)/(k+3)*np.pi,
               2: 2*(k[:-2]+1)*(k[:-2]+2)*np.pi}
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
-        self._matvec_methods += ['cython', 'self']
+        return d
 
     def matvec(self, v, c, format='cython', axis=0):
         N = self.shape[0]
@@ -1143,7 +1131,12 @@ class ASDSDmat(SpectralMatrix):
     where :math:`\phi_k \in` :class:`.chebyshev.bases.ShenDirichlet`, and test and
     trial spaces have dimensions of M and N, respectively.
     """
-    def __init__(self, test, trial, scale=1, measure=1):
+    def __init__(self, test, trial, scale=1, measure=1, assemble=None):
+        SpectralMatrix.__init__(self, test, trial, scale=scale, measure=measure, assemble=assemble)
+        self._matvec_methods += ['cython']
+
+    def assemble(self):
+        test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], SD)
         N = test[0].N
@@ -1160,8 +1153,7 @@ class ASDSDmat(SpectralMatrix):
             return -self._keyscale*4*np.pi*(k[:-(i+2)]+1)
 
         d = dict.fromkeys(np.arange(0, N-2, 2), _getkey)
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
-        self._matvec_methods += ['cython']
+        return d
 
     def get_solver(self):
         return ADDSolver
@@ -1195,7 +1187,8 @@ class ASDSDmatW(SpectralMatrix):
     trial spaces have dimensions of M and N, respectively.
 
     """
-    def __init__(self, test, trial, scale=1, measure=1):
+    def assemble(self):
+        test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], SD)
         N = test[0].N
@@ -1203,7 +1196,7 @@ class ASDSDmatW(SpectralMatrix):
         d = {0: -np.pi/2*(2*k[:-2]*k[2:]+6),
              2: np.pi/2*(k[:-4]+2)*(k[:-4]+3),
              -2: np.pi/2*k[2:-2]*(k[2:-2]-1)}
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
+        return d
 
 
 class ASNSNmat(SpectralMatrix):
@@ -1216,7 +1209,12 @@ class ASNSNmat(SpectralMatrix):
     where :math:`\phi_k \in` :class:`.chebyshev.bases.ShenNeumann`, and test and
     trial spaces have dimensions of M and N, respectively.
     """
-    def __init__(self, test, trial, scale=1, measure=1):
+    def __init__(self, test, trial, scale=1, measure=1, assemble=None):
+        SpectralMatrix.__init__(self, test, trial, scale=scale, measure=measure, assemble=assemble)
+        self._matvec_methods += ['numba']
+
+    def assemble(self):
+        test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], SN)
         assert isinstance(trial[0], SN)
         N = test[0].N
@@ -1227,8 +1225,7 @@ class ASNSNmat(SpectralMatrix):
                 return -2*np.pi*k**2*(k+1)/(k+2)*self._keyscale
             return -4*np.pi*(k[:-i]+i)**2*(k[:-i]+1)/(k[:-i]+2)**2*self._keyscale
         d = dict.fromkeys(np.arange(0, N-2, 2), _getkey)
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
-        self._matvec_methods += ['numba']
+        return d
 
     def get_solver(self):
         return ANNSolver
@@ -1284,7 +1281,8 @@ class ASBSDmat(SpectralMatrix):
     the trial function :math:`\psi_j \in` :class:`.chebyshev.bases.ShenDirichlet`, and test and
     trial spaces have dimensions of M and N, respectively.
     """
-    def __init__(self, test, trial, scale=1, measure=1):
+    def assemble(self):
+        test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], SB)
         assert isinstance(trial[0], SD)
         N = test[0].N-4
@@ -1293,7 +1291,7 @@ class ASBSDmat(SpectralMatrix):
         k = np.arange(Q, dtype=float)
         d = {0: -2*(k+1)*(k+2)*np.pi,
              2: 2*(k[:min(Q, M-2)]+1)*(k[:min(Q, M-2)]+2)*np.pi}
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
+        return d
 
 
 class ATTmat(SpectralMatrix):
@@ -1306,17 +1304,21 @@ class ATTmat(SpectralMatrix):
     where :math:`T_k \in` :class:`.chebyshev.bases.Orthogonal`, and test and
     trial spaces have dimensions of M and N, respectively.
     """
-    def __init__(self, test, trial, scale=1, measure=1):
+    def __init__(self, test, trial, scale=1, measure=1, assemble=None):
+        SpectralMatrix.__init__(self, test, trial, scale=scale, measure=measure, assemble=assemble)
+        self._matvec_methods += ['cython']
+
+    def assemble(self):
+        test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], T)
         assert isinstance(trial[0], T)
-        N = test[0].N
-        k = np.arange(N, dtype=float)
+        M, N = test[0].N, trial[0].N
+        k = np.arange(min(M, N), dtype=float)
         self._keyscale = 1
         def _getkey(j):
             return self._keyscale*k[j:]*(k[j:]**2-k[:-j]**2)*np.pi/2
         d = dict.fromkeys(np.arange(2, N, 2), _getkey)
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
-        self._matvec_methods += ['cython']
+        return d
 
     def matvec(self, v, c, format='cython', axis=0):
         c.fill(0)
@@ -1345,7 +1347,8 @@ class ATSDmat(SpectralMatrix):
     the trial function :math:`\psi_j \in` :class:`.chebyshev.bases.ShenDirichlet`, and test and
     trial spaces have dimensions of M and N, respectively.
     """
-    def __init__(self, test, trial, scale=1, measure=1):
+    def assemble(self):
+        test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], T)
         assert isinstance(trial[0], SD)
         N = test[0].N
@@ -1357,7 +1360,7 @@ class ATSDmat(SpectralMatrix):
             return (k[j:-2]*(k[j:-2]**2-k[:-(j+2)]**2) -
                     k[j+2:]*(k[j+2:]**2-k[:-(j+2)]**2))*np.pi/2.*self._keyscale
         d = dict.fromkeys(np.arange(0, N-2, 2), _getkey)
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
+        return d
 
 class ATSNmat(SpectralMatrix):
     r"""Stiffness matrix :math:`A=(a_{kj}) \in \mathbb{R}^{M \times N}`, where
@@ -1371,7 +1374,8 @@ class ATSNmat(SpectralMatrix):
     trial spaces have dimensions of M and N, respectively.
 
     """
-    def __init__(self, test, trial, scale=1, measure=1):
+    def assemble(self):
+        test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], T)
         assert isinstance(trial[0], SN)
         N = test[0].N
@@ -1382,7 +1386,7 @@ class ATSNmat(SpectralMatrix):
                 return -k[:-2]**2/(k[:-2]+2)*((k[:-2]+2)**2-k[:-2]**2)*np.pi/2.*self._keyscale
             return (k[j:-2]*(k[j:-2]**2-k[:-(j+2)]**2) - k[j:-2]**2/(k[j:-2]+2)*((k[j:-2]+2)**2-k[:-(j+2)]**2))*np.pi/2.*self._keyscale
         d = dict.fromkeys(np.arange(0, N-2, 2), _getkey)
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
+        return d
 
 class ACNCNmat(SpectralMatrix):
     r"""Stiffness matrix :math:`A=(a_{kj}) \in \mathbb{R}^{M \times N}`, where
@@ -1394,7 +1398,8 @@ class ACNCNmat(SpectralMatrix):
     where :math:`\phi_k \in` :class:`.chebyshev.bases.CombinedShenNeumann`, and test and
     trial spaces have dimensions of M and N, respectively.
     """
-    def __init__(self, test, trial, scale=1, measure=1):
+    def assemble(self):
+        test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], CN)
         assert isinstance(trial[0], CN)
         N = test[0].N
@@ -1407,7 +1412,7 @@ class ACNCNmat(SpectralMatrix):
         d[0][0] = 0
         d[-2][0] = 0
         d[2][0] = -np.pi
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
+        return d
 
     def get_solver(self):
         return generic_TDMA
@@ -1424,7 +1429,8 @@ class ASDHHmat(SpectralMatrix):
     the trial function :math:`\psi_j \in` :class:`.chebyshev.bases.Heinrichs`, and test and
     trial spaces have dimensions of M and N, respectively.
     """
-    def __init__(self, test, trial, scale=1, measure=1):
+    def assemble(self):
+        test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], HH)
         N = test[0].N
@@ -1437,8 +1443,7 @@ class ASDHHmat(SpectralMatrix):
         else:
             d = {0: -np.pi/2*ck[:-2]*k[2:]*k[1:-1],
                  2: np.pi/2*k[:-4]*k[1:-3]}
-
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
+        return d
 
     def get_solver(self):
         return TwoDMA
@@ -1453,7 +1458,8 @@ class AHHHHmat(SpectralMatrix):
     where :math:`\phi_k \in` :class:`.chebyshev.bases.Heinrichs`, and test and
     trial spaces have dimensions of M and N, respectively.
     """
-    def __init__(self, test, trial, scale=1, measure=1):
+    def assemble(self):
+        test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], HH)
         assert isinstance(trial[0], HH)
         assert test[0].is_scaled() == trial[0].is_scaled()
@@ -1469,8 +1475,7 @@ class AHHHHmat(SpectralMatrix):
             d[0] *= 1/((k+2)**2*(k+1)**2)
             d[2] *= 1/((k[:-2]+1)*(k[:-2]+2)*(k[:-2]+3)*(k[:-2]+4))
             d[-2]*= 1/(k[1:-1]*k[2:]*(k[2:]+1)*(k[2:]+2))
-
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
+        return d
 
 class BHHHHmat(SpectralMatrix):
     r"""Mass matrix :math:`B=(b_{kj}) \in \mathbb{R}^{M \times N}`, where
@@ -1483,7 +1488,8 @@ class BHHHHmat(SpectralMatrix):
     trial spaces have dimensions of M and N, respectively.
 
     """
-    def __init__(self, test, trial, scale=1, measure=1):
+    def assemble(self):
+        test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], HH)
         assert isinstance(trial[0], HH)
         ck = get_ck(test[0].N, trial[0].N, test[0].quad)
@@ -1500,7 +1506,7 @@ class BHHHHmat(SpectralMatrix):
             d[4] *= 1/((k[:-4]+1)*(k[:-4]+2)*(k[:-4]+5)*(k[:-4]+6))
         d[-2] = d[2].copy()
         d[-4] = d[4].copy()
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
+        return d
 
     def get_solver(self):
         return generic_PDMA
@@ -1517,7 +1523,8 @@ class BSDMNmat(SpectralMatrix):
     trial spaces have dimensions of M and N, respectively.
 
     """
-    def __init__(self, test, trial, scale=1, measure=1):
+    def assemble(self):
+        test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], MN)
         N = test[0].N
@@ -1536,7 +1543,7 @@ class BSDMNmat(SpectralMatrix):
         d[-2][0] = 0
         d[0][0] = np.pi
         d[2][0] = -np.pi/6
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
+        return d
 
 class ASDMNmat(SpectralMatrix):
     r"""Stiffness matrix :math:`A=(a_{kj}) \in \mathbb{R}^{M \times N}`, where
@@ -1549,7 +1556,8 @@ class ASDMNmat(SpectralMatrix):
     the trial function :math:`\psi_j \in` :class:`.chebyshev.bases.MikNeumann`, and test and
     trial spaces have dimensions of M and N, respectively.
     """
-    def __init__(self, test, trial, scale=1, measure=1):
+    def assemble(self):
+        test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], MN)
         N = test[0].N
@@ -1557,7 +1565,7 @@ class ASDMNmat(SpectralMatrix):
         d = {0: -2*np.pi*np.ones(N-2),
              2: 2*np.pi*k[1:-3]/k[3:-1]}
         d[0][0] = 0
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
+        return d
 
     def get_solver(self):
         return TwoDMA
@@ -1574,7 +1582,8 @@ class ASNCNmat(SpectralMatrix):
     trial spaces have dimensions of M and N, respectively.
 
     """
-    def __init__(self, test, trial, scale=1, measure=1):
+    def assemble(self):
+        test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], SN)
         assert isinstance(trial[0], CN)
         N = test[0].N
@@ -1588,12 +1597,10 @@ class ASNCNmat(SpectralMatrix):
              2: 2*np.pi*k[:-4]*k[1:-3]/k[2:-2]**2}
         d[0][0] = 0
         d[2][0] = -np.pi
-
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
+        return d
 
     def get_solver(self):
         return TwoDMA
-
 
 
 class SSBSBmat(SpectralMatrix):
@@ -1607,7 +1614,12 @@ class SSBSBmat(SpectralMatrix):
     trial spaces have dimensions of M and N, respectively.
 
     """
-    def __init__(self, test, trial, scale=1, measure=1):
+    def __init__(self, test, trial, scale=1, measure=1, assemble=None):
+        SpectralMatrix.__init__(self, test, trial, scale=scale, measure=measure, assemble=assemble)
+        self._matvec_methods += ['cython']
+
+    def assemble(self):
+        test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], SB)
         assert isinstance(trial[0], SB)
         N = test[0].N
@@ -1621,8 +1633,7 @@ class SSBSBmat(SpectralMatrix):
                 i = 8*self._keyscale*(ki[:-j]+1)*(ki[:-j]+2)*(ki[:-j]*(ki[:-j]+4)+3*(ki[j:]+2)**2)
                 return np.array(i*np.pi/(k[j:]+3))
         d = dict.fromkeys(np.arange(0, N-4, 2), _getkey)
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
-        self._matvec_methods += ['cython']
+        return d
 
     def matvec(self, v, c, format='cython', axis=0):
         c.fill(0)
@@ -1641,180 +1652,10 @@ class SSBSBmat(SpectralMatrix):
 
         return c
 
-class BGBCGmat(SpectralMatrix):
-    r"""Mass matrix :math:`B=(b_{kj}) \in \mathbb{R}^{M \times N}`, where
-
-    .. math::
-
-        b_{kj}=(\psi_j, \phi_k)_w,
-
-    where the test function :math:`\phi_k` is a subclass of
-    :class:`.chebyshev.bases.CompositeBase`, the
-    trial :math:`\psi_j \in` :class:`.chebyshev.bases.BCGeneric`, and test and
-    trial spaces have dimensions of M and N, respectively.
-
-    """
-    def __init__(self, test, trial, scale=1, measure=1):
-        assert isinstance(test[0], CB)
-        assert isinstance(trial[0], BCG)
-        B = BTTmat((test[0].get_orthogonal(domain=(-1, 1)), 0), (trial[0].get_orthogonal(domain=(-1, 1)), 0))
-        K = test[0].stencil_matrix()
-        K.shape = (test[0].dim(), test[0].N)
-        S = extract_diagonal_matrix(trial[0].stencil_matrix().T).diags('csr')
-        q = sp.degree(measure)
-        if measure != 1:
-            from shenfun.jacobi.recursions import pmat, half, cn, a
-            assert sp.sympify(measure).is_polynomial()
-
-            A = sp.S(0)
-            for dv in split(measure, expand=True):
-                sc = dv['coeff']
-                msi = dv['x']
-                qi = sp.degree(msi)
-                Ax = pmat(a, qi, -half, -half, test[0].N, test[0].N, cn)
-                A = A + sc*Ax.diags('csr')
-            A = K.diags('csr') * A.T * B.diags('csr') * S
-        else:
-            A = K.diags('csr') * B.diags('csr') * S
-
-        M = B.shape[1]
-        K.shape = (test[0].N, test[0].N)
-        d = extract_diagonal_matrix(A, lowerband=M+q, upperband=M)
-        SpectralMatrix.__init__(self, dict(d), test, trial, scale=scale, measure=measure)
-
-class BGGmat(SpectralMatrix):
-    r"""Mass matrix :math:`B=(b_{kj}) \in \mathbb{R}^{M \times N}`, where
-
-    .. math::
-
-        b_{kj}=(\psi_j, x^q \phi_k)_w,
-
-    where the test and trial functions :math:`\phi_k` and :math:`\psi_j` are
-    any subclasses of :class:`.chebyshev.bases.CompositeBase` and :math:`q \ge 0`
-    is an integer. Test and trial spaces have dimensions of M and N, respectively.
-
-    Note
-    ----
-    Creating mass matrices this way is efficient in terms of memory since the
-    mass matrix of the orthogonal basis is diagonal.
-
-    """
-    def __init__(self, test, trial, scale=1, measure=1):
-        assert isinstance(test[0], CB)
-        assert isinstance(trial[0], CB)
-        B = BTTmat((test[0].get_orthogonal(domain=(-1, 1)), 0), (trial[0].get_orthogonal(domain=(-1, 1)), 0))
-        K = test[0].stencil_matrix()
-        K.shape = (test[0].dim(), test[0].N)
-        S = trial[0].stencil_matrix()
-        S.shape = (trial[0].dim(), trial[0].N)
-        q = sp.degree(measure)
-        if measure != 1:
-            from shenfun.jacobi.recursions import pmat, half, cn, a
-            assert sp.sympify(measure).is_polynomial()
-            A = sp.S(0)
-            for dv in split(measure, expand=True):
-                sc = dv['coeff']
-                msi = dv['x']
-                qi = sp.degree(msi)
-                Ax = pmat(a, qi, -half, -half, test[0].N, test[0].N, cn)
-                A = A + sc*Ax.diags('csr')
-            A = K.diags('csr') * B.diags('csr') * A * S.diags('csr').T
-
-        else:
-            A = K.diags('csr') * B.diags('csr') * S.diags('csr').T
-
-        K.shape = (test[0].N, test[0].N)
-        S.shape = (trial[0].N, trial[0].N)
-        ub = test[0].N-test[0].dim()+q
-        lb = trial[0].N-trial[0].dim()+q
-        d = extract_diagonal_matrix(A, lowerband=lb, upperband=ub)
-        SpectralMatrix.__init__(self, dict(d), test, trial, scale=scale, measure=measure)
-
-class PXGmat(SpectralMatrix):
-    r"""Matrix :math:`D=(d_{ij}) \in \mathbb{R}^{M \times N}`, where
-
-    .. math::
-
-        d_{ij}=(\partial^{k-l} \psi_j, x^q \phi_i)_w,
-
-    where the test function :math:`\phi_i` is in one of :class:`.chebyshev.bases.Phi1`,
-    :class:`.chebyshev.bases.Phi2`, :class:`.chebyshev.bases.Phi3`, :class:`.chebyshev.bases.Phi4`,
-    the trial :math:`\psi_j` any class in :class:`.chebyshev.bases`,
-    The three parameters k, q and l are integers, and test and trial spaces
-    have dimensions of M and N, respectively.
-
-    """
-    def __init__(self, test, trial, scale=1, measure=1):
-        assert isinstance(test[0], (P1, P2, P3, P4))
-        assert test[0].quad == 'GC'
-        from shenfun.jacobi.recursions import Lmat, half, cn
-        q = sp.degree(measure)
-        k = (test[0].N-test[0].dim())//2
-        l = k-trial[1]
-        if q > 0 and test[0].domain != test[0].reference_domain():
-            D = sp.S(0)
-            for dv in split(measure, expand=True):
-                sc = dv['coeff']
-                msi = dv['x']
-                qi = sp.degree(msi)
-                Ax = Lmat(k, qi, l, test[0].dim(), trial[0].N, -half, -half, cn)
-                D = D + sc*Ax
-        else:
-            D = Lmat(k, q, l, test[0].dim(), trial[0].N, -half, -half, cn)
-
-        if trial[0].is_orthogonal:
-            D = extract_diagonal_matrix(D, lowerband=q-k+l, upperband=q+k+l)
-        else:
-            K = trial[0].stencil_matrix()
-            K.shape = (trial[0].dim(), trial[0].N)
-            keys = np.sort(np.array(list(K.keys())))
-            lb, ub = -keys[0], keys[-1]
-            D = extract_diagonal_matrix(D*K.diags('csr').T, lowerband=q-k+l+ub, upperband=q+k+l+lb)
-            K.shape = (trial[0].N, trial[0].N)
-        SpectralMatrix.__init__(self, dict(D), test, trial, scale=scale, measure=measure)
-
-class PXBCGmat(SpectralMatrix):
-    r"""Matrix :math:`D=(d_{ij}) \in \mathbb{R}^{M \times N}`, where
-
-    .. math::
-
-        d_{ij}=(\partial^{k-l}\psi_j, x^q \phi_i)_w,
-
-    where the test function :math:`\phi_i` is in one of :class:`.chebyshev.bases.Phi1`,
-    :class:`.chebyshev.bases.Phi2`, :class:`.chebyshev.bases.Phi3`, :class:`.chebyshev.bases.Phi4`,
-    trial :math:`\psi_j \in` :class:`.chebyshev.bases.BCGeneric`.
-    The three parameters k, q, l are integers and test and trial spaces have
-    dimensions of M and N, respectively.
-
-    """
-    def __init__(self, test, trial, scale=1, measure=1):
-        assert isinstance(test[0], (P1, P2, P3, P4))
-        assert isinstance(trial[0], BCG)
-        from shenfun.jacobi.recursions import Lmat, half, cn
-        M = test[0].dim()
-        N = trial[0].dim_ortho
-        q = sp.degree(measure)
-        k = (test[0].N-test[0].dim())//2
-        l = k-trial[1]
-        if q > 0 and test[0].domain != test[0].reference_domain():
-            D = sp.S(0)
-            for dv in split(measure, expand=True):
-                sc = dv['coeff']
-                msi = dv['x']
-                qi = sp.degree(msi)
-                Ax = Lmat(k, qi, l, M, N, -half, -half, cn)
-                D = D + sc*Ax
-        else:
-            D = Lmat(k, q, l, M, N, -half, -half, cn)
-
-        K = trial[0].stencil_matrix()
-        D = extract_diagonal_matrix(D*extract_diagonal_matrix(K).diags('csr').T, lowerband=N+q, upperband=N)
-        SpectralMatrix.__init__(self, dict(D), test, trial, scale=scale, measure=measure)
-
 
 class _Chebmatrix(SpectralMatrix):
-    def __init__(self, test, trial, scale=1, measure=1):
-        SpectralMatrix.__init__(self, {}, test, trial, scale=scale, measure=measure)
+    def __init__(self, test, trial, scale=1, measure=1, assemble=None):
+        SpectralMatrix.__init__(self, test, trial, scale=scale, measure=measure, assemble=assemble)
 
 
 class _ChebMatDict(dict):
@@ -1827,37 +1668,16 @@ class _ChebMatDict(dict):
 
     def __missing__(self, key):
         measure = 1 if len(key) == 2 else key[2]
-        if key[0][1]+key[1][1] == 0 and sp.sympify(measure).is_polynomial():
-            if key[1][0] == BCG:
-                c = functools.partial(BGBCGmat, measure=measure)
-            else:
-                c = functools.partial(BGGmat, measure=measure)
-        else:
-            c = functools.partial(_Chebmatrix, measure=measure)
+        c = functools.partial(_Chebmatrix, measure=measure)
         self[key] = c
         return c
 
     def __getitem__(self, key):
-        measure = 1 if len(key) == 2 else key[2]
-        if key[0][0] in (P1, P2, P3, P4):
-            if key[1][0] == BCG:
-                k = ('PX', 1)
-            else:
-                k = ('PX', 0)
-            if key[1][1] > int(key[0][0].short_name()[1]) or key[1][0] in (P1, P2, P3, P4):
-                # If the number of derivatives is larger than 1 for P1, 2 for P2 etc,
-                # then we need to use quadrature. But it should not be larger if you
-                # have designed the scheme appropriately, so perhaps we should throw
-                # a warning
-                k = key
-            matrix = functools.partial(dict.__getitem__(self, k),
-                                       measure=measure)
-        elif len(key) == 3:
+        if len(key) == 3:
             matrix = functools.partial(dict.__getitem__(self, key),
                                        measure=key[2])
         else:
             matrix = dict.__getitem__(self, key)
-        #assert key[0][1] == 0, 'Test cannot be differentiated (weighted space)'
         return matrix
 
 
@@ -1866,12 +1686,11 @@ class _ChebMatDict(dict):
 mat = _ChebMatDict({
     ((T,  0), (T , 0)): BTTmat,
     ((SD, 0), (SD, 0)): BSDSDmat,
-    ((SD, 0), (SD, 0), (1-x**2)): BSDSDmatW,
     ((SB, 0), (SB, 0)): BSBSBmat,
     ((SN, 0), (SN, 0)): BSNSNmat,
-    ((CN, 0), (CN, 0)): BCNCNmat,
-    ((SN, 0), (T , 0)): BSNTmat,
-    ((SN, 0), (SB, 0)): BSNSBmat,
+    #((CN, 0), (CN, 0)): BCNCNmat,
+    #((SN, 0), (T , 0)): BSNTmat,
+    #((SN, 0), (SB, 0)): BSNSBmat,
     ((SD, 0), (SN, 0)): BSDSNmat,
     ((SN, 0), (SD, 0)): BSNSDmat,
     ((LD, 0), (LD, 0)): BLDLDmat,
@@ -1894,7 +1713,6 @@ mat = _ChebMatDict({
     ((SD, 0), (MN, 0)): BSDMNmat,
     ((SD, 0), (MN, 2)): ASDMNmat,
     ((SN, 0), (CN, 2)): ASNCNmat,
-    ((SN, 0), (CN, 0)): BGGmat,
     ((SD, 0), (HH, 0)): BSDHHmat,
     ((SD, 0), (HH, 2)): ASDHHmat,
     ((SB, 0), (SB, 4)): SSBSBmat,
@@ -1907,18 +1725,6 @@ mat = _ChebMatDict({
     ((SN, 0), (SD, 1)): CSNSDmat,
     ((SD, 0), (SB, 1)): CSDSBmat,
     ((SD, 0), (T,  1)): CSDTmat,
-    ((SD, 0), (BCG, 0)): BGBCGmat,
-    ((HH, 0), (BCG, 0)): BGBCGmat,
-    ((SN, 0), (BCG, 0)): BGBCGmat,
-    ((SB, 0), (BCG, 0)): BGBCGmat,
-    ((CN, 0), (BCG, 0)): BGBCGmat,
-    ((MN, 0), (BCG, 0)): BGBCGmat,
-    ((UD, 0), (BCG, 0)): BGBCGmat,
-    ((LD, 0), (BCG, 0)): BGBCGmat,
-    ((DN, 0), (BCG, 0)): BGBCGmat,
-    ((ND, 0), (BCG, 0)): BGBCGmat,
-    ('PX', 0): PXGmat,
-    ('PX', 1): PXBCGmat,
     })
 
 #mat = _ChebMatDict({})

@@ -54,7 +54,7 @@ bcbases = (
 )
 
 cquads = ('GC', 'GL')
-cuquads = ('GC', 'GU')
+cuquads = ('GU', )
 uquads = ('QG',)
 lquads = ('LG', 'GL')
 lagquads = ('LG',)
@@ -125,28 +125,19 @@ def test_mat(key, mat, quad):
     test = key[0]
     trial = key[1]
     measure = 1
-    if len(key) == 4:
-        domain = key[2]
-        measure = key[3]
+    if len(key) == 3:
+        measure = key[2]
         if quad == 'GL':
             return
-        if not measure == 1:
-            # Way too time-consuming. Test when adding new matrices.
-            return
+        #if not measure == 1:
+        #    # Way too time-consuming. Test when adding new matrices.
+        #    return
 
     if test == 'PX':
-        if quad == 'GL':
-            return
-        module = import_module(mat.__module__)
-        test = ((module.P1, module.P2)[np.random.randint(0, 2)], 0)
-        trial = (module.UD, (0, 1)[np.random.randint(0, 2)])
-        measure = (1, x, x**2)[np.random.randint(0, 3)]
+        return
 
     t0 = test[0]
     t1 = trial[0]
-    if len(key) == 4:
-        t0 = functools.partial(t0, domain=domain)
-        t1 = functools.partial(t1, domain=domain)
 
     if trial[0] in bcbases:
         # Just use some random boundary condition
@@ -158,12 +149,14 @@ def test_mat(key, mat, quad):
         mat = mat(testfunction, trialfunction, measure=measure)
     except AssertionError: # In case something is not implemented
         return
-    shenfun.check_sanity(mat, testfunction, trialfunction, measure)
+    assemble = 'quadrature_vandermonde' if sp.degree(sp.sympify(measure)) < 2 else 'quadrature_fixed_resolution'
+    shenfun.check_sanity(mat, testfunction, trialfunction, measure, assemble=assemble)
     if test[0].family() == 'Legendre' and test[0].boundary_condition() == 'Dirichlet':
         testfunction = (test[0](N, quad=quad, scaled=True), test[1])
         trialfunction = (trial[0](N, quad=quad, scaled=True), trial[1])
         mat = mat(testfunction, trialfunction)
         shenfun.check_sanity(mat, testfunction, trialfunction, measure)
+
 
 @pytest.mark.parametrize('b0,b1', some_cbases2)
 @pytest.mark.parametrize('quad', cquads)
@@ -323,12 +316,6 @@ def test_imul(key, mat, quad):
             return
 
     if test == 'PX':
-        module = import_module(mat.__module__)
-        test = ((module.P1, module.P2)[np.random.randint(0, 2)], 0)
-        trial = (module.UD, (0, 1)[np.random.randint(0, 2)])
-        measure = (1, x, x**2)[np.random.randint(0, 3)]
-
-    if (trial[0] in lBasisLG+cBasisGC or test[0] in lBasisLG+cBasisGC)  and quad == 'GL':
         return
 
     t0 = test[0]
@@ -366,12 +353,6 @@ def test_mul(key, mat, quad):
             return
 
     if test == 'PX':
-        module = import_module(mat.__module__)
-        test = ((module.P1, module.P2)[np.random.randint(0, 2)], 0)
-        trial = (module.UD, (0, 1)[np.random.randint(0, 2)])
-        measure = (1, x, x**2)[np.random.randint(0, 3)]
-
-    if (trial[0] in lBasisLG+cBasisGC or test[0] in lBasisLG+cBasisGC)  and quad == 'GL':
         return
 
     t0 = test[0]
@@ -423,13 +404,8 @@ def test_rmul(key, mat, quad):
             return
 
     if test == 'PX':
-        module = import_module(mat.__module__)
-        test = ((module.P1, module.P2)[np.random.randint(0, 2)], 0)
-        trial = (module.UD, (0, 1)[np.random.randint(0, 2)])
-        measure = (1, x, x**2)[np.random.randint(0, 3)]
-
-    if (trial[0] in lBasisLG+cBasisGC or test[0] in lBasisLG+cBasisGC)  and quad == 'GL':
         return
+
     t0 = test[0]
     t1 = trial[0]
     if len(key) == 4:
@@ -462,12 +438,8 @@ def test_div(key, mat, quad):
         if quad == 'GL':
             return
     if test == 'PX':
-        module = import_module(mat.__module__)
-        test = ((module.P1, module.P2)[np.random.randint(0, 2)], 0)
-        trial = (module.UD, (0, 1)[np.random.randint(0, 2)])
-        measure = (1, x, x**2)[np.random.randint(0, 3)]
-    if (trial[0] in lBasisLG+cBasisGC or test[0] in lBasisLG+cBasisGC)  and quad == 'GL':
         return
+
     t0 = test[0]
     t1 = trial[0]
     if len(key) == 4:
@@ -517,12 +489,8 @@ def test_add(key, mat, quad):
         if quad == 'GL':
             return
     if test == 'PX':
-        module = import_module(mat.__module__)
-        test = ((module.P1, module.P2)[np.random.randint(0, 2)], 0)
-        trial = (module.UD, (0, 1)[np.random.randint(0, 2)])
-        measure = (1, x, x**2)[np.random.randint(0, 3)]
-    if (trial[0] in lBasisLG+cBasisGC or test[0] in lBasisLG+cBasisGC)  and quad == 'GL':
         return
+
     t0 = test[0]
     t1 = trial[0]
     if len(key) == 4:
@@ -556,12 +524,8 @@ def test_iadd(key, mat, quad):
         if quad == 'GL':
             return
     if test == 'PX':
-        module = import_module(mat.__module__)
-        test = ((module.P1, module.P2)[np.random.randint(0, 2)], 0)
-        trial = (module.UD, (0, 1)[np.random.randint(0, 2)])
-        measure = (1, x, x**2)[np.random.randint(0, 3)]
-    if (trial[0] in lBasisLG+cBasisGC or test[0] in lBasisLG+cBasisGC)  and quad == 'GL':
         return
+
     t0 = test[0]
     t1 = trial[0]
     if len(key) == 4:
@@ -593,12 +557,8 @@ def test_isub(key, mat, quad):
         if quad == 'GL':
             return
     if test == 'PX':
-        module = import_module(mat.__module__)
-        test = ((module.P1, module.P2)[np.random.randint(0, 2)], 0)
-        trial = (module.UD, (0, 1)[np.random.randint(0, 2)])
-        measure = (1, x, x**2)[np.random.randint(0, 3)]
-    if (trial[0] in lBasisLG+cBasisGC or test[0] in lBasisLG+cBasisGC)  and quad == 'GL':
         return
+
     t0 = test[0]
     t1 = trial[0]
     if len(key) == 4:
@@ -633,12 +593,8 @@ def test_sub(key, mat, quad):
         if quad == 'GL':
             return
     if test == 'PX':
-        module = import_module(mat.__module__)
-        test = ((module.P1, module.P2)[np.random.randint(0, 2)], 0)
-        trial = (module.UD, (0, 1)[np.random.randint(0, 2)])
-        measure = (1, x, x**2)[np.random.randint(0, 3)]
-    if (trial[0] in lBasisLG+cBasisGC or test[0] in lBasisLG+cBasisGC)  and quad == 'GL':
         return
+
     t0 = test[0]
     t1 = trial[0]
     if len(key) == 4:
@@ -844,7 +800,7 @@ if __name__ == '__main__':
     x = sp.symbols('x', real=True)
     xp = sp.Symbol('x', real=True, positive=True)
 
-    test_mat(('PX', 0), cmatrices.PXGmat, 'GC')
+    test_mat(((ctestBasis[1], 0), (ctestBasis[1], 2), 1-x**2), cmatrices.ASDSDmatW, 'GC')
     #test_mat(*cmats_and_quads[12])
     #test_cmatvec(cBasis[2], cBasis[2], 'GC', 2)
     #test_lmatvec(lBasis[0], lBasis[0], 'LG', 2, 0)

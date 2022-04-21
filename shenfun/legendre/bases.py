@@ -53,7 +53,6 @@ from .lobatto import legendre_lobatto_nodes_and_weights
 from . import fastgl
 
 bases = ['Orthogonal',
-         'CompositeBase',
          'ShenDirichlet',
          'ShenNeumann',
          'ShenBiharmonic',
@@ -125,6 +124,9 @@ class Orthogonal(SpectralBase):
         SpectralBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
                               coordinates=coordinates)
+        self.alpha = 0
+        self.beta = 0
+        self.gn = 1
         self.forward = functools.partial(self.forward, fast_transform=False)
         self.backward = functools.partial(self.backward, fast_transform=False)
         self.scalar_product = functools.partial(self.scalar_product, fast_transform=False)
@@ -203,7 +205,14 @@ class Orthogonal(SpectralBase):
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
     def get_orthogonal(self, **kwargs):
-        return self
+        d = dict(quad=self.quad,
+                 domain=self.domain,
+                 dtype=self.dtype,
+                 padding_factor=self.padding_factor,
+                 dealias_direct=self.dealias_direct,
+                 coordinates=self.coors.coordinates)
+        d.update(kwargs)
+        return Orthogonal(self.N, **d)
 
     def sympy_basis(self, i=0, x=xp):
         return sp.legendre(i, x)
@@ -264,6 +273,10 @@ class Orthogonal(SpectralBase):
     @staticmethod
     def short_name():
         return 'L'
+
+    def stencil_matrix(self, N=None):
+        N = self.N if N is None else N
+        return SparseMatrix({0: 1}, (N, N))
 
     def get_bc_basis(self):
         if self._bc_basis:
@@ -1089,7 +1102,6 @@ class ShenBiPolar(CompositeBase):
     """
     def __init__(self, N, quad="LG", domain=(-1., 1.), bc=(0, 0, 0, 0), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None, **kw):
-        assert quad == "LG"
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
@@ -1538,6 +1550,10 @@ class BCBase(CompositeBase):
     @staticmethod
     def boundary_condition():
         return 'Apply'
+
+    @property
+    def is_boundary_basis(self):
+        return True
 
     def shape(self, forward_output=True):
         if forward_output:

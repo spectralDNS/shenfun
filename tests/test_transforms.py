@@ -9,8 +9,9 @@ import shenfun
 from shenfun.chebyshev import bases as cbases
 from shenfun.chebyshevu import bases as cubases
 from shenfun.legendre import bases as lbases
-from shenfun.laguerre import bases as labases
+from shenfun.laguerre import bases as lagbases
 from shenfun.ultraspherical import bases as ubases
+from shenfun.hermite import bases as hbases
 from shenfun.fourier import bases as fbases
 from shenfun.jacobi import bases as jbases
 from shenfun.la import TDMA
@@ -23,111 +24,53 @@ for f in ['dct', 'dst', 'fft', 'ifft', 'rfft', 'irfft']:
 N = 33
 x, y = symbols("x,y", real=True)
 
-cBasis = (cbases.Orthogonal,
-          cbases.ShenDirichlet,
-          cbases.ShenNeumann,
-          cbases.ShenBiharmonic,
-          cbases.DirichletNeumann,
-          cbases.NeumannDirichlet,
-          cbases.UpperDirichlet,
-          cbases.LowerDirichlet,
-          cbases.UpperDirichletNeumann,
-          cbases.LowerDirichletNeumann
-          )
+ctrialBasis = [cbases.__dict__.get(base) for base in cbases.bases[:-1]]
+ctestBasis = ctrialBasis + [cbases.__dict__.get(base) for base in cbases.testbases]
+cutrialBasis = [cubases.__dict__.get(base) for base in cubases.bases[:-1]]
+cutestBasis = cutrialBasis + [cubases.__dict__.get(base) for base in cubases.testbases]
 
-cuBasis = (cubases.Orthogonal,
-           cubases.CompactDirichlet,
-           cubases.CompactNeumann,
-           cubases.UpperDirichlet,
-           cubases.LowerDirichlet,
-           cubases.Phi1,
-           cubases.Phi2,
-           cubases.Phi3,
-           cubases.Phi4
-           )
+utrialBasis = [ubases.__dict__.get(base) for base in ubases.bases[:-1]]
+utestBasis = utrialBasis + [ubases.__dict__.get(base) for base in ubases.testbases]
+ltrialBasis = [lbases.__dict__.get(base) for base in lbases.bases[:-1]]
+ltestBasis = ltrialBasis + [lbases.__dict__.get(base) for base in lbases.testbases]
+latrialBasis = [lagbases.__dict__.get(base) for base in lagbases.bases[:-1]]
+htrialBasis = [hbases.__dict__.get(base) for base in hbases.bases]
+jtrialBasis = [jbases.__dict__.get(base) for base in jbases.bases[:-1]]
+jtestBasis = jtrialBasis + [jbases.__dict__.get(base) for base in jbases.testbases]
 
-uBasis = (ubases.Orthogonal,
-          ubases.CompactDirichlet,
-          ubases.CompactNeumann,
-          ubases.UpperDirichlet,
-          ubases.LowerDirichlet,
-          ubases.Phi1,
-          ubases.Phi2,
-          ubases.Phi3,
-          ubases.Phi4,
-          )
+bcbases = (
+    cbases.BCGeneric,
+    lbases.BCGeneric,
+    cubases.BCGeneric,
+    ubases.BCGeneric
+)
 
-# Bases with only GC quadrature
-cBasisGC = (cbases.ShenBiPolar,
-            cbases.Heinrichs,
-            cbases.MikNeumann,
-            cbases.CombinedShenNeumann,
-            cbases.Phi1,
-            cbases.Phi2,
-            cbases.Phi3,
-            cbases.Phi4
-            )
+cquads = ('GC', 'GL')
+cuquads = ('GU', )
+uquads = ('QG',)
+lquads = ('LG', 'GL')
+lagquads = ('LG',)
+hquads = ('HG',)
+jquads = ('JG',)
 
-lBasis = (lbases.Orthogonal,
-          lbases.ShenDirichlet,
-          lbases.ShenDirichlet,
-          lbases.ShenBiharmonic,
-          lbases.ShenNeumann)
-
-# Bases with only LG quadrature
-lBasisLG = (lbases.UpperDirichlet,
-            lbases.LowerDirichlet,
-            lbases.ShenBiPolar,
-            lbases.NeumannDirichlet,
-            lbases.DirichletNeumann,
-            lbases.BeamFixedFree,
-            lbases.Phi1,
-            lbases.Phi2,
-            lbases.Phi3,
-            lbases.Phi4
-            )
-
-laBasis = (labases.Orthogonal,
-           labases.CompactDirichlet,
-           labases.CompactNeumann)
 
 fBasis = (fbases.R2C,
           fbases.C2C)
 
-jBasis = (jbases.Orthogonal,
-          jbases.CompactDirichlet,
-          jbases.CompactNeumann,
-          jbases.UpperDirichlet,
-          jbases.LowerDirichlet,
-          jbases.Phi1,
-          jbases.Phi2,
-          jbases.Phi3,
-          jbases.Phi4)
 
-cquads = ('GC', 'GL')
-lquads = ('LG', 'GL')
-laquads = ('LG',)
-
-all_bases_and_quads = (list(product(laBasis, laquads))
-                     +list(product(lBasis, lquads))
-                     +list(product(lBasisLG, ('LG',)))
-                     +list(product(cBasis, cquads))
-                     +list(product(cuBasis, ('GU',)))
-                     +list(product(cBasisGC, ('GC',)))
-                     +list(product(uBasis, ('QG',)))
+all_trial_bases_and_quads = (list(product(latrialBasis, lagquads))
+                     +list(product(ltrialBasis, lquads))
+                     +list(product(ctrialBasis, cquads))
+                     +list(product(utrialBasis, uquads))
                      +list(product(fBasis, ('',)))
-                     +list(product(jBasis, ('JG',))))
+                     +list(product(jtrialBasis, jquads)))
 
-cbases2 = list(list(i[0]) + [i[1]] for i in product(list(product(cBasis, cBasis)), cquads))
-cbases2 += list(list(i[0]) + [i[1]] for i in product(list(product(cBasisGC, cBasisGC)), ('GC',)))
-lbases2 = list(list(i[0]) + [i[1]] for i in product(list(product(lBasis, lBasis)), lquads))
-lbases2 += list(list(i[0]) + [i[1]] for i in product(list(product(lBasisLG, lBasisLG)), ('LG',)))
+cbases2 = list(list(i[0]) + [i[1]] for i in product(list(product(ctestBasis, ctrialBasis)), cquads))
+lbases2 = list(list(i[0]) + [i[1]] for i in product(list(product(ltestBasis, ltrialBasis)), lquads))
 
-cl_nonortho = (list(product(laBasis[1:], laquads))
-             +list(product(lBasis[1:], lquads))
-             +list(product(lBasisLG, ('LG',)))
-             +list(product(cBasis[1:], cquads))
-             +list(product(cBasisGC[1:], ('GC',))))
+cl_nonortho = (list(product(latrialBasis[1:], lagquads))
+               +list(product(ltrialBasis[1:], lquads))
+               +list(product(ctrialBasis[1:], cquads)))
 
 class ABC(object):
     def __init__(self, dim, coors):
@@ -175,7 +118,7 @@ def test_convolve(basis, N):
     assert np.allclose(uv3, uv2)
 
 
-@pytest.mark.parametrize('ST,quad', list(product(cBasis, cquads)) + list(product(fBasis, [""])))
+@pytest.mark.parametrize('ST,quad', list(product(ctrialBasis, cquads)) + list(product(fBasis, [""])))
 def test_scalarproduct(ST, quad):
     """Test fast scalar product against Vandermonde computed version"""
     kwargs = {}
@@ -191,7 +134,7 @@ def test_scalarproduct(ST, quad):
     assert np.allclose(u1, u0)
     assert not np.all(u1 == u0) # Check that fast is not the same as slow
 
-@pytest.mark.parametrize('ST,quad', all_bases_and_quads)
+@pytest.mark.parametrize('ST,quad', all_trial_bases_and_quads)
 def test_eval(ST, quad):
     """Test eval against fast inverse"""
     kwargs = {}
@@ -208,23 +151,20 @@ def test_eval(ST, quad):
     fj = ST.backward(fk, fj, fast_transform=False)
     fk = ST.forward(fj, fk, fast_transform=False)
     f = ST.eval(points, fk)
-    assert np.allclose(fj, f, rtol=1e-5, atol=1e-6)
+    assert np.allclose(fj, f, rtol=1e-5, atol=1e-6), np.linalg.norm(fj-f)
 
 @pytest.mark.parametrize('basis, quad', cl_nonortho)
 #@pytest.mark.xfail(raises=AssertionError)
 def test_to_ortho(basis, quad):
     N = 10
     if basis.family() == 'legendre':
-        B1 = lBasis[0](N, quad)
+        B1 = ltrialBasis[0](N, quad)
         #B3 = lBasis[0](N, quad)
     elif basis.family() == 'chebyshev':
-        if basis.short_name() == 'DU':
-            B1 = cBasisGC[0](N, quad)
-        else:
-            B1 = cBasis[0](N, quad)
+        B1 = ctrialBasis[0](N, quad)
         #B3 = cBasis[0](N, quad)
     elif basis.family() == 'laguerre':
-        B1 = laBasis[0](N)
+        B1 = latrialBasis[0](N)
         #B3 = laBasis[0](N)
 
     B0 = basis(N, quad=quad)
@@ -270,10 +210,11 @@ def test_massmatrices(test, trial, quad):
     test = test(N, quad=quad)
     trial = trial(N, quad=quad)
     f_hat = np.zeros(N)
-    fj = np.random.random(N)
+    fj = shenfun.Array(trial)
+    fj[:trial.dim()] = np.random.random(trial.dim())
     f_hat = trial.forward(fj, f_hat)
     fj = trial.backward(f_hat, fj)
-    BBD = inner_product((test, 0), (trial, 0))
+    BBD = inner_product((test, 0), (trial, 0)) #, assemble='quadrature_vandermonde')
     f_hat = trial.forward(fj, f_hat)
     u2 = np.zeros_like(f_hat)
     u2 = BBD.matvec(f_hat, u2)
@@ -283,7 +224,7 @@ def test_massmatrices(test, trial, quad):
     assert np.allclose(u0[s], u2[s], rtol=1e-5, atol=1e-6)
     del BBD
 
-@pytest.mark.parametrize('basis', cBasis[:2])
+@pytest.mark.parametrize('basis', ctrialBasis[:2])
 def test_project_1D(basis):
     ue = sin(2*np.pi*x)*(1-x**2)
     T = basis(12)
@@ -301,7 +242,7 @@ def test_project_1D(basis):
     u_1 = shenfun.project(ue, T)
     assert np.allclose(u_1, u_p)
 
-@pytest.mark.parametrize('ST,quad', all_bases_and_quads)
+@pytest.mark.parametrize('ST,quad', all_trial_bases_and_quads)
 def test_transforms(ST, quad):
     N = 10
     kwargs = {}
@@ -348,7 +289,7 @@ def test_transforms(ST, quad):
     assert np.allclose(fij, fij.forward().backward())
 
 
-@pytest.mark.parametrize('ST,quad', all_bases_and_quads)
+@pytest.mark.parametrize('ST,quad', all_trial_bases_and_quads)
 @pytest.mark.parametrize('axis', (0, 1, 2))
 def test_axis(ST, quad, axis):
     kwargs = {}
@@ -400,12 +341,12 @@ def test_CDDmat(quad):
     ducdy_hat = shenfun.project(shenfun.Dx(u_hat, 1, 1), T)
     assert np.linalg.norm(ducdy_hat-dudy_hat)/M < 1e-10, np.linalg.norm(ducdy_hat-dudy_hat)/M
 
-@pytest.mark.parametrize('test,trial', product(cBasis, cBasis))
+@pytest.mark.parametrize('test,trial', product(ctestBasis, ctrialBasis))
 def test_CXXmat(test, trial):
     test = test(N)
     trial = trial(N)
 
-    CT = cBasis[0](N)
+    CT = ctrialBasis[0](N)
 
     Cm = inner_product((test, 0), (trial, 1))
     S2 = Cm.trialfunction[0]
@@ -594,11 +535,12 @@ if __name__ == '__main__':
     #test_ASDSDmat(cbases.ShenNeumann, "GC")
     #test_ASBSBmat(cbases.ShenBiharmonic, "GC")
     #test_CDDmat("GL")
-    for i in range(len(cBasis)):
-        test_massmatrices(cBasis[1], cBasis[i], 'GL')
+    #for i in range(len(ctrialBasis)):
+    #    test_massmatrices(ctestBasis[-4], ctrialBasis[i], 'GL')
+    test_massmatrices(ctestBasis[-4], ctrialBasis[2], 'GL')
     #test_CXXmat(cBasis[2], cBasis[1])
     #test_transforms(cBasisGC[3], 'GC')
     #test_project_1D(cBasis[0])
     #test_scalarproduct(cBasis[2], 'GC')
-    #test_eval(jBasis[4], 'JG')
+    #test_eval(cuBasis[-1], 'GU')
     #test_axis(laBasis[1], 'LG', 1)

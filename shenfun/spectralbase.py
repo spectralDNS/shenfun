@@ -21,6 +21,7 @@ from numbers import Number
 import sympy as sp
 import numpy as np
 from mpi4py_fft import fftw
+from shenfun import config
 from .utilities import CachedArrayDict, split
 from .coordinates import Coordinates
 work = CachedArrayDict()
@@ -29,7 +30,6 @@ class SpectralBase:
     """Abstract base class for all spectral function spaces
     """
     # pylint: disable=method-hidden, too-many-instance-attributes
-
     def __init__(self, N, quad='', padding_factor=1, domain=(-1., 1.), dtype=None,
                  dealias_direct=False, coordinates=None):
         self.N = N
@@ -38,6 +38,9 @@ class SpectralBase:
         self.axis = 0
         self.bc = None
         self._bc_basis = None
+        self.alpha = None  # Jacobi parameter
+        self.beta = None   # Jacobi parameter
+        self.gn = None     # Jacobi scaling function
         self.padding_factor = padding_factor
         if padding_factor != 1:
             self.padding_factor = np.floor(N*padding_factor)/N if N > 0 else 1
@@ -677,6 +680,25 @@ class SpectralBase:
             x = a + (x-c)/self.domain_factor()
         return x
 
+    def map_expression_true_domain(self, f, x=None):
+        """Return expression `f` mapped to true domain as a function
+        of the reference coordinate
+
+        Parameters
+        ----------
+        f : Sympy expression
+        x : Sympy symbol, optional
+            coordinate
+        """
+        if not self.domain == self.reference_domain():
+            f = sp.sympify(f)
+            if len(f.free_symbols) == 1:
+                if x is None:
+                    x = f.free_symbols.pop()
+                xm = self.map_true_domain(x)
+                f = f.replace(x, xm)
+        return f
+
     def sympy_basis(self, i=0, x=sp.Symbol('x', real=True)):
         """Return basis function `i` as sympy function
 
@@ -813,6 +835,10 @@ class SpectralBase:
         return False
 
     @property
+    def is_boundary_basis(self):
+        return False
+
+    @property
     def rank(self):
         """Return rank of function space
 
@@ -905,7 +931,7 @@ class SpectralBase:
         msi = dv[msx]
         return inner_product((self, 0), (self.get_bc_basis(), 0), msi)
 
-    def get_measured_weights(self, N=None, measure=1):
+    def get_measured_weights(self, N=None, measure=1, map_true_domain=False):
         """Return weights times ``measure``
 
         Parameters
@@ -916,7 +942,7 @@ class SpectralBase:
         """
         if N is None:
             N = self.shape(False)
-        xm, wj = self.mpmath_points_and_weights(N, map_true_domain=True)
+        xm, wj = self.mpmath_points_and_weights(N, map_true_domain=map_true_domain)
         if measure == 1:
             return wj
 
@@ -1754,7 +1780,7 @@ class slicedict(dict):
         return dict.__getitem__(self, self.__keytransform__(key))
 
 
-def inner_product(test, trial, measure=1):
+def inner_product(test, trial, measure=1, assemble=None):
     """Return 1D weighted inner product of bilinear form
 
     Parameters
@@ -1800,54 +1826,35 @@ def inner_product(test, trial, measure=1):
     key = ((test[0].__class__, test[1]), (trial[0].__class__, trial[1]))
     mat = test[0]._get_mat()
 
-    #sc = 1
     if measure != 1:
+        # replace y, z with x if multidimensional
         x0 = measure.free_symbols
         assert len(x0) == 1
         x0 = x0.pop()
         x = sp.symbols('x', real=x0.is_real, positive=x0.is_positive)
         measure = measure.subs(x0, x)
-        #try:
-        #    if measure.subs(x, (test[0].domain[0]+test[0].domain[1])/2).evalf() < 0:
-        #        sc = -1
-        #        measure *= sc
-        #except TypeError:
-        #    pass
-        # Map measure, which is in true physical domain, to true domain.
-        # This way it returns the true physical measure, but now as a function
-        # of the reference coordinate.
-        # For example, in polar coordinates the measure is the radius r
-        # with domain [0, 1]. At this point we will have measure=x. As
-        # a function of the reference coordinate t in [-1, 1] we get
-        # x = (t+1)/2. The code below replaces x with (t+1)/2
-        # It also works for more complicated, nonlinear measures.
 
-        if test[0].domain != test[0].reference_domain():
-            xm = test[0].map_true_domain(x)
-            measure = measure.replace(x, xm)
+        measure = test[0].map_expression_true_domain(measure, x)
 
         if measure.is_polynomial():
             measure = sp.simplify(measure)
 
         if key + (measure,) in mat:
-            A = A = mat[key](test, trial)
+            A = mat[key+(measure,)](test, trial, assemble=assemble)
 
         else:
-            # Moving from physical to reference coordinates, the expression
-            # may be split (e.g., x = (t+1)/2)
+            # By mapping measure to true domain, the expression may be split
             B = []
             for dv in split(measure, expand=False):
                 sci = dv['coeff']
                 msi = dv['x']
                 newkey = key + (msi,)
-                B.append(mat[newkey](test, trial))
+                B.append(mat[newkey](test, trial, assemble=assemble))
                 B[-1].scale *= sci
             A = B[0] if len(B) == 1 else np.sum(np.array(B, dtype=object))
-
     else:
-        A = mat[key](test, trial)
+        A = mat[key](test, trial, assemble=assemble)
 
-    #A.scale *= sc
     return A
 
 class FuncWrap:
