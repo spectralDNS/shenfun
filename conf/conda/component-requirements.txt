@@ -1,1 +1,1 @@
-quadpy
+quadpy >=0.16.10

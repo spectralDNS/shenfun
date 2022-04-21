@@ -55,7 +55,7 @@ jobs:
       conda build --no-test --python $PYTHON_VERSION ./conf/conda
       conda create --name shenfun pip shenfun python=$PYTHON_VERSION --use-local
       source activate shenfun
-      pip install pytest-cov pytest quadpy
+      pip install pytest-cov pytest quadpy>=0.16.10
       pytest tests/ --junitxml=junit/test-results.xml --cov=$(python -c "import site; print(site.getsitepackages()[0]+'/shenfun')") --cov-report=xml --cov-report=html
     displayName: Build and test
 
