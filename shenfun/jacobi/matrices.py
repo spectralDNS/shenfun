@@ -1,7 +1,6 @@
-import functools
 import sympy as sp
 import numpy as np
-from shenfun.matrixbase import SpectralMatrix
+from shenfun.matrixbase import SpectralMatrix, SpectralMatDict
 from . import bases
 
 J  = bases.Orthogonal
@@ -41,33 +40,6 @@ class BJJmat(SpectralMatrix):
         d = {0: sp.lambdify(n, hh)(k)}
         return d
 
-class _Jacmatrix(SpectralMatrix):
-    def __init__(self, test, trial, scale=1, measure=1, assemble=None):
-        SpectralMatrix.__init__(self, test, trial, scale=scale, measure=measure, assemble=assemble)
-
-
-class _JacMatDict(dict):
-    """Dictionary of inner product matrices
-
-    Matrices that are missing keys are generated from Vandermonde type
-    computations.
-
-    """
-
-    def __missing__(self, key):
-        measure = 1 if len(key) == 2 else key[2]
-        c = functools.partial(_Jacmatrix, measure=measure)
-        self[key] = c
-        return c
-
-    def __getitem__(self, key):
-        if len(key) == 3:
-            matrix = functools.partial(dict.__getitem__(self, key),
-                                       measure=key[2])
-        else:
-            matrix = dict.__getitem__(self, key)
-        return matrix
-
-mat = _JacMatDict({
+mat = SpectralMatDict({
     ((J,  0), (J,  0)): BJJmat,
 })

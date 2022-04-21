@@ -1,5 +1,4 @@
-import functools
-from shenfun.matrixbase import SpectralMatrix
+from shenfun.matrixbase import SpectralMatrix, SpectralMatDict
 from shenfun.la import TDMA_O
 from . import bases
 
@@ -86,34 +85,8 @@ class ACDCDmat(SpectralMatrix):
     def get_solver(self):
         return TDMA_O
 
-class _Lagmatrix(SpectralMatrix):
-    def __init__(self, test, trial, measure=1, assemble=None):
-        SpectralMatrix.__init__(self, test, trial, measure=measure, assemble=assemble)
 
-class _LagMatDict(dict):
-    """Dictionary of inner product matrices
-
-    Matrices that are missing keys are generated from Vandermonde type
-    computations.
-
-    """
-
-    def __missing__(self, key):
-        measure = 1 if len(key) == 2 else key[3]
-        c = functools.partial(_Lagmatrix, measure=measure)
-        self[key] = c
-        return c
-
-    def __getitem__(self, key):
-        if len(key) == 3:
-            matrix = functools.partial(dict.__getitem__(self, key),
-                                       measure=key[2])
-        else:
-            matrix = dict.__getitem__(self, key)
-        return matrix
-
-
-mat = _LagMatDict({
+mat = SpectralMatDict({
     #((CD, 0), (CD, 0)): BCDCDmat,
     #((CD, 1), (CD, 1)): ACDCDmat,
     ((L, 0), (L, 0)): BLLmat

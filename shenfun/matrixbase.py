@@ -3,6 +3,7 @@ This module contains classes for working with sparse matrices.
 
 """
 from __future__ import division
+import functools
 from copy import copy, deepcopy
 from collections.abc import Mapping, MutableMapping
 from collections import defaultdict
@@ -18,7 +19,7 @@ __all__ = ['SparseMatrix', 'SpectralMatrix', 'extract_diagonal_matrix',
            'extract_bc_matrices', 'check_sanity', 'get_dense_matrix',
            'TPMatrix', 'BlockMatrix', 'BlockMatrices', 'Identity',
            'get_dense_matrix_sympy', 'get_dense_matrix_quadpy',
-           'get_simplified_tpmatrices', 'ScipyMatrix']
+           'get_simplified_tpmatrices', 'ScipyMatrix', 'SpectralMatDict']
 
 comm = MPI.COMM_WORLD
 
@@ -609,20 +610,22 @@ class SpectralMatrix(SparseMatrix):
             d = self.assemble()
             assembly = 'implemented'
             if d is None:
-                #assemble = 'quadrature_vandermonde'
-                if test[0].short_name() in ('P1', 'P2', 'P3', 'P4'):
-                    try:
-                        d = assemble_phi(test, trial, measure)
-                        assembly = 'phi'
-                    except AssertionError:
-                        assemble = 'quadrature_vandermonde'
+                if test[0].family() == 'fourier':
+                    assemble = 'quadrature_vandermonde'
                 else:
-                    #if test[1]+trial[1] == 0 and sp.sympify(measure).is_polynomial():
-                    if test[1]+trial[1] == 0 and sp.sympify(measure).is_polynomial() and not (test[0].is_orthogonal and trial[0].is_orthogonal):
-                        d = assemble_stencil(test, trial, measure)
-                        assembly = 'stencil'
+                    if test[0].short_name() in ('P1', 'P2', 'P3', 'P4'):
+                        try:
+                            d = assemble_phi(test, trial, measure)
+                            assembly = 'phi'
+                        except AssertionError:
+                            assemble = 'quadrature_vandermonde'
                     else:
-                        assemble = 'quadrature_vandermonde'
+                        #if test[1]+trial[1] == 0 and sp.sympify(measure).is_polynomial():
+                        if test[1]+trial[1] == 0 and sp.sympify(measure).is_polynomial() and not (test[0].is_orthogonal and trial[0].is_orthogonal):
+                            d = assemble_stencil(test, trial, measure)
+                            assembly = 'stencil'
+                        else:
+                            assemble = 'quadrature_vandermonde'
 
         if assemble is not None:
             # Specified method of assembly, mainly for testing
@@ -2178,3 +2181,30 @@ def _assemble_phi_bc(test, trial, measure=1):
         d = extract_diagonal_matrix(D*extract_diagonal_matrix(K).diags('csr').T, lowerband=N+q, upperband=N)
     d = d._storage
     return d
+
+class SpectralMatDict(dict):
+    """Dictionary for inner product matrices
+
+    Matrices are looked up with keys that are one of::
+
+        ((test, k), (trial, l))
+        ((test, k), (trial, l), measure)
+
+    where test and trial are classes subclassed from SpectralBase and k and l
+    are integers >= 0 that determines how many times the test or trial functions
+    should be differentiated. The measure is optional.
+
+    """
+    def __missing__(self, key):
+        measure = 1 if len(key) == 2 else key[2]
+        c = functools.partial(SpectralMatrix, measure=measure)
+        self[key] = c
+        return c
+
+    def __getitem__(self, key):
+        if len(key) == 3:
+            matrix = functools.partial(dict.__getitem__(self, key),
+                                       measure=key[2])
+        else:
+            matrix = dict.__getitem__(self, key)
+        return matrix

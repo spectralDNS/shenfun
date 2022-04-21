@@ -2,14 +2,11 @@
 Module for handling Fourier diagonal matrices
 """
 from __future__ import division
-
-#__all__ = ['mat']
-
 import functools
 from numbers import Number
 import numpy as np
 import sympy as sp
-from shenfun.matrixbase import SpectralMatrix
+from shenfun.matrixbase import SpectralMatrix, SpectralMatDict
 from shenfun import la
 from . import bases
 
@@ -141,8 +138,17 @@ class Bcosmat(SpectralMatrix):
              -(N-1): 0.5}
         return d
 
+class FourierMatDict(SpectralMatDict):
+    def __missing__(self, key):
+        measure = 1 if len(key) == 2 else key[2]
+        c = functools.partial(FourierMatrix, measure=measure)
+        self[key] = c
+        return c
 
-class _Fouriermatrix(SpectralMatrix):
+class FourierMatrix(SpectralMatrix):
+    def __init__(self, test, trial, scale=1, measure=1, assemble=None):
+        SpectralMatrix.__init__(self, test, trial, scale=scale, measure=measure, assemble=assemble)
+
     def assemble(self):
         test, trial = self.testfunction, self.trialfunction
         N = test[0].N
@@ -168,6 +174,8 @@ class _Fouriermatrix(SpectralMatrix):
                 d = {0: val*test[0].domain_factor()}
             else:
                 d = {0: test[0].domain_factor()}
+        else:
+            d = None
         return d
 
     def solve(self, b, u=None, axis=0, constraints=()):
@@ -198,37 +206,14 @@ class _Fouriermatrix(SpectralMatrix):
         return la.Solver(self)(b, u=u, axis=axis, constraints=constraints)
 
 
-class _FourierMatDict(dict):
-    """Dictionary of inner product matrices.
-
-    Matrices that are missing keys are generated. All Fourier matrices are
-    diagonal.
-
-    """
-
-    def __missing__(self, key):
-        measure = 1 if len(key) == 2 else key[2]
-        c = functools.partial(_Fouriermatrix, measure=measure)
-        self[key] = c
-        return c
-
-    def __getitem__(self, key):
-        if len(key) == 3:
-            matrix = functools.partial(dict.__getitem__(self, key),
-                                       measure=key[2])
-        else:
-            matrix = dict.__getitem__(self, key)
-        return matrix
-
-
-mat = _FourierMatDict({
-    ((C2C, 0), (C2C, 2), sp.cos(xp)**2): functools.partial(Acos2mat, measure=sp.cos(xp)**2),
-    ((C2C, 0), (C2C, 2), sp.cos(xp)): functools.partial(Acosmat, measure=sp.cos(xp)),
-    ((C2C, 0), (C2C, 1), sp.sin(xp)): functools.partial(Csinmat, measure=sp.sin(xp)),
-    ((C2C, 0), (C2C, 1), sp.sin(2*xp)/2): functools.partial(Csincosmat, measure=sp.sin(2*xp)/2),
-    ((C2C, 0), (C2C, 1), sp.sin(xp)*sp.cos(xp)): functools.partial(Csincosmat, measure=sp.sin(xp)*sp.cos(xp)),
-    ((C2C, 0), (C2C, 0), sp.cos(xp)**2): functools.partial(Bcos2mat, measure=sp.cos(xp)**2),
-    ((C2C, 0), (C2C, 0), sp.cos(xp)): functools.partial(Bcosmat, measure=sp.cos(xp)),
+mat = FourierMatDict({
+    ((C2C, 0), (C2C, 2), sp.cos(xp)**2): Acos2mat,
+    ((C2C, 0), (C2C, 2), sp.cos(xp)): Acosmat,
+    ((C2C, 0), (C2C, 1), sp.sin(xp)): Csinmat,
+    ((C2C, 0), (C2C, 1), sp.sin(2*xp)/2): Csincosmat,
+    ((C2C, 0), (C2C, 1), sp.sin(xp)*sp.cos(xp)): Csincosmat,
+    ((C2C, 0), (C2C, 0), sp.cos(xp)**2): Bcos2mat,
+    ((C2C, 0), (C2C, 0), sp.cos(xp)): Bcosmat,
 })
 
-#mat = _FourierMatDict({})
+#mat = FourierMatDict({})

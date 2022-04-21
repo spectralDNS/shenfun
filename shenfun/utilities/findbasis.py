@@ -95,7 +95,6 @@ def get_bc_basis(bcs, family, alpha=None, beta=None):
             s = _computematrix(first)
             break
         except NonInvertibleMatrixError:
-            #print('Not invertible using basis %d'%(first))
             continue
 
     sol = sp.Matrix(np.zeros((bcs.num_bcs(), first+bcs.num_bcs())))

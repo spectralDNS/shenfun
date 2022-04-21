@@ -74,7 +74,7 @@ from __future__ import division
 import functools
 import numpy as np
 import sympy as sp
-from shenfun.matrixbase import SpectralMatrix
+from shenfun.matrixbase import SpectralMatrix, SpectralMatDict
 from shenfun.optimization import cython
 from shenfun.la import TDMA, PDMA
 from . import bases
@@ -998,33 +998,8 @@ class BSDSDrp1mat(SpectralMatrix):
         d[-3] = d[3].copy()
         return d
 
-class _Legmatrix(SpectralMatrix):
-    def __init__(self, test, trial, scale=1, measure=1, assemble=None):
-        SpectralMatrix.__init__(self, test, trial, scale=scale, measure=measure, assemble=assemble)
 
-class _LegMatDict(dict):
-    """Dictionary of inner product matrices
-
-    Matrices that are missing are generated from Vandermonde type
-    computations.
-
-    """
-
-    def __missing__(self, key):
-        measure = 1 if len(key) == 2 else key[2]
-        c = functools.partial(_Legmatrix, measure=measure)
-        self[key] = c
-        return c
-
-    def __getitem__(self, key):
-        if len(key) == 3:
-            matrix = functools.partial(dict.__getitem__(self, key),
-                                       measure=key[2])
-        else:
-            matrix = dict.__getitem__(self, key)
-        return matrix
-
-mat = _LegMatDict({
+mat = SpectralMatDict({
     ((L,  0), (L,  0)): BLLmat,
     ((L,  0), (L,  1)): CLLmat,
     ((L,  1), (L,  0)): CLLmatT,
@@ -1073,4 +1048,4 @@ mat = _LegMatDict({
     ((BF, 0), (BF, 0)): BBFBFmat,
     })
 
-#mat = _LegMatDict({})
+#mat = SpectralMatDict({})

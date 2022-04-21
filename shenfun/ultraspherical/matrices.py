@@ -1,7 +1,6 @@
-import functools
 import sympy as sp
 import numpy as np
-from shenfun.matrixbase import SpectralMatrix
+from shenfun.matrixbase import SpectralMatrix, SpectralMatDict
 from . import bases
 
 Q  = bases.Orthogonal
@@ -42,34 +41,7 @@ class BQQmat(SpectralMatrix):
         d[0][0] = sp.simplify(h(alfa, alfa, n, 0, cn).subs(n, 0)).subs(alfa, a) # For Chebyshev, need the correct limit
         return d
 
-class _Ultramatrix(SpectralMatrix):
-    def __init__(self, test, trial, scale=1, measure=1, assemble=None):
-        SpectralMatrix.__init__(self, test, trial, scale=scale, measure=measure, assemble=assemble)
 
-
-class _UltraMatDict(dict):
-    """Dictionary of inner product matrices
-
-    Matrices that are missing keys are generated from Vandermonde type
-    computations.
-
-    """
-
-    def __missing__(self, key):
-        measure = 1 if len(key) == 2 else key[2]
-        c = functools.partial(_Ultramatrix, measure=measure)
-        self[key] = c
-        return c
-
-    def __getitem__(self, key):
-        if len(key) == 3:
-            matrix = functools.partial(dict.__getitem__(self, key),
-                                       measure=key[2])
-        else:
-            matrix = dict.__getitem__(self, key)
-        return matrix
-
-
-mat = _UltraMatDict({
+mat = SpectralMatDict({
     ((Q,  0), (Q,  0)): BQQmat,
 })

@@ -1,6 +1,5 @@
-import functools
 import numpy as np
-from shenfun.matrixbase import SpectralMatrix
+from shenfun.matrixbase import SpectralMatrix, SpectralMatDict
 from shenfun.optimization.cython import Matvec
 from shenfun.la import TDMA
 from . import bases
@@ -105,31 +104,7 @@ class AHHmat(SpectralMatrix):
         return c
 
 
-class _Hermatrix(SpectralMatrix):
-    def __init__(self, test, trial, scale=1, measure=1, assemble=None):
-        SpectralMatrix.__init__(self, test, trial, scale=scale, measure=measure, assemble=assemble)
-
-
-class _HerMatDict(dict):
-    """Dictionary of inner product matrices
-
-    Matrices that are missing keys are generated from Vandermonde type
-    computations.
-
-    """
-
-    def __missing__(self, key):
-        measure = 1 if len(key) == 2 else key[2]
-        c = functools.partial(_Hermatrix, measure=measure)
-        self[key] = c
-        return c
-
-    def __getitem__(self, key):
-        matrix = dict.__getitem__(self, key)
-        return matrix
-
-
-mat = _HerMatDict({
+mat = SpectralMatDict({
     ((H, 0), (H, 0)): BHHmat,
     ((H, 1), (H, 1)): AHHmat
     })

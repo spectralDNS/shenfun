@@ -75,11 +75,10 @@ To see that this is in fact the BSDSDmat:
 
 from __future__ import division
 
-import functools
 import numpy as np
 import sympy as sp
 from shenfun.optimization import cython, numba
-from shenfun.matrixbase import SpectralMatrix
+from shenfun.matrixbase import SpectralMatrix, SpectralMatDict
 from shenfun.la import TDMA as generic_TDMA
 from shenfun.la import PDMA as generic_PDMA
 from shenfun.la import TwoDMA, FDMA
@@ -1652,38 +1651,9 @@ class SSBSBmat(SpectralMatrix):
 
         return c
 
-
-class _Chebmatrix(SpectralMatrix):
-    def __init__(self, test, trial, scale=1, measure=1, assemble=None):
-        SpectralMatrix.__init__(self, test, trial, scale=scale, measure=measure, assemble=assemble)
-
-
-class _ChebMatDict(dict):
-    """Dictionary of inner product matrices
-
-    Matrices that are missing keys are generated from Vandermonde type
-    computations.
-
-    """
-
-    def __missing__(self, key):
-        measure = 1 if len(key) == 2 else key[2]
-        c = functools.partial(_Chebmatrix, measure=measure)
-        self[key] = c
-        return c
-
-    def __getitem__(self, key):
-        if len(key) == 3:
-            matrix = functools.partial(dict.__getitem__(self, key),
-                                       measure=key[2])
-        else:
-            matrix = dict.__getitem__(self, key)
-        return matrix
-
-
 # Define dictionary to hold all predefined matrices
 # When looked up, missing matrices will be generated automatically
-mat = _ChebMatDict({
+mat = SpectralMatDict({
     ((T,  0), (T , 0)): BTTmat,
     ((SD, 0), (SD, 0)): BSDSDmat,
     ((SB, 0), (SB, 0)): BSBSBmat,
@@ -1727,4 +1697,4 @@ mat = _ChebMatDict({
     ((SD, 0), (T,  1)): CSDTmat,
     })
 
-#mat = _ChebMatDict({})
+#mat = SpectralMatDict({})

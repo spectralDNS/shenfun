@@ -66,10 +66,9 @@ To see that this is in fact the BUUmat:
 
 from __future__ import division
 
-import functools
 import numpy as np
 import sympy as sp
-from shenfun.matrixbase import SpectralMatrix, SparseMatrix
+from shenfun.matrixbase import SpectralMatrix, SparseMatrix, SpectralMatDict
 from shenfun.la import TwoDMA
 from shenfun.chebyshev import bases as chebbases
 from . import bases
@@ -241,35 +240,9 @@ class AP1SNmat(SpectralMatrix):
     def get_solver(self):
         return TwoDMA
 
-class _Chebumatrix(SpectralMatrix):
-    def __init__(self, test, trial, scale=1, measure=1, assemble=None):
-        SpectralMatrix.__init__(self, test, trial, scale=scale, measure=measure, assemble=assemble)
-
-class _ChebuMatDict(dict):
-    """Dictionary of inner product matrices
-
-    Matrices that are missing keys are generated from Vandermonde type
-    computations.
-
-    """
-
-    def __missing__(self, key):
-        measure = 1 if len(key) == 2 else key[2]
-        c = functools.partial(_Chebumatrix, measure=measure)
-        self[key] = c
-        return c
-
-    def __getitem__(self, key):
-        if len(key) == 3:
-            matrix = functools.partial(dict.__getitem__(self, key),
-                                       measure=key[2])
-        else:
-            matrix = dict.__getitem__(self, key)
-        return matrix
-
 # Define dictionary to hold all predefined matrices
 # When looked up, missing matrices will be generated automatically
-mat = _ChebuMatDict({
+mat = SpectralMatDict({
     ((U,  0), (U,  0)): BUUmat,
     ((P1, 0), (SD, 0)): BP1SDmat,
     ((P1, 0), (SN, 0)): BP1SNmat,
