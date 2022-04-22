@@ -13,6 +13,7 @@ from shenfun.chebyshev import matrices as cmatrices
 from shenfun.chebyshev import bases as cbases
 from shenfun.chebyshevu import matrices as cumatrices
 from shenfun.chebyshevu import bases as cubases
+from shenfun.forms.arguments import TestFunction, TrialFunction
 from shenfun.ultraspherical import matrices as umatrices
 from shenfun.ultraspherical import bases as ubases
 from shenfun.legendre import matrices as lmatrices
@@ -24,7 +25,7 @@ from shenfun.hermite import bases as hbases
 from shenfun.jacobi import matrices as jmatrices
 from shenfun.jacobi import bases as jbases
 from shenfun.chebyshev import la as cla
-from shenfun import div, grad, inner, TensorProductSpace, FunctionSpace, SparseMatrix, \
+from shenfun import div, grad, inner, TensorProductSpace, FunctionSpace, SparseMatrix,\
     Function, comm, VectorSpace, BlockMatrix, CompositeSpace
 from shenfun.spectralbase import inner_product
 from shenfun.config import config
@@ -132,9 +133,6 @@ def test_mat(key, mat, quad):
         #if not measure == 1:
         #    # Way too time-consuming. Test when adding new matrices.
         #    return
-
-    if test == 'PX':
-        return
 
     t0 = test[0]
     t1 = trial[0]
@@ -309,20 +307,13 @@ def test_imul(key, mat, quad):
     test = key[0]
     trial = key[1]
     measure = 1
-    if len(key) == 4:
-        domain = key[2]
-        measure = key[3]
+    if len(key) == 3:
+        measure = key[2]
         if quad == 'GL':
             return
 
-    if test == 'PX':
-        return
-
     t0 = test[0]
     t1 = trial[0]
-    if len(key) == 4:
-        t0 = functools.partial(t0, domain=domain)
-        t1 = functools.partial(t1, domain=domain)
     if trial[0] in bcbases:
         # Just use some random boundary condition
         t1 = functools.partial(t1, bc=bcs[np.random.randint(0, 6)])
@@ -346,20 +337,13 @@ def test_mul(key, mat, quad):
     test = key[0]
     trial = key[1]
     measure = 1
-    if len(key) == 4:
-        domain = key[2]
-        measure = key[3]
+    if len(key) == 3:
+        measure = key[2]
         if quad == 'GL':
             return
 
-    if test == 'PX':
-        return
-
     t0 = test[0]
     t1 = trial[0]
-    if len(key) == 4:
-        t0 = functools.partial(t0, domain=domain)
-        t1 = functools.partial(t1, domain=domain)
     if trial[0] in bcbases:
         # Just use some random boundary condition
         t1 = functools.partial(t1, bc=bcs[np.random.randint(0, 6)])
@@ -397,20 +381,13 @@ def test_rmul(key, mat, quad):
     test = key[0]
     trial = key[1]
     measure = 1
-    if len(key) == 4:
-        domain = key[2]
+    if len(key) == 2:
         measure = key[3]
         if quad == 'GL':
             return
 
-    if test == 'PX':
-        return
-
     t0 = test[0]
     t1 = trial[0]
-    if len(key) == 4:
-        t0 = functools.partial(t0, domain=domain)
-        t1 = functools.partial(t1, domain=domain)
     if trial[0] in bcbases:
         # Just use some random boundary condition
         t1 = functools.partial(t1, bc=bcs[np.random.randint(0, 6)])
@@ -432,19 +409,13 @@ def test_div(key, mat, quad):
     test = key[0]
     trial = key[1]
     measure = 1
-    if len(key) == 4:
-        domain = key[2]
-        measure = key[3]
+    if len(key) == 3:
+        measure = key[2]
         if quad == 'GL':
             return
-    if test == 'PX':
-        return
 
     t0 = test[0]
     t1 = trial[0]
-    if len(key) == 4:
-        t0 = functools.partial(t0, domain=domain)
-        t1 = functools.partial(t1, domain=domain)
     if trial[0] in bcbases:
         # Just use some random boundary condition
         t1 = functools.partial(t1, bc=bcs[np.random.randint(0, 6)])
@@ -483,19 +454,13 @@ def test_add(key, mat, quad):
     test = key[0]
     trial = key[1]
     measure = 1
-    if len(key) == 4:
-        domain = key[2]
-        measure = key[3]
+    if len(key) == 3:
+        measure = key[2]
         if quad == 'GL':
             return
-    if test == 'PX':
-        return
 
     t0 = test[0]
     t1 = trial[0]
-    if len(key) == 4:
-        t0 = functools.partial(t0, domain=domain)
-        t1 = functools.partial(t1, domain=domain)
     if trial[0] in bcbases:
         # Just use some random boundary condition
         t1 = functools.partial(t1, bc=bcs[np.random.randint(0, 6)])
@@ -518,19 +483,13 @@ def test_iadd(key, mat, quad):
     test = key[0]
     trial = key[1]
     measure = 1
-    if len(key) == 4:
-        domain = key[2]
-        measure = key[3]
+    if len(key) == 3:
+        measure = key[2]
         if quad == 'GL':
             return
-    if test == 'PX':
-        return
 
     t0 = test[0]
     t1 = trial[0]
-    if len(key) == 4:
-        t0 = functools.partial(t0, domain=domain)
-        t1 = functools.partial(t1, domain=domain)
     if trial[0] in bcbases:
         # Just use some random boundary condition
         t1 = functools.partial(t1, bc=bcs[np.random.randint(0, 6)])
@@ -551,19 +510,12 @@ def test_isub(key, mat, quad):
     test = key[0]
     trial = key[1]
     measure = 1
-    if len(key) == 4:
-        domain = key[2]
-        measure = key[3]
+    if len(key) == 3:
+        measure = key[2]
         if quad == 'GL':
             return
-    if test == 'PX':
-        return
-
     t0 = test[0]
     t1 = trial[0]
-    if len(key) == 4:
-        t0 = functools.partial(t0, domain=domain)
-        t1 = functools.partial(t1, domain=domain)
     if trial[0] in bcbases:
         # Just use some random boundary condition
         t1 = functools.partial(t1, bc=bcs[np.random.randint(0, 6)])
@@ -587,19 +539,12 @@ def test_sub(key, mat, quad):
     test = key[0]
     trial = key[1]
     measure = 1
-    if len(key) == 4:
-        domain = key[2]
-        measure = key[3]
+    if len(key) == 3:
+        measure = key[2]
         if quad == 'GL':
             return
-    if test == 'PX':
-        return
-
     t0 = test[0]
     t1 = trial[0]
-    if len(key) == 4:
-        t0 = functools.partial(t0, domain=domain)
-        t1 = functools.partial(t1, domain=domain)
     if trial[0] in bcbases:
         # Just use some random boundary condition
         t1 = functools.partial(t1, bc=bcs[np.random.randint(0, 6)])
@@ -794,13 +739,55 @@ def test_blockmatrix(bases):
     c2 = B2.matvec(uh, c2, use_scipy=False)
     assert np.linalg.norm(c2-c) < 1e-8
 
+@pytest.mark.parametrize('b0,b1', some_cbases2+some_lbases2)
+def test_stencil(b0, b1):
+    N = 10
+    b0 = b0(N)
+    b1 = b1(N)
+    u = TrialFunction(b0)
+    v = TestFunction(b1)
+    B0 = inner(v, u, assemble='quadrature_vandermonde')
+    B1 = inner(v, u, assemble='quadrature_stencil')
+    C = B0-B1
+    C.incorporate_scale()
+    assert np.linalg.norm(C.diags('csr').data) < 1e-8
+    B0 = inner(v*x, u, assemble='exact_quadpy')
+    B1 = inner(v*x, u, assemble='quadrature_stencil')
+    C = B0-B1
+    C.incorporate_scale()
+    assert np.linalg.norm(C.diags('csr').data) < 1e-8
+    #B0 = inner(v*x**2, u, assemble='quadrature_vandermonde')
+    #B1 = inner(v*x**2, u, assemble='quadrature_stencil')
+    #C = B0-B1
+    #C.incorporate_scale()
+    #assert np.linalg.norm(C.diags('csr').data) < 1e-8
+
+@pytest.mark.parametrize('b0,b1', some_lbases2)
+@pytest.mark.parametrize('quad', lquads)
+def test_quadpy(b0, b1, quad):
+    N = 8
+    b0 = b0(N, quad=quad)
+    b1 = b1(N, quad=quad)
+    u = TrialFunction(b0)
+    v = TestFunction(b1)
+    B0 = inner(v, u, assemble='quadrature_vandermonde')
+    B1 = inner(v, u, assemble='quadrature_stencil')
+    C = B0-B1
+    C.incorporate_scale()
+    assert np.linalg.norm(C.diags('csr').data) < 1e-8
+    B0 = inner(v*x, u, assemble='exact_quadpy')
+    B1 = inner(v*x, u, assemble='quadrature_stencil')
+    C = B0-B1
+    C.incorporate_scale()
+    assert np.linalg.norm(C.diags('csr').data) < 1e-8
 
 if __name__ == '__main__':
     import sympy as sp
     x = sp.symbols('x', real=True)
     xp = sp.Symbol('x', real=True, positive=True)
 
-    test_mat(((ctestBasis[1], 0), (ctestBasis[1], 2), 1-x**2), cmatrices.ASDSDmatW, 'GC')
+    test_quadpy(ltestBasis[2], ltestBasis[2], 'LG')
+    #test_mat(((ctestBasis[1], 0), (ctestBasis[1], 2), 1-x**2), cmatrices.ASDSDmatW, 'GC')
     #test_mat(*cmats_and_quads[12])
     #test_cmatvec(cBasis[2], cBasis[2], 'GC', 2)
     #test_lmatvec(lBasis[0], lBasis[0], 'LG', 2, 0)
