@@ -2085,7 +2085,7 @@ def _assemble_stencil(test, trial, measure=1):
         A = K.diags('csr') * B.diags('csr') * S.diags('csr').T
     K.shape = (test[0].N, test[0].N)
     S.shape = (trial[0].N, trial[0].N)
-    if test[1]+trial[1] == 0:
+    if test[1]+trial[1] == 0 and test[0].family() == trial[0].family():
         keysK = np.sort(np.array(list(K.keys())))
         keysS = np.sort(np.array(list(S.keys())))
         lb = -keysK[0]+keysS[-1]+q
@@ -2097,7 +2097,6 @@ def _assemble_stencil(test, trial, measure=1):
         ub2 = Ac.getrow(1).indices
         if len(ub) == 0 and len(ub2) == 0:
             ub = 0
-            ub2 = 0
         else:
             ub = trial[0].dim() if len(ub) == 0 else ub.max()
             ub2 = trial[0].dim() if len(ub2) == 0 else ub2.max()-1
@@ -2107,7 +2106,6 @@ def _assemble_stencil(test, trial, measure=1):
         lb2 = Ac.getcol(1).indices
         if len(lb) == 0 and len(lb2) == 0:
             lb = 0
-            lb2 = 0
         else:
             lb = test[0].dim() if len(lb) == 0 else lb.max()
             lb2 = test[0].dim() if len(lb2) == 0 else lb2.max()-1

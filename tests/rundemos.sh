@@ -5,6 +5,7 @@ pushd $PWD/../demo
 python poisson1D.py
 python poisson2D.py
 python poisson3D.py
+python poisson2ND.py
 
 python fourier_poisson1D.py
 python fourier_poisson2D.py

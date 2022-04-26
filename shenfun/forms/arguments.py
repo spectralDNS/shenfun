@@ -21,7 +21,7 @@ airyai = lambda x: airy(x)[0]
 def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
                   domain=None, scaled=None, padding_factor=1, basis=None,
                   dealias_direct=False, coordinates=None, **kw):
-    """Return function space
+    r"""Return function space
 
     Parameters
     ----------

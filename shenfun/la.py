@@ -10,6 +10,7 @@ from shenfun.config import config
 from shenfun.optimization import optimizer, get_optimized
 from shenfun.matrixbase import SparseMatrix, extract_bc_matrices, \
     BlockMatrix, get_simplified_tpmatrices
+from shenfun.forms.arguments import Function
 from mpi4py import MPI
 
 comm = MPI.COMM_WORLD
@@ -981,7 +982,7 @@ class Solver2D:
 
         if len(self.bc_mats) > 0:
             u.set_boundary_dofs()
-            w0 = np.zeros_like(u)
+            w0 = Function(self.T).v
             for bc_mat in self.bc_mats:
                 b -= bc_mat.matvec(u, w0)
 

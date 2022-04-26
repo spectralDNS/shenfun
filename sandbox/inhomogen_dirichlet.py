@@ -54,7 +54,7 @@ import sys
 from sympy import symbols, sin, cos
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, \
-    Array, Function, Basis, FunctionSpace, la
+    Array, Function, FunctionSpace, la
 
 assert len(sys.argv) == 3, 'Call with two command-line arguments'
 assert sys.argv[-1] in ('legendre', 'chebyshev')
@@ -82,11 +82,11 @@ v = TestFunction(SD)
 fj = Array(SD, buffer=fe)
 
 # Compute right hand side of Poisson equation
-f_hat = Function(SD).set_boundary_dofs()
+f_hat = Function(SD)
 f_hat = inner(v, fj, output_array=f_hat)
 A = inner(v, div(grad(u))+alpha*grad(u))
 
-u_hat = Function(SD).set_boundary_dofs()
+u_hat = Function(SD)
 sol = la.Solver(A)
 u_hat = sol(f_hat, u_hat)
 uj = SD.backward(u_hat)
