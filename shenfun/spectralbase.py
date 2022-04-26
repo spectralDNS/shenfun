@@ -1029,6 +1029,59 @@ class SpectralBase:
         d.update(kwargs)
         return self.__class__(self.N, **d)
 
+    def get_testspace(self, PG=False, **kwargs):
+        r"""Return appropriate test space
+
+        If `PG` is True and it exists, the returned test space is one of the
+        testbases `Phi1`, `Phi2`, `Phi3` or `Phi4`, where the choice is made
+        on the number of boundary conditions in self. One boundary condition
+        uses `Phi1`, two uses `Phi2` etc. The returned basis then corresponds
+        to :math:`\{\phi^{(k)}_n\}`, where
+
+        .. math::
+
+            \phi_n^{(k)} = \frac{(1-x^2)^k}{h^{(k)}_{n+k}}\frac{d^k}{dx^k}Q_{n+k}
+
+        If `PG` is False (or if `PhiX` does not exist), then return self,
+        corresponding to a regular Galerkin method where the test space is the
+        same as the trial space.
+
+        Parameters
+        ----------
+        PG : bool, optional
+            If True, and if they exists, return one of `Phi1`, `Phi2`, `Phi3`
+            or `Phi4`. If False, then simply use the same test space as trial.
+
+        kwargs : keyword arguments, optional
+            Any other keyword arguments used in the creation of the test bases.
+            Only used if PG=True.
+
+        Returns
+        -------
+        Instance of :class:`.SpectralBase`
+        """
+        if not PG:
+            return self
+
+        d = dict(domain=self.domain,
+                 dtype=self.dtype,
+                 padding_factor=self.padding_factor,
+                 dealias_direct=self.dealias_direct,
+                 coordinates=self.coors.coordinates)
+        dim = self.N-self.dim()
+        if hasattr(self, 'bcs'):
+            d['bc'] = copy.deepcopy(self.bcs)
+        for key in ('alpha', 'beta', 'quad'):
+            if hasattr(self, key):
+                d[key] = object.__getattribute__(self, key)
+        d.update(kwargs)
+        mod = importlib.import_module(self.__module__)
+        if dim == 0 or not hasattr(mod, 'Phi1') :
+            return self.get_unplanned(**d)
+        assert dim > 0
+        P = getattr(mod, 'Phi'+str(dim))
+        return P(self.N+dim, **d)
+
     def get_refined(self, N, **kwargs):
         """Return space (otherwise as self) with N quadrature points
 

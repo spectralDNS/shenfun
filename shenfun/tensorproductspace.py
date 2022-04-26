@@ -1033,10 +1033,44 @@ class TensorProductSpace(PFFT):
         return padded
 
     def get_orthogonal(self):
+        """Return tensor product space using the orthogonal basis for all directions"""
         ortho = []
         for base in self.bases:
             ortho.append(base.get_orthogonal())
         return TensorProductSpace(self.subcomm, ortho, axes=self.axes,
+                                  dtype=self.forward.input_array.dtype,
+                                  coordinates=self.coors.coordinates)
+
+    def get_testspace(self, PG=False, **kwargs):
+        r"""Return appropriate test space
+
+        If `PG` is True and it exists, the returned test space makes use of the
+        testbases `Phi1`, `Phi2`, `Phi3` or `Phi4`, where the choice is made
+        on the number of boundary conditions in self. One boundary condition
+        uses `Phi1`, two uses `Phi2` etc.
+
+        If `PG` is False (or if `PhiX` does not exist for a given basis), then
+        return what is already in self.bases, corresponding to a regular Galerkin
+        method where the test space is the same as the trial space.
+
+        Parameters
+        ----------
+        PG : bool, optional
+            If True, and if they exists, make use of `Phi1`, `Phi2`, `Phi3`
+            or `Phi4`. If False, then simply use the same test space as trial.
+
+        kwargs : keyword arguments, optional
+            Any other keyword arguments used in the creation of the test bases.
+            Only used if PG=True.
+
+        Returns
+        -------
+        Instance of :class:`.TensorProductSpace`
+        """
+        test = []
+        for base in self.bases:
+            test.append(base.get_testspace(PG=PG, **kwargs))
+        return TensorProductSpace(self.subcomm, test, axes=self.axes,
                                   dtype=self.forward.input_array.dtype,
                                   coordinates=self.coors.coordinates)
 

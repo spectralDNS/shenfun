@@ -46,32 +46,30 @@ def main(N, family, bci, bcj, plotting=False):
     global fe, ue
     BX = FunctionSpace(N, family=family, bc=bcx[bci], domain=xdomain)
     BY = FunctionSpace(N, family=family, bc=bcy[bcj], domain=ydomain)
-    TX = FunctionSpace(N+2, family=family, basis='Phi2', domain=xdomain)
-    TY = FunctionSpace(N+2, family=family, basis='Phi2', domain=ydomain)
-    B = TensorProductSpace(comm, (BX, BY))
-    T = TensorProductSpace(comm, (TX, TY))
-    u = TrialFunction(B)
-    v = TestFunction(T)
+    trialspace = TensorProductSpace(comm, (BX, BY))
+    testspace = trialspace.get_testspace(PG=True)
+    u = TrialFunction(trialspace)
+    v = TestFunction(testspace)
 
     # Get f on quad points
-    fj = Array(T, buffer=fe)
+    fj = Array(testspace, buffer=fe)
 
     # Compare with analytical solution
-    ua = Array(B, buffer=ue)
+    ua = Array(trialspace, buffer=ue)
 
     constraint = ()
-    if B.use_fixed_gauge:
-        mean = dx(ua, weighted=True) / dx(Array(T, val=1), weighted=True)
+    if trialspace.use_fixed_gauge:
+        mean = dx(ua, weighted=True) / dx(Array(trialspace, val=1), weighted=True)
         constraint = ((0, mean),)
 
     # Compute right hand side of Poisson equation
-    f_hat = Function(T)
+    f_hat = Function(testspace)
     f_hat = inner(v, fj, output_array=f_hat)
 
     # Get left hand side of Poisson equation
     A = inner(v, -div(grad(u)))
 
-    u_hat = Function(B)
+    u_hat = Function(trialspace)
 
     sol = la.Solver2D(A)
     u_hat = sol(f_hat, u_hat, constraints=constraint)
@@ -82,7 +80,7 @@ def main(N, family, bci, bcj, plotting=False):
 
     if 'pytest' not in os.environ and plotting is True:
         import matplotlib.pyplot as plt
-        X, Y = T.local_mesh(True)
+        X, Y = trialspace.local_mesh(True)
         plt.contourf(X, Y, uj, 100);plt.colorbar()
         plt.figure()
         plt.contourf(X, Y, ua, 100);plt.colorbar()

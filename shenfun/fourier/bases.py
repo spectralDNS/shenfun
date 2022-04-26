@@ -310,7 +310,7 @@ class R2C(FourierBase):
     """
 
     def __init__(self, N, padding_factor=1., domain=(0., 2.*np.pi),
-                 dealias_direct=False, coordinates=None):
+                 dealias_direct=False, coordinates=None, **kw):
         FourierBase.__init__(self, N, padding_factor=padding_factor, dtype=float,
                              domain=domain, dealias_direct=dealias_direct,
                              coordinates=coordinates)
@@ -498,7 +498,7 @@ class C2C(FourierBase):
     """
 
     def __init__(self, N, padding_factor=1, domain=(0., 2.*np.pi),
-                 dealias_direct=False, coordinates=None):
+                 dealias_direct=False, coordinates=None, **kw):
         FourierBase.__init__(self, N, padding_factor=padding_factor, dtype=complex,
                              domain=domain, dealias_direct=dealias_direct,
                              coordinates=coordinates)
