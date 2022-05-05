@@ -5,6 +5,7 @@ from numpy.polynomial import laguerre as lag
 from scipy.special import eval_laguerre
 from mpi4py_fft import fftw
 from shenfun.matrixbase import SparseMatrix
+from shenfun.jacobi.recursions import n
 from shenfun.spectralbase import SpectralBase, Transform, islicedict, \
     slicedict, getCompositeBase, BoundaryConditions
 
@@ -191,6 +192,14 @@ class Orthogonal(SpectralBase):
     def sympy_basis(self, i=0, x=sp.symbols('x')):
         return sp.laguerre(i, x)*sp.exp(-x/2)
 
+    def L2_norm_sq(self, i):
+        return 1
+
+    def l2_norm_sq(self, i=None):
+        if i is None:
+            return np.ones(self.N)
+        return 1
+
     @property
     def is_orthogonal(self):
         return True
@@ -293,6 +302,7 @@ class CompactDirichlet(CompositeBase):
         CompositeBase.__init__(self, N, quad='LG', dtype=dtype, padding_factor=padding_factor,
                                bc=bc, dealias_direct=dealias_direct, domain=(0, np.inf),
                                coordinates=coordinates)
+        self._stencil = {0: 1, 1: -1}
 
     @staticmethod
     def boundary_condition():
@@ -302,14 +312,6 @@ class CompactDirichlet(CompositeBase):
     def short_name():
         return 'SD'
 
-    def stencil_matrix(self, N=None):
-        N = self.N if N is None else N
-        d = np.ones(N)
-        d[-1:] = 0
-        return SparseMatrix({0: d, 1: -d[:-1]}, (N, N))
-
-    def slice(self):
-        return slice(0, self.N-1)
 
 class CompactNeumann(CompositeBase):
     r"""Laguerre function space for Dirichlet boundary conditions
@@ -355,6 +357,7 @@ class CompactNeumann(CompositeBase):
         CompositeBase.__init__(self, N, dtype=dtype, quad='LG', padding_factor=padding_factor,
                                bc=bc, dealias_direct=dealias_direct, domain=(0, np.inf),
                                coordinates=coordinates)
+        self._stencil = {0: 1, 1: -(2*n+1)/(2*n+3)}
 
     @staticmethod
     def boundary_condition():
@@ -364,15 +367,6 @@ class CompactNeumann(CompositeBase):
     def short_name():
         return 'CN'
 
-    def stencil_matrix(self, N=None):
-        N = self.N if N is None else N
-        d = np.ones(N)
-        d[-1:] = 0
-        k = np.arange(N)
-        return SparseMatrix({0: d, 1: -(2*k[:-1]+1)/(2*k[:-1]+3)}, (N, N))
-
-    def slice(self):
-        return slice(0, self.N-1)
 
 class Generic(CompositeBase):
     r"""Function space for Laguerre space with any boundary conditions
@@ -430,24 +424,6 @@ class Generic(CompositeBase):
     @staticmethod
     def short_name():
         return 'GL'
-
-    def slice(self):
-        return slice(0, self.N-self.bcs.num_bcs())
-
-    def stencil_matrix(self, N=None):
-        from shenfun.utilities.findbasis import n
-        N = self.N if N is None else N
-        d0 = np.ones(N, dtype=int)
-        d0[-self.bcs.num_bcs():] = 0
-        d = {0: d0}
-        k = np.arange(N)
-        for i, s in enumerate(self._stencil):
-            di = sp.lambdify(n, s)(k[:-(i+1)])
-            if not np.allclose(di, 0):
-                if isinstance(di, np.ndarray):
-                    di[(N-self.bcs.num_bcs()):] = 0
-                d[i+1] = di
-        return SparseMatrix(d, (N, N))
 
 
 class BCBase(CompositeBase):

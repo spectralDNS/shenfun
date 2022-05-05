@@ -18,7 +18,7 @@ class BHHmat(SpectralMatrix):
     dimensions of M and N, respectively.
 
     """
-    def assemble(self):
+    def assemble(self, method):
         test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], H)
         assert isinstance(trial[0], H)
@@ -54,7 +54,7 @@ class AHHmat(SpectralMatrix):
     dimensions of M and N, respectively.
 
     """
-    def assemble(self):
+    def assemble(self, method):
         test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], H)
         assert isinstance(trial[0], H)

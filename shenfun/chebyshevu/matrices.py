@@ -67,51 +67,19 @@ To see that this is in fact the BUUmat:
 from __future__ import division
 
 import numpy as np
-import sympy as sp
 from shenfun.matrixbase import SpectralMatrix, SparseMatrix, SpectralMatDict
+from shenfun.spectralbase import get_norm_sq
 from shenfun.la import TwoDMA
 from shenfun.chebyshev import bases as chebbases
 from . import bases
 
-x = sp.symbols('x', real=True)
-xp = sp.symbols('x', real=True, positive=True)
-
 # Short names for instances of bases
 U = bases.Orthogonal
-CD = bases.CompactDirichlet
-CN = bases.CompactNeumann
-UD = bases.UpperDirichlet
-LD = bases.LowerDirichlet
-CB = bases.CompositeBase
 P1 = bases.Phi1
-P2 = bases.Phi2
-P3 = bases.Phi3
-P4 = bases.Phi4
-BCG = bases.BCGeneric
 
 SD = chebbases.ShenDirichlet
 SN = chebbases.ShenNeumann
 
-def get_UU(M, N, quad):
-    """Return main diagonal of :math:`(U_i, U_j)_w`
-
-    Parameters
-    ----------
-    M : int
-        The number of quadrature points in the test function
-    N : int
-        The number of quadrature points in the trial function
-    quad : str
-        Type of quadrature
-
-        - GC - Chebyshev-Gauss
-        - GU - Chebyshevu-Gauss
-    """
-    ll = np.pi/2
-    if quad == 'GC' and N >= M:
-        ll = np.ones(min(M, N), dtype=float)*ll
-        ll[-1] = 2*ll[-1]
-    return ll
 
 class BUUmat(SpectralMatrix):
     r"""Mass matrix :math:`B=(b_{kj}) \in \mathbb{R}^{M \times N}`, where
@@ -124,12 +92,11 @@ class BUUmat(SpectralMatrix):
     dimensions of M and N, respectively.
 
     """
-    def assemble(self):
+    def assemble(self, method):
         test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], U)
         assert isinstance(trial[0], U)
-        d = get_UU(test[0].N, trial[0].N, test[0].quad)
-        return {0: d}
+        return {0: get_norm_sq(test[0], trial[0], method)}
 
 class BP1SDmat(SpectralMatrix):
     r"""Mass matrix :math:`B=(b_{kj}) \in \mathbb{R}^{M \times N}`, where
@@ -143,7 +110,7 @@ class BP1SDmat(SpectralMatrix):
     trial spaces have dimensions of M and N, respectively.
 
     """
-    def assemble(self):
+    def assemble(self, method):
         test, trial = self.testfunction, self.trialfunction
         from shenfun.jacobi.recursions import Lmat, half, cn
         assert isinstance(test[0], P1)
@@ -173,7 +140,7 @@ class AP1SDmat(SpectralMatrix):
     trial spaces have dimensions of M and N, respectively.
 
     """
-    def assemble(self):
+    def assemble(self, method):
         test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], P1)
         assert isinstance(trial[0], SD)
@@ -198,7 +165,7 @@ class BP1SNmat(SpectralMatrix):
     trial spaces have dimensions of M and N, respectively.
 
     """
-    def assemble(self):
+    def assemble(self, method):
         from shenfun.jacobi.recursions import Lmat, half, cn
         test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], P1)
@@ -227,7 +194,7 @@ class AP1SNmat(SpectralMatrix):
     trial spaces have dimensions of M and N, respectively.
 
     """
-    def assemble(self):
+    def assemble(self, method):
         test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], P1)
         assert isinstance(trial[0], SN)

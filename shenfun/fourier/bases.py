@@ -82,6 +82,14 @@ class FourierBase(SpectralBase):
         k = self.wavenumbers(bcast=False, scaled=False, eliminate_highest_freq=False)
         return sp.exp(sp.I*k[i]*x)
 
+    def L2_norm_sq(self, i):
+        return 1
+
+    def l2_norm_sq(self, i=None):
+        if i is None:
+            return np.ones(self.N)
+        return 1
+
     def weight(self, x=sp.symbols('x', real=True)):
         return 1/self.domain_length()
 

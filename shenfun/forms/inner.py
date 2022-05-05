@@ -8,7 +8,7 @@ import numpy as np
 from shenfun.spectralbase import inner_product, SpectralBase, MixedFunctionSpace
 from shenfun.matrixbase import TPMatrix
 from shenfun.tensorproductspace import TensorProductSpace, CompositeSpace
-from shenfun.utilities import dx, split
+from shenfun.utilities import dx, split, scalar_product
 from shenfun.config import config
 from .arguments import Expr, Function, BasisFunction, Array, TestFunction
 
@@ -17,7 +17,7 @@ __all__ = ('inner',)
 #pylint: disable=line-too-long,inconsistent-return-statements,too-many-return-statements
 
 
-def inner(expr0, expr1, output_array=None, assemble=None):
+def inner(expr0, expr1, output_array=None, assemble=None, kind=None, fixed_resolution=None):
     r"""
     Return (weighted or unweighted) discrete inner product
 
@@ -70,8 +70,33 @@ def inner(expr0, expr1, output_array=None, assemble=None):
         Optional return array for linear form.
 
     assemble : None or str, optional
-        If None, it determines how to perform the integration, see
-        `config['matrix']['assemble']`
+        Determines how to perform the integration
+
+        - 'quadrature' (default)
+        - 'exact'
+        - 'adaptive'
+
+    kind : None or str, optional
+        The kind of method used to do quadrature.
+
+        - 'implemented'
+        - 'stencil'
+        - 'vandermonde'
+
+        The default is to first try to look for implemented kind, and if that
+        fails try first 'stencil' and then finally fall back on quadrature.
+
+    fixed_resolution : None or str, optional
+        A fixed number of quadrature points used to compute the inner product.
+        If 'fixed_resolution' is set, then assemble is set to 'quadrature' and
+        kind is set to 'vandermonde'.
+
+    Note
+    ----
+    For most matrices all methods will lead to the same result. For bilinear
+    forms with polynomial coefficients regular quadrature will become
+    inaccurate and a 'fixed_resolution' higher than the regular number of
+    quadrature points should be considered.
 
     Returns
     -------
@@ -193,15 +218,18 @@ def inner(expr0, expr1, output_array=None, assemble=None):
             trial = expr1
         if output_array is None:
             output_array = Function(test.function_space())
-        if assemble == 'quadrature_fixed_resolution':
-            M = config['quadrature']['fixed_resolution']
-            if M is None:
-                M = int(test.function_space().N*config['quadrature']['resolution_factor'])
-            testM = test.function_space().get_refined(M)
-            outM = testM.scalar_product(Array(testM, buffer=trial))
-            output_array[:test.function_space().dim()] = outM[:test.function_space().dim()]
-        else:
-            output_array = test.function_space().scalar_product(Array(test.function_space(), buffer=trial), output_array)
+
+        if assemble in ('exact', 'adaptive'):
+            output_array[:] = scalar_product(test, trial, assemble=assemble)
+
+        else: # quadrature
+            if fixed_resolution is not None:
+                M = fixed_resolution
+                testM = test.function_space().get_refined(M)
+                outM = testM.scalar_product(Array(testM, buffer=trial))
+                output_array[:test.function_space().dim()] = outM[:test.function_space().dim()]
+            else:
+                output_array = test.function_space().scalar_product(Array(test.function_space(), buffer=trial), output_array)
         return output_array
 
     assert np.all([hasattr(e, 'argument') for e in (expr0, expr1)])
@@ -246,7 +274,7 @@ def inner(expr0, expr1, output_array=None, assemble=None):
                                     continue
 
                                 w0.fill(0)
-                                xij += inner(teij*gij[i, k]*gij[j, l], trkl, output_array=w0, assemble=assemble)
+                                xij += inner(teij*gij[i, k]*gij[j, l], trkl, output_array=w0, assemble=assemble, kind=kind, fixed_resolution=fixed_resolution)
 
             elif test.tensor_rank == 1:
                 for i, (te, x) in enumerate(zip(test, output_array)):
@@ -254,7 +282,7 @@ def inner(expr0, expr1, output_array=None, assemble=None):
                         if gij[i, j] == 0:
                             continue
                         w0.fill(0)
-                        x += inner(te*gij[i, j], tr, output_array=w0, assemble=assemble)
+                        x += inner(te*gij[i, j], tr, output_array=w0, assemble=assemble, kind=kind, fixed_resolution=fixed_resolution)
 
             return output_array
 
@@ -269,7 +297,7 @@ def inner(expr0, expr1, output_array=None, assemble=None):
                         for l, trkl in enumerate(trk):
                             if gij[j, l] == 0:
                                 continue
-                            p = inner(teij*gij[i, k]*gij[j, l], trkl, assemble=assemble)
+                            p = inner(teij*gij[i, k]*gij[j, l], trkl, assemble=assemble, kind=kind, fixed_resolution=fixed_resolution)
                             result += p if isinstance(p, list) else [p]
 
         elif test.tensor_rank == 1:
@@ -277,7 +305,7 @@ def inner(expr0, expr1, output_array=None, assemble=None):
                 for j, tr in enumerate(trial):
                     if gij[i, j] == 0:
                         continue
-                    l = inner(te, tr*gij[i, j], assemble=assemble)
+                    l = inner(te, tr*gij[i, j], assemble=assemble, kind=kind, fixed_resolution=fixed_resolution)
                     result += l if isinstance(l, list) else [l]
 
         return result[0] if len(result) == 1 else result
@@ -353,7 +381,7 @@ def inner(expr0, expr1, output_array=None, assemble=None):
                             msi = dv[msx]
 
                             # assemble inner product
-                            AA = inner_product((tt, a), (ts, b), msi, assemble=assemble)
+                            AA = inner_product((tt, a), (ts, b), msi, assemble=assemble, kind=kind, fixed_resolution=fixed_resolution)
                             if len(AA) == 0:
                                 sc = 0
                                 continue
@@ -364,7 +392,7 @@ def inner(expr0, expr1, output_array=None, assemble=None):
 
                             if ts.has_nonhomogeneous_bcs:
                                 tsc = ts.get_bc_basis()
-                                BB = inner_product((tt, a), (tsc, b), msi, assemble=assemble)
+                                BB = inner_product((tt, a), (tsc, b), msi, assemble=assemble, kind=kind, fixed_resolution=fixed_resolution)
                                 #if not abs(BB.scale-1.) < 1e-8:
                                 #    BB.incorporate_scale()
                                 #if BB.diags('csr').nnz > 0:

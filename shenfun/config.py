@@ -13,22 +13,8 @@ config = {
         'verbose': False,
     },
     'basisvectors': 'normal',
-    'quadrature':
-    {
-        'fixed_resolution': None, # For using a fixed number of quadrature points. Used with quadrature_fixed_resolution.
-        'resolution_factor': 1.5, # Used if fixed_resolution is None
-    },
     'matrix':
     {
-        'assemble':
-        {
-            'kind': None,
-            #'kind': 'quadrature_vandermonde',
-            #'kind': 'quadrature_stencil',
-            #'kind: ''quadrature_fixed_resolution',
-            #'kind': 'exact_quadpy',
-            #'kind': 'exact_sympy'
-        },
         'sparse':
         {
             #'permc_spec': 'NATURAL',

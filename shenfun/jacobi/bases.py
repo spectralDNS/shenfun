@@ -34,6 +34,7 @@ from shenfun.config import config
 from shenfun.spectralbase import SpectralBase, Transform, islicedict, \
     slicedict, getCompositeBase, BoundaryConditions
 from shenfun.matrixbase import SparseMatrix
+from .recursions import h, alfa, beta, n
 
 try:
     import quadpy
@@ -220,6 +221,14 @@ class Orthogonal(SpectralBase):
     def sympy_basis(self, i=0, x=xp):
         return sp.jacobi(i, self.alpha, self.beta, x)
 
+    def L2_norm_sq(self, i):
+        return h(self.alpha, self.beta, i, 0)
+
+    def l2_norm_sq(self, i=None):
+        if i is None:
+            return sp.lambdify(n, h(self.alpha, self.beta, n, 0))(np.arange(self.N))
+        return h(self.alpha, self.beta, i, 0)
+
     @staticmethod
     def bnd_values(k=0, alpha=0, beta=0):
         from shenfun.jacobi.recursions import bnd_values
@@ -346,15 +355,17 @@ class Phi1(CompositeBase):
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                alpha=alpha, beta=beta, coordinates=coordinates)
-        self._stencil_matrix = {}
-        #self.b0n = sp.simplify(b(alpha, beta, n+1, n) / h(alpha, beta, n, 0))
-        #self.b1n = sp.simplify(b(alpha, beta, n+1, n+1) / h(alpha, beta, n+1, 0))
-        #self.b2n = sp.simplify(b(alpha, beta, n+1, n+2) / h(alpha, beta, n+2, 0))
+        #self._stencil = {
+        #   0: sp.simplify(b(alpha, beta, n+1, n) / h(alpha, beta, n, 0)),
+        #   2: sp.simplify(b(alpha, beta, n+1, n+1) / h(alpha, beta, n+1, 0)),
+        #   4: sp.simplify(b(alpha, beta, n+1, n+2) / h(alpha, beta, n+2, 0))}
         a, b = alpha, beta
-        self.b0n = 2**(-a-b)*sp.gamma(n+1)*sp.gamma(a+b+n+2)/((a+b+2*n+2)*sp.gamma(a+n+1)*sp.gamma(b+n+1))
+        self._stencil = {
+            0: 2**(-a-b)*sp.gamma(n+1)*sp.gamma(a+b+n+2)/((a+b+2*n+2)*sp.gamma(a+n+1)*sp.gamma(b+n+1)),
+            2: -2**(-a-b)*sp.gamma(n+3)*sp.gamma(a+b+n+2)/((a+b+2*n+4)*sp.gamma(a+n+2)*sp.gamma(b+n+2))
+        }
         if alpha != beta:
-            self.b1n = 2**(-a-b)*(a-b)*(a+b+2*n+3)*sp.gamma(n+2)*sp.gamma(a+b+n+2)/((a+b+2*n+2)*(a+b+2*n+4)*sp.gamma(a+n+2)*sp.gamma(b+n+2))
-        self.b2n = -2**(-a-b)*sp.gamma(n+3)*sp.gamma(a+b+n+2)/((a+b+2*n+4)*sp.gamma(a+n+2)*sp.gamma(b+n+2))
+            self._stencil[1] = 2**(-a-b)*(a-b)*(a+b+2*n+3)*sp.gamma(n+2)*sp.gamma(a+b+n+2)/((a+b+2*n+2)*(a+b+2*n+4)*sp.gamma(a+n+2)*sp.gamma(b+n+2))
 
     @staticmethod
     def boundary_condition():
@@ -363,25 +374,6 @@ class Phi1(CompositeBase):
     @staticmethod
     def short_name():
         return 'P1'
-
-    def stencil_matrix(self, N=None):
-        N = self.N if N is None else N
-        if N in self._stencil_matrix:
-            return self._stencil_matrix[N]
-        k = np.arange(N)
-        d0, d2 = np.zeros(N), np.zeros(N-2)
-        d0[:-2] = sp.lambdify(n, self.b0n)(k[:N-2])
-        d2[:] = sp.lambdify(n, self.b2n)(k[:N-2])
-        if self.alpha != self.beta:
-            d1 = np.zeros(N-1)
-            d1[:-1] = sp.lambdify(n, self.b1n)(k[:N-2])
-            self._stencil_matrix[N] = SparseMatrix({0: d0, 1: d1, 2: d2}, (N, N))
-        else:
-            self._stencil_matrix[N] = SparseMatrix({0: d0, 2: d2}, (N, N))
-        return self._stencil_matrix[N]
-
-    def slice(self):
-        return slice(0, self.N-2)
 
 
 class Phi2(CompositeBase):
@@ -440,20 +432,21 @@ class Phi2(CompositeBase):
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                alpha=alpha, beta=beta, coordinates=coordinates)
-        self._stencil_matrix = {}
         a, b = alpha, beta
-        #self.b0n = sp.simplify(matpow(b, 2, alpha, beta, n+2, n) / h(alpha, beta, n, 0))
-        #self.b1n = sp.simplify(matpow(b, 2, alpha, beta, n+2, n+1) / h(alpha, beta, n+1, 0))
-        #self.b2n = sp.simplify(matpow(b, 2, alpha, beta, n+2, n+2) / h(alpha, beta, n+2, 0))
-        #self.b3n = sp.simplify(matpow(b, 2, alpha, beta, n+2, n+3) / h(alpha, beta, n+3, 0))
-        #self.b4n = sp.simplify(matpow(b, 2, alpha, beta, n+2, n+4) / h(alpha, beta, n+4, 0))
-        self.b0n = 2**(-a - b + 1)*sp.gamma(n + 1)*sp.gamma(a + b + n + 3)/((a + b + 2*n + 2)*(a + b + 2*n + 3)*(a + b + 2*n + 4)*sp.gamma(a + n + 1)*sp.gamma(b + n + 1))
-        self.b2n = 2**(-a - b + 1)*(a + b + 2*n + 5)*(a**2 - 4*a*b - 2*a*n - 5*a + b**2 - 2*b*n - 5*b - 2*n**2 - 10*n - 12)*sp.gamma(n + 3)*sp.gamma(a + b + n + 3)/((a + b + 2*n + 3)*(a + b + 2*n + 4)*(a + b + 2*n + 6)*(a + b + 2*n + 7)*sp.gamma(a + n + 3)*sp.gamma(b + n + 3))
-        self.b4n = 2**(-a - b + 1)*sp.gamma(n + 5)*sp.gamma(a + b + n + 3)/((a + b + 2*n + 6)*(a + b + 2*n + 7)*(a + b + 2*n + 8)*sp.gamma(a + n + 3)*sp.gamma(b + n + 3))
-
+        #self._stencil = {
+        #   0: sp.simplify(matpow(b, 2, alpha, beta, n+2, n) / h(alpha, beta, n, 0)),
+        #   2: sp.simplify(matpow(b, 2, alpha, beta, n+2, n+1) / h(alpha, beta, n+1, 0)),
+        #   4: sp.simplify(matpow(b, 2, alpha, beta, n+2, n+2) / h(alpha, beta, n+2, 0)),
+        #   6: sp.simplify(matpow(b, 2, alpha, beta, n+2, n+3) / h(alpha, beta, n+3, 0)),
+        #   8: sp.simplify(matpow(b, 2, alpha, beta, n+2, n+4) / h(alpha, beta, n+4, 0))}
+        self._stencil = {
+            0: 2**(-a - b + 1)*sp.gamma(n + 1)*sp.gamma(a + b + n + 3)/((a + b + 2*n + 2)*(a + b + 2*n + 3)*(a + b + 2*n + 4)*sp.gamma(a + n + 1)*sp.gamma(b + n + 1)),
+            2: 2**(-a - b + 1)*(a + b + 2*n + 5)*(a**2 - 4*a*b - 2*a*n - 5*a + b**2 - 2*b*n - 5*b - 2*n**2 - 10*n - 12)*sp.gamma(n + 3)*sp.gamma(a + b + n + 3)/((a + b + 2*n + 3)*(a + b + 2*n + 4)*(a + b + 2*n + 6)*(a + b + 2*n + 7)*sp.gamma(a + n + 3)*sp.gamma(b + n + 3)),
+            4: 2**(-a - b + 1)*sp.gamma(n + 5)*sp.gamma(a + b + n + 3)/((a + b + 2*n + 6)*(a + b + 2*n + 7)*(a + b + 2*n + 8)*sp.gamma(a + n + 3)*sp.gamma(b + n + 3))
+        }
         if self.alpha != self.beta:
-            self.b1n = 2**(-a - b + 2)*(a - b)*sp.gamma(n + 2)*sp.gamma(a + b + n + 3)/((a + b + 2*n + 2)*(a + b + 2*n + 4)*(a + b + 2*n + 6)*sp.gamma(a + n + 2)*sp.gamma(b + n + 2))
-            self.b3n = -2**(-a - b + 2)*(a - b)*sp.gamma(n + 4)*sp.gamma(a + b + n + 3)/((a + b + 2*n + 4)*(a + b + 2*n + 6)*(a + b + 2*n + 8)*sp.gamma(a + n + 3)*sp.gamma(b + n + 3))
+            self._stencil[1] = 2**(-a - b + 2)*(a - b)*sp.gamma(n + 2)*sp.gamma(a + b + n + 3)/((a + b + 2*n + 2)*(a + b + 2*n + 4)*(a + b + 2*n + 6)*sp.gamma(a + n + 2)*sp.gamma(b + n + 2))
+            self._stencil[3] = -2**(-a - b + 2)*(a - b)*sp.gamma(n + 4)*sp.gamma(a + b + n + 3)/((a + b + 2*n + 4)*(a + b + 2*n + 6)*(a + b + 2*n + 8)*sp.gamma(a + n + 3)*sp.gamma(b + n + 3))
 
     @staticmethod
     def boundary_condition():
@@ -462,27 +455,6 @@ class Phi2(CompositeBase):
     @staticmethod
     def short_name():
         return 'P2'
-
-    def stencil_matrix(self, N=None):
-        N = self.N if N is None else N
-        if N in self._stencil_matrix:
-            return self._stencil_matrix[N]
-        k = np.arange(N)
-        d0, d2, d4 = np.zeros(N), np.zeros(N-2), np.zeros(N-4)
-        d0[:-4] = sp.lambdify(n, sp.simplify(self.b0n))(k[:N-4])
-        d2[:-2] = sp.lambdify(n, sp.simplify(self.b2n))(k[:N-4])
-        d4[:] = sp.lambdify(n, sp.simplify(self.b4n))(k[:N-4])
-        if self.alpha != self.beta:
-            d1, d3 = np.zeros(N-1), np.zeros(N-3)
-            d1[:-3] = sp.lambdify(n, sp.simplify(self.b1n))(k[:N-4])
-            d3[:-1] = sp.lambdify(n, sp.simplify(self.b3n))(k[:N-4])
-            self._stencil_matrix[N] = SparseMatrix({0: d0, 1: d1, 2: d2, 3: d3, 4: d4}, (N, N))
-        else:
-            self._stencil_matrix[N] = SparseMatrix({0: d0, 2: d2, 4: d4}, (N, N))
-        return self._stencil_matrix[N]
-
-    def slice(self):
-        return slice(0, self.N-4)
 
 class Phi3(CompositeBase):
     r"""Function space for 6th order equations
@@ -538,24 +510,25 @@ class Phi3(CompositeBase):
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                alpha=alpha, beta=beta, coordinates=coordinates)
-        self._stencil_matrix = {}
-        #self.b0n = sp.simplify(matpow(b, 3, self.alpha, self.beta, n+3, n) / h(self.alpha, self.beta, n, 0))
-        #self.b2n = sp.simplify(matpow(b, 3, self.alpha, self.beta, n+3, n+2) / h(self.alpha, self.beta, n+2, 0))
-        #self.b4n = sp.simplify(matpow(b, 3, self.alpha, self.beta, n+3, n+4) / h(self.alpha, self.beta, n+4, 0))
-        #self.b6n = sp.simplify(matpow(b, 3, self.alpha, self.beta, n+3, n+6) / h(self.alpha, self.beta, n+6, 0))
-        #self.b1n, self.b3n, self.b5n = (None,)*3
+        #self._stencil = {
+        #   0: sp.simplify(matpow(b, 3, self.alpha, self.beta, n+3, n) / h(self.alpha, self.beta, n, 0)),
+        #   2: sp.simplify(matpow(b, 3, self.alpha, self.beta, n+3, n+2) / h(self.alpha, self.beta, n+2, 0)),
+        #   4: sp.simplify(matpow(b, 3, self.alpha, self.beta, n+3, n+4) / h(self.alpha, self.beta, n+4, 0)),
+        #   6: sp.simplify(matpow(b, 3, self.alpha, self.beta, n+3, n+6) / h(self.alpha, self.beta, n+6, 0))}
         a, b = alpha, beta
-        self.b0n = 2**(-a - b + 2)*sp.gamma(n + 1)*sp.gamma(a + b + n + 4)/((a + b + 2*n + 2)*(a + b + 2*n + 3)*(a + b + 2*n + 4)*(a + b + 2*n + 5)*(a + b + 2*n + 6)*sp.gamma(a + n + 1)*sp.gamma(b + n + 1))
-        self.b2n = 3*2**(-a - b + 2)*(a**2 - 3*a*b - a*n - 3*a + b**2 - b*n - 3*b - n**2 - 6*n - 8)*sp.gamma(n + 3)*sp.gamma(a + b + n + 4)/((a + b + 2*n + 3)*(a + b + 2*n + 4)*(a + b + 2*n + 6)*(a + b + 2*n + 8)*(a + b + 2*n + 9)*sp.gamma(a + n + 3)*sp.gamma(b + n + 3))
-        self.b4n = 3*2**(-a - b + 2)*(-a**2 + 3*a*b + a*n + 4*a - b**2 + b*n + 4*b + n**2 + 8*n + 15)*sp.gamma(n + 5)*sp.gamma(a + b + n + 4)/((a + b + 2*n + 5)*(a + b + 2*n + 6)*(a + b + 2*n + 8)*(a + b + 2*n + 10)*(a + b + 2*n + 11)*sp.gamma(a + n + 4)*sp.gamma(b + n + 4))
-        self.b6n = -2**(-a - b + 2)*sp.gamma(n + 7)*sp.gamma(a + b + n + 4)/((a + b + 2*n + 8)*(a + b + 2*n + 9)*(a + b + 2*n + 10)*(a + b + 2*n + 11)*(a + b + 2*n + 12)*sp.gamma(a + n + 4)*sp.gamma(b + n + 4))
+        self._stencil = {
+            0: 2**(-a - b + 2)*sp.gamma(n + 1)*sp.gamma(a + b + n + 4)/((a + b + 2*n + 2)*(a + b + 2*n + 3)*(a + b + 2*n + 4)*(a + b + 2*n + 5)*(a + b + 2*n + 6)*sp.gamma(a + n + 1)*sp.gamma(b + n + 1)),
+            2: 3*2**(-a - b + 2)*(a**2 - 3*a*b - a*n - 3*a + b**2 - b*n - 3*b - n**2 - 6*n - 8)*sp.gamma(n + 3)*sp.gamma(a + b + n + 4)/((a + b + 2*n + 3)*(a + b + 2*n + 4)*(a + b + 2*n + 6)*(a + b + 2*n + 8)*(a + b + 2*n + 9)*sp.gamma(a + n + 3)*sp.gamma(b + n + 3)),
+            4: 3*2**(-a - b + 2)*(-a**2 + 3*a*b + a*n + 4*a - b**2 + b*n + 4*b + n**2 + 8*n + 15)*sp.gamma(n + 5)*sp.gamma(a + b + n + 4)/((a + b + 2*n + 5)*(a + b + 2*n + 6)*(a + b + 2*n + 8)*(a + b + 2*n + 10)*(a + b + 2*n + 11)*sp.gamma(a + n + 4)*sp.gamma(b + n + 4)),
+            6: -2**(-a - b + 2)*sp.gamma(n + 7)*sp.gamma(a + b + n + 4)/((a + b + 2*n + 8)*(a + b + 2*n + 9)*(a + b + 2*n + 10)*(a + b + 2*n + 11)*(a + b + 2*n + 12)*sp.gamma(a + n + 4)*sp.gamma(b + n + 4))
+        }
         if alpha != beta:
-            #self.b1n = sp.simplify(matpow(b, 3, self.alpha, self.beta, n+3, n+1) / h(self.alpha, self.beta, n+1, 0))
-            #self.b3n = sp.simplify(matpow(b, 3, self.alpha, self.beta, n+3, n+3) / h(self.alpha, self.beta, n+3, 0))
-            #self.b5n = sp.simplify(matpow(b, 3, self.alpha, self.beta, n+3, n+5) / h(self.alpha, self.beta, n+5, 0))
-            self.b1n = 3*2**(-a - b + 2)*(a - b)*sp.gamma(n + 2)*sp.gamma(a + b + n + 4)/((a + b + 2*n + 2)*(a + b + 2*n + 4)*(a + b + 2*n + 5)*(a + b + 2*n + 6)*(a + b + 2*n + 8)*sp.gamma(a + n + 2)*sp.gamma(b + n + 2))
-            self.b3n = 2**(-a - b + 2)*(a - b)*(a + b + 2*n + 7)*(a**2 - 8*a*b - 6*a*n - 21*a + b**2 - 6*b*n - 21*b - 6*n**2 - 42*n - 70)*sp.gamma(n + 4)*sp.gamma(a + b + n + 4)/((a + b + 2*n + 4)*(a + b + 2*n + 5)*(a + b + 2*n + 6)*(a + b + 2*n + 8)*(a + b + 2*n + 9)*(a + b + 2*n + 10)*sp.gamma(a + n + 4)*sp.gamma(b + n + 4))
-            self.b5n = 3*2**(-a - b + 2)*(a - b)*sp.gamma(n + 6)*sp.gamma(a + b + n + 4)/((a + b + 2*n + 6)*(a + b + 2*n + 8)*(a + b + 2*n + 9)*(a + b + 2*n + 10)*(a + b + 2*n + 12)*sp.gamma(a + n + 4)*sp.gamma(b + n + 4))
+            #self._stencil[1] = sp.simplify(matpow(b, 3, self.alpha, self.beta, n+3, n+1) / h(self.alpha, self.beta, n+1, 0))
+            #self._stencil[3] = sp.simplify(matpow(b, 3, self.alpha, self.beta, n+3, n+3) / h(self.alpha, self.beta, n+3, 0))
+            #self._stencil[5] = sp.simplify(matpow(b, 3, self.alpha, self.beta, n+3, n+5) / h(self.alpha, self.beta, n+5, 0))
+            self._stencil[1] = 3*2**(-a - b + 2)*(a - b)*sp.gamma(n + 2)*sp.gamma(a + b + n + 4)/((a + b + 2*n + 2)*(a + b + 2*n + 4)*(a + b + 2*n + 5)*(a + b + 2*n + 6)*(a + b + 2*n + 8)*sp.gamma(a + n + 2)*sp.gamma(b + n + 2))
+            self._stencil[3] = 2**(-a - b + 2)*(a - b)*(a + b + 2*n + 7)*(a**2 - 8*a*b - 6*a*n - 21*a + b**2 - 6*b*n - 21*b - 6*n**2 - 42*n - 70)*sp.gamma(n + 4)*sp.gamma(a + b + n + 4)/((a + b + 2*n + 4)*(a + b + 2*n + 5)*(a + b + 2*n + 6)*(a + b + 2*n + 8)*(a + b + 2*n + 9)*(a + b + 2*n + 10)*sp.gamma(a + n + 4)*sp.gamma(b + n + 4))
+            self._stencil[5] = 3*2**(-a - b + 2)*(a - b)*sp.gamma(n + 6)*sp.gamma(a + b + n + 4)/((a + b + 2*n + 6)*(a + b + 2*n + 8)*(a + b + 2*n + 9)*(a + b + 2*n + 10)*(a + b + 2*n + 12)*sp.gamma(a + n + 4)*sp.gamma(b + n + 4))
 
     @staticmethod
     def boundary_condition():
@@ -564,29 +537,6 @@ class Phi3(CompositeBase):
     @staticmethod
     def short_name():
         return 'P3'
-
-    def stencil_matrix(self, N=None):
-        N = self.N if N is None else N
-        if N in self._stencil_matrix:
-            return self._stencil_matrix[N]
-        k = np.arange(N)
-        d0, d2, d4, d6 = np.zeros(N), np.zeros(N-2), np.zeros(N-4), np.zeros(N-6)
-        d0[:-6] = sp.lambdify(n, self.b0n)(k[:N-6])
-        d2[:-4] = sp.lambdify(n, self.b2n)(k[:N-6])
-        d4[:-2] = sp.lambdify(n, self.b4n)(k[:N-6])
-        d6[:] = sp.lambdify(n, self.b6n)(k[:N-6])
-        if self.alpha != self.beta:
-            d1, d3, d5 = np.zeros(N-1), np.zeros(N-3), np.zeros(N-5)
-            d1[:-7] = sp.lambdify(n, self.b1n)(k[:N-6])
-            d3[:-3] = sp.lambdify(n, self.b3n)(k[:N-6])
-            d5[:-1] = sp.lambdify(n, self.b5n)(k[:N-6])
-            self._stencil_matrix[N] = SparseMatrix({0: d0, 1: d2, 2: d2, 3: d3, 4: d4, 5: d5, 6: d6}, (N, N))
-        else:
-            self._stencil_matrix[N] = SparseMatrix({0: d0, 2: d2, 4: d4, 6: d6}, (N, N))
-        return self._stencil_matrix[N]
-
-    def slice(self):
-        return slice(0, self.N-6)
 
 
 class Phi4(CompositeBase):
@@ -644,28 +594,30 @@ class Phi4(CompositeBase):
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                alpha=alpha, beta=beta, coordinates=coordinates)
-        self._stencil_matrix = {}
-        #self.b0n = sp.simplify(matpow(b, 4, alpha, beta, n+4, n) / h(alpha, beta, n, 0))
-        #self.b2n = sp.simplify(matpow(b, 4, alpha, beta, n+4, n+2) / h(alpha, beta, n+2, 0))
-        #self.b4n = sp.simplify(matpow(b, 4, alpha, beta, n+4, n+4) / h(alpha, beta, n+4, 0))
-        #self.b6n = sp.simplify(matpow(b, 4, alpha, beta, n+4, n+6) / h(alpha, beta, n+6, 0))
-        #self.b8n = sp.simplify(matpow(b, 4, alpha, beta, n+4, n+8) / h(alpha, beta, n+8, 0))
+        #self._stencil = {
+        #   0: sp.simplify(matpow(b, 4, alpha, beta, n+4, n) / h(alpha, beta, n, 0)),
+        #   2: sp.simplify(matpow(b, 4, alpha, beta, n+4, n+2) / h(alpha, beta, n+2, 0)),
+        #   4: sp.simplify(matpow(b, 4, alpha, beta, n+4, n+4) / h(alpha, beta, n+4, 0)),
+        #   6: sp.simplify(matpow(b, 4, alpha, beta, n+4, n+6) / h(alpha, beta, n+6, 0)),
+        #   8: sp.simplify(matpow(b, 4, alpha, beta, n+4, n+8) / h(alpha, beta, n+8, 0))}
         a, b = alpha, beta
-        self.b0n = 2**(-a - b + 3)*sp.gamma(n + 1)*sp.gamma(a + b + n + 5)/((a + b + 2*n + 2)*(a + b + 2*n + 3)*(a + b + 2*n + 4)*(a + b + 2*n + 5)*(a + b + 2*n + 6)*(a + b + 2*n + 7)*(a + b + 2*n + 8)*sp.gamma(a + n + 1)*sp.gamma(b + n + 1))
-        self.b2n = 2**(-a - b + 4)*(3*a**2 - 8*a*b - 2*a*n - 7*a + 3*b**2 - 2*b*n - 7*b - 2*n**2 - 14*n - 20)*sp.gamma(n + 3)*sp.gamma(a + b + n + 5)/((a + b + 2*n + 3)*(a + b + 2*n + 4)*(a + b + 2*n + 6)*(a + b + 2*n + 7)*(a + b + 2*n + 8)*(a + b + 2*n + 10)*(a + b + 2*n + 11)*sp.gamma(a + n + 3)*sp.gamma(b + n + 3))
-        self.b4n = 2**(-a - b + 3)*(a + b + 2*n + 9)*(a**4 - 16*a**3*b - 12*a**3*n - 54*a**3 + 36*a**2*b**2 + 24*a**2*b*n + 108*a**2*b - 6*a**2*n**2 - 54*a**2*n - 109*a**2 - 16*a*b**3 + 24*a*b**2*n + 108*a*b**2 + 48*a*b*n**2 + 432*a*b*n + 932*a*b + 12*a*n**3 + 162*a*n**2 + 714*a*n + 1026*a + b**4 - 12*b**3*n - 54*b**3 - 6*b**2*n**2 - 54*b**2*n - 109*b**2 + 12*b*n**3 + 162*b*n**2 + 714*b*n + 1026*b + 6*n**4 + 108*n**3 + 714*n**2 + 2052*n + 2160)*sp.gamma(n + 5)*sp.gamma(a + b + n + 5)/((a + b + 2*n + 5)*(a + b + 2*n + 6)*(a + b + 2*n + 7)*(a + b + 2*n + 8)*(a + b + 2*n + 10)*(a + b + 2*n + 11)*(a + b + 2*n + 12)*(a + b + 2*n + 13)*sp.gamma(a + n + 5)*sp.gamma(b + n + 5))
-        self.b6n = 2**(-a - b + 4)*(3*a**2 - 8*a*b - 2*a*n - 11*a + 3*b**2 - 2*b*n - 11*b - 2*n**2 - 22*n - 56)*sp.gamma(n + 7)*sp.gamma(a + b + n + 5)/((a + b + 2*n + 7)*(a + b + 2*n + 8)*(a + b + 2*n + 10)*(a + b + 2*n + 11)*(a + b + 2*n + 12)*(a + b + 2*n + 14)*(a + b + 2*n + 15)*sp.gamma(a + n + 5)*sp.gamma(b + n + 5))
-        self.b8n = 2**(-a - b + 3)*sp.gamma(n + 9)*sp.gamma(a + b + n + 5)/((a + b + 2*n + 10)*(a + b + 2*n + 11)*(a + b + 2*n + 12)*(a + b + 2*n + 13)*(a + b + 2*n + 14)*(a + b + 2*n + 15)*(a + b + 2*n + 16)*sp.gamma(a + n + 5)*sp.gamma(b + n + 5))
+        self._stencil = {
+            0: 2**(-a - b + 3)*sp.gamma(n + 1)*sp.gamma(a + b + n + 5)/((a + b + 2*n + 2)*(a + b + 2*n + 3)*(a + b + 2*n + 4)*(a + b + 2*n + 5)*(a + b + 2*n + 6)*(a + b + 2*n + 7)*(a + b + 2*n + 8)*sp.gamma(a + n + 1)*sp.gamma(b + n + 1)),
+            2: 2**(-a - b + 4)*(3*a**2 - 8*a*b - 2*a*n - 7*a + 3*b**2 - 2*b*n - 7*b - 2*n**2 - 14*n - 20)*sp.gamma(n + 3)*sp.gamma(a + b + n + 5)/((a + b + 2*n + 3)*(a + b + 2*n + 4)*(a + b + 2*n + 6)*(a + b + 2*n + 7)*(a + b + 2*n + 8)*(a + b + 2*n + 10)*(a + b + 2*n + 11)*sp.gamma(a + n + 3)*sp.gamma(b + n + 3)),
+            4: 2**(-a - b + 3)*(a + b + 2*n + 9)*(a**4 - 16*a**3*b - 12*a**3*n - 54*a**3 + 36*a**2*b**2 + 24*a**2*b*n + 108*a**2*b - 6*a**2*n**2 - 54*a**2*n - 109*a**2 - 16*a*b**3 + 24*a*b**2*n + 108*a*b**2 + 48*a*b*n**2 + 432*a*b*n + 932*a*b + 12*a*n**3 + 162*a*n**2 + 714*a*n + 1026*a + b**4 - 12*b**3*n - 54*b**3 - 6*b**2*n**2 - 54*b**2*n - 109*b**2 + 12*b*n**3 + 162*b*n**2 + 714*b*n + 1026*b + 6*n**4 + 108*n**3 + 714*n**2 + 2052*n + 2160)*sp.gamma(n + 5)*sp.gamma(a + b + n + 5)/((a + b + 2*n + 5)*(a + b + 2*n + 6)*(a + b + 2*n + 7)*(a + b + 2*n + 8)*(a + b + 2*n + 10)*(a + b + 2*n + 11)*(a + b + 2*n + 12)*(a + b + 2*n + 13)*sp.gamma(a + n + 5)*sp.gamma(b + n + 5)),
+            6: 2**(-a - b + 4)*(3*a**2 - 8*a*b - 2*a*n - 11*a + 3*b**2 - 2*b*n - 11*b - 2*n**2 - 22*n - 56)*sp.gamma(n + 7)*sp.gamma(a + b + n + 5)/((a + b + 2*n + 7)*(a + b + 2*n + 8)*(a + b + 2*n + 10)*(a + b + 2*n + 11)*(a + b + 2*n + 12)*(a + b + 2*n + 14)*(a + b + 2*n + 15)*sp.gamma(a + n + 5)*sp.gamma(b + n + 5)),
+            8: 2**(-a - b + 3)*sp.gamma(n + 9)*sp.gamma(a + b + n + 5)/((a + b + 2*n + 10)*(a + b + 2*n + 11)*(a + b + 2*n + 12)*(a + b + 2*n + 13)*(a + b + 2*n + 14)*(a + b + 2*n + 15)*(a + b + 2*n + 16)*sp.gamma(a + n + 5)*sp.gamma(b + n + 5))
+        }
 
         if alpha != beta:
-            #self.b1n = sp.simplify(matpow(b, 4, alpha, beta, n+4, n+1) / h(alpha, beta, n+1, 0))
-            #self.b3n = sp.simplify(matpow(b, 4, alpha, beta, n+4, n+3) / h(alpha, beta, n+3, 0))
-            #self.b5n = sp.simplify(matpow(b, 4, alpha, beta, n+4, n+5) / h(alpha, beta, n+5, 0))
-            #self.b7n = sp.simplify(matpow(b, 4, alpha, beta, n+4, n+7) / h(alpha, beta, n+7, 0))
-            self.b1n = 2**(-a - b + 5)*(a - b)*sp.gamma(n + 2)*sp.gamma(a + b + n + 5)/((a + b + 2*n + 2)*(a + b + 2*n + 4)*(a + b + 2*n + 5)*(a + b + 2*n + 6)*(a + b + 2*n + 7)*(a + b + 2*n + 8)*(a + b + 2*n + 10)*sp.gamma(a + n + 2)*sp.gamma(b + n + 2))
-            self.b3n = 2**(-a - b + 5)*(a - b)*(a**2 - 5*a*b - 3*a*n - 12*a + b**2 - 3*b*n - 12*b - 3*n**2 - 24*n - 43)*sp.gamma(n + 4)*sp.gamma(a + b + n + 5)/((a + b + 2*n + 4)*(a + b + 2*n + 5)*(a + b + 2*n + 6)*(a + b + 2*n + 8)*(a + b + 2*n + 10)*(a + b + 2*n + 11)*(a + b + 2*n + 12)*sp.gamma(a + n + 4)*sp.gamma(b + n + 4))
-            self.b5n = 2**(-a - b + 5)*(a - b)*(-a**2 + 5*a*b + 3*a*n + 15*a - b**2 + 3*b*n + 15*b + 3*n**2 + 30*n + 70)*sp.gamma(n + 6)*sp.gamma(a + b + n + 5)/((a + b + 2*n + 6)*(a + b + 2*n + 7)*(a + b + 2*n + 8)*(a + b + 2*n + 10)*(a + b + 2*n + 12)*(a + b + 2*n + 13)*(a + b + 2*n + 14)*sp.gamma(a + n + 5)*sp.gamma(b + n + 5))
-            self.b7n = -2**(-a - b + 5)*(a - b)*sp.gamma(n + 8)*sp.gamma(a + b + n + 5)/((a + b + 2*n + 8)*(a + b + 2*n + 10)*(a + b + 2*n + 11)*(a + b + 2*n + 12)*(a + b + 2*n + 13)*(a + b + 2*n + 14)*(a + b + 2*n + 16)*sp.gamma(a + n + 5)*sp.gamma(b + n + 5))
+            #self._stencil[1] = sp.simplify(matpow(b, 4, alpha, beta, n+4, n+1) / h(alpha, beta, n+1, 0))
+            #self._stencil[3] = sp.simplify(matpow(b, 4, alpha, beta, n+4, n+3) / h(alpha, beta, n+3, 0))
+            #self._stencil[5] = sp.simplify(matpow(b, 4, alpha, beta, n+4, n+5) / h(alpha, beta, n+5, 0))
+            #self._stencil[7] = sp.simplify(matpow(b, 4, alpha, beta, n+4, n+7) / h(alpha, beta, n+7, 0))
+            self._stencil[1] = 2**(-a - b + 5)*(a - b)*sp.gamma(n + 2)*sp.gamma(a + b + n + 5)/((a + b + 2*n + 2)*(a + b + 2*n + 4)*(a + b + 2*n + 5)*(a + b + 2*n + 6)*(a + b + 2*n + 7)*(a + b + 2*n + 8)*(a + b + 2*n + 10)*sp.gamma(a + n + 2)*sp.gamma(b + n + 2))
+            self._stencil[3] = 2**(-a - b + 5)*(a - b)*(a**2 - 5*a*b - 3*a*n - 12*a + b**2 - 3*b*n - 12*b - 3*n**2 - 24*n - 43)*sp.gamma(n + 4)*sp.gamma(a + b + n + 5)/((a + b + 2*n + 4)*(a + b + 2*n + 5)*(a + b + 2*n + 6)*(a + b + 2*n + 8)*(a + b + 2*n + 10)*(a + b + 2*n + 11)*(a + b + 2*n + 12)*sp.gamma(a + n + 4)*sp.gamma(b + n + 4))
+            self._stencil[5] = 2**(-a - b + 5)*(a - b)*(-a**2 + 5*a*b + 3*a*n + 15*a - b**2 + 3*b*n + 15*b + 3*n**2 + 30*n + 70)*sp.gamma(n + 6)*sp.gamma(a + b + n + 5)/((a + b + 2*n + 6)*(a + b + 2*n + 7)*(a + b + 2*n + 8)*(a + b + 2*n + 10)*(a + b + 2*n + 12)*(a + b + 2*n + 13)*(a + b + 2*n + 14)*sp.gamma(a + n + 5)*sp.gamma(b + n + 5))
+            self._stencil[7] = -2**(-a - b + 5)*(a - b)*sp.gamma(n + 8)*sp.gamma(a + b + n + 5)/((a + b + 2*n + 8)*(a + b + 2*n + 10)*(a + b + 2*n + 11)*(a + b + 2*n + 12)*(a + b + 2*n + 13)*(a + b + 2*n + 14)*(a + b + 2*n + 16)*sp.gamma(a + n + 5)*sp.gamma(b + n + 5))
 
     @staticmethod
     def boundary_condition():
@@ -674,31 +626,6 @@ class Phi4(CompositeBase):
     @staticmethod
     def short_name():
         return 'P4'
-
-    def stencil_matrix(self, N=None):
-        N = self.N if N is None else N
-        if N in self._stencil_matrix:
-            return self._stencil_matrix[N]
-        k = np.arange(N)
-        d0, d2, d4, d6, d8 = np.zeros(N), np.zeros(N-2), np.zeros(N-4), np.zeros(N-6), np.zeros(N-8)
-        d0[:-8] = sp.lambdify(n, self.b0n)(k[:N-8])
-        d2[:-6] = sp.lambdify(n, self.b2n)(k[:N-8])
-        d4[:-4] = sp.lambdify(n, self.b4n)(k[:N-8])
-        d6[:-2] = sp.lambdify(n, self.b6n)(k[:N-8])
-        d8[:] = sp.lambdify(n, self.b8n)(k[:N-8])
-        if self.alpha != self.beta:
-            d1, d3, d5, d7 = np.zeros(N-1), np.zeros(N-3), np.zeros(N-5), np.zeros(N-7)
-            d1[:-7] = sp.lambdify(n, self.b1n)(k[:N-8])
-            d3[:-5] = sp.lambdify(n, self.b3n)(k[:N-8])
-            d5[:-3] = sp.lambdify(n, self.b5n)(k[:N-8])
-            d7[:-1] = sp.lambdify(n, self.b7n)(k[:N-8])
-            self._stencil_matrix[N] = SparseMatrix({0: d0, 1: d2, 2: d2, 3: d3, 4: d4, 5: d5, 6: d6, 7: d7, 8: d8}, (N, N))
-        else:
-            self._stencil_matrix[N] = SparseMatrix({0: d0, 2: d2, 4: d4, 6: d6, 8: d8}, (N, N))
-        return self._stencil_matrix[N]
-
-    def slice(self):
-        return slice(0, self.N-8)
 
 
 class CompactDirichlet(CompositeBase):
@@ -758,10 +685,12 @@ class CompactDirichlet(CompositeBase):
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                alpha=alpha, beta=beta, coordinates=coordinates)
         a, b = alpha, beta
-        self.b1n = None
-        self.b2n = -(n + 1)*(n + 2)*(a + b + 2*n + 2)/((a + n + 1)*(b + n + 1)*(a + b + 2*n + 4))
+        self._stencil = {
+            0: 1,
+            2: -(n + 1)*(n + 2)*(a + b + 2*n + 2)/((a + n + 1)*(b + n + 1)*(a + b + 2*n + 4))
+        }
         if self.alpha != self.beta:
-            self.b1n = (a - b)*(n + 1)*(a + b + 2*n + 3)/((a + n + 1)*(b + n + 1)*(a + b + 2*n + 4))
+            self._stencil[1] = (a - b)*(n + 1)*(a + b + 2*n + 3)/((a + n + 1)*(b + n + 1)*(a + b + 2*n + 4))
 
     @staticmethod
     def boundary_condition():
@@ -770,21 +699,6 @@ class CompactDirichlet(CompositeBase):
     @staticmethod
     def short_name():
         return 'CD'
-
-    def stencil_matrix(self, N=None):
-        N = self.N if N is None else N
-        k = np.arange(N)
-        d0, d2 = np.ones(N), np.zeros(N-2)
-        d0[-2:] = 0
-        d2[:] = sp.lambdify(n, self.b2n)(k[:N-2])
-        if self.b1n:
-            d1 = np.zeros(N-1)
-            d1[:-1] = sp.lambdify(n, self.b1n)(k[:N-2])
-            return SparseMatrix({0: d0, 1: d1, 2: d2}, (N, N))
-        return SparseMatrix({0: d0, 2: d2}, (N, N))
-
-    def slice(self):
-        return slice(0, self.N-2)
 
 
 class CompactNeumann(CompositeBase):
@@ -845,6 +759,13 @@ class CompactNeumann(CompositeBase):
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                alpha=alpha, beta=beta, coordinates=coordinates)
+        a, b = self.alpha, self.beta
+        self._stencil = {
+            0: 1,
+            2: -n*(n+1)*(a+b+n+1)*(a+b+2*n+2)/((a+n+1)*(b+n+1)*(a+b+n+3)*(a+b+2*n+4))
+        }
+        if self.alpha != self.beta:
+            self._stencil[1] = n*(a-b)*(a+b+n+1)*(a+b+2*n+3)/((a+n+1)*(b+n+1)*(a+b+n+2)*(a+b+2*n+4))
 
     @staticmethod
     def boundary_condition():
@@ -854,21 +775,6 @@ class CompactNeumann(CompositeBase):
     def short_name():
         return 'CN'
 
-    def stencil_matrix(self, N=None):
-        N = self.N if N is None else N
-        k = np.arange(N)
-        a, b = self.alpha, self.beta
-        d0, d2 = np.zeros(N), np.zeros(N-2)
-        d0[:-2] = 1
-        d2[:] = sp.lambdify(n, -n*(n+1)*(a+b+n+1)*(a+b+2*n+2)/((a+n+1)*(b+n+1)*(a+b+n+3)*(a+b+2*n+4)))(k[:N-2])
-        if self.alpha != self.beta:
-            d1 = np.zeros(N-1)
-            d1[:-1] = sp.lambdify(n, n*(a-b)*(a+b+n+1)*(a+b+2*n+3)/((a+n+1)*(b+n+1)*(a+b+n+2)*(a+b+2*n+4)))(k[:N-2])
-            return SparseMatrix({0: d0, 1: d1, 2: d2}, (N, N))
-        return SparseMatrix({0: d0, 2: d2}, (N, N))
-
-    def slice(self):
-        return slice(0, self.N-2)
 
 class UpperDirichlet(CompositeBase):
     r"""Function space for Dirichlet boundary conditions at right edge
@@ -918,6 +824,7 @@ class UpperDirichlet(CompositeBase):
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                alpha=alpha, beta=beta, coordinates=coordinates)
+        self._stencil = {0: 1, 1: -(n+1)/(self.alpha+n+1)}
 
     @staticmethod
     def boundary_condition():
@@ -927,16 +834,6 @@ class UpperDirichlet(CompositeBase):
     def short_name():
         return 'UD'
 
-    def stencil_matrix(self, N=None):
-        N = self.N if N is None else N
-        k = np.arange(N)
-        d0, d1 = np.ones(N), np.zeros(N-1)
-        d0[-1] = 0
-        d1[:] = -(k[:N-1]+1)/(self.alpha+k[:N-1]+1)
-        return SparseMatrix({0: d0, 1: d1}, (N, N))
-
-    def slice(self):
-        return slice(0, self.N-1)
 
 class LowerDirichlet(CompositeBase):
     r"""Function space for Dirichlet boundary condition at left edge
@@ -986,6 +883,7 @@ class LowerDirichlet(CompositeBase):
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                alpha=alpha, beta=beta, coordinates=coordinates)
+        self._stencil = {0: 1, 1: (n+1)/(self.beta+n+1)}
 
     @staticmethod
     def boundary_condition():
@@ -994,17 +892,6 @@ class LowerDirichlet(CompositeBase):
     @staticmethod
     def short_name():
         return 'LD'
-
-    def stencil_matrix(self, N=None):
-        N = self.N if N is None else N
-        k = np.arange(N)
-        d0, d1 = np.ones(N), np.zeros(N-1)
-        d0[-1] = 0
-        d1[:] = (k[:N-1]+1)/(self.beta+k[:N-1]+1)
-        return SparseMatrix({0: d0, 1: d1}, (N, N))
-
-    def slice(self):
-        return slice(0, self.N-1)
 
 
 class Generic(CompositeBase):
@@ -1073,23 +960,6 @@ class Generic(CompositeBase):
     def short_name():
         return 'GJ'
 
-    def slice(self):
-        return slice(0, self.N-self.bcs.num_bcs())
-
-    def stencil_matrix(self, N=None):
-        from shenfun.utilities.findbasis import n
-        N = self.N if N is None else N
-        d0 = np.ones(N, dtype=int)
-        d0[-self.bcs.num_bcs():] = 0
-        d = {0: d0}
-        k = np.arange(N)
-        for i, s in enumerate(self._stencil):
-            di = sp.lambdify(n, s)(k[:-(i+1)])
-            if not np.allclose(di, 0):
-                if isinstance(di, np.ndarray):
-                    di[(N-self.bcs.num_bcs()):] = 0
-                d[i+1] = di
-        return SparseMatrix(d, (N, N))
 
 class BCBase(CompositeBase):
     """Function space for inhomogeneous boundary conditions

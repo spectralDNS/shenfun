@@ -18,7 +18,7 @@ class BLLmat(SpectralMatrix):
     dimensions of M and N, respectively.
 
     """
-    def assemble(self):
+    def assemble(self, method):
         test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], L)
         assert isinstance(trial[0], L)
@@ -51,7 +51,7 @@ class BCDCDmat(SpectralMatrix):
     dimensions of M and N, respectively.
 
     """
-    def assemble(self):
+    def assemble(self, method):
         test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], CD)
         assert isinstance(trial[0], CD)
@@ -73,7 +73,7 @@ class ACDCDmat(SpectralMatrix):
     dimensions of M and N, respectively.
 
     """
-    def assemble(self):
+    def assemble(self, method):
         test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], CD)
         assert isinstance(trial[0], CD)

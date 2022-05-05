@@ -4,7 +4,7 @@ from sympy.matrices.common import NonInvertibleMatrixError
 import sympy as sp
 import numpy as np
 
-n = sp.Symbol('n', integer=True, positive=True)
+n = sp.Symbol('n', real=True, integer=True, positive=True)
 
 def get_stencil_matrix(bcs, family, alpha=None, beta=None):
     """Return stencil matrix.
@@ -47,7 +47,12 @@ def get_stencil_matrix(bcs, family, alpha=None, beta=None):
         r.append(-sp.simplify(f(n)))
     A = sp.Matrix(s)
     b = sp.Matrix(r)
-    return sp.simplify(A.solve(b))
+    M = sp.simplify(A.solve(b))
+    d = {0: 1}
+    for i, s in enumerate(M):
+        if not s == 0:
+            d[i+1] = s
+    return d
 
 def get_bc_basis(bcs, family, alpha=None, beta=None):
     """Return boundary basis satisfying `bcs`.

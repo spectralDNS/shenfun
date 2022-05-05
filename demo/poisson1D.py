@@ -64,11 +64,8 @@ def main(N, family, bc):
         # The Poisson equation with only Neumann boundary conditions require a constraint
         constraint = ((0, dx(Array(SD, buffer=ue), weighted=True)/dx(Array(SD, val=1), weighted=True)),)
 
-    # Get f on quad points
-    fj = Array(SD, buffer=fe)
-
     # Compute right hand side of Poisson equation
-    f_hat = inner(v, fj)
+    f_hat = inner(v, fe)
 
     # Get left hand side of Poisson equation
     A0 = inner(v, -div(grad(u)))

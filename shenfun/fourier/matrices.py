@@ -26,7 +26,7 @@ class Acos2mat(SpectralMatrix):
     where test and trial spaces have dimensions of M and N, respectively.
 
     """
-    def assemble(self):
+    def assemble(self, method):
         test = self.testfunction
         k = test[0].wavenumbers(bcast=False, scaled=False, eliminate_highest_freq=False)
         N = test[0].N
@@ -48,7 +48,7 @@ class Acosmat(SpectralMatrix):
     where test and trial spaces have dimensions of M and N, respectively.
 
     """
-    def assemble(self):
+    def assemble(self, method):
         test = self.testfunction
         k = test[0].wavenumbers(bcast=False, scaled=False, eliminate_highest_freq=False)
         N = test[0].N
@@ -68,7 +68,7 @@ class Csinmat(SpectralMatrix):
     where test and trial spaces have dimensions of M and N, respectively.
 
     """
-    def assemble(self):
+    def assemble(self, method):
         test = self.testfunction
         k = test[0].wavenumbers(bcast=False, scaled=False, eliminate_highest_freq=False)
         N = test[0].N
@@ -88,7 +88,7 @@ class Csincosmat(SpectralMatrix):
     where test and trial spaces have dimensions of M and N, respectively.
 
     """
-    def assemble(self):
+    def assemble(self, method):
         test = self.testfunction
         k = test[0].wavenumbers(bcast=False, scaled=False, eliminate_highest_freq=False)
         N = test[0].N
@@ -108,7 +108,7 @@ class Bcos2mat(SpectralMatrix):
     where test and trial spaces have dimensions of M and N, respectively.
 
     """
-    def assemble(self):
+    def assemble(self, method):
         test = self.testfunction
         N = test[0].N
         d = {0: 0.5,
@@ -129,7 +129,7 @@ class Bcosmat(SpectralMatrix):
     where test and trial spaces have dimensions of M and N, respectively.
 
     """
-    def assemble(self):
+    def assemble(self, method):
         test = self.testfunction
         N = test[0].N
         d = {1: 0.5,
@@ -146,10 +146,10 @@ class FourierMatDict(SpectralMatDict):
         return c
 
 class FourierMatrix(SpectralMatrix):
-    def __init__(self, test, trial, scale=1, measure=1, assemble=None):
-        SpectralMatrix.__init__(self, test, trial, scale=scale, measure=measure, assemble=assemble)
+    def __init__(self, test, trial, scale=1, measure=1, assemble=None, kind=None, fixed_resolution=None):
+        SpectralMatrix.__init__(self, test, trial, scale=scale, measure=measure, assemble=assemble, kind=kind, fixed_resolution=fixed_resolution)
 
-    def assemble(self):
+    def assemble(self, method):
         test, trial = self.testfunction, self.trialfunction
         N = test[0].N
         d = {}

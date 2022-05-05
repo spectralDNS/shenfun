@@ -13,12 +13,12 @@ import sympy as sp
 from scipy.fftpack import dct
 from shenfun.optimization import optimizer
 from shenfun.config import config
-from .findbasis import get_bc_basis, get_stencil_matrix
+from .findbasis import get_bc_basis, get_stencil_matrix, n
 
-__all__ = ['dx', 'clenshaw_curtis1D', 'CachedArrayDict', 'surf3D', 'wrap_periodic',
-           'outer', 'dot', 'apply_mask', 'integrate_sympy', 'mayavi_show',
-           'quiver3D', 'get_bc_basis', 'get_stencil_matrix']
-
+__all__ = ['dx', 'clenshaw_curtis1D', 'CachedArrayDict', 'surf3D',
+           'wrap_periodic', 'outer', 'dot', 'apply_mask', 'integrate_sympy',
+           'mayavi_show', 'quiver3D', 'get_bc_basis', 'get_stencil_matrix',
+           'scalar_product', 'n']
 
 def dx(u, weighted=False):
     r"""Compute integral of u over domain
@@ -628,3 +628,78 @@ def quiver3D(u, mesh=None, wrapaxes=(), slices=None, fig=None, kind='normal', **
     if fig is None:
         mlab.figure(bgcolor=(1, 1, 1), size=(400, 400))
     mlab.quiver3d(x, y, z, u[0], u[1], u[2], **par)
+
+def scalar_product(v, f, assemble='exact'):
+    r"""Return scalar product
+
+    .. math::
+
+        (v, f)_w
+
+    Parameters
+    ----------
+    v : :class:`.TestFunction`
+    f : Sympy function
+    assemble : str, optional
+        'exact' or 'adaptive'
+
+    Note
+    ----
+    The computed scalar product is not compensated for a non-standard domain size.
+
+    >>> from shenfun import inner, FunctionSpace, TestFunction
+    >>> import sympy as sp
+    >>> C = FunctionSpace(4, 'C')
+    >>> v = TestFunction(C)
+    >>> x = sp.Symbol('x', real=True)
+    >>> f = x**2
+    >>> inner(v, f, assemble='exact')
+    Function([1.57079633, 0.        , 0.78539816, 0.        ])
+
+    """
+    assert assemble in ('exact', 'adaptive')
+    if assemble == 'adaptive':
+        import quadpy
+    T = v.base.function_space()
+    V = np.zeros(T.N)
+    x = sp.Symbol('x', real=True)
+    if not isinstance(f, Number):
+        s = f.free_symbols
+        assert len(s) == 1
+        x = s.pop()
+        xm = T.map_true_domain(x)
+        if T.family() == 'chebyshev':
+            f = f.subs(x, sp.cos(xm))
+        else:
+            f = f.subs(x, xm)
+
+    if T.family() == 'chebyshev':
+        S = T.stencil_matrix().diags('csr')
+        for i in range(T.slice().start, T.slice().stop):
+            M = S.getrow(i)
+            integrand = sp.S(0)
+            for ind, d in zip(M.indices, M.data):
+                integrand += d*sp.cos(ind*x)
+            integrand = f*integrand
+            if assemble == 'exact':
+                V[i] = sp.integrate(integrand, (x, (0, sp.pi)))
+            elif assemble == 'adaptive':
+                if isinstance(integrand, Number):
+                    V[i] = integrand*np.pi
+                else:
+                    V[i] = quadpy.c1.integrate_adaptive(sp.lambdify(x, integrand), (0, np.pi))[0]
+
+        return V
+    else:
+        domain = T.sympy_reference_domain()
+        for i in range(T.slice().start, T.slice().stop):
+            integrand = f*np.conj(T.sympy_basis(i, x=x))
+            if assemble == 'exact':
+                V[i] = sp.integrate(integrand, (x, (domain[0], domain[1])))
+            elif assemble == 'adaptive':
+                if isinstance(integrand, Number):
+                    V[i] = integrand*(domain[1]-domain[0])
+                else:
+                    V[i] = quadpy.c1.integrate_adaptive(sp.lambdify(x, integrand), domain)[0]
+        return V
+

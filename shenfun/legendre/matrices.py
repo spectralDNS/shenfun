@@ -75,6 +75,7 @@ import functools
 import numpy as np
 import sympy as sp
 from shenfun.matrixbase import SpectralMatrix, SpectralMatDict
+from shenfun.spectralbase import get_norm_sq
 from shenfun.optimization import cython
 from shenfun.la import TDMA, PDMA
 from . import bases
@@ -102,27 +103,6 @@ xp = sp.symbols('x', real=True, positive=True)
 
 #pylint: disable=unused-variable, redefined-builtin, bad-continuation
 
-def get_LL(M, N, quad):
-    """Return main diagonal of :math:`(L_i, L_j)`
-
-    Parameters
-    ----------
-    M : int
-        The number of quadrature points in the test function
-    N : int
-        The number of quadrature points in the trial function
-    quad : str
-        Type of quadrature
-
-        - LG - Legendre-Gauss
-        - GL - Legendre-Gauss-Lobatto
-    """
-    k = np.arange(min(M, N), dtype=float)
-    ll = 2/(2*k+1)
-    if quad == 'GL' and N >= M:
-        ll[-1] = 2/(M-1)
-    return ll
-
 class BLLmat(SpectralMatrix):
     r"""Mass matrix :math:`B=(b_{kj}) \in \mathbb{R}^{M \times N}`, where
 
@@ -133,11 +113,12 @@ class BLLmat(SpectralMatrix):
     where :math:`L_k \in` :class:`.legendre.bases.Orthogonal`, and test
     and trial spaces have dimensions of M and N, respectively.
     """
-    def assemble(self):
+    def assemble(self, method):
         test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], L)
         assert isinstance(trial[0], L)
-        return {0: get_LL(test[0].N, trial[0].N, test[0].quad)}
+        return {0: get_norm_sq(test[0], trial[0], method)}
+
 
 class BSDSDmat(SpectralMatrix):
     r"""Mass matrix :math:`B=(b_{kj}) \in \mathbb{R}^{M \times N}`, where
@@ -150,11 +131,11 @@ class BSDSDmat(SpectralMatrix):
     and trial spaces have dimensions of M and N, respectively.
 
     """
-    def assemble(self):
+    def assemble(self, method):
         test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], SD)
-        d0 = get_LL(test[0].N, trial[0].N, test[0].quad)
+        d0 = get_norm_sq(test[0], trial[0], method)
         d = {0: d0[:-2]+d0[2:], -2: -d0[2:-2]}
 
         if test[0].is_scaled():
@@ -178,18 +159,18 @@ class BSNSNmat(SpectralMatrix):
     where :math:`\phi_k \in` :class:`.legendre.bases.ShenNeumann`, and test
     and trial spaces have dimensions of M and N, respectively.
     """
-    def assemble(self):
+    def assemble(self, method):
         test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], SN)
         assert isinstance(trial[0], SN)
         N = test[0].N
         k = np.arange(N-2, dtype=float)
         alpha = k*(k+1)/(k+2)/(k+3)
-        d0 = 2./(2*k+1)
-        d = {0: d0 + alpha**2*2./(2*(k+2)+1),
-             2: -d0[2:]*alpha[:-2]}
-        if test[0].quad == 'GL':
-            d[0][-1] = d0[-1] + alpha[-1]**2*2./(N-1)
+        d0 = get_norm_sq(test[0], trial[0], method)
+        d = {
+            0: d0[:-2] + alpha**2*d0[2:],
+            2: -alpha[:-2]*d0[2:-2]
+        }
         d[-2] = d[2].copy()
         return d
 
@@ -205,61 +186,23 @@ class BSBSBmat(SpectralMatrix):
     and trial spaces have dimensions of M and N, respectively.
 
     """
-    def assemble(self):
+    def assemble(self, method):
         test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], SB)
         assert isinstance(trial[0], SB)
-        N = test[0].N
-        k = np.arange(N, dtype=float)
-        gk = (2*k+3)/(2*k+7)
-        hk = -(1+gk)
-        ek = 2./(2*k+1)
-        if test[0].quad == 'GL':
-            ek[-1] = 2./(N-1)
-        d = {0: ek[:-4] + hk[:-4]**2*ek[2:-2] + gk[:-4]**2*ek[4:],
-             2: hk[:-6]*ek[2:-4] + gk[:-6]*hk[2:-4]*ek[4:-2],
-             4: gk[:-8]*ek[4:-4]}
+        d0 = get_norm_sq(test[0], trial[0], method)
+        i = np.arange(test[0].dim())
+        d = {
+            0: (-4*i - 10)**2*d0[2:-2]/(2*i + 7)**2 + (2*i + 3)**2*d0[4:]/(2*i + 7)**2 + d0[:-4],
+            2: (-4*i[:-2] - 18)*(2*i[:-2] + 3)*d0[4:-2]/((2*i[:-2] + 7)*(2*i[:-2] + 11)) + (-4*i[:-2] - 10)*d0[2:-4]/(2*i[:-2] + 7),
+            4: (2*i[:-4] + 3)*d0[4:-4]/(2*i[:-4] + 7)
+        }
         d[-2] = d[2].copy()
         d[-4] = d[4].copy()
         return d
 
     def get_solver(self):
         return PDMA
-
-class BBFBFmat(SpectralMatrix):
-    r"""Mass matrix :math:`B=(b_{kj}) \in \mathbb{R}^{M \times N}`, where
-
-    .. math::
-
-        b_{kj}=(\phi_j, \phi_k),
-
-    where :math:`\phi_k \in` :class:`.legendre.bases.BeamFixedFree`, and test
-    and trial spaces have dimensions of M and N, respectively.
-    """
-    def assemble(self):
-        test, trial = self.testfunction, self.trialfunction
-        assert isinstance(test[0], BF)
-        assert isinstance(trial[0], BF)
-        N = test[0].N
-        k = np.arange(N-4, dtype=float)
-        f1 = lambda k: 4*(2*k+3)/((k+3)**2)
-        f2 = lambda k: -(2*(k-1)*(k+1)*(k+6)*(2*k+5)/((k+3)**2*(k+4)*(2*k+7)))
-        f3 = lambda k: -4*(k+1)**2*(2*k+3)/((k+3)**2*(k+4)**2)
-        f4 = lambda k: (((k+1)/(k+3))*((k+2)/(k+4)))**2*(2*k+3)/(2*k+7)
-        d = {0: 2/(2*k+1)+f1(k)**2*2/(2*k+3)+f2(k)**2*2/(2*k+5)+f3(k)**2*2/(2*k+7)+f4(k)**2*2/(2*k+9),
-             1: (f1(k)*2/(2*k+3)+f1(k+1)*f2(k)*2/(2*k+5)+f2(k+1)*f3(k)*2/(2*k+7)+f3(k+1)*f4(k)*2/(2*k+9))[:-1],
-             2: (f2(k)*2/(2*k+5)+f1(k+2)*f3(k)*2/(2*k+7)+f2(k+2)*f4(k)*2/(2*k+9))[:-2],
-             3: (f3(k)*2/(2*k+7)+f1(k+3)*f4(k)*2/(2*k+9))[:-3],
-             4: (f4(k)*2/(2*k+9))[:-4]
-            }
-        d[-1] = d[1].copy()
-        d[-2] = d[2].copy()
-        d[-3] = d[3].copy()
-        d[-4] = d[4].copy()
-        if test[0].quad == 'GL':
-            k = N-5
-            d[0][-1] = 2/(2*k+1)+f1(k)**2*2/(2*k+3)+f2(k)**2*2/(2*k+5)+f3(k)**2*2/(2*k+7)+f4(k)**2*2/(N-1)
-        return d
 
 
 class BSDLmat(SpectralMatrix):
@@ -274,19 +217,16 @@ class BSDLmat(SpectralMatrix):
     and trial spaces have dimensions of M and N, respectively.
 
     """
-    def assemble(self):
+    def assemble(self, method):
         test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], L)
-        N = test[0].N
-        k = np.arange(N, dtype=float)
-        sc = np.ones(N)
-        if test[0].is_scaled():
-            sc = 1. / np.sqrt(4*k+6)
-        d = {2: -2./(2*k[2:] + 1)*sc[:-2],
-             0: 2./(2.*k[:-2]+1)*sc[:-2]}
-        if test[0].quad == 'GL':
-            d[2][-1] = -2./(N-1)*sc[N-3]
+        d0 = get_norm_sq(test[0], trial[0], method)
+        S = test[0].stencil_matrix()
+        d = {
+            0: d0[:-2]*S[0][:-2] if isinstance(S[0], np.ndarray) else d0[:-2]*S[0],
+            2: d0[2:]*S[2]
+        }
         return d
 
 
@@ -302,20 +242,16 @@ class BLSDmat(SpectralMatrix):
     and trial spaces have dimensions of M and N, respectively.
 
     """
-    def assemble(self):
+    def assemble(self, method):
         test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], L)
         assert isinstance(trial[0], SD)
-        N = test[0].N
-        k = np.arange(N, dtype=float)
-        sc = np.ones(N)
-        if trial[0].is_scaled():
-            sc = 1. / np.sqrt(4*k+6)
-
-        d = {-2: -2./(2*k[2:] + 1)*sc[:-2],
-             0: 2./(2.*k[:-2]+1)*sc[:-2]}
-        if test[0].quad == 'GL':
-            d[-2][-1] = -2./(N-1)*sc[-3]
+        d0 = get_norm_sq(test[0], trial[0], method)
+        S = trial[0].stencil_matrix()
+        d = {
+            0: d0[:-2]*S[0][:-2] if isinstance(S[0], np.ndarray) else d0[:-2]*S[0],
+            -2: d0[2:]*S[2]
+        }
         return d
 
 class BDNDNmat(SpectralMatrix):
@@ -329,24 +265,19 @@ class BDNDNmat(SpectralMatrix):
     and trial spaces have dimensions of M and N, respectively.
 
     """
-    def assemble(self):
+    def assemble(self, method):
         test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], DN)
         assert isinstance(trial[0], DN)
-        N = test[0].N
-        k = np.arange(N-2, dtype=float)
-        km = k[:-1]
-        kp = k[:-2]
-        d = {0: 2/(2*k+1) + 2*((2*k+3)/(k+2))/(k+2)**3 + 2*((k+1)/(k+2))**4/(2*k+5),
-            1: (2/(km+2)**2 - 2*((km+1)/(km+2))**2/(km+3)**2),
-            2: -2*((kp+1)/(kp+2))**2/(2*kp+5)
+        d0 = get_norm_sq(test[0], trial[0], method)
+        i = np.arange(test[0].N-2)
+        d = {
+            0: (2*i + 3)**2*d0[1:-1]/(i**2 + 4*i + 4)**2 + (-i**2 - 2*i - 1)**2*d0[2:]/(i**2 + 4*i + 4)**2 + d0[:-2],
+            1: (2*i[:-1] + 3)*d0[1:-2]/(i[:-1]**2 + 4*i[:-1] + 4) + (2*i[:-1] + 5)*(-i[:-1]**2 - 2*i[:-1] - 1)*d0[2:-1]/((4*i[:-1] + (i[:-1] + 1)**2 + 8)*(i[:-1]**2 + 4*i[:-1] + 4)),
+            2: (-i[:-2]**2 - 2*i[:-2] - 1)*d0[2:-2]/(i[:-2]**2 + 4*i[:-2] + 4)
         }
         d[-1] = d[1].copy()
         d[-2] = d[2].copy()
-
-        if test[0].quad == 'GL':
-            k = N-3
-            d[0][-1] = 2/(2*k+1) + 2*((2*k+3)/(k+2))/(k+2)**3 + 2*((k+1)/(k+2))**4/(N-1)
         return d
 
 
@@ -361,7 +292,7 @@ class ASDSDmat(SpectralMatrix):
     trial spaces have dimensions of M and N, respectively.
 
     """
-    def assemble(self):
+    def assemble(self, method):
         test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], SD)
@@ -385,7 +316,7 @@ class ASNSNmat(SpectralMatrix):
     trial spaces have dimensions of M and N, respectively.
 
     """
-    def assemble(self):
+    def assemble(self, method):
         test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], SN)
         assert isinstance(trial[0], SN)
@@ -395,7 +326,6 @@ class ASNSNmat(SpectralMatrix):
         d0 = 2./(2*k+1)
         d = {0: d0*alpha*(k+0.5)*((k+2)*(k+3)-k*(k+1))}
         return d
-
 
 
 class ASBSBmat(SpectralMatrix):
@@ -409,7 +339,7 @@ class ASBSBmat(SpectralMatrix):
     trial spaces have dimensions of M and N, respectively.
 
     """
-    def assemble(self):
+    def assemble(self, method):
         test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], SB)
         assert isinstance(trial[0], SB)
@@ -432,7 +362,7 @@ class ADNDNmat(SpectralMatrix):
     trial spaces have dimensions of M and N, respectively.
 
     """
-    def assemble(self):
+    def assemble(self, method):
         test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], DN)
         assert isinstance(trial[0], DN)
@@ -452,7 +382,7 @@ class SBFBFmat(SpectralMatrix):
     where :math:`\phi_k \in` :class:`.legendre.bases.BeamFixedFree`, and test and
     trial spaces have dimensions of M and N, respectively.
     """
-    def assemble(self):
+    def assemble(self, method):
         test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], BF)
         assert isinstance(trial[0], BF)
@@ -474,11 +404,11 @@ class ALLmat(SpectralMatrix):
     trial spaces have dimensions of M and N, respectively.
 
     """
-    def __init__(self, test, trial, scale=1, measure=1, assemble=None):
-        SpectralMatrix.__init__(self, test, trial, scale=scale, measure=measure, assemble=assemble)
+    def __init__(self, test, trial, scale=1, measure=1, assemble=None, kind=None, fixed_resolution=None):
+        SpectralMatrix.__init__(self, test, trial, scale=scale, measure=measure, assemble=assemble, kind=kind, fixed_resolution=fixed_resolution)
         self._matvec_methods += ['cython']
 
-    def assemble(self):
+    def assemble(self, method):
         test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], L)
         assert isinstance(trial[0], L)
@@ -522,7 +452,7 @@ class SSBSBmat(SpectralMatrix):
     where :math:`\phi_k \in` :class:`.legendre.bases.ShenBiharmonic`, and test and
     trial spaces have dimensions of M and N, respectively.
     """
-    def assemble(self):
+    def assemble(self, method):
         test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], SB)
         assert isinstance(trial[0], SB)
@@ -543,11 +473,11 @@ class CLLmat(SpectralMatrix):
     and trial spaces have dimensions of M and N, respectively.
 
     """
-    def __init__(self, test, trial, scale=1, measure=1, assemble=None):
-        SpectralMatrix.__init__(self, test, trial, scale=scale, measure=measure, assemble=assemble)
+    def __init__(self, test, trial, scale=1, measure=1, assemble=None, kind=None, fixed_resolution=None):
+        SpectralMatrix.__init__(self, test, trial, scale=scale, measure=measure, assemble=assemble, kind=kind, fixed_resolution=fixed_resolution)
         self._matvec_methods += ['cython', 'self']
 
-    def assemble(self):
+    def assemble(self, method):
         test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], L)
         assert isinstance(trial[0], L)
@@ -598,7 +528,7 @@ class CLLmatT(SpectralMatrix):
     and trial spaces have dimensions of M and N, respectively.
 
     """
-    def assemble(self):
+    def assemble(self, method):
         test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], L)
         assert isinstance(trial[0], L)
@@ -622,7 +552,7 @@ class CLSDmat(SpectralMatrix):
     and trial spaces have dimensions of M and N, respectively.
 
     """
-    def assemble(self):
+    def assemble(self, method):
         test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], L)
         assert isinstance(trial[0], SD)
@@ -646,7 +576,7 @@ class CSDLmat(SpectralMatrix):
     and trial spaces have dimensions of M and N, respectively.
 
     """
-    def assemble(self):
+    def assemble(self, method):
         test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], L)
@@ -669,7 +599,7 @@ class CSDSDmat(SpectralMatrix):
     and trial spaces have dimensions of M and N, respectively.
 
     """
-    def assemble(self):
+    def assemble(self, method):
         test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], SD)
@@ -692,7 +622,7 @@ class CSDSDTmat(SpectralMatrix):
     and trial spaces have dimensions of M and N, respectively.
 
     """
-    def assemble(self):
+    def assemble(self, method):
         test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], SD)
@@ -715,7 +645,7 @@ class ASDSDrp1mat(SpectralMatrix):
     where :math:`\phi_k \in` :class:`.legendre.bases.ShenDirichlet`, and test and
     trial spaces have dimensions of M and N, respectively.
     """
-    def assemble(self):
+    def assemble(self, method):
         test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], SD)
@@ -737,11 +667,10 @@ class ASDSD2rp1mat(SpectralMatrix):
     trial spaces have dimensions of M and N, respectively.
 
     """
-    def assemble(self):
+    def assemble(self, method):
         test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], SD)
-        assert test[0].quad == 'LG'
         k = np.arange(test[0].N-2)
         d = {0: -(4*k+6), 1: -(2*k[:-1]+6), -1: -(2*k[:-1]+2)}
         return d
@@ -752,18 +681,16 @@ class ASDSD2Trp1mat(SpectralMatrix):
 
     .. math::
 
-        a_{kj} = (\phi_j, (1+x)\phi''_k)
+        a_{kj} = (\phi''_j, (1+x)\phi_k)
 
     where :math:`\phi_k \in` :class:`.legendre.bases.ShenDirichlet`, and test and
     trial spaces have dimensions of M and N, respectively.
 
     """
-    def assemble(self):
+    def assemble(self, method):
         test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], SD)
-        assert test[0].quad == 'LG'
-
         k = np.arange(test[0].N-2)
         d = {0: -(4*k+6), -1: -(2*k[:-1]+6), 1: -(2*k[:-1]+2)}
         return d
@@ -779,11 +706,10 @@ class AUDUDrp1mat(SpectralMatrix):
     where :math:`\phi_k \in` :class:`.legendre.bases.UpperDirichlet`, and test and
     trial spaces have dimensions of M and N, respectively.
     """
-    def assemble(self):
+    def assemble(self, method):
         test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], UD)
         assert isinstance(trial[0], UD)
-        assert test[0].quad == 'LG'
         k = np.arange(test[0].N-1)
         d = {0: 2*k+2}
         return d
@@ -799,14 +725,11 @@ class AUDUDrp1smat(SpectralMatrix):
     trial spaces have dimensions of M and N, respectively.
 
     """
-    def assemble(self):
+    def assemble(self, method):
         test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], UD)
         assert isinstance(trial[0], UD)
-        assert test[0].quad == 'LG'
         k = np.arange(test[0].N-1)
-        #d = {0: 4*k**2*(k+1)/(2*k+1)+4*(k+1)**2*(k+2)/(2*k+3)-4*k*(k+1),
-        #     1: 2*(k[:-1]+1)*(k[:-1]+2)-4*(k[:-1]+1)**2*(k[:-1]+2)/(2*k[:-1]+3)}
         d = {0: 2*(k+1)**2*(1/(2*k+1)+1/(2*k+3)),
              1: 2*k[1:]*(k[1:]+1)/(2*k[1:]+1)}
         d[-1] = d[1].copy()
@@ -823,11 +746,10 @@ class GUDUDrp1smat(SpectralMatrix):
     trial spaces have dimensions of M and N, respectively.
 
     """
-    def assemble(self):
+    def assemble(self, method):
         test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], UD)
         assert isinstance(trial[0], UD)
-        assert test[0].quad == 'LG'
         k = np.arange(test[0].N-1)
         d = {0: -2*(k+1)*((k-1)/(2*k+1) + (k+3)/(2*k+3)),
              1: -2*(k[1:]+1)*(k[1:]+2)/(2*k[1:]+1),
@@ -845,16 +767,31 @@ class BUDUDrp1smat(SpectralMatrix):
     trial spaces have dimensions of M and N, respectively.
 
     """
-    def assemble(self):
+    def assemble(self, method):
+        from sympy import KroneckerDelta
+        i, j = sp.symbols('i,j', real=True, integer=True)
         test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], UD)
         assert isinstance(trial[0], UD)
-        assert test[0].quad == 'LG'
         k = np.arange(test[0].N-1)
-        d = {0: (k/(2*k+1))**2*(2/(2*k-1) + 2/(2*k+3)) + ((k+2)/(2*k+3))**2 * (2/(2*k+1)+2/(2*k+5)),
-             1: 2*k[1:]*(k[1:]+1)/(2*k[1:]+1)**2*(1/(2*k[1:]-1)+1/(2*k[1:]+3)) - 2*(k[1:]+2)*(k[1:]-1)/(2*k[1:]+3)/(2*k[1:]+1)/(2*k[1:]-1),
-             2: -2*k[2:]*(k[2:]-2)/(2*k[2:]+1)/(2*k[2:]-1)/(2*k[2:]-3)-2*k[2:]*(k[2:]+2)/(2*k[2:]+3)/(2*k[2:]+1)/(2*k[2:]-1),
-             3: -2*k[3:]*(k[3:]-1)/(2*k[3:]+1)/(2*k[3:]-1)/(2*k[3:]-3)}
+        LL = get_norm_sq(test[0], trial[0], method)
+        class h(sp.Function):
+            @classmethod
+            def eval(cls, x):
+                if x.is_Number:
+                    return LL[int(x)]
+
+        N = test[0].dim()
+        s = i*(i - 1)*(KroneckerDelta(j, i - 2) - KroneckerDelta(i - 2, j + 1))*h(i - 2)/((2*i - 1)*(2*i + 1)) - i*(i + 1)*(KroneckerDelta(j, i - 1) - KroneckerDelta(i - 1, j + 1))*h(i - 1)/((2*i + 1)*(2*i + 3)) + 2*i*(KroneckerDelta(j, i - 1) - KroneckerDelta(i - 1, j + 1))*h(i - 1)/(2*i + 1) + (i + 1)*(i + 2)*(KroneckerDelta(j, i + 2) - KroneckerDelta(i + 2, j + 1))*h(i + 2)/((2*i + 1)*(2*i + 3)) - 2*(i + 1)*(KroneckerDelta(i, j) - KroneckerDelta(i, j + 1))*h(i)/(2*i + 3) + 2*(i + 1)*(KroneckerDelta(j, i + 1) - KroneckerDelta(i + 1, j + 1))*h(i + 1)/(2*i + 1) - (i + 2)*(i + 3)*(KroneckerDelta(j, i + 3) - KroneckerDelta(i + 3, j + 1))*h(i + 3)/((2*i + 3)*(2*i + 5)) - 2*(i + 2)*(KroneckerDelta(j, i + 2) - KroneckerDelta(i + 2, j + 1))*h(i + 2)/(2*i + 3) + (KroneckerDelta(i, j) - KroneckerDelta(i, j + 1))*(i**2/((2*i - 1)*(2*i + 1)) + (i + 1)**2/((2*i + 1)*(2*i + 3)) + 1)*h(i) - (KroneckerDelta(j, i + 1) - KroneckerDelta(i + 1, j + 1))*((i + 1)**2/((2*i + 1)*(2*i + 3)) + (i + 2)**2/((2*i + 3)*(2*i + 5)) + 1)*h(i + 1)
+        d = {0: np.array([s.subs(j, i).subs(i, k) for k in range(N)], dtype=float),
+             1: np.array([s.subs(j, i+1).subs(i, k) for k in range(N-1)], dtype=float),
+             2: np.array([s.subs(j, i+2).subs(i, k) for k in range(N-2)], dtype=float),
+             3: np.array([s.subs(j, i+3).subs(i, k) for k in range(N-3)], dtype=float)
+            }
+        #d = {0: (k/(2*k+1))**2*(2/(2*k-1) + 2/(2*k+3)) + ((k+2)/(2*k+3))**2 * (2/(2*k+1)+2/(2*k+5)),
+        #     1: 2*k[1:]*(k[1:]+1)/(2*k[1:]+1)**2*(1/(2*k[1:]-1)+1/(2*k[1:]+3)) - 2*(k[1:]+2)*(k[1:]-1)/(2*k[1:]+3)/(2*k[1:]+1)/(2*k[1:]-1),
+        #     2: -2*k[2:]*(k[2:]-2)/(2*k[2:]+1)/(2*k[2:]-1)/(2*k[2:]-3)-2*k[2:]*(k[2:]+2)/(2*k[2:]+3)/(2*k[2:]+1)/(2*k[2:]-1),
+        #     3: -2*k[3:]*(k[3:]-1)/(2*k[3:]+1)/(2*k[3:]-1)/(2*k[3:]-3)}
         d[-1] = d[1].copy()
         d[-2] = d[2].copy()
         d[-3] = d[3].copy()
@@ -871,11 +808,10 @@ class CUDUDrp1mat(SpectralMatrix):
     trial spaces have dimensions of M and N, respectively.
 
     """
-    def assemble(self):
+    def assemble(self, method):
         test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], UD)
         assert isinstance(trial[0], UD)
-        assert test[0].quad == 'LG'
         k = np.arange(test[0].N-1)
         d = {0: -2*(k+1)/(2*k+1)+2*(k+1)/(2*k+3),
              1:  2*(k[1:]+1)/(2*k[1:]+1),
@@ -894,11 +830,11 @@ class BUDUDmat(SpectralMatrix):
     trial spaces have dimensions of M and N, respectively.
 
     """
-    def assemble(self):
+    def assemble(self, method):
         test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], UD)
         assert isinstance(trial[0], UD)
-        d0 = get_LL(test[0].N, trial[0].N, test[0].quad)
+        d0 = get_norm_sq(test[0], trial[0], method)
         d = {0: d0[:-1]+d0[1:], -1: -d0[1:-1]}
         d[1] = d[-1].copy()
         return d
@@ -914,11 +850,11 @@ class BLDLDmat(SpectralMatrix):
     trial spaces have dimensions of M and N, respectively.
 
     """
-    def assemble(self):
+    def assemble(self, method):
         test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], LD)
         assert isinstance(trial[0], LD)
-        d0 = get_LL(test[0].N, trial[0].N, test[0].quad)
+        d0 = get_norm_sq(test[0], trial[0], method)
         d = {0: d0[:-1]+d0[1:], -1: d0[1:-1]}
         d[1] = d[-1].copy()
         return d
@@ -934,7 +870,7 @@ class BUDUDrp1mat(SpectralMatrix):
     trial spaces have dimensions of M and N, respectively.
 
     """
-    def assemble(self):
+    def assemble(self, method):
         test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], UD)
         assert isinstance(trial[0], UD)
@@ -960,7 +896,7 @@ class BSDSD1orp1mat(SpectralMatrix):
     trial spaces have dimensions of M and N, respectively.
 
     """
-    def assemble(self):
+    def assemble(self, method):
         test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], SD)
@@ -982,11 +918,11 @@ class BSDSDrp1mat(SpectralMatrix):
     trial spaces have dimensions of M and N, respectively.
 
     """
-    def assemble(self):
+    def assemble(self, method):
         test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], SD)
-        assert test[0].quad == 'LG'
+        #assert test[0].quad == 'LG'
 
         k = np.arange(test[0].N-2)
         d = {0: 2/(2*k+1)+2/(2*k+5),
@@ -1028,14 +964,14 @@ mat = SpectralMatDict({
     ((SB, 4), (SB, 0)): SSBSBmat,
     ((SD, 0), (SD, 2), 1+x): ASDSD2rp1mat,
     ((SD, 2), (SD, 0), 1+x): ASDSD2Trp1mat,
-    ((SD, 0), (SD, 0), 1+x): BSDSDrp1mat,
-    ((SD, 0), (SD, 0), 1/(1+x)): BSDSD1orp1mat,
+    #((SD, 0), (SD, 0), 1+x): BSDSDrp1mat,
+    #((SD, 0), (SD, 0), 1/(1+x)): BSDSD1orp1mat,
     ((UD, 1), (UD, 1), 1+x): AUDUDrp1mat,
-    ((UD, 0), (UD, 0), 1+x): BUDUDrp1mat,
+    #((UD, 0), (UD, 0), 1+x): BUDUDrp1mat,
     ((UD, 1), (UD, 1), (1+x)**2): AUDUDrp1smat,
     ((UD, 0), (UD, 2), (1+x)**2): GUDUDrp1smat,
-    ((UD, 0), (UD, 1), (1+x)): CUDUDrp1mat,
-    ((UD, 0), (UD, 0), (1+x)**2): BUDUDrp1smat,
+    #((UD, 0), (UD, 1), (1+x)): CUDUDrp1mat,
+    #((UD, 0), (UD, 0), (1+x)**2): BUDUDrp1smat,
     ((UD, 0), (UD, 0)): BUDUDmat,
     ((LD, 0), (LD, 0)): BLDLDmat,
     ((DN, 0), (DN, 0)): BDNDNmat,
@@ -1045,7 +981,6 @@ mat = SpectralMatDict({
     ((BF, 4), (BF, 0)): SBFBFmat,
     ((BF, 0), (BF, 4)): SBFBFmat,
     ((BF, 2), (BF, 2)): SBFBFmat,
-    ((BF, 0), (BF, 0)): BBFBFmat,
     })
 
 #mat = SpectralMatDict({})

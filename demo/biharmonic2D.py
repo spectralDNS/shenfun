@@ -21,10 +21,7 @@ BiharmonicSolver = chebyshev.la.Biharmonic if family == 'chebyshev' else la.Solv
 
 # Use sympy to compute a rhs, given an analytical solution
 x, y = sp.symbols("x,y", real=True)
-a = 1
-b = -1
-ue = (sp.sin(2*sp.pi*x))*(1-x**2) + a*(1/2-9/16*x+1/16*sp.chebyshevt(3, x)) + b*(1/2+9/16*x-1/16*sp.chebyshevt(3, x))
-#ue = (sin(2*np.pi*x)*cos(2*y))*(1-x**2) + a*(0.5-0.6*x+1/10*legendre(3, x)) + b*(0.5+0.6*x-1./10.*legendre(3, x))
+ue = x**4*sp.sin(2*y)
 fe = ue.diff(x, 4) + ue.diff(y, 4) + 2*ue.diff(x, 2, y, 2)
 
 # Size of discretization
@@ -33,8 +30,8 @@ N = (30, 30)
 if family == 'chebyshev':
     assert N[0] % 2 == 0, "Biharmonic solver only implemented for even numbers"
 
-bcs = (ue.subs(x, -1), ue.diff(x, 1).subs(x, -1), ue.subs(x, 1), ue.diff(x, 1).subs(x, 1))
-#SD = FunctionSpace(N[0], family=family, bc='Biharmonic')
+bcs = {'left': {'D': ue.subs(x, -1), 'N': ue.diff(x, 1).subs(x, -1)},
+       'right': {'D': ue.subs(x, 1), 'N': ue.diff(x, 1).subs(x, 1)}}
 SD = FunctionSpace(N[0], family=family, bc=bcs)
 K1 = FunctionSpace(N[1], family='F')
 T = TensorProductSpace(comm, (SD, K1), axes=(0, 1))

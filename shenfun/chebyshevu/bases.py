@@ -12,7 +12,7 @@ from shenfun.spectralbase import SpectralBase, Transform, FuncWrap, \
     islicedict, slicedict, getCompositeBase, BoundaryConditions
 from shenfun.matrixbase import SparseMatrix
 from shenfun.config import config
-from shenfun.jacobi.recursions import n, half, un
+from shenfun.jacobi.recursions import half, un, n
 
 #pylint: disable=abstract-method, not-callable, method-hidden, no-self-use, cyclic-import
 
@@ -56,7 +56,7 @@ class DCTWrap(FuncWrap):
         return self.output_array
 
 class Orthogonal(SpectralBase):
-    """Function space for Chebyshev series of second kind
+    r"""Function space for Chebyshev series of second kind
 
     The orthogonal basis is
 
@@ -169,6 +169,19 @@ class Orthogonal(SpectralBase):
 
     def sympy_basis(self, i=0, x=xp):
         return sp.chebyshevu(i, x)
+
+    def L2_norm_sq(self, i):
+        return sp.pi/2
+
+    def l2_norm_sq(self, i=None):
+        if i is None:
+            f = np.full(self.N, np.pi/2)
+            if self.quad == 'GC':
+                f[-1] *= 2
+            return f
+        elif i == self.N-1 and self.quad == 'GC':
+            return np.pi
+        return np.pi/2
 
     @staticmethod
     def bnd_values(k=0, **kw):
@@ -391,10 +404,18 @@ class Phi1(CompositeBase):
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates, scaled=scaled)
-        #self.b0n = sp.simplify(b(half, half, n+1, n, un) / (h(half, half, n, 0, un)))
-        #self.b2n = sp.simplify(b(half, half, n+1, n+2, un) / (h(half, half, n+2, 0, un)))
-        self.b0n = 1/(np.pi*(n+1))
-        self.b2n = -1/(np.pi*(n+3))
+        #self._stencil = {
+        #   0: sp.simplify(b(half, half, n+1, n, un) / (h(half, half, n, 0, un))),
+        #   2: sp.simplify(b(half, half, n+1, n+2, un) / (h(half, half, n+2, 0, un)))}
+        self._stencil = {
+            0: 1/(np.pi*(n+1)),
+            2: -1/(np.pi*(n+3))
+        }
+        if self.is_scaled():
+            self._stencil = {
+                0: 1/(sp.pi*(n+1)*(n+2)),
+                2: -1/(sp.pi*(n+3)*(n+2))
+            }
 
     @staticmethod
     def boundary_condition():
@@ -404,20 +425,6 @@ class Phi1(CompositeBase):
     def short_name():
         return 'P1'
 
-    def stencil_matrix(self, N=None):
-        N = self.N if N is None else N
-        k = np.arange(N)
-        d0, d2 = np.zeros(N), np.zeros(N-2)
-        #d0[:-2] = sp.lambdify(n, self.b0n)(k[:N-2])
-        #d2[:] = sp.lambdify(n, self.b2n)(k[:N-2])
-        d0[:-2] = 1/(np.pi*(k[:N-2]+1))
-        d2[:] = -1/(np.pi*(k[:N-2]+3))
-        if self.is_scaled():
-            return SparseMatrix({0: d0/(k+2), 2: d2/(k[:-2]+2)}, (N, N))
-        return SparseMatrix({0: d0, 2: d2}, (N, N))
-
-    def slice(self):
-        return slice(0, self.N-2)
 
 class Phi2(CompositeBase):
     r"""Function space for biharmonic equation.
@@ -479,12 +486,22 @@ class Phi2(CompositeBase):
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                scaled=scaled, coordinates=coordinates)
-        #self.b0n = sp.simplify(matpow(b, 2, half, half, n+2, n, un) / (h(half, half, n, 0, un)))
-        #self.b2n = sp.simplify(matpow(b, 2, half, half, n+2, n+2, un) / (h(half, half, n+2, 0, un)))
-        #self.b4n = sp.simplify(matpow(b, 2, half, half, n+2, n+4, un) / (h(half, half, n+4, 0, un)))
-        self.b0n = 1/(2*np.pi*(n+1)*(n+2))
-        self.b2n = -1/(np.pi*(n+2)*(n+4))
-        self.b4n = 1/(2*np.pi*(n+4)*(n+5))
+        #self._stencil = {
+        #   0: sp.simplify(matpow(b, 2, half, half, n+2, n, un) / (h(half, half, n, 0, un))),
+        #   2: sp.simplify(matpow(b, 2, half, half, n+2, n+2, un) / (h(half, half, n+2, 0, un))),
+        #   4: sp.simplify(matpow(b, 2, half, half, n+2, n+4, un) / (h(half, half, n+4, 0, un)))}
+        self._stencil = {
+            0: 1/(2*sp.pi*(n+1)*(n+2)),
+            2: -1/(sp.pi*(n+2)*(n+4)),
+            4: 1/(2*sp.pi*(n+4)*(n+5))
+        }
+        if self.is_scaled():
+            self._stencil = {
+                0: 1/(2*sp.pi*(n+1)*(n+2)*(n+3)),
+                2: -1/(sp.pi*(n+2)*(n+4)*(n+3)),
+                4: 1/(2*sp.pi*(n+4)*(n+5)*(n+3))
+            }
+
 
     @staticmethod
     def boundary_condition():
@@ -494,19 +511,6 @@ class Phi2(CompositeBase):
     def short_name():
         return 'P2'
 
-    def stencil_matrix(self, N=None):
-        N = self.N if N is None else N
-        k = np.arange(N)
-        d0, d2, d4 = np.zeros(N), np.zeros(N-2), np.zeros(N-4)
-        d0[:-4] = sp.lambdify(n, self.b0n)(k[:N-4])
-        d2[:-2] = sp.lambdify(n, self.b2n)(k[:N-4])
-        d4[:] = sp.lambdify(n, self.b4n)(k[:N-4])
-        if self.is_scaled():
-            return SparseMatrix({0: d0/(k+3), 2: d2/(k[:-2]+3), 4: d4/(k[:-4]+3)}, (N, N))
-        return SparseMatrix({0: d0, 2: d2, 4: d4}, (N, N))
-
-    def slice(self):
-        return slice(0, self.N-4)
 
 class Phi3(CompositeBase):
     r"""Function space for 6'th order equation
@@ -558,14 +562,17 @@ class Phi3(CompositeBase):
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
-        #self.b0n = sp.simplify(matpow(b, 3, half, half, n+3, n, un) / (h(half, half, n, 0, un)))
-        #self.b2n = sp.simplify(matpow(b, 3, half, half, n+3, n+2, un) / (h(half, half, n+2, 0, un)))
-        #self.b4n = sp.simplify(matpow(b, 3, half, half, n+3, n+4, un) / (h(half, half, n+4, 0, un)))
-        #self.b6n = sp.simplify(matpow(b, 3, half, half, n+3, n+6, un) / (h(half, half, n+6, 0, un)))
-        self.b0n = 1/(4*sp.pi*(n+1)*(n+2)*(n+3))
-        self.b2n = -3/(4*sp.pi*(n+2)*(n+3)*(n+5))
-        self.b4n = 3/(4*sp.pi*(n+3)*(n+5)*(n+6))
-        self.b6n = -1/(4*sp.pi*(n+5)*(n+6)*(n+7))
+        #self._stencil = {
+        #   0: sp.simplify(matpow(b, 3, half, half, n+3, n, un) / (h(half, half, n, 0, un))),
+        #   2: sp.simplify(matpow(b, 3, half, half, n+3, n+2, un) / (h(half, half, n+2, 0, un))),
+        #   4: sp.simplify(matpow(b, 3, half, half, n+3, n+4, un) / (h(half, half, n+4, 0, un))),
+        #   6: sp.simplify(matpow(b, 3, half, half, n+3, n+6, un) / (h(half, half, n+6, 0, un)))}
+        self._stencil = {
+            0: 1/(4*sp.pi*(n+1)*(n+2)*(n+3)),
+            2: -3/(4*sp.pi*(n+2)*(n+3)*(n+5)),
+            4: 3/(4*sp.pi*(n+3)*(n+5)*(n+6)),
+            6: -1/(4*sp.pi*(n+5)*(n+6)*(n+7))
+        }
 
     @staticmethod
     def boundary_condition():
@@ -575,18 +582,6 @@ class Phi3(CompositeBase):
     def short_name():
         return 'P3'
 
-    def stencil_matrix(self, N=None):
-        N = self.N if N is None else N
-        k = np.arange(N)
-        d0, d2, d4, d6 = np.zeros(N), np.zeros(N-2), np.zeros(N-4), np.zeros(N-6)
-        d0[:-6] = sp.lambdify(n, self.b0n)(k[:N-6])
-        d2[:-4] = sp.lambdify(n, self.b2n)(k[:N-6])
-        d4[:-2] = sp.lambdify(n, self.b4n)(k[:N-6])
-        d6[:] = sp.lambdify(n, self.b6n)(k[:N-6])
-        return SparseMatrix({0: d0, 2: d2, 4: d4, 6: d6}, (N, N))
-
-    def slice(self):
-        return slice(0, self.N-6)
 
 class Phi4(CompositeBase):
     r"""Function space for 8th order equation
@@ -637,17 +632,20 @@ class Phi4(CompositeBase):
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
-        #self.b0n = sp.simplify(matpow(b, 4, half, half, n+4, n, un) / h(half, half, n, 0, un)
-        #self.b2n = sp.simplify(matpow(b, 4, half, half, n+4, n+2, un) / h(half, half, n+2, 0, un))
-        #self.b4n = sp.simplify(matpow(b, 4, half, half, n+4, n+4, un) / h(half, half, n+4, 0, un))
-        #self.b6n = sp.simplify(matpow(b, 4, half, half, n+4, n+6, un) / h(half, half, n+6, 0, un))
-        #self.b8n = sp.simplify(matpow(b, 4, half, half, n+4, n+8, un) / h(half, half, n+8, 0, un))
+        #self._stencil = {
+        #   0: sp.simplify(matpow(b, 4, half, half, n+4, n, un) / h(half, half, n, 0, un),
+        #   2: sp.simplify(matpow(b, 4, half, half, n+4, n+2, un) / h(half, half, n+2, 0, un)),
+        #   4: sp.simplify(matpow(b, 4, half, half, n+4, n+4, un) / h(half, half, n+4, 0, un)),
+        #   6: sp.simplify(matpow(b, 4, half, half, n+4, n+6, un) / h(half, half, n+6, 0, un)),
+        #   8: sp.simplify(matpow(b, 4, half, half, n+4, n+8, un) / h(half, half, n+8, 0, un))}
         # Below are the same but faster since already simplified
-        self.b0n = 1/(8*sp.pi*(n + 1)*(n + 2)*(n + 3)*(n + 4))
-        self.b2n = -1/(2*sp.pi*(n + 2)*(n + 3)*(n + 4)*(n + 6))
-        self.b4n = 3/(4*sp.pi*(n + 3)*(n + 4)*(n + 6)*(n + 7))
-        self.b6n = -1/(2*sp.pi*(n + 4)*(n + 6)*(n + 7)*(n + 8))
-        self.b8n = 1/(8*sp.pi*(n + 6)*(n + 7)*(n + 8)*(n + 9))
+        self._stencil = {
+            0: 1/(8*sp.pi*(n + 1)*(n + 2)*(n + 3)*(n + 4)),
+            2: -1/(2*sp.pi*(n + 2)*(n + 3)*(n + 4)*(n + 6)),
+            4: 3/(4*sp.pi*(n + 3)*(n + 4)*(n + 6)*(n + 7)),
+            6: -1/(2*sp.pi*(n + 4)*(n + 6)*(n + 7)*(n + 8)),
+            8: 1/(8*sp.pi*(n + 6)*(n + 7)*(n + 8)*(n + 9))
+        }
 
     @staticmethod
     def boundary_condition():
@@ -656,20 +654,6 @@ class Phi4(CompositeBase):
     @staticmethod
     def short_name():
         return 'P4'
-
-    def stencil_matrix(self, N=None):
-        N = self.N if N is None else N
-        k = np.arange(N)
-        d0, d2, d4, d6, d8 = np.zeros(N), np.zeros(N-2), np.zeros(N-4), np.zeros(N-6), np.zeros(N-8)
-        d0[:-8] = sp.lambdify(n, self.b0n)(k[:N-8])
-        d2[:-6] = sp.lambdify(n, self.b2n)(k[:N-8])
-        d4[:-4] = sp.lambdify(n, self.b4n)(k[:N-8])
-        d6[:-2] = sp.lambdify(n, self.b6n)(k[:N-8])
-        d8[:] = sp.lambdify(n, self.b8n)(k[:N-8])
-        return SparseMatrix({0: d0, 2: d2, 4: d4, 6: d6, 8: d8}, (N, N))
-
-    def slice(self):
-        return slice(0, self.N-8)
 
 
 class CompactDirichlet(CompositeBase):
@@ -735,6 +719,9 @@ class CompactDirichlet(CompositeBase):
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates, scaled=scaled)
+        self._stencil = {0: 1, 2: -(n+1)/(n+3)}
+        if self.is_scaled():
+            self._stencil = {0: 1/(n+1), 2: -1/(n+3)}
 
     @staticmethod
     def boundary_condition():
@@ -743,21 +730,6 @@ class CompactDirichlet(CompositeBase):
     @staticmethod
     def short_name():
         return 'CD'
-
-    def stencil_matrix(self, N=None):
-        N = self.N if N is None else N
-        k = np.arange(N)
-        d0, d2 = np.zeros(N), np.zeros(N-2)
-        if not self.is_scaled():
-            d0[:-2] = 1
-            d2[:] = -(k[:-2]+1)/(k[:-2]+3)
-        else:
-            d0[:-2] = 1/(k[:-2]+1)
-            d2[:] = -1/(k[:-2]+3)
-        return SparseMatrix({0: d0, 2: d2}, (N, N))
-
-    def slice(self):
-        return slice(0, self.N-2)
 
 
 class CompactNeumann(CompositeBase):
@@ -812,6 +784,7 @@ class CompactNeumann(CompositeBase):
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
+        self._stencil = {0: 1, 2: -n*(n+1)/((n+3)*(n+4))}
 
     @staticmethod
     def boundary_condition():
@@ -821,16 +794,6 @@ class CompactNeumann(CompositeBase):
     def short_name():
         return 'CN'
 
-    def stencil_matrix(self, N=None):
-        N = self.N if N is None else N
-        k = np.arange(N)
-        d0, d2 = np.zeros(N), np.zeros(N-2)
-        d0[:-2] = 1
-        d2[:] = -k[:-2]*(k[:-2]+1)/((k[:-2]+3)*(k[:-2]+4))
-        return SparseMatrix({0: d0, 2: d2}, (N, N))
-
-    def slice(self):
-        return slice(0, self.N-2)
 
 class UpperDirichlet(CompositeBase):
     r"""Function space with single Dirichlet on upper edge
@@ -880,6 +843,7 @@ class UpperDirichlet(CompositeBase):
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
+        self._stencil = {0: 1, 1: -(n+1)/(n+2)}
 
     @staticmethod
     def boundary_condition():
@@ -888,16 +852,6 @@ class UpperDirichlet(CompositeBase):
     @staticmethod
     def short_name():
         return 'UD'
-
-    def stencil_matrix(self, N=None):
-        N = self.N if N is None else N
-        d = np.ones(N, dtype=int)
-        k = np.arange(N)
-        d[-1:] = 0
-        return SparseMatrix({0: d, 1: -(k[:-1]+1)/(k[:-1]+2)*d[:-1]}, (N, N))
-
-    def slice(self):
-        return slice(0, self.N-1)
 
 class LowerDirichlet(CompositeBase):
     r"""Function space with single Dirichlet on left edge
@@ -947,6 +901,7 @@ class LowerDirichlet(CompositeBase):
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
+        self._stencil = {0: 1, 1: (n+1)/(n+2)}
 
     @staticmethod
     def boundary_condition():
@@ -956,15 +911,6 @@ class LowerDirichlet(CompositeBase):
     def short_name():
         return 'LD'
 
-    def stencil_matrix(self, N=None):
-        N = self.N if N is None else N
-        d = np.ones(N, dtype=int)
-        k = np.arange(N)
-        d[-1:] = 0
-        return SparseMatrix({0: d, 1: (k[:-1]+1)/(k[:-1]+2)*d[:-1]}, (N, N))
-
-    def slice(self):
-        return slice(0, self.N-1)
 
 class Generic(CompositeBase):
     r"""Function space for space with any boundary conditions
@@ -1027,24 +973,6 @@ class Generic(CompositeBase):
     @staticmethod
     def short_name():
         return 'GU'
-
-    def slice(self):
-        return slice(0, self.N-self.bcs.num_bcs())
-
-    def stencil_matrix(self, N=None):
-        from shenfun.utilities.findbasis import n
-        N = self.N if N is None else N
-        d0 = np.ones(N, dtype=int)
-        d0[-self.bcs.num_bcs():] = 0
-        d = {0: d0}
-        k = np.arange(N)
-        for i, s in enumerate(self._stencil):
-            di = sp.lambdify(n, s)(k[:-(i+1)])
-            if not np.allclose(di, 0):
-                if isinstance(di, np.ndarray):
-                    di[(N-self.bcs.num_bcs()):] = 0
-                d[i+1] = di
-        return SparseMatrix(d, (N, N))
 
 
 class BCBase(CompositeBase):

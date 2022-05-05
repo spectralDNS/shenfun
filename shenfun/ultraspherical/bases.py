@@ -34,10 +34,10 @@ from shenfun.config import config
 from shenfun.spectralbase import SpectralBase, Transform, islicedict, \
     slicedict, getCompositeBase, BoundaryConditions
 from shenfun.matrixbase import SparseMatrix
-from shenfun.jacobi.recursions import cn
+from shenfun.jacobi.recursions import cn, h, alfa
 
 xp = sp.Symbol('x', real=True)
-m, n, k = sp.symbols('m,n,k', real=True, integer=True)
+m, n, k = sp.symbols('m,n,k', real=True, integer=True, positive=True)
 
 #pylint: disable=method-hidden,no-else-return,not-callable,abstract-method,no-member,cyclic-import
 
@@ -191,6 +191,18 @@ class Orthogonal(SpectralBase):
     def sympy_basis(self, i=0, x=xp):
         return cn(self.alpha, self.alpha, i)*sp.jacobi(i, self.alpha, self.alpha, x)
 
+    def L2_norm_sq(self, i):
+        if i == 0:
+            return sp.simplify(h(alfa, alfa, i, 0, cn).subs(i, 0)).subs(alfa, self.alpha)
+        return h(self.alpha, self.alpha, i, 0, cn)
+
+    def l2_norm_sq(self, i=None):
+        if i is None:
+            hh = sp.lambdify(n, h(self.alpha, self.alpha, n, 0))(np.arange(self.N))
+            hh[0] = self.L2_norm_sq(0)
+            return hh
+        return self.L2_norm_sq(i)
+
     @staticmethod
     def bnd_values(k=0, alpha=0, beta=0):
         from shenfun.jacobi.recursions import bnd_values
@@ -303,12 +315,14 @@ class Phi1(CompositeBase):
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                alpha=alpha, coordinates=coordinates)
-        self._stencil_matrix = {}
-        #self.b0n = sp.simplify(b(alpha, alpha, n+1, n, cn) / h(alpha, alpha, n, 0, cn))
-        #self.b2n = sp.simplify(b(alpha, alpha, n+1, n+2, cn) / h(alpha, alpha, n+2, 0, cn))
+        #self._stencil = {
+        #   0: sp.simplify(b(alpha, alpha, n+1, n, cn) / h(alpha, alpha, n, 0, cn)),
+        #   2: sp.simplify(b(alpha, alpha, n+1, n+2, cn) / h(alpha, alpha, n+2, 0, cn))}
         a = alpha
-        self.b0n = sp.gamma(2*a + n + 2)/(2*2**(2*a)*sp.gamma(a + 1)**2*sp.gamma(n + 2))
-        self.b2n = -sp.gamma(2*a + n + 2)/(2*2**(2*a)*sp.gamma(a + 1)**2*sp.gamma(n + 2))
+        self._stencil ={
+            0: sp.gamma(2*a + n + 2)/(2*2**(2*a)*sp.gamma(a + 1)**2*sp.gamma(n + 2)),
+            2: -sp.gamma(2*a + n + 2)/(2*2**(2*a)*sp.gamma(a + 1)**2*sp.gamma(n + 2)),
+        }
 
     @staticmethod
     def boundary_condition():
@@ -317,20 +331,6 @@ class Phi1(CompositeBase):
     @staticmethod
     def short_name():
         return 'P1'
-
-    def stencil_matrix(self, N=None):
-        N = self.N if N is None else N
-        if N in self._stencil_matrix:
-            return self._stencil_matrix[N]
-        k = np.arange(N)
-        d0, d2 = np.zeros(N), np.zeros(N-2)
-        d0[:-2] = sp.lambdify(n, self.b0n)(k[:N-2])
-        d2[:] = sp.lambdify(n, self.b2n)(k[:N-2])
-        self._stencil_matrix[N] = SparseMatrix({0: d0, 2: d2}, (N, N))
-        return self._stencil_matrix[N]
-
-    def slice(self):
-        return slice(0, self.N-2)
 
 
 class Phi2(CompositeBase):
@@ -387,14 +387,16 @@ class Phi2(CompositeBase):
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                alpha=alpha, coordinates=coordinates)
-        self._stencil_matrix = {}
         a = alpha
-        #self.b0n = sp.simplify(matpow(b, 2, alpha, alpha, n+2, n, cn) / h(alpha, alpha, n, 0, cn))
-        #self.b2n = sp.simplify(matpow(b, 2, alpha, alpha, n+2, n+2, cn) / h(alpha, alpha, n+2, 0, cn))
-        #self.b4n = sp.simplify(matpow(b, 2, alpha, alpha, n+2, n+4, cn) / h(alpha, alpha, n+4, 0, cn))
-        self.b0n = sp.gamma(2*a + n + 3)/(2*2**(2*a)*(2*a + 2*n + 3)*sp.gamma(a + 1)**2*sp.gamma(n + 3))
-        self.b2n = -(2*a + 2*n + 5)*sp.gamma(2*a + n + 3)/(4**a*(2*a + 2*n + 3)*(2*a + 2*n + 7)*sp.gamma(a + 1)**2*sp.gamma(n + 3))
-        self.b4n = sp.gamma(2*a + n + 3)/(2*2**(2*a)*(2*a + 2*n + 7)*sp.gamma(a + 1)**2*sp.gamma(n + 3))
+        #self._stencil = {
+        #   0: sp.simplify(matpow(b, 2, alpha, alpha, n+2, n, cn) / h(alpha, alpha, n, 0, cn)),
+        #   2: sp.simplify(matpow(b, 2, alpha, alpha, n+2, n+2, cn) / h(alpha, alpha, n+2, 0, cn)),
+        #   4: sp.simplify(matpow(b, 2, alpha, alpha, n+2, n+4, cn) / h(alpha, alpha, n+4, 0, cn))}
+        self._stencil = {
+            0: sp.gamma(2*a + n + 3)/(2*2**(2*a)*(2*a + 2*n + 3)*sp.gamma(a + 1)**2*sp.gamma(n + 3)),
+            2: -(2*a + 2*n + 5)*sp.gamma(2*a + n + 3)/(4**a*(2*a + 2*n + 3)*(2*a + 2*n + 7)*sp.gamma(a + 1)**2*sp.gamma(n + 3)),
+            4: sp.gamma(2*a + n + 3)/(2*2**(2*a)*(2*a + 2*n + 7)*sp.gamma(a + 1)**2*sp.gamma(n + 3))
+        }
 
     @staticmethod
     def boundary_condition():
@@ -404,20 +406,6 @@ class Phi2(CompositeBase):
     def short_name():
         return 'P2'
 
-    def stencil_matrix(self, N=None):
-        N = self.N if N is None else N
-        if N in self._stencil_matrix:
-            return self._stencil_matrix[N]
-        k = np.arange(N)
-        d0, d2, d4 = np.zeros(N), np.zeros(N-2), np.zeros(N-4)
-        d0[:-4] = sp.lambdify(n, sp.simplify(self.b0n))(k[:N-4])
-        d2[:-2] = sp.lambdify(n, sp.simplify(self.b2n))(k[:N-4])
-        d4[:] = sp.lambdify(n, sp.simplify(self.b4n))(k[:N-4])
-        self._stencil_matrix[N] = SparseMatrix({0: d0, 2: d2, 4: d4}, (N, N))
-        return self._stencil_matrix[N]
-
-    def slice(self):
-        return slice(0, self.N-4)
 
 class Phi3(CompositeBase):
     r"""Function space for 6th order equations
@@ -471,16 +459,18 @@ class Phi3(CompositeBase):
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                alpha=alpha, coordinates=coordinates)
-        self._stencil_matrix = {}
-        #self.b0n = sp.simplify(matpow(b, 3, alpha, alpha, n+3, n, cn) / h(alpha, alpha, n, 0, cn))
-        #self.b2n = sp.simplify(matpow(b, 3, alpha, alpha, n+3, n+2, cn) / h(alpha, alpha, n+2, 0, cn))
-        #self.b4n = sp.simplify(matpow(b, 3, alpha, alpha, n+3, n+4, cn) / h(alpha, alpha, n+4, 0, cn))
-        #self.b6n = sp.simplify(matpow(b, 3, alpha, alpha, n+3, n+6, cn) / h(alpha, alpha, n+6, 0, cn))
+        #self._stencil = {
+        #   0: sp.simplify(matpow(b, 3, alpha, alpha, n+3, n, cn) / h(alpha, alpha, n, 0, cn)),
+        #   2: sp.simplify(matpow(b, 3, alpha, alpha, n+3, n+2, cn) / h(alpha, alpha, n+2, 0, cn)),
+        #   4: sp.simplify(matpow(b, 3, alpha, alpha, n+3, n+4, cn) / h(alpha, alpha, n+4, 0, cn)),
+        #   6: sp.simplify(matpow(b, 3, alpha, alpha, n+3, n+6, cn) / h(alpha, alpha, n+6, 0, cn))}
         a = alpha
-        self.b0n = sp.gamma(2*a + n + 4)/(2*2**(2*a)*(2*a + 2*n + 3)*(2*a + 2*n + 5)*sp.gamma(a + 1)**2*sp.gamma(n + 4))
-        self.b2n = -3*sp.gamma(2*a + n + 4)/(2*2**(2*a)*(2*a + 2*n + 3)*(2*a + 2*n + 9)*sp.gamma(a + 1)**2*sp.gamma(n + 4))
-        self.b4n = 3*sp.gamma(2*a + n + 4)/(2*2**(2*a)*(2*a + 2*n + 5)*(2*a + 2*n + 11)*sp.gamma(a + 1)**2*sp.gamma(n + 4))
-        self.b6n = -sp.gamma(2*a + n + 4)/(2*2**(2*a)*(2*a + 2*n + 9)*(2*a + 2*n + 11)*sp.gamma(a + 1)**2*sp.gamma(n + 4))
+        self._stencil = {
+            0: sp.gamma(2*a + n + 4)/(2*2**(2*a)*(2*a + 2*n + 3)*(2*a + 2*n + 5)*sp.gamma(a + 1)**2*sp.gamma(n + 4)),
+            2: -3*sp.gamma(2*a + n + 4)/(2*2**(2*a)*(2*a + 2*n + 3)*(2*a + 2*n + 9)*sp.gamma(a + 1)**2*sp.gamma(n + 4)),
+            4: 3*sp.gamma(2*a + n + 4)/(2*2**(2*a)*(2*a + 2*n + 5)*(2*a + 2*n + 11)*sp.gamma(a + 1)**2*sp.gamma(n + 4)),
+            6: -sp.gamma(2*a + n + 4)/(2*2**(2*a)*(2*a + 2*n + 9)*(2*a + 2*n + 11)*sp.gamma(a + 1)**2*sp.gamma(n + 4))
+        }
 
     @staticmethod
     def boundary_condition():
@@ -489,22 +479,6 @@ class Phi3(CompositeBase):
     @staticmethod
     def short_name():
         return 'P3'
-
-    def stencil_matrix(self, N=None):
-        N = self.N if N is None else N
-        if N in self._stencil_matrix:
-            return self._stencil_matrix[N]
-        k = np.arange(N)
-        d0, d2, d4, d6 = np.zeros(N), np.zeros(N-2), np.zeros(N-4), np.zeros(N-6)
-        d0[:-6] = sp.lambdify(n, self.b0n)(k[:N-6])
-        d2[:-4] = sp.lambdify(n, self.b2n)(k[:N-6])
-        d4[:-2] = sp.lambdify(n, self.b4n)(k[:N-6])
-        d6[:] = sp.lambdify(n, self.b6n)(k[:N-6])
-        self._stencil_matrix[N] = SparseMatrix({0: d0, 2: d2, 4: d4, 6: d6}, (N, N))
-        return self._stencil_matrix[N]
-
-    def slice(self):
-        return slice(0, self.N-6)
 
 
 class Phi4(CompositeBase):
@@ -561,17 +535,20 @@ class Phi4(CompositeBase):
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                alpha=alpha, coordinates=coordinates)
         self._stencil_matrix = {}
-        #self.b0n = sp.simplify(matpow(b, 4, alpha, alpha, n+4, n, cn) / h(alpha, alpha, n, 0, cn))
-        #self.b2n = sp.simplify(matpow(b, 4, alpha, alpha, n+4, n+2, cn) / h(alpha, alpha, n+2, 0, cn))
-        #self.b4n = sp.simplify(matpow(b, 4, alpha, alpha, n+4, n+4, cn) / h(alpha, alpha, n+4, 0, cn))
-        #self.b6n = sp.simplify(matpow(b, 4, alpha, alpha, n+4, n+6, cn) / h(alpha, alpha, n+6, 0, cn))
-        #self.b8n = sp.simplify(matpow(b, 4, alpha, alpha, n+4, n+8, cn) / h(alpha, alpha, n+8, 0, cn))
+        #self._stencil = {
+        #   0: sp.simplify(matpow(b, 4, alpha, alpha, n+4, n, cn) / h(alpha, alpha, n, 0, cn)),
+        #   2: sp.simplify(matpow(b, 4, alpha, alpha, n+4, n+2, cn) / h(alpha, alpha, n+2, 0, cn)),
+        #   4: sp.simplify(matpow(b, 4, alpha, alpha, n+4, n+4, cn) / h(alpha, alpha, n+4, 0, cn)),
+        #   6: sp.simplify(matpow(b, 4, alpha, alpha, n+4, n+6, cn) / h(alpha, alpha, n+6, 0, cn)),
+        #   8: sp.simplify(matpow(b, 4, alpha, alpha, n+4, n+8, cn) / h(alpha, alpha, n+8, 0, cn))}
         a = alpha
-        self.b0n = sp.gamma(2*a + n + 5)/(2*2**(2*a)*(2*a + 2*n + 3)*(2*a + 2*n + 5)*(2*a + 2*n + 7)*sp.gamma(a + 1)**2*sp.gamma(n + 5))
-        self.b2n = -2**(1 - 2*a)*sp.gamma(2*a + n + 5)/((2*a + 2*n + 3)*(2*a + 2*n + 7)*(2*a + 2*n + 11)*sp.gamma(a + 1)**2*sp.gamma(n + 5))
-        self.b4n = 3*(2*a + 2*n + 9)*sp.gamma(2*a + n + 5)/(4**a*(2*a + 2*n + 5)*(2*a + 2*n + 7)*(2*a + 2*n + 11)*(2*a + 2*n + 13)*sp.gamma(a + 1)**2*sp.gamma(n + 5))
-        self.b6n = -2**(1 - 2*a)*sp.gamma(2*a + n + 5)/((2*a + 2*n + 7)*(2*a + 2*n + 11)*(2*a + 2*n + 15)*sp.gamma(a + 1)**2*sp.gamma(n + 5))
-        self.b8n = sp.gamma(2*a + n + 5)/(2*2**(2*a)*(2*a + 2*n + 11)*(2*a + 2*n + 13)*(2*a + 2*n + 15)*sp.gamma(a + 1)**2*sp.gamma(n + 5))
+        self._stencil = {
+            0: sp.gamma(2*a + n + 5)/(2*2**(2*a)*(2*a + 2*n + 3)*(2*a + 2*n + 5)*(2*a + 2*n + 7)*sp.gamma(a + 1)**2*sp.gamma(n + 5)),
+            2: -2**(1 - 2*a)*sp.gamma(2*a + n + 5)/((2*a + 2*n + 3)*(2*a + 2*n + 7)*(2*a + 2*n + 11)*sp.gamma(a + 1)**2*sp.gamma(n + 5)),
+            4: 3*(2*a + 2*n + 9)*sp.gamma(2*a + n + 5)/(4**a*(2*a + 2*n + 5)*(2*a + 2*n + 7)*(2*a + 2*n + 11)*(2*a + 2*n + 13)*sp.gamma(a + 1)**2*sp.gamma(n + 5)),
+            6: -2**(1 - 2*a)*sp.gamma(2*a + n + 5)/((2*a + 2*n + 7)*(2*a + 2*n + 11)*(2*a + 2*n + 15)*sp.gamma(a + 1)**2*sp.gamma(n + 5)),
+            8: sp.gamma(2*a + n + 5)/(2*2**(2*a)*(2*a + 2*n + 11)*(2*a + 2*n + 13)*(2*a + 2*n + 15)*sp.gamma(a + 1)**2*sp.gamma(n + 5))
+        }
 
     @staticmethod
     def boundary_condition():
@@ -580,23 +557,6 @@ class Phi4(CompositeBase):
     @staticmethod
     def short_name():
         return 'P4'
-
-    def stencil_matrix(self, N=None):
-        N = self.N if N is None else N
-        if N in self._stencil_matrix:
-            return self._stencil_matrix[N]
-        k = np.arange(N)
-        d0, d2, d4, d6, d8 = np.zeros(N), np.zeros(N-2), np.zeros(N-4), np.zeros(N-6), np.zeros(N-8)
-        d0[:-8] = sp.lambdify(n, self.b0n)(k[:N-8])
-        d2[:-6] = sp.lambdify(n, self.b2n)(k[:N-8])
-        d4[:-4] = sp.lambdify(n, self.b4n)(k[:N-8])
-        d6[:-2] = sp.lambdify(n, self.b6n)(k[:N-8])
-        d8[:] = sp.lambdify(n, self.b8n)(k[:N-8])
-        self._stencil_matrix[N] = SparseMatrix({0: d0, 2: d2, 4: d4, 6: d6, 8: d8}, (N, N))
-        return self._stencil_matrix[N]
-
-    def slice(self):
-        return slice(0, self.N-8)
 
 
 class CompactDirichlet(CompositeBase):
@@ -647,6 +607,7 @@ class CompactDirichlet(CompositeBase):
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                alpha=alpha, coordinates=coordinates)
+        self._stencil = {0: 1, 2: -1}
 
     @staticmethod
     def boundary_condition():
@@ -655,15 +616,6 @@ class CompactDirichlet(CompositeBase):
     @staticmethod
     def short_name():
         return 'QD'
-
-    def stencil_matrix(self, N=None):
-        N = self.N if N is None else N
-        d = np.ones(N, dtype=int)
-        d[-2:] = 0
-        return SparseMatrix({0: d, 2: -d[:-2]}, (N, N))
-
-    def slice(self):
-        return slice(0, self.N-2)
 
 
 class CompactNeumann(CompositeBase):
@@ -717,6 +669,8 @@ class CompactNeumann(CompositeBase):
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                alpha=alpha, coordinates=coordinates)
+        a = self.alpha
+        self._stencil = {0: 1, 2: n*(-2*a-n-1)/(2*a*n+4*a+n**2+5*n+6)}
 
     @staticmethod
     def boundary_condition():
@@ -726,17 +680,6 @@ class CompactNeumann(CompositeBase):
     def short_name():
         return 'QN'
 
-    def stencil_matrix(self, N=None):
-        N = self.N if N is None else N
-        k = np.arange(N)
-        a = self.alpha
-        d0, d2 = np.zeros(N), np.zeros(N-2)
-        d0[:-2] = 1
-        d2[:] = sp.lambdify(n, n*(-2*a-n-1)/(2*a*n+4*a+n**2+5*n+6))(k[:N-2])
-        return SparseMatrix({0: d0, 2: d2}, (N, N))
-
-    def slice(self):
-        return slice(0, self.N-2)
 
 class UpperDirichlet(CompositeBase):
     r"""Function space with single Dirichlet on upper edge
@@ -785,10 +728,10 @@ class UpperDirichlet(CompositeBase):
     def __init__(self, N, quad="QG", bc=(None, 0), domain=(-1., 1.), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None,
                  alpha=0, **kw):
-        assert quad == "QG"
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                alpha=alpha, coordinates=coordinates)
+        self._stencil = {0: 1, 1: -1}
 
     @staticmethod
     def boundary_condition():
@@ -798,14 +741,6 @@ class UpperDirichlet(CompositeBase):
     def short_name():
         return 'UD'
 
-    def stencil_matrix(self, N=None):
-        N = self.N if N is None else N
-        d = np.ones(N)
-        d[-1] = 0
-        return SparseMatrix({0: d, 1: -d[:-1]}, (N, N))
-
-    def slice(self):
-        return slice(0, self.N-1)
 
 class LowerDirichlet(CompositeBase):
     r"""Function space with single Dirichlet on left edge
@@ -858,6 +793,7 @@ class LowerDirichlet(CompositeBase):
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                alpha=alpha, coordinates=coordinates)
+        self._stencil = {0: 1, 1: 1}
 
     @staticmethod
     def boundary_condition():
@@ -867,14 +803,6 @@ class LowerDirichlet(CompositeBase):
     def short_name():
         return 'LD'
 
-    def stencil_matrix(self, N=None):
-        N = self.N if N is None else N
-        d = np.ones(N)
-        d[-1] = 0
-        return SparseMatrix({0: d, 1: d[:-1]}, (N, N))
-
-    def slice(self):
-        return slice(0, self.N-1)
 
 class Generic(CompositeBase):
     r"""Function space for space with any boundary conditions
@@ -940,23 +868,6 @@ class Generic(CompositeBase):
     def short_name():
         return 'GQ'
 
-    def slice(self):
-        return slice(0, self.N-self.bcs.num_bcs())
-
-    def stencil_matrix(self, N=None):
-        from shenfun.utilities.findbasis import n
-        N = self.N if N is None else N
-        d0 = np.ones(N, dtype=int)
-        d0[-self.bcs.num_bcs():] = 0
-        d = {0: d0}
-        k = np.arange(N)
-        for i, s in enumerate(self._stencil):
-            di = sp.lambdify(n, s)(k[:-(i+1)])
-            if not np.allclose(di, 0):
-                if isinstance(di, np.ndarray):
-                    di[(N-self.bcs.num_bcs()):] = 0
-                d[i+1] = di
-        return SparseMatrix(d, (N, N))
 
 class BCBase(CompositeBase):
     """Function space for inhomogeneous boundary conditions

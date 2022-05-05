@@ -125,11 +125,6 @@ def test_mat(key, mat, quad):
     measure = 1
     if len(key) == 3:
         measure = key[2]
-        if quad == 'GL':
-            return
-        #if not measure == 1:
-        #    # Way too time-consuming. Test when adding new matrices.
-        #    return
 
     t0 = test[0]
     t1 = trial[0]
@@ -140,12 +135,13 @@ def test_mat(key, mat, quad):
 
     testfunction = (t0(N, quad=quad), test[1])
     trialfunction = (t1(N, quad=quad), trial[1])
-    try:
-        mat = mat(testfunction, trialfunction, measure=measure)
-    except AssertionError: # In case something is not implemented
-        return
-    assemble = 'quadrature_vandermonde' if sp.degree(sp.sympify(measure)) < 2 else 'quadrature_fixed_resolution'
-    shenfun.check_sanity(mat, testfunction, trialfunction, measure, assemble=assemble)
+    mat = mat(testfunction, trialfunction, measure=measure)
+    #try:
+    #
+    #except AssertionError: # In case something is not implemented
+    #    return
+    fixed_resolution = None if sp.degree(sp.sympify(measure)) < 2 else int(3*N/2)
+    shenfun.check_sanity(mat, testfunction, trialfunction, measure, fixed_resolution=fixed_resolution)
     if test[0].family() == 'Legendre' and test[0].boundary_condition() == 'Dirichlet':
         testfunction = (test[0](N, quad=quad, scaled=True), test[1])
         trialfunction = (trial[0](N, quad=quad, scaled=True), trial[1])
@@ -743,13 +739,13 @@ def test_stencil(b0, b1):
     b1 = b1(N)
     u = shenfun.TrialFunction(b0)
     v = shenfun.TestFunction(b1)
-    B0 = inner(v, u, assemble='quadrature_vandermonde')
-    B1 = inner(v, u, assemble='quadrature_stencil')
+    B0 = inner(v, u, kind='vandermonde')
+    B1 = inner(v, u, kind='stencil')
     C = B0-B1
     C.incorporate_scale()
     assert np.linalg.norm(C.diags('csr').data) < 1e-8
-    B0 = inner(v*x, u, assemble='quadrature_vandermonde')
-    B1 = inner(v*x, u, assemble='quadrature_stencil')
+    B0 = inner(v*x, u, kind='vandermonde')
+    B1 = inner(v*x, u, kind='stencil')
     C = B0-B1
     C.incorporate_scale()
     assert np.linalg.norm(C.diags('csr').data) < 1e-8
@@ -762,8 +758,8 @@ def test_quadpy(b0, b1, quad):
     b1 = b1(N, quad=quad)
     u = shenfun.TrialFunction(b0)
     v = shenfun.TestFunction(b1)
-    B0 = inner(v, u, assemble='exact_quadpy')
-    B1 = inner(v, u, assemble='quadrature_stencil')
+    B0 = inner(v, u, assemble='adaptive')
+    B1 = inner(v, u, assemble='quadrature', kind='stencil')
     C = B0-B1
     C.incorporate_scale()
 

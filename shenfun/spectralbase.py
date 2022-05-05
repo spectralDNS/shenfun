@@ -22,6 +22,7 @@ import sympy as sp
 import numpy as np
 from mpi4py_fft import fftw
 from shenfun import config
+from shenfun.utilities import get_stencil_matrix, n
 from .utilities import CachedArrayDict, split
 from .coordinates import Coordinates
 work = CachedArrayDict()
@@ -38,6 +39,8 @@ class SpectralBase:
         self.axis = 0
         self.bc = None
         self._bc_basis = None
+        self._stencil = None
+        self._stencil_matrix = {}
         self.alpha = None  # Jacobi parameter
         self.beta = None   # Jacobi parameter
         self.gn = None     # Jacobi scaling function
@@ -714,6 +717,96 @@ class SpectralBase:
         """Return all basis functions as sympy functions"""
         return np.array([self.sympy_basis(i, x=x) for i in range(self.slice().start, self.slice().stop)])
 
+    def L2_norm_sq(self, i):
+        r"""Return square of L2-norm
+
+        .. math::
+
+            \| \phi_i \|^2_{\omega} = (\phi_i, \phi_i)_{\omega} = \int_{I} \phi_i \overline{\phi}_i \omega dx
+
+        where :math:`\phi_i` is the i'th orthogonal basis function for the
+        orthogonal basis in the given family.
+
+        Parameters
+        ----------
+        i : int
+            The number of the orthogonal basis function
+
+        """
+        raise NotImplementedError
+
+
+    def l2_norm_sq(self, i=None):
+        r"""Return square of l2-norm
+
+        .. math::
+
+            \| u \|^2_{N,\omega} = (u, u)_{N,\omega} = \sun_{j=0}^{N-1} u(x_j) \overline{u}(x_j) \omega_j
+
+        where :math:`u=\{\phi_i\}_{i=0}^{N-1}` and :math:`\phi_i` is the i'th
+        orthogonal basis function in the given family.
+
+        Parameters
+        ----------
+        i : None or int
+            If None then return the square of the l2-norm for all
+            i=0, 1, ..., N-1. Else, return for given i.
+
+        """
+        raise NotImplementedError
+
+    def sympy_l2_norm_sq(self, i=sp.Symbol('i', integer=True)):
+        r"""Return sympy function for square of l2-norm
+
+        .. math::
+
+            \| \phi_i \|^2_{N,\omega} = (\phi_i, \phi_i)_{N,\omega} = \sun_{j=0}^{N-1} \phi_i(x_j) \overline{\phi}_i(x_j) \omega_j
+
+        where :math:`\phi_i` is the i'th orthogonal basis function in the given
+        family.
+
+        Parameters
+        ----------
+        i : Sympy Symbol, optional
+
+        Returns
+        -------
+        Sympy Function
+
+        """
+        class h(sp.Function):
+            @classmethod
+            def eval(cls, x):
+                if x.is_Number:
+                    return self.l2_norm_sq(x)
+        return h(i)
+
+    def sympy_L2_norm_sq(self, i=sp.Symbol('i', integer=True)):
+        r"""Return sympy function for square of L2-norm
+
+        .. math::
+
+            \| \phi_i \|^2_{N,\omega} = (\phi_i, \phi_i)_{\omega} = \int_{I} \phi_i \overline{\phi}_i \omega dx
+
+        where :math:`\phi_i` is the i'th orthogonal basis function in the given
+        family.
+
+        Parameters
+        ----------
+        i : Sympy Symbol, optional
+
+        Returns
+        -------
+        Sympy Function
+
+        """
+        class h(sp.Function):
+            @classmethod
+            def eval(cls, x):
+                if x.is_Number:
+                    return self.L2_norm_sq(x)
+        return h(i)
+
     def weight(self, x=None):
         """Weight of inner product space
 
@@ -1069,8 +1162,6 @@ class SpectralBase:
                  dealias_direct=self.dealias_direct,
                  coordinates=self.coors.coordinates)
         dim = self.N-self.dim()
-        if hasattr(self, 'bcs'):
-            d['bc'] = copy.deepcopy(self.bcs)
         for key in ('alpha', 'beta', 'quad'):
             if hasattr(self, key):
                 d[key] = object.__getattribute__(self, key)
@@ -1299,17 +1390,21 @@ def getCompositeBase(Orthogonal):
             scaled = kwargs.pop('scaled', None)
             Orthogonal.__init__(self, *args, **kwargs)
             if bc is not None:
+                from shenfun.utilities import get_stencil_matrix
                 from shenfun.tensorproductspace import BoundaryValues
                 if isinstance(bc, dict) and not isinstance(bc, BoundaryConditions):
                     bc = BoundaryConditions(bc, domain=kwargs['domain'])
                 if isinstance(bc, (tuple, list)):
                     bc = BoundaryConditions(bc, domain=kwargs['domain'])
-
                 assert isinstance(bc, BoundaryConditions)
                 self.bcs = bc
                 self.bc = BoundaryValues(self, bc=bc)
+
             if scaled is not None:
                 self._scaled = scaled
+
+        def slice(self):
+            return slice(0, self.N-self.bcs.num_bcs())
 
         def evaluate_basis_all(self, x=None, argument=0):
             V = Orthogonal.evaluate_basis_all(self, x=x, argument=argument)
@@ -1368,15 +1463,35 @@ def getCompositeBase(Orthogonal):
             return self._scaled
 
         def stencil_matrix(self, N=None):
-            """Matrix describing the linear combination of orthogonal basis
-            functions for the current basis.
+            from .matrixbase import SparseMatrix
+            if self._stencil is None:
+                self._stencil = get_stencil_matrix(self.bcs, self.family(), self.alpha, self.beta)
+            N = self.N if N is None else N
+            if N in self._stencil_matrix:
+                return self._stencil_matrix[N]
+            d = {}
+            k = np.arange(N)
+            for i, s in self._stencil.items():
+                di = sp.lambdify(n, s)(k[:N-i])
+                if isinstance(di, np.ndarray):
+                    di[(N-self.bcs.num_bcs()):] = 0
+                d[i] = di
+            self._stencil_matrix[N] = SparseMatrix(d, (N, N))
+            return self._stencil_matrix[N]
 
-            Parameters
-            ----------
-            N : int, optional
-                The number of quadrature points
-            """
-            raise NotImplementedError
+        def sympy_stencil(self, i=sp.Symbol('i', integer=True), j=sp.Symbol('j', integer=True)):
+            if self._stencil is None:
+                self._stencil = get_stencil_matrix(self.bcs, self.family(), self.alpha, self.beta)
+
+            S = sp.S(0)
+            for m, s in self._stencil.items():
+                if len(sp.sympify(s).free_symbols) == 1:
+                    n = sp.sympify(s).free_symbols.pop()
+                    d0 = s.subs(n, i)
+                else:
+                    d0 = s
+                S += d0*sp.KroneckerDelta(i+m, j)
+            return S
 
         def _composite(self, V, argument=0):
             """Return Vandermonde matrix V adjusted for basis composition
@@ -1417,7 +1532,10 @@ def getCompositeBase(Orthogonal):
                 Q = s0.stop-s0.start
                 s1 = slice(max(0, key), max(0, key)+Q)
                 s[self.axis] = slice(0, Q)
-                output_array[self.sl[s1]] += val[tuple(s)]*input_array[self.sl[s0]]
+                if isinstance(val, Number):
+                    output_array[self.sl[s1]] += val*input_array[self.sl[s0]]
+                else:
+                    output_array[self.sl[s1]] += val[tuple(s)]*input_array[self.sl[s0]]
             if self.has_nonhomogeneous_bcs:
                 self.bc._add_to_orthogonal(output_array, input_array)
             return output_array
@@ -1833,7 +1951,7 @@ class slicedict(dict):
         return dict.__getitem__(self, self.__keytransform__(key))
 
 
-def inner_product(test, trial, measure=1, assemble=None):
+def inner_product(test, trial, measure=1, assemble=None, kind=None, fixed_resolution=None):
     """Return 1D weighted inner product of bilinear form
 
     Parameters
@@ -1856,6 +1974,12 @@ def inner_product(test, trial, measure=1, assemble=None):
         Like test
     measure: function of coordinate, optional
         The measure is in physical coordinates, not in the reference domain.
+    assemble : None or str, optional
+        Determines how to perform the integration, either 'exact',
+        'quadrature' or 'adaptive', see `config['matrix']['assemble']['kind']`
+    kind : None or str, optional
+        The kind of method used to do quadrature. See
+        `config['quadrature']['kind']`
 
     Note
     ----
@@ -1886,14 +2010,12 @@ def inner_product(test, trial, measure=1, assemble=None):
         x0 = x0.pop()
         x = sp.symbols('x', real=x0.is_real, positive=x0.is_positive)
         measure = measure.subs(x0, x)
-
         measure = test[0].map_expression_true_domain(measure, x)
-
         if measure.is_polynomial():
             measure = sp.simplify(measure)
 
         if key + (measure,) in mat:
-            A = mat[key+(measure,)](test, trial, assemble=assemble)
+            A = mat[key+(measure,)](test, trial, assemble=assemble, kind=kind, fixed_resolution=fixed_resolution)
 
         else:
             # By mapping measure to true domain, the expression may be split
@@ -1902,13 +2024,60 @@ def inner_product(test, trial, measure=1, assemble=None):
                 sci = dv['coeff']
                 msi = dv['x']
                 newkey = key + (msi,)
-                B.append(mat[newkey](test, trial, assemble=assemble))
+                B.append(mat[newkey](test, trial, assemble=assemble, kind=kind, fixed_resolution=fixed_resolution))
                 B[-1].scale *= sci
             A = B[0] if len(B) == 1 else np.sum(np.array(B, dtype=object))
     else:
-        A = mat[key](test, trial, assemble=assemble)
+        A = mat[key](test, trial, assemble=assemble, kind=kind, fixed_resolution=fixed_resolution)
 
     return A
+
+def scalar_product_sympy(v, f, measure=1):
+    from .utilities import integrate_sympy
+    T = v.base.function_space()
+    V = np.zeros(T.N)
+    x = sp.Symbol('x', real=True)
+    f = f*measure
+    if not isinstance(f, Number):
+        s = f.free_symbols
+        assert len(s) == 1
+        x = s.pop()
+        xm = T.map_true_domain(x)
+        f = f.subs(x, xm)
+    f = f*T.weight()
+    for i in range(T.slice().start, T.slice().stop):
+        pi = np.conj(T.sympy_basis(i, x=x))
+        integrand = f*pi
+        rd = T.sympy_reference_domain()
+        V[i] = integrate_sympy(integrand, (x, rd[0], rd[1]))
+    return V
+
+def get_norm_sq(v, u, method):
+    r"""Return square of weighted norm
+
+    .. math::
+
+        `(\phi_i, \phi_i)_w`
+
+    where :math:`\phi_i` is the orthogonal basis for a spectral family.
+
+    Parameters
+    ----------
+    v : instance of :class:`.SpectralBase`
+        Orthogonal test function
+    N : instance of :class:`.SpectralBase`
+        Orthogonal trial function
+    method : str
+        Type of integration
+
+        - exact
+        - quadrature
+    """
+    if method == 'quadrature':
+        return v.l2_norm_sq()[:min(v.N, u.N)]
+    else:
+        return np.array([v.L2_norm_sq(i) for i in range(min(v.N, u.N))])
+
 
 class FuncWrap:
 

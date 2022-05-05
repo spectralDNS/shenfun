@@ -1,6 +1,7 @@
 import sympy as sp
 import numpy as np
 from shenfun.matrixbase import SpectralMatrix, SpectralMatDict
+from shenfun.spectralbase import get_norm_sq
 from . import bases
 
 Q  = bases.Orthogonal
@@ -27,21 +28,13 @@ class BQQmat(SpectralMatrix):
     trial spaces have dimensions of M and N, respectively.
 
     """
-    def assemble(self):
+    def assemble(self, method):
         test, trial = self.testfunction, self.trialfunction
         assert isinstance(test[0], Q)
         assert isinstance(trial[0], Q)
-        from shenfun.jacobi.recursions import h, n, cn, alfa
-        N = test[0].N
-        k = np.arange(N, dtype=int)
-        a = test[0].alpha
-        hh = h(a, a, n, 0, cn)
-        d = {0: np.zeros(N)}
-        d[0][:] = sp.lambdify(n, hh)(k)
-        d[0][0] = sp.simplify(h(alfa, alfa, n, 0, cn).subs(n, 0)).subs(alfa, a) # For Chebyshev, need the correct limit
-        return d
+        return {0: get_norm_sq(test[0], trial[0], method)}
 
 
 mat = SpectralMatDict({
-    ((Q,  0), (Q,  0)): BQQmat,
+    ((Q, 0), (Q, 0)): BQQmat,
 })

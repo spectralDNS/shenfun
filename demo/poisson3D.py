@@ -66,26 +66,28 @@ def main(N, family, bc):
     # Try the uncommon approach of squeezing SD between the two Fourier spaces
     subcomms = Subcomm(MPI.COMM_WORLD, [0, 0, 1])
     T = TensorProductSpace(subcomms, (K1, SD, K2), axes=(1, 0, 2))
+    B = T.get_testspace(PG=True)
 
     u = TrialFunction(T)
-    v = TestFunction(T)
+    v = TestFunction(B)
 
     constraint = ()
     if bc == 1:
         constraint = ((0, dx(Array(T, buffer=ue), weighted=True)/dx(Array(T, val=1), weighted=True)),)
 
     # Get f on quad points
-    fj = Array(T, buffer=fe)
+    fj = Array(B, buffer=fe)
 
     # Compute right hand side of Poisson equation
-    f_hat = Function(T)
+    f_hat = Function(B)
     f_hat = inner(v, fj, output_array=f_hat)
 
     # Get left hand side of Poisson equation
     matrices = inner(v, div(grad(u)))
 
     # Create Helmholtz linear algebra solver
-    Solver = chebyshev.la.Helmholtz if family == 'chebyshev' and bc in (0, 1) else la.SolverGeneric1ND
+    #Solver = chebyshev.la.Helmholtz if family == 'chebyshev' and bc in (0, 1) else la.SolverGeneric1ND
+    Solver = la.SolverGeneric1ND
     H = Solver(matrices)
 
     # Solve and transform to real space

@@ -1272,11 +1272,14 @@ class ShenfunBaseArray(DistArray):
         if hasattr(buffer, 'free_symbols'):
             sym0 = tuple(buffer.free_symbols)
             mesh = space.local_mesh(True)
-            m = []
-            for sym in sym0:
-                j = 'xyzrs'.index(str(sym))
-                m.append(mesh[j])
-            buf = sp.lambdify(sym0, buffer, modules=['numpy', {'airyai': airyai, 'cot': cot, 'Ynm': Ynm, 'erf': erf}])(*m).astype(space.forward.input_array.dtype)
+            if len(sym0) > 0:
+                m = []
+                for sym in sym0:
+                    j = 'xyzrs'.index(str(sym))
+                    m.append(mesh[j])
+                buf = sp.lambdify(sym0, buffer, modules=['numpy', {'airyai': airyai, 'cot': cot, 'Ynm': Ynm, 'erf': erf}])(*m).astype(space.forward.input_array.dtype)
+            else:
+                buf = buffer
             buffer = Array(space)
             buffer.v[:] = buf
             if cls.__name__ == 'Function':

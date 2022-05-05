@@ -849,7 +849,7 @@ class SolverGeneric2ND:
 
         if len(self.bc_mats) > 0:
             u.set_boundary_dofs()
-            w0 = np.zeros_like(u)
+            w0 = Function(self.T).v
             for bc_mat in self.bc_mats:
                 b -= bc_mat.matvec(u, w0)
 
@@ -1074,6 +1074,8 @@ class SolverGeneric1ND:
         self.naxes = mats[0].naxes[0]
         bc_mats = extract_bc_matrices([mats])
         self.mats = mats
+        self.testspace = mats[0].space
+        self.trialspace = mats[0].trialspace
         self.bc_mats = bc_mats
         self.solvers1D = None
         self.assemble()
@@ -1082,7 +1084,7 @@ class SolverGeneric1ND:
 
     def matvec(self, u, c):
         c.fill(0)
-        w0 = np.zeros_like(u)
+        w0 = np.zeros_like(c)
         for mat in self.mats:
             c += mat.matvec(u, w0)
 
@@ -1209,7 +1211,7 @@ class SolverGeneric1ND:
 
     def fast_solve(self, u, b, solvers1D, naxes):
         if u is not b:
-            u[:] = b
+            u[self.trialspace.local_slice()] = b[self.trialspace.local_slice()]
         # Solve first for the possibly different Fourier wavenumber 0, or (0, 0) in 3D
         # All other wavenumbers we assume have the same solver
         sol0 = solvers1D[0] if u.ndim == 2 else solvers1D[0][0]
@@ -1228,7 +1230,7 @@ class SolverGeneric1ND:
 
     def solve(self, u, b, solvers1D, naxes):
         if u is not b:
-            u[:] = b
+            u[self.trialspace.local_slice()] = b[self.trialspace.local_slice()]
 
         s = [0]*u.ndim
         s[naxes] = slice(None)
@@ -1266,11 +1268,12 @@ class SolverGeneric1ND:
         if u is None:
             u = b
         else:
-            assert u.shape == b.shape
+            pass
+            #assert u.shape == b.shape
 
         if len(self.bc_mats) > 0:
             u.set_boundary_dofs()
-            w0 = np.zeros_like(u)
+            w0 = np.zeros_like(b)
             for bc_mat in self.bc_mats:
                 b -= bc_mat.matvec(u, w0)
 
@@ -1342,7 +1345,7 @@ class BlockMatrixSolver:
 
         if self.bc_mat: # Add contribution to right hand side due to inhomogeneous boundary conditions
             u.set_boundary_dofs()
-            w0 = np.zeros_like(u)
+            w0 = np.zeros_like(b)
             b -= self.bc_mat.matvec(u, w0)
 
         nvars = b.shape[0] if len(b.shape) > space.dimensions else 1
@@ -1371,6 +1374,7 @@ class BlockMatrixSolver:
             else:
                 for con in constraints:
                     Ai, gi = self.apply_constraint(Ai, gi, dims[con[0]], key, con)
+
                 lu = sp.linalg.splu(Ai, permc_spec=config['matrix']['block']['permc_spec'])
                 self._lu[key] = lu
 

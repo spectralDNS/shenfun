@@ -10,7 +10,7 @@ import sympy as sp
 x = sp.Symbol('x', real=True)
 delta = sp.KroneckerDelta
 half = sp.Rational(1, 2)
-m, n, k = sp.symbols('m,n,k', real=True, integer=True)
+m, n, k = sp.symbols('m,n,k', real=True, integer=True, positive=True)
 alfa, beta = sp.symbols('a,b', real=True)
 
 def jt(alf, bet, n):
@@ -338,7 +338,7 @@ def gamma(alf, bet, n):
     """
     #f = 2**(alfa+beta+1)*sp.gamma(m+alfa+1)*sp.gamma(m+beta+1)/sp.gamma(m+alfa+beta+1)/sp.gamma(m+1)/(2*m+alfa+beta+1)
     f = sp.rf(n+1, alfa)/sp.rf(n+beta+1, alfa) * 2**(alfa+beta+1)/(2*n+alfa+beta+1)
-    return sp.simplify(f.subs(m, n)).subs([(alfa, alf), (beta, bet)])
+    return sp.simplify(f.subs([(alfa, alf), (beta, bet)]))
 
 def h(alf, bet, n, k, gn=1):
     r"""Return normalization factor :math:`h^{(k)}_n` for inner product of derivatives of Jacobi polynomials
@@ -346,7 +346,7 @@ def h(alf, bet, n, k, gn=1):
     .. math::
 
         Q_n(x) = g_n(x)P^{(\alpha,\beta)}_n(x) \\
-        h_n^{(k)} = (\partial^k Q_n, \partial^k Q_n)_{\omega^{(\alpha,\beta)}} \quad (*)
+        h_n^{(k)} = (\partial^k Q_n, \partial^k Q_n)_{\omega^{(\alpha+k,\beta+k)}} \quad (*)
 
     where :math:`\partial^k` represents the :math:`k`'th derivative.
 

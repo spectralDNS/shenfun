@@ -99,6 +99,14 @@ class Orthogonal(SpectralBase):
     def sympy_basis(self, i=0, x=sp.symbols('x')):
         return sp.hermite(i, x)*sp.exp(-x**2/2)*self.factor(i)
 
+    def L2_norm_sq(self, i):
+        return 1
+
+    def l2_norm_sq(self, i=None):
+        if i is None:
+            return np.ones(self.N)
+        return 1
+
     def evaluate_basis(self, x, i=0, output_array=None):
         x = np.atleast_1d(x)
         if output_array is None:
