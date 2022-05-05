@@ -702,4 +702,3 @@ def scalar_product(v, f, assemble='exact'):
                 else:
                     V[i] = quadpy.c1.integrate_adaptive(sp.lambdify(x, integrand), domain)[0]
         return V
-

@@ -76,7 +76,6 @@ To see that this is in fact the BSDSDmat:
 from __future__ import division
 
 import numpy as np
-import sympy as sp
 from shenfun.optimization import cython, numba
 from shenfun.matrixbase import SpectralMatrix, SpectralMatDict
 from shenfun.spectralbase import get_norm_sq
@@ -173,9 +172,9 @@ class BSDSDmat(SpectralMatrix):
         test, trial = self.testfunction, self.trialfunction
         h = get_norm_sq(test[0], trial[0], method)
         d = {
-            -2 : -np.pi/2,
+            -2 : np.array([-np.pi/2]),
             0: h[:-2]+h[2:],
-            2: -np.pi/2
+            2: np.array([-np.pi/2])
         }
         return d
 

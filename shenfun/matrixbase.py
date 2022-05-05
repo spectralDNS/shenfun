@@ -610,7 +610,7 @@ class SpectralMatrix(SparseMatrix):
             scale *= measure
             self.measure = measure = 1
 
-        if assemble == None or fixed_resolution is not None:
+        if assemble is None or fixed_resolution is not None:
             assemble = 'quadrature'
         d = {}
         _assembly_method = assemble
@@ -1857,7 +1857,6 @@ def _get_matrix(test, trial, measure=1, assemble=None, fixed_resolution=None):
             assert test[1] == 0
             S0 = test[0].stencil_matrix().diags('csr')
             S1 = trial[0].stencil_matrix().diags('csr')
-            theta = sp.acos(x)
             for i in range(test[0].slice().start, test[0].slice().stop):
                 M0 = S0.getrow(i)
                 pi = sp.S(0)

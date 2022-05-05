@@ -30,10 +30,8 @@ import numpy as np
 import sympy as sp
 from scipy.special import eval_jacobi, roots_jacobi #, gamma
 from mpi4py_fft import fftw
-from shenfun.config import config
 from shenfun.spectralbase import SpectralBase, Transform, islicedict, \
     slicedict, getCompositeBase, BoundaryConditions
-from shenfun.matrixbase import SparseMatrix
 from shenfun.jacobi.recursions import cn, h, alfa
 
 xp = sp.Symbol('x', real=True)
@@ -319,7 +317,7 @@ class Phi1(CompositeBase):
         #   0: sp.simplify(b(alpha, alpha, n+1, n, cn) / h(alpha, alpha, n, 0, cn)),
         #   2: sp.simplify(b(alpha, alpha, n+1, n+2, cn) / h(alpha, alpha, n+2, 0, cn))}
         a = alpha
-        self._stencil ={
+        self._stencil = {
             0: sp.gamma(2*a + n + 2)/(2*2**(2*a)*sp.gamma(a + 1)**2*sp.gamma(n + 2)),
             2: -sp.gamma(2*a + n + 2)/(2*2**(2*a)*sp.gamma(a + 1)**2*sp.gamma(n + 2)),
         }

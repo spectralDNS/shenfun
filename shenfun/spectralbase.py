@@ -1390,7 +1390,6 @@ def getCompositeBase(Orthogonal):
             scaled = kwargs.pop('scaled', None)
             Orthogonal.__init__(self, *args, **kwargs)
             if bc is not None:
-                from shenfun.utilities import get_stencil_matrix
                 from shenfun.tensorproductspace import BoundaryValues
                 if isinstance(bc, dict) and not isinstance(bc, BoundaryConditions):
                     bc = BoundaryConditions(bc, domain=kwargs['domain'])

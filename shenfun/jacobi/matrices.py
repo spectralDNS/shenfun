@@ -1,4 +1,3 @@
-import sympy as sp
 from shenfun.matrixbase import SpectralMatrix, SpectralMatDict
 from shenfun.spectralbase import get_norm_sq
 from . import bases

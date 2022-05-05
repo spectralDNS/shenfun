@@ -36,7 +36,7 @@ import sympy as sp
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, \
     Array, Function, FunctionSpace, TensorProductSpace, la, \
-    chebyshev, dx, MPI
+    dx, MPI
 from mpi4py_fft.pencil import Subcomm
 
 # Use sympy to compute a rhs, given an analytical solution
