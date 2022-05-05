@@ -1211,7 +1211,8 @@ class SolverGeneric1ND:
 
     def fast_solve(self, u, b, solvers1D, naxes):
         if u is not b:
-            u[self.trialspace.local_slice()] = b[self.trialspace.local_slice()]
+            s = tuple([slice(0, i) for i in u.shape])
+            u[s] = b[s]
         # Solve first for the possibly different Fourier wavenumber 0, or (0, 0) in 3D
         # All other wavenumbers we assume have the same solver
         sol0 = solvers1D[0] if u.ndim == 2 else solvers1D[0][0]
@@ -1230,7 +1231,8 @@ class SolverGeneric1ND:
 
     def solve(self, u, b, solvers1D, naxes):
         if u is not b:
-            u[self.trialspace.local_slice()] = b[self.trialspace.local_slice()]
+            s = tuple([slice(0, i) for i in u.shape])
+            u[s] = b[s]
 
         s = [0]*u.ndim
         s[naxes] = slice(None)
