@@ -1851,6 +1851,9 @@ def _get_matrix(test, trial, measure=1, assemble=None, fixed_resolution=None):
             else:
                 assert isinstance(measure, Number)
 
+        # Exact integration is much more expensive than quadrature and
+        # as such we use quadrature first simply to get the sparsity pattern.
+        R = _get_matrix(test, trial, measure=measure, assemble='quadrature')
         V = np.zeros((K0, K1), dtype=test[0].forward.output_array.dtype)
         if test[0].family() == 'chebyshev':
             # Transform integral using x=cos(theta)
@@ -1862,7 +1865,10 @@ def _get_matrix(test, trial, measure=1, assemble=None, fixed_resolution=None):
                 pi = sp.S(0)
                 for ind, d in zip(M0.indices, M0.data):
                     pi += d*sp.cos(ind*x)
-                for j in range(trial[0].slice().start, trial[0].slice().stop):
+                for jq in R.keys():
+                    j = i+jq
+                    if j < 0 or j >= K1:
+                        continue
                     M1 = S1.getrow(j)
                     pj = sp.S(0)
                     for ind, d in zip(M1.indices, M1.data):
@@ -1874,7 +1880,7 @@ def _get_matrix(test, trial, measure=1, assemble=None, fixed_resolution=None):
 
                     integrand = measure*pi*pj
                     if assemble == 'exact':
-                        V[i, j] = sp.integrate(sp.simplify(integrand), (x, 0, sp.pi))
+                        V[i, j] = sp.integrate(integrand, (x, 0, sp.pi))
                     elif assemble == 'adaptive':
                         if isinstance(integrand, Number):
                             V[i, j] = integrand*np.pi
@@ -1887,7 +1893,10 @@ def _get_matrix(test, trial, measure=1, assemble=None, fixed_resolution=None):
             domain = test[0].reference_domain()
             for i in range(test[0].slice().start, test[0].slice().stop):
                 pi = np.conj(test[0].sympy_basis(i, x=x))
-                for j in range(trial[0].slice().start, trial[0].slice().stop):
+                for jq in R.keys():
+                    j = i+jq
+                    if j < 0 or j >= K1:
+                        continue
                     pj = trial[0].sympy_basis(j, x=x)
                     integrand = measure*pi.diff(x, test[1])*pj.diff(x, trial[1])
                     if assemble == 'exact':
@@ -1904,7 +1913,6 @@ def _get_matrix(test, trial, measure=1, assemble=None, fixed_resolution=None):
             V = V.real.copy()
         elif np.linalg.norm(V.real) / ni > 1e14:
             V = V.real.copy()
-
     return extract_diagonal_matrix(V)
 
 def assemble_stencil(test, trial, measure=1):
@@ -2073,7 +2081,7 @@ def _assemble_phi_bc(test, trial, measure=1):
     d = d._storage
     return d
 
-def _assemble_sympy(test, trial, measure=1):
+def _assemble_sympy(test, trial, measure=1, implicit=True, assemble='exact'):
     """Return sympy representation of mass matrix
     """
     Tv = test[0].get_orthogonal(domain=(-1, 1))
@@ -2083,7 +2091,7 @@ def _assemble_sympy(test, trial, measure=1):
     assert test[1]+trial[1] == 0, 'Only implemented for mass matrix, because need B to be diagonal.'
 
     i, j, k, l, m = sp.symbols('i,j,k,l,m', integer=True)
-    K = test[0].sympy_stencil(i, k)
+    K = test[0].sympy_stencil(i, k, implicit='k' if implicit else False)
     q = sp.degree(measure)
     if measure != 1:
         from shenfun.jacobi.recursions import a, matpow
@@ -2096,8 +2104,11 @@ def _assemble_sympy(test, trial, measure=1):
             qi = sp.degree(msi)
             A = A + sc*matpow(a, qi, alpha, beta, l, k, gn)
 
-        B = Tv.sympy_l2_norm_sq(l)*sp.KroneckerDelta(l, m)
-        S = trial[0].sympy_stencil(j, m)
+        if assemble == 'exact':
+            B = Tv.sympy_L2_norm_sq(l, implicit)*sp.KroneckerDelta(l, m)
+        else:
+            B = Tv.sympy_l2_norm_sq(l, implicit)*sp.KroneckerDelta(l, m)
+        S = trial[0].sympy_stencil(j, m, implicit='s' if implicit else False)
         A = K * A * B * S
         M = sp.S(0)
         nd = test[0].N-test[0].dim()
@@ -2109,8 +2120,11 @@ def _assemble_sympy(test, trial, measure=1):
                     M3 = M2.subs(m, i + kk + ll + mm)
                     M += M3
     else:
-        B = Tv.sympy_l2_norm_sq(k)*sp.KroneckerDelta(k, l)
-        S = trial[0].sympy_stencil(j, l)
+        if assemble == 'exact':
+            B = Tv.sympy_L2_norm_sq(k, implicit)*sp.KroneckerDelta(k, l)
+        else:
+            B = Tv.sympy_l2_norm_sq(k, implicit)*sp.KroneckerDelta(k, l)
+        S = trial[0].sympy_stencil(j, l, implicit='s' if implicit else False)
         A = K * B * S
         M = sp.S(0)
         nd = test[0].N-test[0].dim()
@@ -2120,6 +2134,7 @@ def _assemble_sympy(test, trial, measure=1):
                 M2 = M1.subs(l, i + kk + ll)
                 M += M2
     return M
+
 
 class SpectralMatDict(dict):
     """Dictionary for inner product matrices

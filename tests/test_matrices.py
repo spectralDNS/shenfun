@@ -750,25 +750,44 @@ def test_stencil(b0, b1):
     C.incorporate_scale()
     assert np.linalg.norm(C.diags('csr').data) < 1e-8
 
-@pytest.mark.parametrize('b0,b1', some_lbases2)
-@pytest.mark.parametrize('quad', lquads)
-def test_quadpy(b0, b1, quad):
+@pytest.mark.parametrize('b0,b1', some_lbases2+some_cbases2)
+def test_quadpy(b0, b1):
     N = 12
-    b0 = b0(N, quad=quad)
-    b1 = b1(N, quad=quad)
+    b0 = b0(N)
+    b1 = b1(N)
     u = shenfun.TrialFunction(b0)
     v = shenfun.TestFunction(b1)
     B0 = inner(v, u, assemble='adaptive')
     B1 = inner(v, u, assemble='quadrature', kind='stencil')
     C = B0-B1
     C.incorporate_scale()
+    assert np.linalg.norm(C.diags('csr').data) < 1e-8
+
+# Some bases take too long for Chebyshev, so just choose these three
+some_cbases3 = [(cbases.ShenDirichlet, cbases.ShenDirichlet),
+                (cbases.ShenDirichlet, cbases.ShenNeumann),
+                (cbases.LowerDirichlet, cbases.UpperDirichlet)]
+some_lbases3 = [lbases2[i] for i in np.random.randint(0, len(lbases2), 3)]
+
+@pytest.mark.parametrize('b0,b1', some_lbases3+some_cbases3)
+def test_exact(b0, b1):
+    N = 10
+    b0 = b0(N)
+    b1 = b1(N)
+    u = shenfun.TrialFunction(b0)
+    v = shenfun.TestFunction(b1)
+    B0 = inner(v, u, assemble='exact')
+    B1 = inner(v, u, fixed_resolution=20)
+    C = B0-B1
+    C.incorporate_scale()
+    assert np.linalg.norm(C.diags('csr').data) < 1e-8
 
 if __name__ == '__main__':
     import sympy as sp
     x = sp.symbols('x', real=True)
     xp = sp.Symbol('x', real=True, positive=True)
 
-    test_quadpy(ltestBasis[2], ltestBasis[2], 'LG')
+    test_exact(ctrialBasis[0], ctrialBasis[0])
     #test_mat(((ctestBasis[1], 0), (ctestBasis[1], 2), 1-x**2), cmatrices.ASDSDmatW, 'GC')
     #test_mat(*cmats_and_quads[12])
     #test_cmatvec(cBasis[2], cBasis[2], 'GC', 2)

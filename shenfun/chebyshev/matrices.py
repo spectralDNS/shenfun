@@ -47,10 +47,13 @@ and an instance of the matrix can be created as
 
 >>> B0 = SD(10)
 >>> BM = B((B0, 0), (B0, 0))
+
+Check that this matrix corresponds to the matrix 'd' hardcoded below:
+
 >>> import numpy as np
->>> d = {-2: np.array([-np.pi/2]),
+>>> d = {-2: -np.pi/2,
 ...       0: np.array([ 1.5*np.pi, np.pi, np.pi, np.pi, np.pi, np.pi, np.pi, np.pi]),
-...       2: np.array([-np.pi/2])}
+...       2: -np.pi/2}
 >>> [np.all(BM[k] == v) for k, v in d.items()]
 [True, True, True]
 
@@ -172,9 +175,9 @@ class BSDSDmat(SpectralMatrix):
         test, trial = self.testfunction, self.trialfunction
         h = get_norm_sq(test[0], trial[0], method)
         d = {
-            -2 : np.array([-np.pi/2]),
+            -2: -h[1],
             0: h[:-2]+h[2:],
-            2: np.array([-np.pi/2])
+            2: -h[1]
         }
         return d
 
@@ -188,27 +191,25 @@ class BSDSDmat(SpectralMatrix):
         if not M == N:
             format = 'csr'
 
+        d0 = np.array(self[0]).astype(float)
+        ld = np.array(self[-2]).astype(float)*np.ones(M-2)
         if format == 'cython' and v.ndim == 3:
-            ld = self[-2]*np.ones(M-2)
-            cython.Matvec.Tridiagonal_matvec3D_ptr(v, c, ld, self[0], ld, axis)
+            cython.Matvec.Tridiagonal_matvec3D_ptr(v, c, ld, d0, ld, axis)
             self.scale_array(c, self.scale)
         elif format == 'cython' and v.ndim == 2:
-            ld = self[-2]*np.ones(M-2)
-            cython.Matvec.Tridiagonal_matvec2D_ptr(v, c, ld, self[0], ld, axis)
+            cython.Matvec.Tridiagonal_matvec2D_ptr(v, c, ld, d0, ld, axis)
             self.scale_array(c, self.scale)
         elif format == 'cython' and v.ndim == 1:
-            ld = self[-2]*np.ones(M-2)
-            cython.Matvec.Tridiagonal_matvec(v, c, ld, self[0], ld)
+            cython.Matvec.Tridiagonal_matvec(v, c, ld, d0, ld)
             self.scale_array(c, self.scale)
         elif format == 'self':
             if axis > 0:
                 v = np.moveaxis(v, axis, 0)
                 c = np.moveaxis(c, axis, 0)
             s = (slice(0, M),)+(np.newaxis,)*(v.ndim-1) # broadcasting
-            sm2 = (slice(0, M-2),)+(np.newaxis,)*(v.ndim-1) # broadcasting
-            c[:(M-2)] = self[2][sm2]*v[2:M]
-            c[:M] += self[0][s]*v[:M]
-            c[2:M] += self[-2][sm2]*v[:(M-2)]
+            c[:(M-2)] = ld*v[2:M]
+            c[:M] += d0[s]*v[:M]
+            c[2:M] += ld*v[:(M-2)]
             if axis > 0:
                 v = np.moveaxis(v, 0, axis)
                 c = np.moveaxis(c, 0, axis)

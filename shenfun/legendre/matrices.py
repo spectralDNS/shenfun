@@ -139,7 +139,7 @@ class BSDSDmat(SpectralMatrix):
         d = {0: d0[:-2]+d0[2:], -2: -d0[2:-2]}
 
         if test[0].is_scaled():
-            k = np.arange(test[0].N-2, dtype=float)
+            k = np.arange(test[0].N-2)
             d[0] /= (4*k+6)
             d[-2] /= (np.sqrt(4*k[2:]+6)*np.sqrt(4*k[:-2]+6))
 

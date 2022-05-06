@@ -755,7 +755,7 @@ class SpectralBase:
         """
         raise NotImplementedError
 
-    def sympy_l2_norm_sq(self, i=sp.Symbol('i', integer=True)):
+    def sympy_l2_norm_sq(self, i=sp.Symbol('i', integer=True), implicit=True):
         r"""Return sympy function for square of l2-norm
 
         .. math::
@@ -779,9 +779,11 @@ class SpectralBase:
             def eval(cls, x):
                 if x.is_Number:
                     return self.l2_norm_sq(x)
-        return h(i)
+        if implicit:
+            return h(i)
+        return self.l2_norm_sq(i)
 
-    def sympy_L2_norm_sq(self, i=sp.Symbol('i', integer=True)):
+    def sympy_L2_norm_sq(self, i=sp.Symbol('i', integer=True), implicit=True):
         r"""Return sympy function for square of L2-norm
 
         .. math::
@@ -805,7 +807,9 @@ class SpectralBase:
             def eval(cls, x):
                 if x.is_Number:
                     return self.L2_norm_sq(x)
-        return h(i)
+        if implicit:
+            return h(i)
+        return self.L2_norm_sq(i)
 
     def weight(self, x=None):
         """Weight of inner product space
@@ -1462,6 +1466,13 @@ def getCompositeBase(Orthogonal):
             return self._scaled
 
         def stencil_matrix(self, N=None):
+            """Return stencil matrix in :class:`.SparseMatrix` format
+
+            Parameters
+            ----------
+            N : int or None, optional
+                Shape (N, N) of the stencil matrix. Using self.N if None
+            """
             from .matrixbase import SparseMatrix
             if self._stencil is None:
                 self._stencil = get_stencil_matrix(self.bcs, self.family(), self.alpha, self.beta)
@@ -1478,15 +1489,62 @@ def getCompositeBase(Orthogonal):
             self._stencil_matrix[N] = SparseMatrix(d, (N, N))
             return self._stencil_matrix[N]
 
-        def sympy_stencil(self, i=sp.Symbol('i', integer=True), j=sp.Symbol('j', integer=True)):
+        def sympy_stencil(self, i=sp.Symbol('i', integer=True), j=sp.Symbol('j', integer=True), implicit=False):
+            """Return stencil matrix as a Sympy matrix
+
+            Parameters
+            ----------
+            i, j : Sympy symbols
+                indices for row and column
+            implicit : bool or str, optional
+                Whether to use an unevaluated Sympy function instead of the
+                actual value of the stencil. This makes the matrix prettier,
+                and it can still be evaluated. If implicit is not False, then
+                it must be a string of length one. This string represents the
+                diagonals of the matrix. If implicit='a' and the stencil matrix
+                has two diagonals in the main diagonal and the first upper
+                diagonal, then these are called 'a0' and 'a1'.
+
+            Example
+            -------
+            >>> from shenfun import FunctionSpace
+            >>> import sympy as sp
+            >>> i, j = sp.symbols('i,j', integer=True)
+            >>> D = FunctionSpace(8, 'L', bc=(0, 0), scaled=True)
+            >>> D._stencil
+            {0: 1/sqrt(4*n + 6), 2: -1/sqrt(4*n + 6)}
+            >>> D.sympy_stencil()
+            KroneckerDelta(i, j)/sqrt(4*i + 6) - KroneckerDelta(j, i + 2)/sqrt(4*i + 6)
+            >>> D.sympy_stencil(implicit='a')
+            KroneckerDelta(i, j)*a0(i) + KroneckerDelta(j, i + 2)*a2(i)
+
+            Get the main diagonal
+
+            >>> D.sympy_stencil(implicit=False).subs(j, i)
+            1/sqrt(4*i + 6)
+
+            """
             if self._stencil is None:
                 self._stencil = get_stencil_matrix(self.bcs, self.family(), self.alpha, self.beta)
+
+            def _named_diagonal(s, name, i):
+                class h(sp.Function):
+                    @classmethod
+                    def eval(cls, x):
+                        if x.is_Number:
+                            return s.subs(i, x)
+                hh = h(i)
+                hh.__class__.__name__ = name
+                return hh
 
             S = sp.S(0)
             for m, s in self._stencil.items():
                 if len(sp.sympify(s).free_symbols) == 1:
                     n = sp.sympify(s).free_symbols.pop()
                     d0 = s.subs(n, i)
+                    if implicit is not False:
+                        name = implicit if isinstance(implicit, str) else 'a'
+                        d0 = _named_diagonal(d0, name+str(m), i)
                 else:
                     d0 = s
                 S += d0*sp.KroneckerDelta(i+m, j)
@@ -1993,9 +2051,9 @@ def inner_product(test, trial, measure=1, assemble=None, kind=None, fixed_resolu
     >>> from shenfun.chebyshev.bases import ShenDirichlet
     >>> SD = ShenDirichlet(6)
     >>> B = inner_product((SD, 0), (SD, 0))
-    >>> d = {-2: np.array([-np.pi/2]),
+    >>> d = {-2: -np.pi/2,
     ...       0: np.array([1.5*np.pi, np.pi, np.pi, np.pi]),
-    ...       2: np.array([-np.pi/2])}
+    ...       2: -np.pi/2}
     >>> [np.all(B[k] == v) for k, v in d.items()]
     [True, True, True]
     """
@@ -2075,7 +2133,7 @@ def get_norm_sq(v, u, method):
     if method == 'quadrature':
         return v.l2_norm_sq()[:min(v.N, u.N)]
     else:
-        return np.array([v.L2_norm_sq(i) for i in range(min(v.N, u.N))])
+        return np.array([v.L2_norm_sq(sp.S(i)) for i in range(min(v.N, u.N))]).astype(float)
 
 
 class FuncWrap:

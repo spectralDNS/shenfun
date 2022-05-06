@@ -407,6 +407,7 @@ def _matpow(mat, m2, q, alf, bet, i, j):
 
 _pmat = {}
 
+#@profile
 def pmat(mat, q, alf, bet, M, N, gn=1):
     r"""Return SparseMatrix of q'th matrix power of recursion matrix mat
 
@@ -438,7 +439,7 @@ def pmat(mat, q, alf, bet, M, N, gn=1):
         if not fz == 0:
             fz = sp.lambdify(m, fz)
             if i >= 0:
-                Z = min(N-abs(i), M)
+                Z = min(N-i, M)
                 d[i] = np.zeros(Z)
                 if mat == b:
                     d[i][:q] = 0
@@ -452,13 +453,20 @@ def pmat(mat, q, alf, bet, M, N, gn=1):
             else:
                 Z = min(M-abs(i), N)
                 d[i] = np.zeros(Z)
-                if mat == b and q > 2:
+                if mat == b and q+i > 0:
                     d[i][:(q+i)] = 0
-                    d[i][(q+i):q] = [sp.simplify(f.subs(m, -i+z)).subs([(alfa, alf), (beta, bet)]) for z in np.arange(q+i, q)]
-                    d[i][q:] = fz(np.arange(-i+q, Z-i))
+                    if alf == -half and bet == -half:
+                        d[i][(q+i):q] = [sp.simplify(f.subs(m, -i+z)).subs([(alfa, alf), (beta, bet)]) for z in np.arange(q+i, q)]
+                        d[i][q:] = fz(np.arange(-i+q, Z-i))
+                    else:
+                        d[i][(q+i):] = fz(np.arange(q, Z-i))
+
                 else:
-                    d[i][:q] = [sp.simplify(f.subs(m, -i+z)).subs([(alfa, alf), (beta, bet)]) for z in np.arange(0, q)]
-                    d[i][q:] = fz(np.arange(-i+q, Z-i))
+                    if alf == -half and bet == -half:
+                        d[i][:q] = [sp.simplify(f.subs(m, -i+z)).subs([(alfa, alf), (beta, bet)]) for z in np.arange(0, q)]
+                        d[i][q:] = fz(np.arange(-i+q, Z-i))
+                    else:
+                        d[i][:] = fz(np.arange(-i, Z-i))
     _pmat[(mat, q, alf, bet, M, N, gn)] = d
     return SparseMatrix(d, (M, N))
 
