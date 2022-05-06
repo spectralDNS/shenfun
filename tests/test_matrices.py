@@ -1,5 +1,6 @@
 from copy import copy, deepcopy
 import functools
+from ipaddress import ip_address
 from itertools import product
 import numpy as np
 import sympy as sp
@@ -787,10 +788,10 @@ if __name__ == '__main__':
     x = sp.symbols('x', real=True)
     xp = sp.Symbol('x', real=True, positive=True)
 
-    test_exact(ctrialBasis[0], ctrialBasis[0])
+    #test_exact(ctrialBasis[0], ctrialBasis[0])
     #test_mat(((ctestBasis[1], 0), (ctestBasis[1], 2), 1-x**2), cmatrices.ASDSDmatW, 'GC')
     #test_mat(*cmats_and_quads[12])
-    #test_cmatvec(cBasis[2], cBasis[2], 'GC', 2)
+    test_cmatvec(ctrialBasis[1], ctrialBasis[1], 'GC', 0)
     #test_lmatvec(lBasis[0], lBasis[0], 'LG', 2, 0)
     #test_lagmatvec(lagBasis[0], lagBasis[1], 'LG', 'python', 3, 2, 0)
     #test_hmatvec(hBasis[0], hBasis[0], 'HG', 'self', 3, 1, 1)

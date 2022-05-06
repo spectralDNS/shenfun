@@ -38,6 +38,7 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
         - ``Laguerre`` or ``La``,
         - ``Hermite`` or ``H``
         - ``Jacobi`` or ``J``
+        - ``Ultraspherical`` or ``Q``
 
     bc : tuple or dict, optional
         See :class:`~shenfun.spectralbase.BoundaryConditions`
@@ -74,6 +75,10 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
         * For family=Jacobi:
 
           - JG - Jacobi-Gauss
+
+        * For family=Ultraspherical:
+
+          - QG - Jacobi-Gauss
 
     domain : two-tuple of floats, optional
         The computational domain

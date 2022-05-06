@@ -207,9 +207,9 @@ class BSDSDmat(SpectralMatrix):
                 v = np.moveaxis(v, axis, 0)
                 c = np.moveaxis(c, axis, 0)
             s = (slice(0, M),)+(np.newaxis,)*(v.ndim-1) # broadcasting
-            c[:(M-2)] = ld*v[2:M]
+            c[:(M-2)] = float(self[-2])*v[2:M]
             c[:M] += d0[s]*v[:M]
-            c[2:M] += ld*v[:(M-2)]
+            c[2:M] += float(self[2])*v[:(M-2)]
             if axis > 0:
                 v = np.moveaxis(v, 0, axis)
                 c = np.moveaxis(c, 0, axis)
