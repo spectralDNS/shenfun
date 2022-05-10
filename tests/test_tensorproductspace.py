@@ -64,8 +64,8 @@ def test_transform(typecode, dim):
 
             # Alternative method
             fft.forward.input_array[...] = U
-            fft.forward(fast_transform=False)
-            fft.backward(fast_transform=False)
+            fft.forward(kind='vandermonde')
+            fft.backward(kind='vandermonde')
             V = fft.backward.output_array
             assert allclose(V, U)
 

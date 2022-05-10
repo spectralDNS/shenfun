@@ -16,22 +16,22 @@ solution that is either real or complex.
 
 """
 import os
-from sympy import Symbol, cos, sin, lambdify
+import sympy as sp
 import numpy as np
 from shenfun import inner, grad, TestFunction, TrialFunction, FunctionSpace, Function, \
     Array
 
 # Use sympy to compute a rhs, given an analytical solution
-x = Symbol("x", real=True)
-ue = cos(2*x) + 1j*sin(1*x)
+x = sp.Symbol("x", real=True)
+ue = sp.cos(2*x) + sp.I*sp.sin(1*x)
 #ue = cos(4*x)
 fe = ue.diff(x, 2)
 
 # Size of discretization
 N = 10
 
-dtype = {True: complex, False: float}[ue.has(1j)]
-ST = FunctionSpace(N, dtype=dtype, domain=(-2*np.pi, 2*np.pi))
+dtype = {True: complex, False: float}[ue.has(sp.I)]
+ST = FunctionSpace(N, dtype=dtype, domain=(-2*sp.pi, 2*sp.pi))
 u = TrialFunction(ST)
 v = TestFunction(ST)
 
@@ -50,14 +50,14 @@ u_hat = A.solve(-f_hat, u_hat)
 
 uq = ST.backward(u_hat)
 uh = Function(ST)
-uh = ST.forward(uq, uh, fast_transform=False)
-uq = ST.backward(uh, uq, fast_transform=False)
+uh = ST.forward(uq, uh, kind='vandermonde')
+uq = ST.backward(uh, uq, kind='vandermonde')
 
 assert np.allclose(uj, uq)
 
 point = np.array([0.1, 0.2])
 p = ST.eval(point, u_hat)
-assert np.allclose(p, lambdify(x, ue)(point))
+assert np.allclose(p, sp.lambdify(x, ue)(point))
 
 if 'pytest' not in os.environ:
     import matplotlib.pyplot as plt

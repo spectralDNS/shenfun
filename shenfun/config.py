@@ -1,5 +1,6 @@
 import os
 from collections.abc import Mapping
+from collections import defaultdict
 import yaml
 
 # The configuration can be overloaded by a local 'shenfun.yaml' file, or
@@ -13,6 +14,15 @@ config = {
         'verbose': False,
     },
     'basisvectors': 'normal',
+    'transforms':
+    {
+        'kind': defaultdict(lambda: 'vandermonde',
+            {
+                'chebyshev': 'fast',
+                'fourier': 'fast',
+                'legendre': 'fast'
+            }) # The other families need to have Orthogonal basis overload _evaluate_scalar_product and _evaluate_expansion_all
+    },
     'matrix':
     {
         'sparse':

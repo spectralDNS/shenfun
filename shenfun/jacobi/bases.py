@@ -85,6 +85,8 @@ class Orthogonal(SpectralBase):
         Parameter of the Jacobi polynomial
     beta : number, optional
         Parameter of the Jacobi polynomial
+    domain : 2-tuple of numbers, optional
+        The computational domain
     padding_factor : float, optional
         Factor for padding backward transforms.
     dealias_direct : bool, optional
@@ -96,7 +98,7 @@ class Orthogonal(SpectralBase):
         Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
     """
 
-    def __init__(self, N, quad="JG", alpha=0, beta=0, domain=(-1., 1.),
+    def __init__(self, N, quad="JG", alpha=0, beta=0, domain=(-1, 1),
                  dtype=float, padding_factor=1, dealias_direct=False, coordinates=None, **kw):
         SpectralBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
@@ -104,9 +106,9 @@ class Orthogonal(SpectralBase):
         self.alpha = alpha
         self.beta = beta
         self.gn = 1
-        self.forward = functools.partial(self.forward, fast_transform=False)
-        self.backward = functools.partial(self.backward, fast_transform=False)
-        self.scalar_product = functools.partial(self.scalar_product, fast_transform=False)
+        self.forward = functools.partial(self.forward, kind='vandermonde')
+        self.backward = functools.partial(self.backward, kind='vandermonde')
+        self.scalar_product = functools.partial(self.scalar_product, kind='vandermonde')
         self.plan(int(N*padding_factor), 0, dtype, {})
 
     @staticmethod
@@ -339,6 +341,8 @@ class Phi1(CompositeBase):
         Parameter of the Jacobi polynomial
     beta : number, optional
         Parameter of the Jacobi polynomial
+    domain : 2-tuple of numbers, optional
+        The computational domain
     padding_factor : float, optional
         Factor for padding backward transforms.
     dealias_direct : bool, optional
@@ -349,7 +353,7 @@ class Phi1(CompositeBase):
     coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
         Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
     """
-    def __init__(self, N, quad="JG", bc=(0., 0.), domain=(-1., 1.), dtype=float,
+    def __init__(self, N, quad="JG", bc=(0, 0), domain=(-1, 1), dtype=float,
                  padding_factor=1, dealias_direct=False, alpha=0, beta=0,
                  coordinates=None, **kw):
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
@@ -416,6 +420,8 @@ class Phi2(CompositeBase):
         Parameter of the Jacobi polynomial
     beta : number, optional
         Parameter of the Jacobi polynomial
+    domain : 2-tuple of numbers, optional
+        The computational domain
     padding_factor : float, optional
         Factor for padding backward transforms.
     dealias_direct : bool, optional
@@ -427,7 +433,7 @@ class Phi2(CompositeBase):
         Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
     """
 
-    def __init__(self, N, quad="JG", bc=(0, 0, 0, 0), domain=(-1., 1.), dtype=float,
+    def __init__(self, N, quad="JG", bc=(0, 0, 0, 0), domain=(-1, 1), dtype=float,
                  padding_factor=1, dealias_direct=False, alpha=0, beta=0, coordinates=None, **kw):
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
@@ -494,6 +500,8 @@ class Phi3(CompositeBase):
         Parameter of the Jacobi polynomial
     beta : number, optional
         Parameter of the Jacobi polynomial
+    domain : 2-tuple of numbers, optional
+        The computational domain
     padding_factor : float, optional
         Factor for padding backward transforms.
     dealias_direct : bool, optional
@@ -578,6 +586,8 @@ class Phi4(CompositeBase):
         Parameter of the Jacobi polynomial
     beta : number, optional
         Parameter of the Jacobi polynomial
+    domain : 2-tuple of numbers, optional
+        The computational domain
     padding_factor : float, optional
         Factor for padding backward transforms.
     dealias_direct : bool, optional
@@ -668,6 +678,8 @@ class CompactDirichlet(CompositeBase):
         Parameter of the Jacobi polynomial
     beta : number, optional
         Parameter of the Jacobi polynomial
+    domain : 2-tuple of numbers, optional
+        The computational domain
     padding_factor : float, optional
         Factor for padding backward transforms.
     dealias_direct : bool, optional
@@ -678,7 +690,7 @@ class CompactDirichlet(CompositeBase):
     coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
         Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
     """
-    def __init__(self, N, quad="JG", bc=(0., 0.), domain=(-1., 1.), dtype=float,
+    def __init__(self, N, quad="JG", bc=(0, 0), domain=(-1, 1), dtype=float,
                  padding_factor=1, dealias_direct=False, alpha=0, beta=0,
                  coordinates=None, **kw):
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
@@ -741,6 +753,8 @@ class CompactNeumann(CompositeBase):
         Parameter of the Jacobi polynomial
     beta : number, optional
         Parameter of the Jacobi polynomial
+    domain : 2-tuple of numbers, optional
+        The computational domain
     padding_factor : float, optional
         Factor for padding backward transforms.
     dealias_direct : bool, optional
@@ -751,7 +765,7 @@ class CompactNeumann(CompositeBase):
     coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
         Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
     """
-    def __init__(self, N, quad="JG", bc=(0., 0.), domain=(-1., 1.), dtype=float,
+    def __init__(self, N, quad="JG", bc=(0, 0), domain=(-1, 1), dtype=float,
                  padding_factor=1, dealias_direct=False, alpha=0, beta=0,
                  coordinates=None, **kw):
         if isinstance(bc, (tuple, list)):
@@ -808,6 +822,8 @@ class UpperDirichlet(CompositeBase):
         Parameter of the Jacobi polynomial
     beta : number, optional
         Parameter of the Jacobi polynomial
+    domain : 2-tuple of numbers, optional
+        The computational domain
     padding_factor : float, optional
         Factor for padding backward transforms.
     dealias_direct : bool, optional
@@ -867,6 +883,8 @@ class LowerDirichlet(CompositeBase):
         Parameter of the Jacobi polynomial
     beta : number, optional
         Parameter of the Jacobi polynomial
+    domain : 2-tuple of numbers, optional
+        The computational domain
     padding_factor : float, optional
         Factor for padding backward transforms.
     dealias_direct : bool, optional
@@ -924,7 +942,7 @@ class Generic(CompositeBase):
 
         Any combination should be possible, and it should also be possible to
         use second derivatives `N2`. See :class:`~shenfun.spectralbase.BoundaryConditions`.
-    domain : 2-tuple of floats, optional
+    domain : 2-tuple of numbers, optional
         The computational domain
     dtype : data-type, optional
         Type of input data in real physical space. Will be overloaded when
@@ -941,7 +959,7 @@ class Generic(CompositeBase):
     A test function is always using homogeneous boundary conditions.
 
     """
-    def __init__(self, N, quad="JG", bc={}, domain=(-1., 1.), dtype=float,
+    def __init__(self, N, quad="JG", bc={}, domain=(-1, 1), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None,
                  alpha=0, beta=0, **kw):
         from shenfun.utilities.findbasis import get_stencil_matrix
@@ -971,7 +989,7 @@ class BCBase(CompositeBase):
     bc : dict
         The boundary conditions in dictionary form, see
         :class:`.BoundaryConditions`.
-    domain : 2-tuple, optional
+    domain : 2-tuple of numbers, optional
         The domain of the homogeneous space.
     alpha : number, optional
         Parameter of the Jacobi polynomial

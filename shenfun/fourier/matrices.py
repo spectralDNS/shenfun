@@ -163,7 +163,6 @@ class FourierMatrix(SpectralMatrix):
                 k_trial = trial[1][(0,)*np.ndim(trial[1])]
             else:
                 raise RuntimeError
-
             if abs(k_trial) + abs(k_test) > 0:
                 if N % 2 == 0 and (k_trial + k_test) % 2 == 1:
                     pass
@@ -171,9 +170,10 @@ class FourierMatrix(SpectralMatrix):
                 val = (1j*k)**(k_trial)*(-1j*k)**k_test
                 if (k_trial + k_test) % 2 == 0:
                     val = val.real
-                d = {0: val*test[0].domain_factor()}
+                d = {0: val*float(test[0].domain_factor())}
+
             else:
-                d = {0: test[0].domain_factor()}
+                d = {0: float(test[0].domain_factor())}
         else:
             d = None
         return d

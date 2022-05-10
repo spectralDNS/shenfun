@@ -629,7 +629,7 @@ def quiver3D(u, mesh=None, wrapaxes=(), slices=None, fig=None, kind='normal', **
         mlab.figure(bgcolor=(1, 1, 1), size=(400, 400))
     mlab.quiver3d(x, y, z, u[0], u[1], u[2], **par)
 
-def scalar_product(v, f, assemble='exact'):
+def scalar_product(v, f, output_array=None, assemble='exact'):
     r"""Return scalar product
 
     .. math::
@@ -640,6 +640,7 @@ def scalar_product(v, f, assemble='exact'):
     ----------
     v : :class:`.TestFunction`
     f : Sympy function
+    output_array : :class:`.Function`
     assemble : str, optional
         'exact' or 'adaptive'
 
@@ -660,8 +661,16 @@ def scalar_product(v, f, assemble='exact'):
     assert assemble in ('exact', 'adaptive')
     if assemble == 'adaptive':
         import quadpy
-    T = v.base.function_space()
-    V = np.zeros(T.N)
+    T = v.function_space()
+    if output_array is None:
+        from shenfun import Function
+        output_array = Function(T)
+
+    if T.is_composite_space:
+        for vi, xi in zip(v, output_array):
+            xi = scalar_product(vi, f, xi)
+        return output_array
+
     x = sp.Symbol('x', real=True)
     if not isinstance(f, Number):
         s = f.free_symbols
@@ -682,23 +691,24 @@ def scalar_product(v, f, assemble='exact'):
                 integrand += d*sp.cos(ind*x)
             integrand = f*integrand
             if assemble == 'exact':
-                V[i] = sp.integrate(integrand, (x, (0, sp.pi)))
+                output_array[i] = sp.integrate(integrand, (x, (0, sp.pi)))
             elif assemble == 'adaptive':
                 if isinstance(integrand, Number):
-                    V[i] = integrand*np.pi
+                    output_array[i] = integrand*np.pi
                 else:
-                    V[i] = quadpy.c1.integrate_adaptive(sp.lambdify(x, integrand), (0, np.pi))[0]
-
-        return V
+                    output_array[i] = quadpy.c1.integrate_adaptive(sp.lambdify(x, integrand), (0, np.pi))[0]
     else:
-        domain = T.sympy_reference_domain()
+        domain = T.reference_domain()
+        f *= T.weight()
         for i in range(T.slice().start, T.slice().stop):
-            integrand = f*np.conj(T.sympy_basis(i, x=x))
+            integrand = f*sp.conjugate(T.sympy_basis(i, x=x))
             if assemble == 'exact':
-                V[i] = sp.integrate(integrand, (x, (domain[0], domain[1])))
+                output_array[i] = sp.integrate(integrand, (x, (domain[0], domain[1])))
             elif assemble == 'adaptive':
-                if isinstance(integrand, Number):
-                    V[i] = integrand*(domain[1]-domain[0])
+                if len(integrand.free_symbols) == 0:
+                    output_array[i] = integrand*float(domain[1]-domain[0])
                 else:
-                    V[i] = quadpy.c1.integrate_adaptive(sp.lambdify(x, integrand), domain)[0]
-        return V
+                    output_array[i] = quadpy.c1.integrate_adaptive(sp.lambdify(x, integrand), (float(domain[0]), float(domain[1])))[0]
+    if T.domain_factor() != 1:
+        output_array /= float(T.domain_factor())
+    return output_array

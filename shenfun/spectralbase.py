@@ -136,9 +136,10 @@ class SpectralBase:
 
         else:
             d = self.domain
-            X = np.linspace(d[0], d[1], N)
+            X = np.linspace(float(d[0]), float(d[1]), N)
             if map_true_domain is False:
                 X = self.map_reference_domain(X)
+
         if bcast is True:
             X = self.broadcast_to_ndims(X)
         return X
@@ -210,7 +211,7 @@ class SpectralBase:
         s[self.axis] = slice(None)
         return x[tuple(s)]
 
-    def scalar_product(self, input_array=None, output_array=None, fast_transform=True):
+    def scalar_product(self, input_array=None, output_array=None, kind=None):
         """Compute weighted scalar product
 
         Parameters
@@ -218,10 +219,10 @@ class SpectralBase:
         input_array : array, optional
             Function values on quadrature mesh
         output_array : array, optional
-            Expansion coefficients
-        fast_transform : bool, optional
-            If True use fast transforms, if False use
-            Vandermonde type
+            The result of the scalar product
+        kind : str, optional
+            - 'fast' - use fast transform if implemented
+            - 'vandermonde' - use Vandermonde matrix
 
         Note
         ----
@@ -229,22 +230,23 @@ class SpectralBase:
         as planned with self.plan
 
         """
+        kind = kind if kind is not None else config['transforms']['kind'][self.family()]
+
         if input_array is not None:
             self.scalar_product.input_array[...] = input_array
 
         self.scalar_product._input_array = self.get_measured_array(self.scalar_product._input_array)
 
-        self._evaluate_scalar_product(fast_transform=fast_transform)
+        self._evaluate_scalar_product(kind=kind)
 
         self._truncation_forward(self.scalar_product.tmp_array,
                                  self.scalar_product.output_array)
-
         if output_array is not None:
             output_array[...] = self.scalar_product.output_array
             return output_array
         return self.scalar_product.output_array
 
-    def forward(self, input_array=None, output_array=None, fast_transform=True):
+    def forward(self, input_array=None, output_array=None, kind=None):
         """Compute forward transform
 
         Parameters
@@ -253,9 +255,9 @@ class SpectralBase:
             Function values on quadrature mesh
         output_array : array, optional
             Expansion coefficients
-        fast_transform : bool, optional
-            If True use fast transforms, if False use
-            Vandermonde type
+        kind : str, optional
+            - 'fast' - use fast transform if implemented
+            - 'vandermonde' - Use Vandermonde matrix
 
         Note
         ----
@@ -263,7 +265,8 @@ class SpectralBase:
         as planned with self.plan
 
         """
-        self.scalar_product(input_array, fast_transform=fast_transform)
+        kind = kind if kind is not None else config['transforms']['kind'][self.family()]
+        self.scalar_product(input_array, kind=kind)
         if self.bc:
             self.bc._add_mass_rhs(self.forward.output_array)
         self.apply_inverse_mass(self.forward.output_array)
@@ -272,7 +275,7 @@ class SpectralBase:
             return output_array
         return self.forward.output_array
 
-    def backward(self, input_array=None, output_array=None, fast_transform=True, kind='normal'):
+    def backward(self, input_array=None, output_array=None, kind=None):
         """Compute backward (inverse) transform
 
         Parameters
@@ -281,15 +284,13 @@ class SpectralBase:
             Expansion coefficients
         output_array : array, optional
             Function values on quadrature mesh
-        fast_transform : bool, optional
-            If True use fast transforms (if implemented), if
-            False use Vandermonde type
         kind : str or functionspace, optional
 
-            - normal - use regular quadrature points
-            - uniform - use uniform mesh
-            - instance of :class:`.SpectralBase` - use quadrature mesh of this
-                space
+            - 'fast' - Use fast transform on regular quadrature points
+            - 'vandermonde' - use Vandermonde on regular quadrature points
+            - 'uniform' - use Vandermonde on uniform mesh
+            - instance of :class:`.SpectralBase` - use Vandermonde and quadrature
+              mesh of this space.
 
         Note
         ----
@@ -297,6 +298,7 @@ class SpectralBase:
         as planned with self.plan
 
         """
+        kind = kind if kind is not None else config['transforms']['kind'][self.family()]
         if input_array is not None:
             self.backward.input_array[...] = input_array
 
@@ -305,16 +307,17 @@ class SpectralBase:
 
         mesh = None
         if kind == 'uniform':
-            fast_transform = False
+            kind = 'vandermonde'
             mesh = self.mesh(bcast=False, map_true_domain=False, uniform=True)
         elif isinstance(kind, SpectralBase):
-            fast_transform = False
             mesh = kind.mesh()
             if len(kind) > 1:
                 mesh = np.squeeze(mesh[self.axis])
+            kind = 'vandermonde'
+
         self._evaluate_expansion_all(self.backward.tmp_array,
                                      self.backward.output_array,
-                                     x=mesh, fast_transform=fast_transform)
+                                     x=mesh, kind=kind)
 
         if output_array is not None:
             output_array[...] = self.backward.output_array
@@ -345,9 +348,8 @@ class SpectralBase:
 
         Note
         ----
-        This function returns a matrix of evaluated orthogonal basis functions for
-        either family. That is, it is using either pure Chebyshev, Legendre or
-        Fourier exponentials. The true Vandermonde matrix of a basis is obtained
+        This function returns a matrix of evaluated orthogonal basis functions
+        for either family. The true Vandermonde matrix of a basis is obtained
         through :meth:`.SpectralBase.evaluate_basis_all`.
 
         """
@@ -454,7 +456,7 @@ class SpectralBase:
         return V
 
     def _evaluate_expansion_all(self, input_array, output_array,
-                                x=None, fast_transform=False):
+                                x=None, kind='fast'):
         r"""Evaluate expansion on 'x' or entire mesh
 
         .. math::
@@ -469,8 +471,10 @@ class SpectralBase:
             Function values on quadrature mesh, instance of :class:`.Array`
         x : points for evaluation, optional
             If None, use entire quadrature mesh
-        fast_transform : bool, optional
-            Whether to use fast transforms (if implemented)
+        kind : str, optional
+
+            - 'fast' - use fast transform if implemented
+            - 'vandermonde' - Use Vandermonde matrix
 
         """
         P = self.evaluate_basis_all(x=x, argument=1)
@@ -504,17 +508,17 @@ class SpectralBase:
         if output_array is None:
             output_array = np.zeros(x.shape, dtype=self.dtype)
         x = self.map_reference_domain(x)
-        self._evaluate_expansion_all(u, output_array, x, False)
+        self._evaluate_expansion_all(u, output_array, x, kind='vandermonde')
         return output_array
 
-    def _evaluate_scalar_product(self, fast_transform=False):
+    def _evaluate_scalar_product(self, kind=None):
         """Evaluate scalar product
 
         Parameters
         ----------
-        fast_transform : bool, optional
-            If True use fast transforms (if implemented), if
-            False use Vandermonde type
+        kind : str, optional
+            - 'fast' - use fast transform if implemented
+            - 'vandermonde' - Use Vandermonde matrix
 
         Note
         ----
@@ -528,7 +532,7 @@ class SpectralBase:
         M = self.shape(False)
         weights = self.points_and_weights(M)[1]
         if self.domain_factor() != 1:
-            weights /= self.domain_factor()
+            weights /= float(self.domain_factor())
         P = self.evaluate_basis_all(argument=0)
         if input_array.ndim == 1:
             output_array[slice(0, M)] = np.dot(input_array*weights, np.conj(P))
@@ -667,7 +671,10 @@ class SpectralBase:
         if not self.domain == self.reference_domain():
             a = self.domain[0]
             c = self.reference_domain()[0]
-            x = c + (x-a)*self.domain_factor()
+            if isinstance(x, (np.ndarray, float)):
+                x = float(c) + (x-float(a))*float(self.domain_factor())
+            else:
+                x = c + (x-a)*self.domain_factor()
         return x
 
     def map_true_domain(self, x):
@@ -680,7 +687,10 @@ class SpectralBase:
         if not self.domain == self.reference_domain():
             a = self.domain[0]
             c = self.reference_domain()[0]
-            x = a + (x-c)/self.domain_factor()
+            if isinstance(x, (np.ndarray, float)):
+                x = float(a) + (x-float(c))/float(self.domain_factor())
+            else:
+                x = a + (x-c)/self.domain_factor()
         return x
 
     def map_expression_true_domain(self, f, x=None):
@@ -755,7 +765,7 @@ class SpectralBase:
         """
         raise NotImplementedError
 
-    def sympy_l2_norm_sq(self, i=sp.Symbol('i', integer=True), implicit=True):
+    def sympy_l2_norm_sq(self, i=sp.Symbol('i', integer=True)):
         r"""Return sympy function for square of l2-norm
 
         .. math::
@@ -768,6 +778,9 @@ class SpectralBase:
         Parameters
         ----------
         i : Sympy Symbol, optional
+        implicit : bool, optional
+            Whether to use an unevaluated Sympy function instead of the
+            actual value of the l2-norm.
 
         Returns
         -------
@@ -779,11 +792,9 @@ class SpectralBase:
             def eval(cls, x):
                 if x.is_Number:
                     return self.l2_norm_sq(x)
-        if implicit:
-            return h(i)
-        return self.l2_norm_sq(i)
+        return h(i)
 
-    def sympy_L2_norm_sq(self, i=sp.Symbol('i', integer=True), implicit=True):
+    def sympy_L2_norm_sq(self, i=sp.Symbol('i', integer=True)):
         r"""Return sympy function for square of L2-norm
 
         .. math::
@@ -796,6 +807,9 @@ class SpectralBase:
         Parameters
         ----------
         i : Sympy Symbol, optional
+        implicit : bool, optional
+            Whether to use an unevaluated Sympy function instead of the
+            actual value of the l2-norm.
 
         Returns
         -------
@@ -807,9 +821,7 @@ class SpectralBase:
             def eval(cls, x):
                 if x.is_Number:
                     return self.L2_norm_sq(x)
-        if implicit:
-            return h(i)
-        return self.L2_norm_sq(i)
+        return h(i)
 
     def weight(self, x=None):
         """Weight of inner product space
@@ -822,9 +834,6 @@ class SpectralBase:
 
     def reference_domain(self):
         raise NotImplementedError
-
-    def sympy_reference_domain(self):
-        return self.reference_domain()
 
     def domain_length(self):
         return self.domain[1]-self.domain[0]
@@ -1294,7 +1303,7 @@ class SpectralBase:
         converged = False
         count = 0
         points = np.random.random(8)
-        points = T.domain[0] + points*(T.domain[1]-T.domain[0])
+        points = float(T.domain[0]) + points*float(T.domain[1]-T.domain[0])
         sym = fun.free_symbols
         assert len(sym) == 1
         x = sym.pop()
@@ -1417,22 +1426,30 @@ def getCompositeBase(Orthogonal):
             V = Orthogonal.evaluate_basis_derivative_all(self, x=x, k=k, argument=argument)
             return self._composite(V, argument=argument)
 
-        def _evaluate_expansion_all(self, input_array, output_array, x=None, fast_transform=True):
-            if fast_transform is False:
-                SpectralBase._evaluate_expansion_all(self, input_array, output_array, x, False)
+        def _evaluate_expansion_all(self, input_array, output_array, x=None, kind=None):
+            if kind == 'fast':
+                assert self.family() in ('fourier', 'chebyshev', 'legendre'), f'Fast method not implemented for {self.family()} family'
+                if output_array.ndim > 1 and self.family() == 'legendre':
+                    kind = 'vandermonde'
+            if kind == 'vandermonde':
+                SpectralBase._evaluate_expansion_all(self, input_array, output_array, x, kind)
                 return
             assert input_array is self.backward.tmp_array
             assert output_array is self.backward.output_array
             input_array[:] = self.to_ortho(input_array, output_array)
-            Orthogonal._evaluate_expansion_all(self, input_array, output_array, x, fast_transform)
+            Orthogonal._evaluate_expansion_all(self, input_array, output_array, x, kind)
 
-        def _evaluate_scalar_product(self, fast_transform=True):
+        def _evaluate_scalar_product(self, kind=None):
             output = self.scalar_product.tmp_array
-            if fast_transform is False:
+            if kind == 'fast':
+                assert self.family() in ('fourier', 'chebyshev', 'legendre'), f'Fast method not implemented for {self.family()} family'
+                if output.ndim > 1 and self.family() == 'legendre':
+                    kind = 'vandermonde'
+            if kind == 'vandermonde':
                 SpectralBase._evaluate_scalar_product(self)
                 output[self.sl[slice(-(self.N-self.dim()), None)]] = 0
                 return
-            Orthogonal._evaluate_scalar_product(self, True)
+            Orthogonal._evaluate_scalar_product(self, kind)
             K = self.stencil_matrix(self.shape(False))
             w0 = output.copy()
             output = K.matvec(w0, output, axis=self.axis)
@@ -1779,8 +1796,8 @@ class BoundaryConditions(dict):
         df = 1
         if domain is not None:
             assert isinstance(domain, (tuple, list))
-            if np.isfinite(domain[0]*domain[1]):
-                df = 2./(domain[1]-domain[0])
+            if np.isfinite(float(domain[0]*domain[1])):
+                df = 2/float(domain[1]-domain[0])
         for key, val in bcs.items():
             for bc, v in val.items():
                 if bc == 'N':
@@ -2089,25 +2106,6 @@ def inner_product(test, trial, measure=1, assemble=None, kind=None, fixed_resolu
 
     return A
 
-def scalar_product_sympy(v, f, measure=1):
-    from .utilities import integrate_sympy
-    T = v.base.function_space()
-    V = np.zeros(T.N)
-    x = sp.Symbol('x', real=True)
-    f = f*measure
-    if not isinstance(f, Number):
-        s = f.free_symbols
-        assert len(s) == 1
-        x = s.pop()
-        xm = T.map_true_domain(x)
-        f = f.subs(x, xm)
-    f = f*T.weight()
-    for i in range(T.slice().start, T.slice().stop):
-        pi = np.conj(T.sympy_basis(i, x=x))
-        integrand = f*pi
-        rd = T.sympy_reference_domain()
-        V[i] = integrate_sympy(integrand, (x, rd[0], rd[1]))
-    return V
 
 def get_norm_sq(v, u, method):
     r"""Return square of weighted norm

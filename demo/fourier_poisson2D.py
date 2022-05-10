@@ -46,7 +46,7 @@ sol = la.SolverDiagonal(A)
 u_hat = sol(-f_hat, u_hat, constraints=((0, 0),))
 
 uq = Array(T)
-uq = T.backward(u_hat, uq, fast_transform=True)
+uq = T.backward(u_hat, uq, kind='fast')
 
 uj = Array(T, buffer=ue)
 assert np.allclose(uj, uq)

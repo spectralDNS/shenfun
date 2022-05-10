@@ -50,7 +50,7 @@ f_hat = inner(v, fj, output_array=f_hat)
 A = inner(v, u+div(grad(u)))
 f_hat = A.solve(f_hat)
 
-uq = T.backward(f_hat, fast_transform=True)
+uq = T.backward(f_hat, kind='fast')
 
 uj = Array(T, buffer=ue)
 print(np.sqrt(dx((uj-uq)**2)))

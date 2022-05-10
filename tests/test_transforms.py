@@ -129,8 +129,8 @@ def test_scalarproduct(ST, quad):
     fj = shenfun.Array(ST, buffer=f)
     u0 = shenfun.Function(ST)
     u1 = shenfun.Function(ST)
-    u0 = ST.scalar_product(fj, u0, fast_transform=True)
-    u1 = ST.scalar_product(fj, u1, fast_transform=False)
+    u0 = ST.scalar_product(fj, u0, kind='fast')
+    u1 = ST.scalar_product(fj, u1, kind='vandermonde')
     assert np.allclose(u1, u0)
     assert not np.all(u1 == u0) # Check that fast is not the same as slow
 
@@ -148,8 +148,8 @@ def test_eval(ST, quad):
     f = ST.eval(points, fk)
     fj = fk.backward()
     assert np.allclose(fj, f, rtol=1e-5, atol=1e-6), np.linalg.norm(fj-f)
-    fj = ST.backward(fk, fj, fast_transform=False)
-    fk = ST.forward(fj, fk, fast_transform=False)
+    fj = ST.backward(fk, fj, kind='vandermonde')
+    fk = ST.forward(fj, fk, kind='vandermonde')
     f = ST.eval(points, fk)
     assert np.allclose(fj, f, rtol=1e-5, atol=1e-6), np.linalg.norm(fj-f)
 
@@ -255,8 +255,8 @@ def test_transforms(ST, quad):
     assert np.allclose(fj, fj.forward().backward())
     u0 = shenfun.Function(ST0)
     u1 = shenfun.Array(ST0)
-    u0 = ST0.forward(fj, u0, fast_transform=False)
-    u1 = ST0.backward(u0, u1, fast_transform=False)
+    u0 = ST0.forward(fj, u0, kind='vandermonde')
+    u1 = ST0.backward(u0, u1, kind='vandermonde')
     assert np.allclose(fj, u1, rtol=1e-5, atol=1e-6)
 
     # Multidimensional version

@@ -76,15 +76,22 @@ def inner(expr0, expr1, output_array=None, assemble=None, kind=None, fixed_resol
         - 'exact'
         - 'adaptive'
 
+        Exact and adaptive should result in the same matrix. Exact computes the
+        integral using `Sympy integrate <https://docs.sympy.org/latest/modules/integrals/integrals.html>`_,
+        whereas adaptive makes use of adaptive quadrature through `quadpy <https://github.com/sigma-py/quadpy>`_.
+
     kind : None or str, optional
         The kind of method used to do quadrature.
 
         - 'implemented'
         - 'stencil'
         - 'vandermonde'
+        - 'fast' (only for linear forms)
 
         The default is to first try to look for implemented kind, and if that
-        fails try first 'stencil' and then finally fall back on quadrature.
+        fails try first 'stencil' and then finally fall back on vandermonde.
+        Vandermonde creates a dense matrix of size NxN, so it should be avoided
+        (e.g., by implementing the matrix) for large N.
 
     fixed_resolution : None or str, optional
         A fixed number of quadrature points used to compute the inner product.
@@ -155,36 +162,40 @@ def inner(expr0, expr1, output_array=None, assemble=None, kind=None, fixed_resol
         expr1 = Array(expr0.function_space(), buffer=expr1)
 
     if isinstance(expr0, Number):
-        assert isinstance(expr1, (Array, Function))
-        space = expr1.function_space()
-        if isinstance(space, (TensorProductSpace, CompositeSpace)):
-            df = np.prod(np.array([base.domain_factor() for base in space.bases]))
-        elif isinstance(space, SpectralBase):
-            df = space.domain_factor()
-        if isinstance(expr1, Function):
-            #return (expr0/df)*dx(expr1.backward())
-            expr1 = expr1.backward()
-        if hasattr(space, 'hi'):
-            if space.hi.prod() != 1:
-                expr1 = space.get_measured_array(expr1.copy())
-
-        return (expr0/df)*dx(expr1)
+        if isinstance(expr1, TestFunction):
+            expr0 = sp.sympify(expr0)
+        else:
+            assert isinstance(expr1, (Array, Function))
+            space = expr1.function_space()
+            if isinstance(space, (TensorProductSpace, CompositeSpace)):
+                df = np.prod(np.array([float(base.domain_factor()) for base in space.bases]))
+            elif isinstance(space, SpectralBase):
+                df = float(space.domain_factor())
+            if isinstance(expr1, Function):
+                #return (expr0/df)*dx(expr1.backward())
+                expr1 = expr1.backward()
+            if hasattr(space, 'hi'):
+                if space.hi.prod() != 1:
+                    expr1 = space.get_measured_array(expr1.copy())
+            return (expr0/df)*dx(expr1)
 
     if isinstance(expr1, Number):
-        assert isinstance(expr0, (Array, Function))
-        space = expr0.function_space()
-        if isinstance(space, (TensorProductSpace, CompositeSpace)):
-            df = np.prod(np.array([base.domain_factor() for base in space.bases]))
-        elif isinstance(space, SpectralBase):
-            df = space.domain_factor()
-        if isinstance(expr0, Function):
-            #return (expr1/df)*dx(expr0.backward())
-            expr0 = expr0.backward()
-        if hasattr(space, 'hi'):
-            if space.hi.prod() != 1:
-                expr0 = space.get_measured_array(expr0.copy())
-
-        return (expr1/df)*dx(expr0)
+        if isinstance(expr0, TestFunction):
+            expr1 = sp.sympify(expr1)
+        else:
+            assert isinstance(expr0, (Array, Function))
+            space = expr0.function_space()
+            if isinstance(space, (TensorProductSpace, CompositeSpace)):
+                df = np.prod(np.array([float(base.domain_factor()) for base in space.bases]))
+            elif isinstance(space, SpectralBase):
+                df = float(space.domain_factor())
+            if isinstance(expr0, Function):
+                #return (expr1/df)*dx(expr0.backward())
+                expr0 = expr0.backward()
+            if hasattr(space, 'hi'):
+                if space.hi.prod() != 1:
+                    expr0 = space.get_measured_array(expr0.copy())
+            return (expr1/df)*dx(expr0)
 
     if isinstance(expr0, tuple):
         assert isinstance(expr1, (Array, Function))
@@ -216,20 +227,21 @@ def inner(expr0, expr1, output_array=None, assemble=None, kind=None, fixed_resol
             assert isinstance(expr0, TestFunction)
             test = expr0
             trial = expr1
+
         if output_array is None:
             output_array = Function(test.function_space())
 
         if assemble in ('exact', 'adaptive'):
-            output_array[:] = scalar_product(test, trial, assemble=assemble)
+            output_array = scalar_product(test, trial, output_array, assemble=assemble)
 
         else: # quadrature
             if fixed_resolution is not None:
                 M = fixed_resolution
                 testM = test.function_space().get_refined(M)
-                outM = testM.scalar_product(Array(testM, buffer=trial))
+                outM = testM.scalar_product(Array(testM, buffer=trial), kind=kind)
                 output_array[:test.function_space().dim()] = outM[:test.function_space().dim()]
             else:
-                output_array = test.function_space().scalar_product(Array(test.function_space(), buffer=trial), output_array)
+                output_array = test.function_space().scalar_product(Array(test.function_space(), buffer=trial), output_array, kind=kind)
         return output_array
 
     assert np.all([hasattr(e, 'argument') for e in (expr0, expr1)])
@@ -320,7 +332,7 @@ def inner(expr0, expr1, output_array=None, assemble=None, kind=None, fixed_resol
         space = test.function_space()
         if isinstance(trial, Array):
             if trial.tensor_rank == 0 and isinstance(test, BasisFunction):
-                output_array = space.scalar_product(trial, output_array)
+                output_array = space.scalar_product(trial, output_array, kind=kind)
                 return output_array
             # project to orthogonal. Cannot use trial space, because the Array trial
             # may not fit with the boundary conditions of the trialspace

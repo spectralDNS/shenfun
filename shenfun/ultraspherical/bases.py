@@ -72,6 +72,8 @@ class Orthogonal(SpectralBase):
         - QG - Jacobi-Gauss
     alpha : number, optional
         Parameter of the ultraspherical polynomial
+    domain : 2-tuple of numbers, optional
+        The computational domain
     padding_factor : float, optional
         Factor for padding backward transforms.
     dealias_direct : bool, optional
@@ -91,9 +93,9 @@ class Orthogonal(SpectralBase):
         self.alpha = alpha
         self.beta = alpha
         self.gn = cn
-        self.forward = functools.partial(self.forward, fast_transform=False)
-        self.backward = functools.partial(self.backward, fast_transform=False)
-        self.scalar_product = functools.partial(self.scalar_product, fast_transform=False)
+        self.forward = functools.partial(self.forward, kind='vandermonde')
+        self.backward = functools.partial(self.backward, kind='vandermonde')
+        self.scalar_product = functools.partial(self.scalar_product, kind='vandermonde')
         self.plan(int(N*padding_factor), 0, dtype, {})
 
     @staticmethod
@@ -297,6 +299,8 @@ class Phi1(CompositeBase):
         Boundary conditions at, respectively, x=(-1, 1).
     alpha : number, optional
         Parameter of the ultraspherical polynomial
+    domain : 2-tuple of numbers, optional
+        The computational domain
     padding_factor : float, optional
         Factor for padding backward transforms.
     dealias_direct : bool, optional
@@ -307,7 +311,7 @@ class Phi1(CompositeBase):
     coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
         Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
     """
-    def __init__(self, N, quad="QG", bc=(0., 0.), domain=(-1., 1.), dtype=float,
+    def __init__(self, N, quad="QG", bc=(0, 0), domain=(-1, 1), dtype=float,
                  padding_factor=1, dealias_direct=False, alpha=0,
                  coordinates=None, **kw):
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
@@ -369,6 +373,8 @@ class Phi2(CompositeBase):
         Boundary conditions.
     alpha : number, optional
         Parameter of the ultraspherical polynomial
+    domain : 2-tuple of numbers, optional
+        The computational domain
     padding_factor : float, optional
         Factor for padding backward transforms.
     dealias_direct : bool, optional
@@ -380,7 +386,7 @@ class Phi2(CompositeBase):
         Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
     """
 
-    def __init__(self, N, quad="QG", bc=(0, 0, 0, 0), domain=(-1., 1.), dtype=float,
+    def __init__(self, N, quad="QG", bc=(0, 0, 0, 0), domain=(-1, 1), dtype=float,
                  padding_factor=1, dealias_direct=False, alpha=0, coordinates=None, **kw):
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
@@ -441,6 +447,8 @@ class Phi3(CompositeBase):
         Boundary conditions.
     alpha : number, optional
         Parameter of the ultraspherical polynomial
+    domain : 2-tuple of numbers, optional
+        The computational domain
     padding_factor : float, optional
         Factor for padding backward transforms.
     dealias_direct : bool, optional
@@ -516,6 +524,8 @@ class Phi4(CompositeBase):
         Boundary conditions.
     alpha : number, optional
         Parameter of the ultraspherical polynomial
+    domain : 2-tuple of numbers, optional
+        The computational domain
     padding_factor : float, optional
         Factor for padding backward transforms.
     dealias_direct : bool, optional
@@ -589,6 +599,8 @@ class CompactDirichlet(CompositeBase):
         Boundary conditions at, respectively, x=(-1, 1).
     alpha : number, optional
         Parameter of the ultraspherical polynomial
+    domain : 2-tuple of numbers, optional
+        The computational domain
     padding_factor : float, optional
         Factor for padding backward transforms.
     dealias_direct : bool, optional
@@ -649,6 +661,8 @@ class CompactNeumann(CompositeBase):
         Boundary conditions at, respectively, x=(-1, 1).
     alpha : number, optional
         Parameter of the ultraspherical polynomial
+    domain : 2-tuple of numbers, optional
+        The computational domain
     padding_factor : float, optional
         Factor for padding backward transforms.
     dealias_direct : bool, optional
@@ -710,7 +724,7 @@ class UpperDirichlet(CompositeBase):
         The number is the boundary condition value
     alpha : number, optional
         Parameter of the ultraspherical polynomial
-    domain : 2-tuple of floats, optional
+    domain : 2-tuple of numbers, optional
         The computational domain
     padding_factor : float, optional
         Factor for padding backward transforms.
@@ -723,7 +737,7 @@ class UpperDirichlet(CompositeBase):
         Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
 
     """
-    def __init__(self, N, quad="QG", bc=(None, 0), domain=(-1., 1.), dtype=float,
+    def __init__(self, N, quad="QG", bc=(None, 0), domain=(-1, 1), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None,
                  alpha=0, **kw):
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
@@ -771,7 +785,7 @@ class LowerDirichlet(CompositeBase):
         The number is the boundary condition value
     alpha : number, optional
         Parameter of the ultraspherical polynomial
-    domain : 2-tuple of floats, optional
+    domain : 2-tuple of numbers, optional
         The computational domain
     padding_factor : float, optional
         Factor for padding backward transforms.
@@ -784,7 +798,7 @@ class LowerDirichlet(CompositeBase):
         Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
 
     """
-    def __init__(self, N, quad="QG", bc=(None, 0), domain=(-1., 1.), dtype=float,
+    def __init__(self, N, quad="QG", bc=(None, 0), domain=(-1, 1), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None,
                  alpha=0, **kw):
         assert quad == "QG"
@@ -832,7 +846,7 @@ class Generic(CompositeBase):
 
         Any combination should be possible, and it should also be possible to
         use second derivatives `N2`. See :class:`~shenfun.spectralbase.BoundaryConditions`.
-    domain : 2-tuple of floats, optional
+    domain : 2-tuple of numbers, optional
         The computational domain
     dtype : data-type, optional
         Type of input data in real physical space. Will be overloaded when
@@ -847,7 +861,7 @@ class Generic(CompositeBase):
         Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
 
     """
-    def __init__(self, N, quad="QG", bc={}, domain=(-1., 1.), dtype=float,
+    def __init__(self, N, quad="QG", bc={}, domain=(-1, 1), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None,
                  alpha=0, **kw):
         from shenfun.utilities.findbasis import get_stencil_matrix
@@ -877,7 +891,7 @@ class BCBase(CompositeBase):
     bc : dict
         The boundary conditions in dictionary form, see
         :class:`.BoundaryConditions`.
-    domain : 2-tuple, optional
+    domain : 2-tuple of numbers, optional
         The domain of the homogeneous space.
     alpha : number, optional
         Parameter of the Ultraspherical polynomial

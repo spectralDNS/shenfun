@@ -105,7 +105,7 @@ class Orthogonal(SpectralBase):
 
         - LG - Legendre-Gauss
         - GL - Legendre-Gauss-Lobatto
-    domain : 2-tuple of floats, optional
+    domain : 2-tuple of numbers, optional
         The computational domain
     padding_factor : float, optional
         Factor for padding backward transforms.
@@ -119,7 +119,7 @@ class Orthogonal(SpectralBase):
 
     """
 
-    def __init__(self, N, quad="LG", domain=(-1., 1.), dtype=float, padding_factor=1,
+    def __init__(self, N, quad="LG", domain=(-1, 1), dtype=float, padding_factor=1,
                  dealias_direct=False, coordinates=None, **kw):
         SpectralBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
@@ -127,9 +127,9 @@ class Orthogonal(SpectralBase):
         self.alpha = 0
         self.beta = 0
         self.gn = 1
-        self.forward = functools.partial(self.forward, fast_transform=False)
-        self.backward = functools.partial(self.backward, fast_transform=False)
-        self.scalar_product = functools.partial(self.scalar_product, fast_transform=False)
+        self.forward = functools.partial(self.forward, kind='vandermonde')
+        self.backward = functools.partial(self.backward, kind='vandermonde')
+        self.scalar_product = functools.partial(self.scalar_product, kind='vandermonde')
         self.plan(int(padding_factor*N), 0, dtype, {})
 
     @staticmethod
@@ -307,17 +307,18 @@ class Orthogonal(SpectralBase):
             return output_array
         return input_array
 
-    def _evaluate_scalar_product(self, fast_transform=False):
+    def _evaluate_scalar_product(self, kind='vandermonde'):
         input_array = self.scalar_product.input_array
         output_array = self.scalar_product.tmp_array
-        if fast_transform is False:
+        if input_array.ndim > 1:
+            kind = 'vandermonde'
+        if kind == 'vandermonde':
             SpectralBase._evaluate_scalar_product(self)
             return
         M = self.shape(False)
         xj, wj = self.points_and_weights(M)
         if self.domain_factor() != 1:
             wj /= self.domain_factor()
-        assert input_array.ndim == 1, 'Use fast_transform=False'
         from shenfun.optimization.numba import legendre as legn
         legn.legendre_orthogonal_scalar_product(xj, wj, input_array, output_array)
 
@@ -356,7 +357,7 @@ class ShenDirichlet(CompositeBase):
 
     bc : tuple of numbers
         Boundary conditions at edges of domain
-    domain : 2-tuple of floats, optional
+    domain : 2-tuple of numbers, optional
         The computational domain
     scaled : bool, optional
         Whether or not to scale test functions with 1/sqrt(4k+6).
@@ -373,7 +374,7 @@ class ShenDirichlet(CompositeBase):
         Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
 
     """
-    def __init__(self, N, quad="LG", bc=(0., 0.), domain=(-1., 1.), dtype=float,
+    def __init__(self, N, quad="LG", bc=(0, 0), domain=(-1, 1), dtype=float,
                  scaled=False, padding_factor=1, dealias_direct=False, coordinates=None, **kw):
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc, scaled=scaled,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
@@ -391,19 +392,22 @@ class ShenDirichlet(CompositeBase):
         return 'SD'
 
     def _evaluate_expansion_all(self, input_array, output_array,
-                                x=None, fast_transform=False):
-        if fast_transform is False:
-            SpectralBase._evaluate_expansion_all(self, input_array, output_array, x, fast_transform)
+                                x=None, kind='vandermonde'):
+        if input_array.ndim > 1:
+            kind = 'vandermonde'
+        if kind == 'vandermonde':
+            SpectralBase._evaluate_expansion_all(self, input_array, output_array, x, kind=kind)
             return
-        assert input_array.ndim == 1, 'Use fast_transform=False'
         xj, _ = self.points_and_weights(self.N)
         from shenfun.optimization.numba import legendre as legn
         legn.legendre_shendirichlet_evaluate_expansion_all(xj, input_array, output_array, self.is_scaled())
 
-    def _evaluate_scalar_product(self, fast_transform=False):
+    def _evaluate_scalar_product(self, kind='vandermonde'):
         input_array = self.scalar_product.input_array
         output_array = self.scalar_product.tmp_array
-        if fast_transform is False:
+        if input_array.ndim > 1:
+            kind = 'vandermonde'
+        if kind == 'vandermonde':
             SpectralBase._evaluate_scalar_product(self)
             output_array[self.si[-2]] = 0
             output_array[self.si[-1]] = 0
@@ -412,7 +416,6 @@ class ShenDirichlet(CompositeBase):
         xj, wj = self.points_and_weights(M)
         if self.domain_factor() != 1:
             wj /= self.domain_factor()
-        assert input_array.ndim == 1, 'Use fast_transform=False'
         from shenfun.optimization.numba import legendre as legn
         legn.legendre_shendirichlet_scalar_product(xj, wj, input_array, output_array, self.is_scaled())
         output_array[self.si[-2]] = 0
@@ -451,7 +454,7 @@ class Phi1(CompositeBase):
 
     bc : tuple of numbers
         Boundary conditions at edges of domain
-    domain : 2-tuple of floats, optional
+    domain : 2-tuple of numbers, optional
         The computational domain
     padding_factor : float, optional
         Factor for padding backward transforms.
@@ -464,7 +467,7 @@ class Phi1(CompositeBase):
         Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
 
     """
-    def __init__(self, N, quad="LG", bc=(0., 0.), domain=(-1., 1.), dtype=float,
+    def __init__(self, N, quad="LG", bc=(0, 0), domain=(-1, 1), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None, **kw):
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
@@ -513,7 +516,7 @@ class ShenNeumann(CompositeBase):
 
     bc : 2-tuple of numbers
         Boundary conditions at edges of domain
-    domain : 2-tuple of floats, optional
+    domain : 2-tuple of numbers, optional
         The computational domain
     padding_factor : float, optional
         Factor for padding backward transforms.
@@ -526,7 +529,7 @@ class ShenNeumann(CompositeBase):
         Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
 
     """
-    def __init__(self, N, quad="LG", bc=(0, 0), domain=(-1., 1.), padding_factor=1,
+    def __init__(self, N, quad="LG", bc=(0, 0), domain=(-1, 1), padding_factor=1,
                  dealias_direct=False, dtype=float, coordinates=None, **kw):
         if isinstance(bc, (tuple, list)):
             bc = BoundaryConditions({'left': {'N': bc[0]}, 'right': {'N': bc[1]}}, domain=domain)
@@ -543,15 +546,16 @@ class ShenNeumann(CompositeBase):
     def short_name():
         return 'SN'
 
-    def _evaluate_scalar_product(self, fast_transform=False):
+    def _evaluate_scalar_product(self, kind='vandermonde'):
         input_array = self.scalar_product.input_array
         output_array = self.scalar_product.tmp_array
-        if fast_transform is False:
+        if input_array.ndim > 1:
+            kind = 'vandermonde'
+        if kind == 'vandermonde':
             SpectralBase._evaluate_scalar_product(self)
             output_array[self.sl[slice(-2, None)]] = 0
             return
 
-        assert input_array.ndim == 1, 'Use fast_transform=False'
         xj, wj = self.points_and_weights(self.N)
         if self.domain_factor() != 1:
             wj /= self.domain_factor()
@@ -560,12 +564,12 @@ class ShenNeumann(CompositeBase):
         output_array[self.sl[slice(-2, None)]] = 0
 
     def _evaluate_expansion_all(self, input_array, output_array,
-                                x=None, fast_transform=False):
-        if fast_transform is False:
-            SpectralBase._evaluate_expansion_all(self, input_array, output_array, x, fast_transform)
+                                x=None, kind='vandermonde'):
+        if input_array.ndim > 1:
+            kind = 'vandermonde'
+        if kind == 'vandermonde':
+            SpectralBase._evaluate_expansion_all(self, input_array, output_array, x, kind=kind)
             return
-
-        assert input_array.ndim == 1, 'Use fast_transform=False'
         xj, _ = self.points_and_weights(self.N)
         try:
             from shenfun.optimization.numba import legendre as legn
@@ -607,7 +611,7 @@ class ShenBiharmonic(CompositeBase):
         The two conditions on x=-1 first, and then x=1.
         With (a, b, c, d) corresponding to
         bc = {'left': [('D', a), ('N', b)], 'right': [('D', c), ('N', d)]}
-    domain : 2-tuple of floats, optional
+    domain : 2-tuple of numbers, optional
         The computational domain
     padding_factor : float, optional
         Factor for padding backward transforms.
@@ -620,7 +624,7 @@ class ShenBiharmonic(CompositeBase):
         Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
 
     """
-    def __init__(self, N, quad="LG", bc=(0, 0, 0, 0), domain=(-1., 1.), padding_factor=1,
+    def __init__(self, N, quad="LG", bc=(0, 0, 0, 0), domain=(-1, 1), padding_factor=1,
                  dealias_direct=False, dtype=float, coordinates=None, **kw):
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
@@ -679,7 +683,7 @@ class Phi2(CompositeBase):
     bc : 4-tuple of numbers, optional
         The values of the 4 boundary conditions at x=(-1, 1).
         The two on x=-1 first and then x=1. (a, b, c, d)
-    domain : 2-tuple of floats, optional
+    domain : 2-tuple of numbers, optional
         The computational domain
     padding_factor : float, optional
         Factor for padding backward transforms.
@@ -692,7 +696,7 @@ class Phi2(CompositeBase):
         Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
 
     """
-    def __init__(self, N, quad="LG", bc=(0, 0, 0, 0), domain=(-1., 1.), padding_factor=1,
+    def __init__(self, N, quad="LG", bc=(0, 0, 0, 0), domain=(-1, 1), padding_factor=1,
                  dealias_direct=False, dtype=float, coordinates=None, **kw):
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
@@ -738,6 +742,8 @@ class Phi3(CompositeBase):
         - GL - Legendre-Gauss-Lobatto
     bc : 6-tuple of numbers, optional
         Boundary conditions.
+    domain : 2-tuple of numbers, optional
+        The computational domain
     padding_factor : float, optional
         Factor for padding backward transforms.
     dealias_direct : bool, optional
@@ -805,7 +811,7 @@ class Phi4(CompositeBase):
         - LG - Legendre-Gauss
         - GL - Legendre-Gauss-Lobatto
     bc : 8-tuple of numbers
-    domain : 2-tuple of floats, optional
+    domain : 2-tuple of numbers, optional
         The computational domain
     dtype : data-type, optional
         Type of input data in real physical space. Will be overloaded when
@@ -892,7 +898,7 @@ class BeamFixedFree(CompositeBase):
         The values of the 4 boundary conditions
         u(-1) = a, u'(-1) = b, u''(1) = c, u'''(1) = d
 
-    domain : 2-tuple of floats, optional
+    domain : 2-tuple of numbers, optional
         The computational domain
     padding_factor : float, optional
         Factor for padding backward transforms.
@@ -905,7 +911,7 @@ class BeamFixedFree(CompositeBase):
         Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
 
     """
-    def __init__(self, N, quad="LG", bc=(0, 0, 0, 0), domain=(-1., 1.), padding_factor=1,
+    def __init__(self, N, quad="LG", bc=(0, 0, 0, 0), domain=(-1, 1), padding_factor=1,
                  dealias_direct=False, dtype=float, coordinates=None, **kw):
         if isinstance(bc, (tuple, list)):
             bc = BoundaryConditions({'left': {'D': bc[0], 'N': bc[1]}, 'right': {'N2': bc[2], 'N3': bc[3]}}, domain=domain)
@@ -959,7 +965,7 @@ class UpperDirichlet(CompositeBase):
         - GL - Legendre-Gauss-Lobatto
     bc : 2-tuple of (None, number), optional
         The number is the boundary condition value
-    domain : 2-tuple of floats, optional
+    domain : 2-tuple of numbers, optional
         The computational domain
     padding_factor : float, optional
         Factor for padding backward transforms.
@@ -972,7 +978,7 @@ class UpperDirichlet(CompositeBase):
         Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
 
     """
-    def __init__(self, N, quad="LG", bc=(None, 0), domain=(-1., 1.), dtype=float,
+    def __init__(self, N, quad="LG", bc=(None, 0), domain=(-1, 1), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None, **kw):
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
@@ -1023,7 +1029,7 @@ class ShenBiPolar(CompositeBase):
     bc : 4-tuple of numbers, optional
         The values of the 4 boundary conditions at x=(-1, 1).
         The two on x=-1 first and then x=1. (a, b, c, d)
-    domain : 2-tuple of floats, optional
+    domain : 2-tuple of numbers, optional
         The computational domain
     padding_factor : float, optional
         Factor for padding backward transforms.
@@ -1036,7 +1042,7 @@ class ShenBiPolar(CompositeBase):
         Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
 
     """
-    def __init__(self, N, quad="LG", domain=(-1., 1.), bc=(0, 0, 0, 0), dtype=float,
+    def __init__(self, N, quad="LG", domain=(-1, 1), bc=(0, 0, 0, 0), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None, **kw):
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
@@ -1108,7 +1114,7 @@ class DirichletNeumann(CompositeBase):
 
     bc : tuple of numbers
         Boundary conditions at edges of domain. Dirichlet first.
-    domain : 2-tuple of floats, optional
+    domain : 2-tuple of numbers, optional
         The computational domain
     padding_factor : float, optional
         Factor for padding backward transforms.
@@ -1121,7 +1127,7 @@ class DirichletNeumann(CompositeBase):
         Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
 
     """
-    def __init__(self, N, quad="LG", bc=(0., 0.), domain=(-1., 1.), dtype=float,
+    def __init__(self, N, quad="LG", bc=(0, 0), domain=(-1, 1), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None, **kw):
         if isinstance(bc, (tuple, list)):
             bc = BoundaryConditions({'left': {'D': bc[0]}, 'right': {'N': bc[1]}}, domain=domain)
@@ -1170,7 +1176,7 @@ class LowerDirichlet(CompositeBase):
 
     bc : tuple of (number, None)
         Boundary conditions at edges of domain.
-    domain : 2-tuple of floats, optional
+    domain : 2-tuple of numbers, optional
         The computational domain
     padding_factor : float, optional
         Factor for padding backward transforms.
@@ -1183,7 +1189,7 @@ class LowerDirichlet(CompositeBase):
         Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
 
     """
-    def __init__(self, N, quad="LG", bc=(0, None), domain=(-1., 1.), dtype=float,
+    def __init__(self, N, quad="LG", bc=(0, None), domain=(-1, 1), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None, **kw):
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
@@ -1232,7 +1238,7 @@ class NeumannDirichlet(CompositeBase):
 
     bc : tuple of numbers
         Boundary conditions at edges of domain. Neumann first.
-    domain : 2-tuple of floats, optional
+    domain : 2-tuple of numbers, optional
         The computational domain
     padding_factor : float, optional
         Factor for padding backward transforms.
@@ -1245,7 +1251,7 @@ class NeumannDirichlet(CompositeBase):
         Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
 
     """
-    def __init__(self, N, quad="LG", bc=(0., 0.), domain=(-1., 1.), dtype=float,
+    def __init__(self, N, quad="LG", bc=(0, 0), domain=(-1, 1), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None, **kw):
         if isinstance(bc, (tuple, list)):
             bc = BoundaryConditions({'left': {'N': bc[0]}, 'right': {'D': bc[1]}}, domain=domain)
@@ -1297,7 +1303,7 @@ class UpperDirichletNeumann(CompositeBase):
 
     bc : tuple of numbers
         Boundary conditions at edges of domain, Dirichlet first.
-    domain : 2-tuple of floats, optional
+    domain : 2-tuple of numbers, optional
         The computational domain
     padding_factor : float, optional
         Factor for padding backward transforms.
@@ -1314,7 +1320,7 @@ class UpperDirichletNeumann(CompositeBase):
     This basis is not recommended as it leads to a poorly conditioned
     stiffness matrix.
     """
-    def __init__(self, N, quad="LG", bc=(0., 0.), domain=(-1., 1.), dtype=float,
+    def __init__(self, N, quad="LG", bc=(0, 0), domain=(-1, 1), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None, **kw):
         if isinstance(bc, (tuple, list)):
             bc = BoundaryConditions({'right': {'D': bc[0], 'N': bc[1]}}, domain=domain)
@@ -1365,7 +1371,7 @@ class Generic(CompositeBase):
 
         Any combination should be possible, and it should also be possible to
         use second derivatives `N2`. See :class:`~shenfun.spectralbase.BoundaryConditions`.
-    domain : 2-tuple of floats, optional
+    domain : 2-tuple of numbers, optional
         The computational domain
     dtype : data-type, optional
         Type of input data in real physical space. Will be overloaded when
@@ -1382,7 +1388,7 @@ class Generic(CompositeBase):
     A test function is always using homogeneous boundary conditions.
 
     """
-    def __init__(self, N, quad="LG", bc={}, domain=(-1., 1.), dtype=float,
+    def __init__(self, N, quad="LG", bc={}, domain=(-1, 1), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None, **kw):
         if not isinstance(bc, BoundaryConditions):
             bc = BoundaryConditions(bc, domain=domain)
@@ -1409,7 +1415,7 @@ class BCBase(CompositeBase):
     bc : dict
         The boundary conditions in dictionary form, see
         :class:`.BoundaryConditions`.
-    domain : 2-tuple, optional
+    domain : 2-tuple of numbers, optional
         The domain of the homogeneous space.
 
     """

@@ -51,7 +51,7 @@ __all__ = ['R2C', 'C2C']
 class FourierBase(SpectralBase):
     r"""Abstract base class for Fourier exponentials
     """
-    def __init__(self, N, padding_factor=1, domain=(0, 2*np.pi), dtype=float,
+    def __init__(self, N, padding_factor=1, domain=(0, 2*sp.pi), dtype=float,
                  dealias_direct=False, coordinates=None):
         self._k = None
         self._planned_axes = None  # Collapsing of axes means that this base can be used to plan transforms over several collapsed axes. Store the axes planned for here.
@@ -75,7 +75,7 @@ class FourierBase(SpectralBase):
             points = self.map_true_domain(points)
         if weighted:
             # weight is 1/self.domain_length() since this leads to the Kronecker delta function for mass matrix
-            return points, np.array([self.domain_factor()/N])
+            return points, np.array([float(self.domain_factor())/N])
         return points, np.array([2*np.pi/N])
 
     def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
@@ -125,10 +125,10 @@ class FourierBase(SpectralBase):
         return V
 
     # Reimplemented for efficiency (smaller array in *= when truncated)
-    def forward(self, input_array=None, output_array=None, fast_transform=True):
+    def forward(self, input_array=None, output_array=None, kind='fast'):
 
-        if fast_transform is False:
-            return SpectralBase.forward(self, input_array, output_array, False)
+        if kind == 'vandermonde':
+            return SpectralBase.forward(self, input_array, output_array, kind=kind)
 
         if input_array is not None:
             self.forward.input_array[...] = input_array
@@ -151,17 +151,14 @@ class FourierBase(SpectralBase):
             return SpectralBase.apply_inverse_mass(self, array)
         return array
 
-    def _evaluate_scalar_product(self, fast_transform=True):
-        if fast_transform is False:
-            SpectralBase._evaluate_scalar_product(self)
+    def _evaluate_scalar_product(self, kind='fast'):
+        if kind == 'vandermonde':
+            SpectralBase._evaluate_scalar_product(self, kind=kind)
             return
         output = self.scalar_product.xfftn()
         output *= self.get_normalization()
 
     def reference_domain(self):
-        return (0., 2*np.pi)
-
-    def sympy_reference_domain(self):
         return (0, 2*sp.pi)
 
     @property
@@ -280,7 +277,7 @@ class FourierBase(SpectralBase):
 
 
 class R2C(FourierBase):
-    """Fourier function space for real to complex transforms
+    r"""Fourier function space for real to complex transforms
 
     A basis function :math:`\phi_k` is given as
 
@@ -307,7 +304,7 @@ class R2C(FourierBase):
     padding_factor : float, optional
         Factor for padding backward transforms. padding_factor=1.5
         corresponds to a 3/2-rule for dealiasing.
-    domain : 2-tuple of floats, optional
+    domain : 2-tuple of numbers, optional
         The computational domain.
     dealias_direct : bool, optional
         True for dealiasing using 2/3-rule. Must be used with
@@ -317,7 +314,7 @@ class R2C(FourierBase):
 
     """
 
-    def __init__(self, N, padding_factor=1., domain=(0., 2.*np.pi),
+    def __init__(self, N, padding_factor=1., domain=(0, 2*sp.pi),
                  dealias_direct=False, coordinates=None, **kw):
         FourierBase.__init__(self, N, padding_factor=padding_factor, dtype=float,
                              domain=domain, dealias_direct=dealias_direct,
@@ -377,8 +374,8 @@ class R2C(FourierBase):
             return self.N//2+1
         return int(np.floor(self.padding_factor*self.N))
 
-    def _evaluate_expansion_all(self, input_array, output_array, x=None, fast_transform=True):
-        if fast_transform is False:
+    def _evaluate_expansion_all(self, input_array, output_array, x=None, kind='fast'):
+        if kind == 'vandermonde':
             assert abs(self.padding_factor-1) < 1e-8
             P = self.evaluate_basis_all(x=x)
             if output_array.ndim == 1:
@@ -475,7 +472,7 @@ class R2C(FourierBase):
 
 
 class C2C(FourierBase):
-    """Fourier function space for complex to complex transforms
+    r"""Fourier function space for complex to complex transforms
 
     A basis function :math:`\phi_k` is given as
 
@@ -495,7 +492,7 @@ class C2C(FourierBase):
     padding_factor : float, optional
         Factor for padding backward transforms. padding_factor=1.5
         corresponds to a 3/2-rule for dealiasing.
-    domain : 2-tuple of floats, optional
+    domain : 2-tuple of numbers, optional
         The computational domain.
     dealias_direct : bool, optional
         True for dealiasing using 2/3-rule. Must be used with
@@ -505,7 +502,7 @@ class C2C(FourierBase):
 
     """
 
-    def __init__(self, N, padding_factor=1, domain=(0., 2.*np.pi),
+    def __init__(self, N, padding_factor=1, domain=(0, 2*sp.pi),
                  dealias_direct=False, coordinates=None, **kw):
         FourierBase.__init__(self, N, padding_factor=padding_factor, dtype=complex,
                              domain=domain, dealias_direct=dealias_direct,
@@ -522,9 +519,9 @@ class C2C(FourierBase):
     def short_name():
         return 'C2C'
 
-    def _evaluate_expansion_all(self, input_array, output_array, x=None, fast_transform=True):
-        if fast_transform is False:
-            SpectralBase._evaluate_expansion_all(self, input_array, output_array, x, False)
+    def _evaluate_expansion_all(self, input_array, output_array, x=None, kind='fast'):
+        if kind == 'vandermonde':
+            SpectralBase._evaluate_expansion_all(self, input_array, output_array, x, kind=kind)
             return
         assert input_array is self.backward.tmp_array
         assert output_array is self.backward.output_array

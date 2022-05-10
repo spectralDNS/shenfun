@@ -16,7 +16,7 @@ from shenfun.config import config
 from .utilities import integrate_sympy
 
 __all__ = ['SparseMatrix', 'SpectralMatrix', 'extract_diagonal_matrix',
-           'extract_bc_matrices', 'check_sanity',
+           'extract_bc_matrices', 'check_sanity', 'assemble_sympy',
            'TPMatrix', 'BlockMatrix', 'BlockMatrices', 'Identity',
            'get_simplified_tpmatrices', 'ScipyMatrix', 'SpectralMatDict']
 
@@ -549,12 +549,21 @@ class SpectralMatrix(SparseMatrix):
         - 'quadrature' (default)
         - 'exact'
         - 'adaptive'
+
+        Exact and adaptive should result in the same matrix. Exact computes the
+        integral using `Sympy integrate <https://docs.sympy.org/latest/modules/integrals/integrals.html>`_,
+        whereas adaptive makes use of adaptive quadrature through `quadpy <adaptive quadrature through>`_.
     kind : None or str, optional
         The kind of method used to do quadrature.
 
         - 'implemented'
         - 'stencil'
         - 'vandermonde'
+
+        The default is to first try to look for implemented kind, and if that
+        fails try first 'stencil' and then finally fall back on vandermonde.
+        Vandermonde creates a dense matrix of size NxN, so it should be avoided
+        (e.g., by implementing the matrix) for large N.
     fixed_resolution : None or str, optional
         A fixed number of quadrature points used to compute the matrix.
         If 'fixed_resolution' is set, then assemble is set to 'quadrature' and
@@ -668,7 +677,7 @@ class SpectralMatrix(SparseMatrix):
                     _assembly_method += '_vandermonde'
 
         if test[0].domain_factor() != 1:
-            scale *= test[0].domain_factor()**(test[1]+trial[1]-1)
+            scale *= float(test[0].domain_factor())**(test[1]+trial[1]-1)
         SparseMatrix.__init__(self, d, shape, scale)
         self._assembly_method = _assembly_method
         self.incorporate_scale()
@@ -1889,7 +1898,6 @@ def _get_matrix(test, trial, measure=1, assemble=None, fixed_resolution=None):
 
         else:
             measure *= test[0].weight() # Weight of weighted space (in reference domain)
-            rd = test[0].sympy_reference_domain()
             domain = test[0].reference_domain()
             for i in range(test[0].slice().start, test[0].slice().stop):
                 pi = np.conj(test[0].sympy_basis(i, x=x))
@@ -1900,12 +1908,12 @@ def _get_matrix(test, trial, measure=1, assemble=None, fixed_resolution=None):
                     pj = trial[0].sympy_basis(j, x=x)
                     integrand = measure*pi.diff(x, test[1])*pj.diff(x, trial[1])
                     if assemble == 'exact':
-                        V[i, j] = integrate_sympy(integrand, (x, rd[0], rd[1]))
+                        V[i, j] = integrate_sympy(integrand, (x, domain[0], domain[1]))
                     elif assemble == 'adaptive':
                         if isinstance(integrand, Number):
-                            V[i, j] = integrand*(domain[1]-domain[0])
+                            V[i, j] = integrand*float(domain[1]-domain[0])
                         else:
-                            V[i, j] = quadpy.c1.integrate_adaptive(sp.lambdify(x, integrand), domain)[0]
+                            V[i, j] = quadpy.c1.integrate_adaptive(sp.lambdify(x, integrand), (float(domain[0]), float(domain[1])))[0]
 
     if V.dtype.char in 'FDG':
         ni = np.linalg.norm(V.imag)
@@ -1993,6 +2001,7 @@ def _assemble_stencil(test, trial, measure=1):
         ub = keysK[-1]-keysS[0]+q
         d = extract_diagonal_matrix(A, lowerband=lb, upperband=ub)
     else:
+        # compute the sparsity pattern
         Ac = A.tocsc()
         ub = Ac.getrow(0).indices
         ub2 = Ac.getrow(1).indices
@@ -2081,17 +2090,83 @@ def _assemble_phi_bc(test, trial, measure=1):
     d = d._storage
     return d
 
-def _assemble_sympy(test, trial, measure=1, implicit=True, assemble='exact'):
+def assemble_sympy(test, trial, measure=1, implicit=True, assemble='exact'):
     """Return sympy representation of mass matrix
-    """
-    Tv = test[0].get_orthogonal(domain=(-1, 1))
-    alpha = test[0].alpha
-    beta = test[0].beta
-    gn = test[0].gn
-    assert test[1]+trial[1] == 0, 'Only implemented for mass matrix, because need B to be diagonal.'
 
+    Parameters
+    ----------
+    test : :class:`.TestFunction` or 2-tuple of :class:`.SpectralBase`, int
+        If 2-tuple, then the integer represents the number of derivatives, which
+        should be zero for this function
+    trial : Like test but representing trial function
+    measure : Number or Sympy function
+        Function of coordinate
+    implicit : bool, optional
+        Whether to use unevaluated Sympy functions instead of the actual values
+        of the diagonals.
+    assemble : str, optional
+        - exact
+        - quadrature
+
+    Example
+    -------
+    >>> from shenfun import assemble_sympy, TrialFunction, TestFunction
+    >>> N = 8
+    >>> D = FunctionSpace(N, 'C', bc=(0, 0))
+    >>> v = TestFunction(D)
+    >>> u = TrialFunction(D)
+    >>> assemble_sympy(v, u, implicit=True)
+    (KroneckerDelta(i, j) - KroneckerDelta(i, j + 2))*h(i) - (KroneckerDelta(j, i + 2) - KroneckerDelta(i + 2, j + 2))*h(i + 2)
+    >>> assemble_sympy(v, u, implicit=False)
+    pi*(KroneckerDelta(i, j) - KroneckerDelta(i, j + 2))/2 - pi*(KroneckerDelta(j, i + 2) - KroneckerDelta(i + 2, j + 2))/2
+
+    Note that when implicit is True, then h(i) represents the l2-norm,
+    or the L2-norm (if exact) of the orthogonal basis.
+
+    >>> D = FunctionSpace(N, 'C', bc={'left': {'N': 0}, 'right': {'N': 0}})
+    >>> u = TrialFunction(D)
+    >>> v = TestFunction(D)
+    >>> assemble_sympy(v, u, implicit=True)
+    (KroneckerDelta(i, j) + KroneckerDelta(i, j + 2)*s2(j))*h(i) + (KroneckerDelta(j, i + 2) + KroneckerDelta(i + 2, j + 2)*s2(j))*h(i + 2)*k2(i)
+    >>> assemble_sympy(v, u, implicit=False)
+    -pi*i**2*(-j**2*KroneckerDelta(i + 2, j + 2)/(j + 2)**2 + KroneckerDelta(j, i + 2))/(2*(i + 2)**2) + pi*(-j**2*KroneckerDelta(i, j + 2)/(j + 2)**2 + KroneckerDelta(i, j))/2
+
+    Here the implicit version uses 'k' for the diagonals of the test function,
+    and 's' for the trial function. The number represents the location of the
+    diagonal, so 's2' is the second upper diagonal of the stencil matrix of the
+    trial function.
+
+    You can get the diagonals like this:
+    >>> import sympy as sp
+    >>> i, j = sp.symbols('i,j', integer=True)
+    >>> M = assemble_sympy(v, u, implicit=False)
+    >>> M.subs(j, i) # main diagonal
+    pi*i**4/(2*(i + 2)**4) + pi/2
+    >>> M.subs(j, i+2) # second upper diagonal
+    -pi*i**2/(2*(i + 2)**2)
+    >>> M.subs(j, i-2) # second lower diagonal
+    -pi*(i - 2)**2/(2*i**2)
+
+    i is the row number, so the last one starts for i=2.
+
+    """
+    if isinstance(test, tuple) and isinstance(trial, tuple):
+        assert len(test) == 2 and len(trial) == 2
+        assert test[1]+trial[1] == 0, 'Only implemented for mass matrix, because need B to be diagonal.'
+        test = test[0]
+        trial = trial[0]
+    else:
+        from shenfun.forms import TestFunction, TrialFunction
+        assert isinstance(test, TestFunction) and isinstance(trial, TrialFunction)
+        test = test.function_space()
+        trial = trial.function_space()
+
+    alpha = test.alpha
+    beta = test.beta
+    gn = test.gn
+    Tv = test.get_orthogonal(domain=(-1, 1))
     i, j, k, l, m = sp.symbols('i,j,k,l,m', integer=True)
-    K = test[0].sympy_stencil(i, k, implicit='k' if implicit else False)
+    K = test.sympy_stencil(i, k, implicit='k' if implicit else False)
     q = sp.degree(measure)
     if measure != 1:
         from shenfun.jacobi.recursions import a, matpow
@@ -2105,13 +2180,13 @@ def _assemble_sympy(test, trial, measure=1, implicit=True, assemble='exact'):
             A = A + sc*matpow(a, qi, alpha, beta, l, k, gn)
 
         if assemble == 'exact':
-            B = Tv.sympy_L2_norm_sq(l, implicit)*sp.KroneckerDelta(l, m)
+            B = Tv.sympy_L2_norm_sq(l)*sp.KroneckerDelta(l, m)
         else:
-            B = Tv.sympy_l2_norm_sq(l, implicit)*sp.KroneckerDelta(l, m)
+            B = Tv.sympy_l2_norm_sq(l)*sp.KroneckerDelta(l, m)
         S = trial[0].sympy_stencil(j, m, implicit='s' if implicit else False)
         A = K * A * B * S
         M = sp.S(0)
-        nd = test[0].N-test[0].dim()
+        nd = test.N-test.dim()
         for kk in range(-nd, nd+1):
             M1 = A.subs(k, i + kk)
             for ll in range(-q, q+1):
@@ -2121,10 +2196,10 @@ def _assemble_sympy(test, trial, measure=1, implicit=True, assemble='exact'):
                     M += M3
     else:
         if assemble == 'exact':
-            B = Tv.sympy_L2_norm_sq(k, implicit)*sp.KroneckerDelta(k, l)
+            B = Tv.sympy_L2_norm_sq(k)*sp.KroneckerDelta(k, l)
         else:
-            B = Tv.sympy_l2_norm_sq(k, implicit)*sp.KroneckerDelta(k, l)
-        S = trial[0].sympy_stencil(j, l, implicit='s' if implicit else False)
+            B = Tv.sympy_l2_norm_sq(k)*sp.KroneckerDelta(k, l)
+        S = trial.sympy_stencil(j, l, implicit='s' if implicit else False)
         A = K * B * S
         M = sp.S(0)
         nd = test[0].N-test[0].dim()
@@ -2134,6 +2209,24 @@ def _assemble_sympy(test, trial, measure=1, implicit=True, assemble='exact'):
                 M2 = M1.subs(l, i + kk + ll)
                 M += M2
     return M
+
+def sympy2SparseMatrix(sympymat, shape):
+    i, j = sp.symbols('i,j', integer=True)
+    d = {}
+    M, N = shape
+    numzerorow = 0
+    for k in range(N):
+        val = sp.simplify(sympymat.subs(j, i+k))
+        if val == 0:
+            numzerorow += 1
+            if numzerorow >=2:
+                break
+            continue
+        d[k] = np.array([val.subs(i, l) for l in np.arange(min(M, N-k))]).astype(float)
+        if k > 0:
+            d[-k] = d[k].copy()
+        numzerorow = 0
+    return SparseMatrix(d, shape)
 
 
 class SpectralMatDict(dict):

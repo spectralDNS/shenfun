@@ -76,7 +76,7 @@ class Orthogonal(SpectralBase):
 
         - GC - Chebyshev-Gauss
         - GU - Chebyshevu-Gauss
-    domain : 2-tuple of floats, optional
+    domain : 2-tuple of numbers, optional
         The computational domain
     dtype : data-type, optional
         Type of input data in real physical space. Will be overloaded when
@@ -228,8 +228,8 @@ class Orthogonal(SpectralBase):
         i = np.arange(1, M)[None, :]
         return V[:, 1:]/i
 
-    def _evaluate_scalar_product(self, fast_transform=True):
-        if fast_transform is False:
+    def _evaluate_scalar_product(self, kind='fast'):
+        if kind == 'vandermonde':
             SpectralBase._evaluate_scalar_product(self)
             return
 
@@ -243,8 +243,8 @@ class Orthogonal(SpectralBase):
             out = self.scalar_product.xfftn()
             out *= (np.pi/(2*self.N*self.padding_factor*self.domain_factor()))
 
-    def _evaluate_expansion_all(self, input_array, output_array, x=None, fast_transform=True):
-        if fast_transform is False:
+    def _evaluate_expansion_all(self, input_array, output_array, x=None, kind='fast'):
+        if kind == 'vandermonde':
             SpectralBase._evaluate_expansion_all(self, input_array, output_array, x, False)
             return
 
@@ -384,7 +384,7 @@ class Phi1(CompositeBase):
         - GU - Chebyshevu-Gauss
     bc : 2-tuple of floats, optional
         Boundary conditions at, respectively, x=(-1, 1).
-    domain : 2-tuple of floats, optional
+    domain : 2-tuple of numbers, optional
         The computational domain
     scaled : boolean, optional
         Whether or not to scale basis function n by 1/(n+2)
@@ -399,7 +399,7 @@ class Phi1(CompositeBase):
         Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
 
     """
-    def __init__(self, N, quad="GU", bc=(0., 0.), domain=(-1., 1.), dtype=float,
+    def __init__(self, N, quad="GU", bc=(0., 0.), domain=(-1, 1), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None, scaled=False, **kw):
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
@@ -466,7 +466,7 @@ class Phi2(CompositeBase):
         - GU - Chebyshevu-Gauss
     bc : 4-tuple of floats, optional
         2 boundary conditions at, respectively, x=-1 and x=1.
-    domain : 2-tuple of floats, optional
+    domain : 2-tuple of numbers, optional
         The computational domain
     dtype : data-type, optional
         Type of input data in real physical space. Will be overloaded when
@@ -544,7 +544,7 @@ class Phi3(CompositeBase):
         - GU - Chebyshevu-Gauss
     bc : 6-tuple of floats, optional
         3 boundary conditions at, respectively, x=-1 and x=1.
-    domain : 2-tuple of floats, optional
+    domain : 2-tuple of numbers, optional
         The computational domain
     dtype : data-type, optional
         Type of input data in real physical space. Will be overloaded when
@@ -614,7 +614,7 @@ class Phi4(CompositeBase):
         - GC - Chebyshev-Gauss
         - GU - Chebyshevu-Gauss
     bc : 8-tuple of numbers
-    domain : 2-tuple of floats, optional
+    domain : 2-tuple of numbers, optional
         The computational domain
     dtype : data-type, optional
         Type of input data in real physical space. Will be overloaded when
@@ -694,7 +694,7 @@ class CompactDirichlet(CompositeBase):
         - GU - Chebyshevu-Gauss
     bc : 2-tuple of floats, optional
         Boundary conditions at, respectively, x=(-1, 1).
-    domain : 2-tuple of floats, optional
+    domain : 2-tuple of numbers, optional
         The computational domain
     dtype : data-type, optional
         Type of input data in real physical space. Will be overloaded when
@@ -764,7 +764,7 @@ class CompactNeumann(CompositeBase):
         - GU - Chebyshevu-Gauss
     bc : 2-tuple of floats, optional
         Boundary conditions at, respectively, x=(-1, 1).
-    domain : 2-tuple of floats, optional
+    domain : 2-tuple of numbers, optional
         The computational domain
     dtype : data-type, optional
         Type of input data in real physical space. Will be overloaded when
@@ -825,7 +825,7 @@ class UpperDirichlet(CompositeBase):
         - GU - Chebyshevu-Gauss
     bc : 2-tuple of (None, number), optional
         Boundary condition at x=1.
-    domain : 2-tuple of floats, optional
+    domain : 2-tuple of numbers, optional
         The computational domain
     dtype : data-type, optional
         Type of input data in real physical space. Will be overloaded when
@@ -838,7 +838,7 @@ class UpperDirichlet(CompositeBase):
          Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
 
     """
-    def __init__(self, N, quad="GU", bc=(None, 0), domain=(-1., 1.), dtype=float,
+    def __init__(self, N, quad="GU", bc=(None, 0), domain=(-1, 1), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None, **kw):
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
@@ -883,7 +883,7 @@ class LowerDirichlet(CompositeBase):
         - GU - Chebyshevu-Gauss
     bc : 2-tuple of (number, None), optional
         Boundary condition at x=-1.
-    domain : 2-tuple of floats, optional
+    domain : 2-tuple of numbers, optional
         The computational domain
     dtype : data-type, optional
         Type of input data in real physical space. Will be overloaded when
@@ -896,7 +896,7 @@ class LowerDirichlet(CompositeBase):
          Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
 
     """
-    def __init__(self, N, quad="GU", bc=(None, 0), domain=(-1., 1.), dtype=float,
+    def __init__(self, N, quad="GU", bc=(None, 0), domain=(-1, 1), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None, **kw):
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
@@ -944,7 +944,7 @@ class Generic(CompositeBase):
 
         Any combination should be possible, and it should also be possible to
         use second derivatives `N2`. See :class:`~shenfun.spectralbase.BoundaryConditions`.
-    domain : 2-tuple of floats, optional
+    domain : 2-tuple of numbers, optional
         The computational domain
     dtype : data-type, optional
         Type of input data in real physical space. Will be overloaded when
@@ -957,7 +957,7 @@ class Generic(CompositeBase):
         Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
 
     """
-    def __init__(self, N, quad="GC", bc={}, domain=(-1., 1.), dtype=float,
+    def __init__(self, N, quad="GC", bc={}, domain=(-1, 1), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None, **kw):
         from shenfun.utilities.findbasis import get_stencil_matrix
         self._stencil = get_stencil_matrix(bc, 'chebyshevu')

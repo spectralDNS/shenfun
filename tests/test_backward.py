@@ -101,8 +101,8 @@ def test_padding(family):
     #u[:(N-2)] = np.random.random(N-2)
     u[:(N-2)] = 1
     up = Array(Bp)
-    up = Bp.backward(u, fast_transform=False)
-    uf = Bp.forward(up, fast_transform=False)
+    up = Bp.backward(u, kind="vandermonde")
+    uf = Bp.forward(up, kind="vandermonde")
     assert np.linalg.norm(uf-u) < 1e-12
     if family == 'C':
         up = Bp.backward(u)
@@ -140,8 +140,8 @@ def test_padding_neumann(family):
     u = Function(B)
     u[1:-2] = np.random.random(N-3)
     up = Array(Bp)
-    up = Bp.backward(u, fast_transform=False)
-    uf = Bp.forward(up, fast_transform=False)
+    up = Bp.backward(u, kind="vandermonde")
+    uf = Bp.forward(up, kind="vandermonde")
     assert np.linalg.norm(uf-u) < 1e-12
     if family == 'C':
         up = Bp.backward(u)
@@ -179,12 +179,12 @@ def test_padding_orthogonal(family):
     u[:] = np.random.random(u.shape)
     up = Array(Bp)
     if family != 'F':
-        up = Bp.backward(u, fast_transform=False)
-        uf = Bp.forward(up, fast_transform=False)
+        up = Bp.backward(u, kind="vandermonde")
+        uf = Bp.forward(up, kind="vandermonde")
         assert np.linalg.norm(uf-u) < 1e-12
     if family in ('C', 'F'):
-        up = Bp.backward(u, fast_transform=True)
-        uf = Bp.forward(up, fast_transform=True)
+        up = Bp.backward(u, kind="fast")
+        uf = Bp.forward(up, kind="fast")
         assert np.linalg.norm(uf-u) < 1e-12
 
     # Test padding 2D
@@ -219,8 +219,8 @@ def test_padding_biharmonic(family):
     u = Function(B)
     u[:(N-4)] = np.random.random(N-4)
     up = Array(Bp)
-    up = Bp.backward(u, fast_transform=False)
-    uf = Bp.forward(up, fast_transform=False)
+    up = Bp.backward(u, kind="vandermonde")
+    uf = Bp.forward(up, kind="vandermonde")
     assert np.linalg.norm(uf-u) < 1e-12
     if family == 'C':
         up = Bp.backward(u)

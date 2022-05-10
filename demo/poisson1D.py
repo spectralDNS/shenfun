@@ -74,7 +74,6 @@ def main(N, family, bc):
     u_hat = Function(SD)
     M = la.Solver(A0)
     u_hat = M(f_hat, u_hat, constraints=constraint)
-
     # Transform to real space
     uj = u_hat.backward()
 
