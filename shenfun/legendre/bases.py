@@ -79,6 +79,12 @@ except:
     has_quadpy = False
     mp = None
 
+try:
+    import numba
+    has_numba = True
+except:
+    has_numba = False
+
 mode = config['bases']['legendre']['mode']
 mode = mode if has_quadpy else 'numpy'
 
@@ -310,7 +316,7 @@ class Orthogonal(SpectralBase):
     def _evaluate_scalar_product(self, kind='vandermonde'):
         input_array = self.scalar_product.input_array
         output_array = self.scalar_product.tmp_array
-        if input_array.ndim > 1:
+        if input_array.ndim > 1 or not has_numba:
             kind = 'vandermonde'
         if kind == 'vandermonde':
             SpectralBase._evaluate_scalar_product(self)
@@ -393,7 +399,7 @@ class ShenDirichlet(CompositeBase):
 
     def _evaluate_expansion_all(self, input_array, output_array,
                                 x=None, kind='vandermonde'):
-        if input_array.ndim > 1:
+        if input_array.ndim > 1 or not has_numba:
             kind = 'vandermonde'
         if kind == 'vandermonde':
             SpectralBase._evaluate_expansion_all(self, input_array, output_array, x, kind=kind)
@@ -405,7 +411,7 @@ class ShenDirichlet(CompositeBase):
     def _evaluate_scalar_product(self, kind='vandermonde'):
         input_array = self.scalar_product.input_array
         output_array = self.scalar_product.tmp_array
-        if input_array.ndim > 1:
+        if input_array.ndim > 1 or not has_numba:
             kind = 'vandermonde'
         if kind == 'vandermonde':
             SpectralBase._evaluate_scalar_product(self)
@@ -549,7 +555,7 @@ class ShenNeumann(CompositeBase):
     def _evaluate_scalar_product(self, kind='vandermonde'):
         input_array = self.scalar_product.input_array
         output_array = self.scalar_product.tmp_array
-        if input_array.ndim > 1:
+        if input_array.ndim > 1 or not has_numba:
             kind = 'vandermonde'
         if kind == 'vandermonde':
             SpectralBase._evaluate_scalar_product(self)
@@ -565,7 +571,7 @@ class ShenNeumann(CompositeBase):
 
     def _evaluate_expansion_all(self, input_array, output_array,
                                 x=None, kind='vandermonde'):
-        if input_array.ndim > 1:
+        if input_array.ndim > 1 or not has_numba:
             kind = 'vandermonde'
         if kind == 'vandermonde':
             SpectralBase._evaluate_expansion_all(self, input_array, output_array, x, kind=kind)
