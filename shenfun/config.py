@@ -6,6 +6,11 @@ import yaml
 # The configuration can be overloaded by a local 'shenfun.yaml' file, or
 # in '~/.shenfun/shenfun.yaml'. A yaml file to work with can be created
 # using the `dumpconfig` function below
+try:
+    import numba
+    has_numba = True
+except:
+    has_numba = False
 
 config = {
     'optimization':
@@ -20,7 +25,7 @@ config = {
             {
                 'chebyshev': 'fast',
                 'fourier': 'fast',
-                'legendre': 'fast'
+                'legendre': 'fast' if has_numba else 'vandermonde'
             }) # The other families need to have Orthogonal basis overload _evaluate_scalar_product and _evaluate_expansion_all
     },
     'matrix':
