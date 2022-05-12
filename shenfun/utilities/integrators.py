@@ -205,6 +205,7 @@ class IRK3(IntegratorBase):
             t += dt
             tstep += 1
             self.update(u, u_hat, t, tstep, **self.params)
+        return u_hat
 
 class BackwardEuler(IntegratorBase):
     """First order backward Euler
@@ -288,6 +289,7 @@ class BackwardEuler(IntegratorBase):
             t += dt
             tstep += 1
             self.update(u, u_hat, t, tstep, **self.params)
+        return u_hat
 
 
 class ETD(IntegratorBase):
