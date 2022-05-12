@@ -38,7 +38,7 @@ to the orthogonal basis.
 """
 
 from __future__ import division
-import functools
+import importlib
 import sympy as sp
 import numpy as np
 from numpy.polynomial import legendre as leg
@@ -51,6 +51,7 @@ from shenfun.matrixbase import SparseMatrix
 from shenfun.utilities import n
 from .lobatto import legendre_lobatto_nodes_and_weights
 from . import fastgl
+
 
 bases = ['Orthogonal',
          'ShenDirichlet',
@@ -318,11 +319,11 @@ class Orthogonal(SpectralBase):
         if kind == 'vandermonde':
             SpectralBase._evaluate_expansion_all(self, input_array, output_array, x, kind=kind)
             return
+        mod = config['optimization']['mode']
+        legn = importlib.import_module('.'.join(('shenfun.optimization', mod, 'legendre')))
         if x is None:
             x = self.mesh(False, False)
-        from shenfun.optimization.numba import legendre as legn
-        legn.evaluate_expansion_all(input_array, output_array, self.axis, x)
-
+        legn.evaluate_expansion_all(input_array, output_array, x, self.axis)
 
     def _evaluate_scalar_product(self, kind='fast'):
         input_array = self.scalar_product.input_array
@@ -334,8 +335,9 @@ class Orthogonal(SpectralBase):
         xj, wj = self.points_and_weights(M)
         if self.domain_factor() != 1:
             wj /= float(self.domain_factor())
-        from shenfun.optimization.numba import legendre as legn
-        legn.scalar_product(input_array, output_array, self.axis, xj, wj)
+        mod = config['optimization']['mode']
+        legn = importlib.import_module('.'.join(('shenfun.optimization', mod, 'legendre')))
+        legn.scalar_product(input_array, output_array, xj, wj, self.axis)
 
 CompositeBase = getCompositeBase(Orthogonal)
 

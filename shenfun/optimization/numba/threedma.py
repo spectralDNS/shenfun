@@ -1,5 +1,5 @@
 import numba as nb
-from .la import Solve_axis_2D, Solve_axis_3D
+from .la import Solve_axis_2D, Solve_axis_3D, Solve_axis_4D
 
 __all__ = ['ThreeDMA_Solve', 'ThreeDMA_inner_solve']
 
@@ -11,6 +11,8 @@ def ThreeDMA_Solve(x, data, axis=0):
         Solve_axis_2D(data, x, ThreeDMA_inner_solve, axis)
     elif n == 3:
         Solve_axis_3D(data, x, ThreeDMA_inner_solve, axis)
+    elif n == 4:
+        Solve_axis_4D(data, x, ThreeDMA_inner_solve, axis)
 
 @nb.jit(nopython=True, fastmath=True, cache=True)
 def ThreeDMA_inner_solve(u, data):
