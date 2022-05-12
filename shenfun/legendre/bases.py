@@ -133,9 +133,9 @@ class Orthogonal(SpectralBase):
         self.alpha = 0
         self.beta = 0
         self.gn = 1
-        self.forward = functools.partial(self.forward, kind='vandermonde')
-        self.backward = functools.partial(self.backward, kind='vandermonde')
-        self.scalar_product = functools.partial(self.scalar_product, kind='vandermonde')
+        #self.forward = functools.partial(self.forward, kind='vandermonde')
+        #self.backward = functools.partial(self.backward, kind='vandermonde')
+        #self.scalar_product = functools.partial(self.scalar_product, kind='vandermonde')
         self.plan(int(padding_factor*N), 0, dtype, {})
 
     @staticmethod
@@ -313,20 +313,29 @@ class Orthogonal(SpectralBase):
             return output_array
         return input_array
 
-    def _evaluate_scalar_product(self, kind='vandermonde'):
+    def _evaluate_expansion_all(self, input_array, output_array,
+                                x=None, kind='fast'):
+        if kind == 'vandermonde':
+            SpectralBase._evaluate_expansion_all(self, input_array, output_array, x, kind=kind)
+            return
+        if x is None:
+            x = self.mesh(False, False)
+        from shenfun.optimization.numba import legendre as legn
+        legn.evaluate_expansion_all(input_array, output_array, self.axis, x)
+
+
+    def _evaluate_scalar_product(self, kind='fast'):
         input_array = self.scalar_product.input_array
         output_array = self.scalar_product.tmp_array
-        if input_array.ndim > 1 or not has_numba:
-            kind = 'vandermonde'
         if kind == 'vandermonde':
             SpectralBase._evaluate_scalar_product(self)
             return
         M = self.shape(False)
         xj, wj = self.points_and_weights(M)
         if self.domain_factor() != 1:
-            wj /= self.domain_factor()
+            wj /= float(self.domain_factor())
         from shenfun.optimization.numba import legendre as legn
-        legn.legendre_orthogonal_scalar_product(xj, wj, input_array, output_array)
+        legn.scalar_product(input_array, output_array, self.axis, xj, wj)
 
 CompositeBase = getCompositeBase(Orthogonal)
 
@@ -397,35 +406,6 @@ class ShenDirichlet(CompositeBase):
     def short_name():
         return 'SD'
 
-    def _evaluate_expansion_all(self, input_array, output_array,
-                                x=None, kind='vandermonde'):
-        if input_array.ndim > 1 or not has_numba:
-            kind = 'vandermonde'
-        if kind == 'vandermonde':
-            SpectralBase._evaluate_expansion_all(self, input_array, output_array, x, kind=kind)
-            return
-        xj, _ = self.points_and_weights(self.N)
-        from shenfun.optimization.numba import legendre as legn
-        legn.legendre_shendirichlet_evaluate_expansion_all(xj, input_array, output_array, self.is_scaled())
-
-    def _evaluate_scalar_product(self, kind='vandermonde'):
-        input_array = self.scalar_product.input_array
-        output_array = self.scalar_product.tmp_array
-        if input_array.ndim > 1 or not has_numba:
-            kind = 'vandermonde'
-        if kind == 'vandermonde':
-            SpectralBase._evaluate_scalar_product(self)
-            output_array[self.si[-2]] = 0
-            output_array[self.si[-1]] = 0
-            return
-        M = self.shape(False)
-        xj, wj = self.points_and_weights(M)
-        if self.domain_factor() != 1:
-            wj /= self.domain_factor()
-        from shenfun.optimization.numba import legendre as legn
-        legn.legendre_shendirichlet_scalar_product(xj, wj, input_array, output_array, self.is_scaled())
-        output_array[self.si[-2]] = 0
-        output_array[self.si[-1]] = 0
 
 class Phi1(CompositeBase):
     r"""Function space for Dirichlet boundary conditions
@@ -551,37 +531,6 @@ class ShenNeumann(CompositeBase):
     @staticmethod
     def short_name():
         return 'SN'
-
-    def _evaluate_scalar_product(self, kind='vandermonde'):
-        input_array = self.scalar_product.input_array
-        output_array = self.scalar_product.tmp_array
-        if input_array.ndim > 1 or not has_numba:
-            kind = 'vandermonde'
-        if kind == 'vandermonde':
-            SpectralBase._evaluate_scalar_product(self)
-            output_array[self.sl[slice(-2, None)]] = 0
-            return
-
-        xj, wj = self.points_and_weights(self.N)
-        if self.domain_factor() != 1:
-            wj /= self.domain_factor()
-        from shenfun.optimization.numba import legendre as legn
-        legn.legendre_shenneumann_scalar_product(xj, wj, input_array, output_array)
-        output_array[self.sl[slice(-2, None)]] = 0
-
-    def _evaluate_expansion_all(self, input_array, output_array,
-                                x=None, kind='vandermonde'):
-        if input_array.ndim > 1 or not has_numba:
-            kind = 'vandermonde'
-        if kind == 'vandermonde':
-            SpectralBase._evaluate_expansion_all(self, input_array, output_array, x, kind=kind)
-            return
-        xj, _ = self.points_and_weights(self.N)
-        try:
-            from shenfun.optimization.numba import legendre as legn
-            legn.legendre_shenneumann_evaluate_expansion_all(xj, input_array, output_array)
-        except:
-            raise RuntimeError('Requires Numba')
 
 
 class ShenBiharmonic(CompositeBase):

@@ -1,8 +1,51 @@
 import numba as nb
 import numpy as np
 
+def scalar_product(input_array, output_array, axis, x, w):
+    n = input_array.ndim
+    if n == 1:
+        orthogonal_scalar_product(input_array, output_array, x, w)
+    elif n == 2:
+        fun_2D(orthogonal_scalar_product, input_array, output_array, axis, x, w)
+    elif n == 3:
+        fun_3D(orthogonal_scalar_product, input_array, output_array, axis, x, w)
+
+def evaluate_expansion_all(input_array, output_array, axis, x):
+    n = input_array.ndim
+    if n == 1:
+        orthogonal_evaluate_expansion_all(input_array, output_array, x)
+    elif n == 2:
+        fun_2D(orthogonal_evaluate_expansion_all, input_array, output_array, axis, x)
+    elif n == 3:
+        fun_3D(orthogonal_evaluate_expansion_all, input_array, output_array, axis, x)
+
 @nb.jit(nopython=True, fastmath=True, cache=True)
-def legendre_orthogonal_scalar_product(xj, wj, input_array, output_array):
+def fun_2D(fun, input_array, output_array, axis, *args):
+    if axis == 0:
+        for j in range(input_array.shape[1]):
+            fun(input_array[:, j], output_array[:, j], *args)
+    elif axis == 1:
+        for i in range(input_array.shape[0]):
+            fun(input_array[i], output_array[i], *args)
+
+@nb.jit(nopython=True, fastmath=True, cache=True)
+def fun_3D(fun, input_array, output_array, axis, *args):
+    if axis == 0:
+        for j in range(input_array.shape[1]):
+            for k in range(input_array.shape[2]):
+                fun(input_array[:, j, k], output_array[:, j, k], *args)
+    elif axis == 1:
+        for i in range(input_array.shape[0]):
+            for k in range(input_array.shape[2]):
+                fun(input_array[i, :, k], output_array[i, :, k], *args)
+    elif axis == 2:
+        for i in range(input_array.shape[0]):
+            for j in range(input_array.shape[1]):
+                fun(input_array[i, j], output_array[i, j], *args)
+
+
+@nb.jit(nopython=True, fastmath=True, cache=True)
+def orthogonal_scalar_product(input_array, output_array, xj, wj):
     N = xj.shape[0]
     Lnm = np.ones_like(xj)
     Ln = xj.copy()
@@ -18,73 +61,10 @@ def legendre_orthogonal_scalar_product(xj, wj, input_array, output_array):
             Lnp[j] = s1*xj[j]*Ln[j] - s2*Lnm[j]
         output_array[i] = s
 
-@nb.jit(nopython=True, fastmath=True, cache=True)
-def legendre_shendirichlet_scalar_product(xj, wj, input_array, output_array, is_scaled=True):
-    N = xj.shape[0]
-    phi_i = np.zeros_like(xj)
-    Lnm = np.ones_like(xj)
-    Ln = xj.copy()
-    Lnp = ((2+1)*xj*Ln - 1*Lnm)/2
-    for i in range(N-2):
-        s = 0.0
-        s2 = (i+2)/(i+3)
-        s1 = (2*(i+2)+1)/(i+3)
-        ss = np.sqrt(4*i+6)
-        for j in range(N):
-            phi_i[j] = Lnm[j]-Lnp[j]
-            if is_scaled:
-                phi_i[j] /= ss
-            s += phi_i[j]*wj[j]*input_array[j]
-            Lnm[j] = Ln[j]
-            Ln[j] = Lnp[j]
-            Lnp[j] = s1*xj[j]*Ln[j] - s2*Lnm[j]
-        output_array[i] = s
 
 @nb.jit(nopython=True, fastmath=True, cache=True)
-def legendre_shenneumann_scalar_product(xj, wj, input_array, output_array):
+def orthogonal_evaluate_expansion_all(input_array, output_array, xj):
     N = xj.shape[0]
-    phi_i = np.zeros_like(xj)
-    Lnm = np.ones_like(xj)
-    Ln = xj.copy()
-    Lnp = ((2+1)*xj*Ln - 1*Lnm)/2
-    for i in range(N-2):
-        s = 0.0
-        s2 = (i+2)/(i+3)
-        s1 = (2*(i+2)+1)/(i+3)
-        for j in range(N):
-            phi_i[j] = Lnm[j]-Lnp[j]*(i*(i+1)/(i+2)/(i+3))
-            s += phi_i[j]*wj[j]*input_array[j]
-            Lnm[j] = Ln[j]
-            Ln[j] = Lnp[j]
-            Lnp[j] = s1*xj[j]*Ln[j] - s2*Lnm[j]
-        output_array[i] = s
-
-@nb.jit(nopython=True, fastmath=True, cache=True)
-def legendre_shendirichlet_evaluate_expansion_all(xj, input_array, output_array, is_scaled=True):
-    N = xj.shape[0]
-    phi_i = np.zeros_like(xj)
-    Lnm = np.ones_like(xj)
-    Ln = xj.copy()
-    Lnp = ((2+1)*xj*Ln - 1*Lnm)/2
-    output_array[:] = 0
-    for i in range(N-2):
-        s2 = (i+2)/(i+3)
-        s1 = (2*(i+2)+1)/(i+3)
-        ss = np.sqrt(4*i+6)
-        for j in range(N):
-            phi_i[j] = Lnm[j]-Lnp[j]
-            if is_scaled:
-                phi_i[j] /= ss
-
-            output_array[j] += phi_i[j]*input_array[i]
-            Lnm[j] = Ln[j]
-            Ln[j] = Lnp[j]
-            Lnp[j] = s1*xj[j]*Ln[j] - s2*Lnm[j]
-
-@nb.jit(nopython=True, fastmath=True, cache=True)
-def legendre_shenneumann_evaluate_expansion_all(xj, input_array, output_array):
-    N = xj.shape[0]
-    phi_i = np.zeros_like(xj)
     Lnm = np.ones_like(xj)
     Ln = xj.copy()
     Lnp = ((2+1)*xj*Ln - 1*Lnm)/2
@@ -93,8 +73,7 @@ def legendre_shenneumann_evaluate_expansion_all(xj, input_array, output_array):
         s2 = (i+2)/(i+3)
         s1 = (2*(i+2)+1)/(i+3)
         for j in range(N):
-            phi_i[j] = Lnm[j]-Lnp[j]*(i*(i+1)/(i+2)/(i+3))
-            output_array[j] += phi_i[j]*input_array[i]
+            output_array[j] += Lnm[j]*input_array[i]
             Lnm[j] = Ln[j]
             Ln[j] = Lnp[j]
             Lnp[j] = s1*xj[j]*Ln[j] - s2*Lnm[j]

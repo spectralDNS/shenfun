@@ -642,7 +642,9 @@ def scalar_product(v, f, output_array=None, assemble='exact'):
     f : Sympy function
     output_array : :class:`.Function`
     assemble : str, optional
-        'exact' or 'adaptive'
+
+        - 'exact'
+        - 'adaptive'
 
     Note
     ----

@@ -314,7 +314,6 @@ class SpectralBase:
             if len(kind) > 1:
                 mesh = np.squeeze(mesh[self.axis])
             kind = 'vandermonde'
-
         self._evaluate_expansion_all(self.backward.tmp_array,
                                      self.backward.output_array,
                                      x=mesh, kind=kind)
@@ -1428,9 +1427,7 @@ def getCompositeBase(Orthogonal):
 
         def _evaluate_expansion_all(self, input_array, output_array, x=None, kind=None):
             if kind == 'fast':
-                assert self.family() in ('fourier', 'chebyshev', 'legendre'), f'Fast method not implemented for {self.family()} family'
-                if output_array.ndim > 1 and self.family() == 'legendre':
-                    kind = 'vandermonde'
+                assert self.family() in ('fourier', 'chebyshev', 'chebyshevu', 'legendre'), f'Fast method not implemented for {self.family()} family'
             if kind == 'vandermonde':
                 SpectralBase._evaluate_expansion_all(self, input_array, output_array, x, kind)
                 return
@@ -1442,9 +1439,7 @@ def getCompositeBase(Orthogonal):
         def _evaluate_scalar_product(self, kind=None):
             output = self.scalar_product.tmp_array
             if kind == 'fast':
-                assert self.family() in ('fourier', 'chebyshev', 'legendre'), f'Fast method not implemented for {self.family()} family'
-                if output.ndim > 1 and self.family() == 'legendre':
-                    kind = 'vandermonde'
+                assert self.family() in ('fourier', 'chebyshev', 'chebyshevu', 'legendre'), f'Fast method not implemented for {self.family()} family'
             if kind == 'vandermonde':
                 SpectralBase._evaluate_scalar_product(self)
                 output[self.sl[slice(-(self.N-self.dim()), None)]] = 0

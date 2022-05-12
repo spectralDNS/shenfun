@@ -1537,21 +1537,21 @@ class Function(ShenfunBaseArray, BasisFunction):
         """
         return self.function_space().eval(x, self, output_array)
 
-    def backward(self, output_array=None, kind='normal', padding_factor=None):
+    def backward(self, output_array=None, kind=None, padding_factor=None):
         """Return Function evaluated on some quadrature mesh
 
         Parameters
         ----------
         output_array : array, optional
             Return array, Function evaluated on mesh
-        kind : str or function space
-            There are three kinds of backward transforms
+        kind : str or function space, optional
 
-            - 'normal' - evaluate Function on its quadrature mesh
-            - 'uniform' - evaluate Function on uniform mesh
-            - function space - evaluate Function on the quadrature mesh of the
-              given function space. This could be a :func:`.FunctionSpace`
-              if 1D, or a :class:`.TensorProductSpace` if multidimensional.
+            - 'fast' - Use fast transform on regular quadrature points
+            - 'vandermonde' - use Vandermonde on regular quadrature points
+            - 'uniform' - use Vandermonde on uniform mesh
+            - instance of :class:`.SpectralBase` - use Vandermonde and quadrature
+              mesh of this space.
+
         padding_factor : None or number, optional
             If padding_factor is a number different from 1, then perform a
             padded backward transform, using a padded work array
@@ -1572,22 +1572,16 @@ class Function(ShenfunBaseArray, BasisFunction):
                 else:
                     output_array = Array(space)
                     space._backward_work_array = output_array
-            output_array = space.backward(self, output_array)
+            output_array = space.backward(self, output_array, kind=kind)
             return output_array
 
         space = self.function_space()
-        if hasattr(kind, 'mesh'):
-            if output_array is None:
-                output_array = Array(kind)
-            output_array = space.backward(self, output_array, kind=kind)
-            return output_array
-        assert isinstance(kind, str)
         if output_array is None:
-            output_array = Array(space)
-        if kind.lower() == 'uniform':
-            output_array = space.backward(self, output_array, kind='uniform')
-        elif kind.lower() == 'normal':
-            output_array = space.backward(self, output_array)
+            if hasattr(kind, 'mesh'):
+                output_array = Array(kind)
+            else:
+                output_array = Array(space)
+        output_array = space.backward(self, output_array, kind=kind)
         return output_array
 
     def get_dealiased_space(self, padding_factor):
@@ -1919,12 +1913,21 @@ class Array(ShenfunBaseArray):
     def forward_output(self):
         return False
 
-    def forward(self, output_array=None):
-        """Return Function used to evaluate Array"""
+    def forward(self, output_array=None, kind=None):
+        """Return Function used to evaluate Array
+
+        Parameters
+        ----------
+        output_array : array, optional
+            Expansion coefficients
+        kind : str, optional
+            - 'fast' - use fast transform if implemented
+            - 'vandermonde' - Use Vandermonde matrix
+        """
         space = self.function_space()
         if output_array is None:
             output_array = Function(space)
-        output_array = space.forward(self, output_array)
+        output_array = space.forward(self, output_array, kind=kind)
         return output_array
 
     def offset(self):

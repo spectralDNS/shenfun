@@ -486,31 +486,31 @@ class ShenDirichlet(CompositeBase):
     def short_name():
         return 'SD'
 
-    def _evaluate_scalar_product(self, kind='fast'):
-        if kind == 'vandermonde':
-            SpectralBase._evaluate_scalar_product(self, kind=kind)
-            self.scalar_product.tmp_array[self.si[-2]] = 0
-            self.scalar_product.tmp_array[self.si[-1]] = 0
-            return
-        Orthogonal._evaluate_scalar_product(self, kind=kind)
-        output = self.scalar_product.tmp_array
-        s0 = self.sl[slice(0, self.N-2)]
-        s1 = self.sl[slice(2, self.N)]
-        output[s0] -= output[s1]
-        output[self.si[-2]] = 0
-        output[self.si[-1]] = 0
+    #def _evaluate_scalar_product(self, kind='fast'):
+    #    if kind == 'vandermonde':
+    #        SpectralBase._evaluate_scalar_product(self, kind=kind)
+    #        self.scalar_product.tmp_array[self.si[-2]] = 0
+    #        self.scalar_product.tmp_array[self.si[-1]] = 0
+    #        return
+    #    Orthogonal._evaluate_scalar_product(self, kind=kind)
+    #    output = self.scalar_product.tmp_array
+    #    s0 = self.sl[slice(0, self.N-2)]
+    #    s1 = self.sl[slice(2, self.N)]
+    #    output[s0] -= output[s1]
+    #    output[self.si[-2]] = 0
+    #    output[self.si[-1]] = 0
 
-    def to_ortho(self, input_array, output_array=None):
-        if output_array is None:
-            output_array = np.zeros_like(input_array)
-        else:
-            output_array.fill(0)
-        s0 = self.sl[slice(0, self.N-2)]
-        s1 = self.sl[slice(2, self.N)]
-        output_array[s0] = input_array[s0]
-        output_array[s1] -= input_array[s0]
-        self.bc._add_to_orthogonal(output_array, input_array)
-        return output_array
+    #def to_ortho(self, input_array, output_array=None):
+    #    if output_array is None:
+    #        output_array = np.zeros_like(input_array)
+    #    else:
+    #        output_array.fill(0)
+    #    s0 = self.sl[slice(0, self.N-2)]
+    #    s1 = self.sl[slice(2, self.N)]
+    #    output_array[s0] = input_array[s0]
+    #    output_array[s1] -= input_array[s0]
+    #    self.bc._add_to_orthogonal(output_array, input_array)
+    #    return output_array
 
 class Phi1(CompositeBase):
     r"""Function space for Dirichlet boundary conditions.

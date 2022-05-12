@@ -28,112 +28,112 @@ def ThreeDMA_Solve(u, data, axis=0):
         if u.ndim == 1:
             ThreeDMA_inner_solve[np.complex128_t](u, data)
         elif u.ndim == 2:
-            Solve_axis_2D[np.complex128_t](u, data, ThreeDMA_inner_solve_ptr, axis, False)
+            Solve_axis_2D[np.complex128_t](u, data, ThreeDMA_inner_solve_ptr, axis)
         elif u.ndim == 3:
-            Solve_axis_3D[np.complex128_t](u, data, ThreeDMA_inner_solve_ptr, axis, False)
+            Solve_axis_3D[np.complex128_t](u, data, ThreeDMA_inner_solve_ptr, axis)
     else:
         if u.ndim == 1:
             ThreeDMA_inner_solve[np.float64_t](u, data)
         elif u.ndim == 2:
-            Solve_axis_2D[np.float64_t](u, data, ThreeDMA_inner_solve_ptr, axis, False)
+            Solve_axis_2D[np.float64_t](u, data, ThreeDMA_inner_solve_ptr, axis)
         elif u.ndim == 3:
-            Solve_axis_3D[np.float64_t](u, data, ThreeDMA_inner_solve_ptr, axis, False)
+            Solve_axis_3D[np.float64_t](u, data, ThreeDMA_inner_solve_ptr, axis)
 
 def TwoDMA_Solve(u, data, axis=0):
     if u.dtype.char in 'FDG':
         if u.ndim == 1:
             TwoDMA_inner_solve[np.complex128_t](u, data)
         elif u.ndim == 2:
-            Solve_axis_2D[np.complex128_t](u, data, TwoDMA_inner_solve_ptr, axis, False)
+            Solve_axis_2D[np.complex128_t](u, data, TwoDMA_inner_solve_ptr, axis)
         elif u.ndim == 3:
-            Solve_axis_3D[np.complex128_t](u, data, TwoDMA_inner_solve_ptr, axis, False)
+            Solve_axis_3D[np.complex128_t](u, data, TwoDMA_inner_solve_ptr, axis)
     else:
         if u.ndim == 1:
             TwoDMA_inner_solve[np.float64_t](u, data)
         elif u.ndim == 2:
-            Solve_axis_2D[np.float64_t](u, data, TwoDMA_inner_solve_ptr, axis, False)
+            Solve_axis_2D[np.float64_t](u, data, TwoDMA_inner_solve_ptr, axis)
         elif u.ndim == 3:
-            Solve_axis_3D[np.float64_t](u, data, TwoDMA_inner_solve_ptr, axis, False)
+            Solve_axis_3D[np.float64_t](u, data, TwoDMA_inner_solve_ptr, axis)
 
 def PDMA_Solve(u, data, axis=0):
     if u.dtype.char in 'FDG':
         if u.ndim == 1:
             PDMA_inner_solve[np.complex128_t](u, data)
         elif u.ndim == 2:
-            Solve_axis_2D[np.complex128_t](u, data, PDMA_inner_solve_ptr, axis, False)
+            Solve_axis_2D[np.complex128_t](u, data, PDMA_inner_solve_ptr, axis)
         elif u.ndim == 3:
-            Solve_axis_3D[np.complex128_t](u, data, PDMA_inner_solve_ptr, axis, False)
+            Solve_axis_3D[np.complex128_t](u, data, PDMA_inner_solve_ptr, axis)
     else:
         if u.ndim == 1:
             PDMA_inner_solve[np.float64_t](u, data)
         elif u.ndim == 2:
-            Solve_axis_2D[np.float64_t](u, data, PDMA_inner_solve_ptr, axis, False)
+            Solve_axis_2D[np.float64_t](u, data, PDMA_inner_solve_ptr, axis)
         elif u.ndim == 3:
-            Solve_axis_3D[np.float64_t](u, data, PDMA_inner_solve_ptr, axis, False)
+            Solve_axis_3D[np.float64_t](u, data, PDMA_inner_solve_ptr, axis)
 
 def TDMA_Solve(u, data, axis=0):
     if u.dtype.char in 'FDG':
         if u.ndim == 1:
             TDMA_inner_solve[np.complex128_t](u, data)
         elif u.ndim == 2:
-            Solve_axis_2D[np.complex128_t](u, data, TDMA_inner_solve_ptr, axis, False)
+            Solve_axis_2D[np.complex128_t](u, data, TDMA_inner_solve_ptr, axis)
         elif u.ndim == 3:
-            Solve_axis_3D[np.complex128_t](u, data, TDMA_inner_solve_ptr, axis, False)
+            Solve_axis_3D[np.complex128_t](u, data, TDMA_inner_solve_ptr, axis)
     else:
         if u.ndim == 1:
             TDMA_inner_solve[np.float64_t](u, data)
         elif u.ndim == 2:
-            Solve_axis_2D[np.float64_t](u, data, TDMA_inner_solve_ptr, axis, False)
+            Solve_axis_2D[np.float64_t](u, data, TDMA_inner_solve_ptr, axis)
         elif u.ndim == 3:
-            Solve_axis_3D[np.float64_t](u, data, TDMA_inner_solve_ptr, axis, False)
+            Solve_axis_3D[np.float64_t](u, data, TDMA_inner_solve_ptr, axis)
 
 def TDMA_O_Solve(u, data, axis=0):
     if u.dtype.char in 'FDG':
         if u.ndim == 1:
             TDMA_O_inner_solve[np.complex128_t](u, data)
         elif u.ndim == 2:
-            Solve_axis_2D[np.complex128_t](u, data, TDMA_O_inner_solve_ptr, axis, False)
+            Solve_axis_2D[np.complex128_t](u, data, TDMA_O_inner_solve_ptr, axis)
         elif u.ndim == 3:
-            Solve_axis_3D[np.complex128_t](u, data, TDMA_O_inner_solve_ptr, axis, False)
+            Solve_axis_3D[np.complex128_t](u, data, TDMA_O_inner_solve_ptr, axis)
     else:
         if u.ndim == 1:
             TDMA_O_inner_solve[np.float64_t](u, data)
         elif u.ndim == 2:
-            Solve_axis_2D[np.float64_t](u, data, TDMA_O_inner_solve_ptr, axis, False)
+            Solve_axis_2D[np.float64_t](u, data, TDMA_O_inner_solve_ptr, axis)
         elif u.ndim == 3:
-            Solve_axis_3D[np.float64_t](u, data, TDMA_O_inner_solve_ptr, axis, False)
+            Solve_axis_3D[np.float64_t](u, data, TDMA_O_inner_solve_ptr, axis)
 
 def DiagMA_Solve(u, data, axis=0):
     if u.dtype.char in 'FDG':
         if u.ndim == 1:
             DiagMA_inner_solve[np.complex128_t](u, data)
         elif u.ndim == 2:
-            Solve_axis_2D[np.complex128_t](u, data, DiagMA_inner_solve_ptr, axis, False)
+            Solve_axis_2D[np.complex128_t](u, data, DiagMA_inner_solve_ptr, axis)
         elif u.ndim == 3:
-            Solve_axis_3D[np.complex128_t](u, data, DiagMA_inner_solve_ptr, axis, False)
+            Solve_axis_3D[np.complex128_t](u, data, DiagMA_inner_solve_ptr, axis)
     else:
         if u.ndim == 1:
             DiagMA_inner_solve[np.float64_t](u, data)
         elif u.ndim == 2:
-            Solve_axis_2D[np.float64_t](u, data, DiagMA_inner_solve_ptr, axis, False)
+            Solve_axis_2D[np.float64_t](u, data, DiagMA_inner_solve_ptr, axis)
         elif u.ndim == 3:
-            Solve_axis_3D[np.float64_t](u, data, DiagMA_inner_solve_ptr, axis, False)
+            Solve_axis_3D[np.float64_t](u, data, DiagMA_inner_solve_ptr, axis)
 
 def FDMA_Solve(u, data, axis=0):
     if u.dtype.char in 'FDG':
         if u.ndim == 1:
             FDMA_inner_solve[np.complex128_t](u, data)
         elif u.ndim == 2:
-            Solve_axis_2D[np.complex128_t](u, data, FDMA_inner_solve_ptr, axis, False)
+            Solve_axis_2D[np.complex128_t](u, data, FDMA_inner_solve_ptr, axis)
         elif u.ndim == 3:
-            Solve_axis_3D[np.complex128_t](u, data, FDMA_inner_solve_ptr, axis, False)
+            Solve_axis_3D[np.complex128_t](u, data, FDMA_inner_solve_ptr, axis)
     else:
         if u.ndim == 1:
             FDMA_inner_solve[np.float64_t](u, data)
         elif u.ndim == 2:
-            Solve_axis_2D[np.float64_t](u, data, FDMA_inner_solve_ptr, axis, False)
+            Solve_axis_2D[np.float64_t](u, data, FDMA_inner_solve_ptr, axis)
         elif u.ndim == 3:
-            Solve_axis_3D[np.float64_t](u, data, FDMA_inner_solve_ptr, axis, False)
+            Solve_axis_3D[np.float64_t](u, data, FDMA_inner_solve_ptr, axis)
 
 # LU - decomposition
 
@@ -324,7 +324,7 @@ cdef void SolverGeneric1ND_solve_2D(np.complex128_t[:, ::1] u, real_t[:, :, ::1]
                 continue
             sol(&u[i, 0], st, &data[i, 0, 0], data.shape[1], data.shape[2])
 
-cdef void Solve_axis_3D(T[:, :, ::1] u, real_t[:, ::1] data, funcT sol, int naxes, bint is_zero_index):
+cdef void Solve_axis_3D(T[:, :, ::1] u, real_t[:, ::1] data, funcT sol, int naxes):
     cdef:
         int i, j, st
 
@@ -332,38 +332,28 @@ cdef void Solve_axis_3D(T[:, :, ::1] u, real_t[:, ::1] data, funcT sol, int naxe
     if naxes == 0:
         for i in range(u.shape[1]):
             for j in range(u.shape[2]):
-                if i == 0 and j == 0 and is_zero_index:
-                    continue
                 sol(&u[0, i, j], st, &data[0, 0], data.shape[0], data.shape[1])
 
     elif naxes == 1:
         for i in range(u.shape[0]):
             for j in range(u.shape[2]):
-                if i == 0 and j == 0 and is_zero_index:
-                    continue
                 sol(&u[i, 0, j], st, &data[0, 0], data.shape[0], data.shape[1])
 
     elif naxes == 2:
         for i in range(u.shape[0]):
             for j in range(u.shape[1]):
-                if i == 0 and j == 0 and is_zero_index:
-                    continue
                 sol(&u[i, j, 0], st, &data[0, 0], data.shape[0], data.shape[1])
 
-cdef void Solve_axis_2D(T[:, ::1] u, real_t[:, ::1] data, funcT sol, int naxes, bint is_zero_index):
+cdef void Solve_axis_2D(T[:, ::1] u, real_t[:, ::1] data, funcT sol, int naxes):
     cdef:
         int i, j, st
 
     st = u.strides[naxes]/u.itemsize
     if naxes == 0:
         for i in range(u.shape[1]):
-            if i == 0 and is_zero_index:
-                continue
             sol(&u[0, i], st, &data[0, 0], data.shape[0], data.shape[1])
     elif naxes == 1:
         for i in range(u.shape[0]):
-            if i == 0 and is_zero_index:
-                continue
             sol(&u[i, 0], st, &data[0, 0], data.shape[0], data.shape[1])
 
 cpdef PDMA_inner_solve(T[:] u, real_t[:, ::1] data):

@@ -1,7 +1,8 @@
+import numpy as np
 import numba as nb
 
 __all__ = ['SolverGeneric1ND_solve_data',
-           'Solve_axis_2D', 'Solve_axis_3D']
+           'Solve_axis_2D', 'Solve_axis_3D', 'Solve_axis_4D']
 
 @nb.njit
 def SolverGeneric1ND_solve_data(u, data, sol, naxes, is_zero_index):
@@ -64,3 +65,26 @@ def Solve_axis_3D(data, x, innerfun, axis):
         for i in range(x.shape[0]):
             for j in range(x.shape[1]):
                 innerfun(x[i, j], data)
+
+@nb.jit(nopython=True, fastmath=True, cache=True)
+def Solve_axis_4D(data, x, innerfun, axis):
+    if axis == 0:
+        for j in range(x.shape[1]):
+            for k in range(x.shape[2]):
+                for l in range(x.shape[3]):
+                    innerfun(x[:, j, k, l], data)
+    elif axis == 1:
+        for i in range(x.shape[0]):
+            for k in range(x.shape[2]):
+                for l in range(x.shape[3]):
+                    innerfun(x[i, :, k, l], data)
+    elif axis == 2:
+        for i in range(x.shape[0]):
+            for j in range(x.shape[1]):
+                for l in range(x.shape[3]):
+                    innerfun(x[i, j, :, l], data)
+    elif axis == 3:
+        for i in range(x.shape[0]):
+            for j in range(x.shape[1]):
+                for k in range(x.shape[2]):
+                    innerfun(x[i, j, k], data)

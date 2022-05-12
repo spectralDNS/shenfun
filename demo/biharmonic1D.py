@@ -36,11 +36,8 @@ def main(N, family):
     u = TrialFunction(SD)
     v = TestFunction(SD)
 
-    # Get f on quad points
-    fj = Array(SD, buffer=fe)
-
     # Compute right hand side of biharmonic equation
-    f_hat = inner(v, fj)
+    f_hat = inner(v, fe)
 
     # Get left hand side of biharmonic equation
     matrices = inner(v, div(grad(div(grad(u)))))
