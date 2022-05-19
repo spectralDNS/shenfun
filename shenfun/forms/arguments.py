@@ -1548,14 +1548,16 @@ class Function(ShenfunBaseArray, BasisFunction):
 
             - 'fast' - Use fast transform on regular quadrature points
             - 'vandermonde' - use Vandermonde on regular quadrature points
+            - 'recursive' - Use low-memory implementation (only for polynomials)
             - 'uniform' - use Vandermonde on uniform mesh
             - instance of :class:`.SpectralBase` - use Vandermonde and quadrature
               mesh of this space.
 
-        padding_factor : None or number, optional
+        padding_factor : None or number or tuple, optional
             If padding_factor is a number different from 1, then perform a
             padded backward transform, using a padded work array
-            'self._backward_work_array'
+            'self._backward_work_array'. Use a tuple for different padding in
+            different directions.
 
         """
         if padding_factor is not None:
@@ -1589,12 +1591,13 @@ class Function(ShenfunBaseArray, BasisFunction):
 
         Parameters
         ----------
-        padding_factor : number
+        padding_factor : number or tuple
             The padding factor of the backward transform
+            A tuple can be used for padding differently in each direction.
         """
         if padding_factor is None:
             return self.function_space()
-        if abs(padding_factor-1) < 1e-8:
+        if np.all(abs(np.atleast_1d(padding_factor)-1) < 1e-8):
             return self.function_space()
         if padding_factor in self._padded_space:
             return self._padded_space[padding_factor]

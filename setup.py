@@ -39,7 +39,7 @@ class build_ext_subclass(build_ext):
 
 def get_extensions():
     ext = []
-    for s in ("Matvec", "la", "evaluate", "legendre"):
+    for s in ("Matvec", "la", "evaluate", "transforms"):
         ext.append(Extension("shenfun.optimization.cython.{0}".format(s),
                              libraries=['m'],
                              sources=[os.path.join(cdir, '{0}.pyx'.format(s))],

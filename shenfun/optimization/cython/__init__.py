@@ -10,4 +10,4 @@ from .Matvec import Helmholtz_matvec, Helmholtz_Neumann_matvec, Biharmonic_matve
 from .outer import outer2D, outer3D
 from .applymask import apply_mask
 from .Cheb import chebval
-from .legendre import evaluate_expansion_all, scalar_product
+from .transforms import evaluate_expansion_all, scalar_product

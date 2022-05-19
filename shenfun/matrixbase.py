@@ -645,14 +645,15 @@ class SpectralMatrix(SparseMatrix):
                     if test[0].family() == 'fourier':
                         kind = 'vandermonde'
                     else:
-                        if test[0].short_name() in ('P1', 'P2', 'P3', 'P4'):
+                        if test[0].family() != trial[0].family():
+                            kind = 'vandermonde'
+                        elif test[0].short_name() in ('P1', 'P2', 'P3', 'P4'):
                             try:
                                 d = assemble_phi(test, trial, measure)
                                 _assembly_method += '_phi'
                             except AssertionError:
                                 kind = 'vandermonde'
                         else:
-                            #if test[1]+trial[1] == 0 and sp.sympify(measure).is_polynomial() and not (test[0].is_orthogonal and trial[0].is_orthogonal):
                             if sp.sympify(measure).is_polynomial() and not (test[0].is_orthogonal and trial[0].is_orthogonal):
                                 d = assemble_stencil(test, trial, measure)
                                 _assembly_method += '_stencil'

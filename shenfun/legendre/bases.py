@@ -38,7 +38,6 @@ to the orthogonal basis.
 """
 
 from __future__ import division
-import importlib
 import sympy as sp
 import numpy as np
 from numpy.polynomial import legendre as leg
@@ -79,12 +78,6 @@ try:
 except:
     has_quadpy = False
     mp = None
-
-try:
-    import numba
-    has_numba = True
-except:
-    has_numba = False
 
 mode = config['bases']['legendre']['mode']
 mode = mode if has_quadpy else 'numpy'
@@ -134,9 +127,6 @@ class Orthogonal(SpectralBase):
         self.alpha = 0
         self.beta = 0
         self.gn = 1
-        #self.forward = functools.partial(self.forward, kind='vandermonde')
-        #self.backward = functools.partial(self.backward, kind='vandermonde')
-        #self.scalar_product = functools.partial(self.scalar_product, kind='vandermonde')
         self.plan(int(padding_factor*N), 0, dtype, {})
 
     @staticmethod
@@ -301,6 +291,11 @@ class Orthogonal(SpectralBase):
     def sympy_stencil(self, i=sp.Symbol('i', integer=True), j=sp.Symbol('j', integer=True)):
         return sp.KroneckerDelta(i, j)
 
+    def get_recursion_matrix(self, M, N):
+        k = np.arange(max(M, N))
+        return SparseMatrix({-1: (k[:min(N, M-1)]+1)/(2*k[:min(N, M-1)]+1),
+                             1: (k[:min(M, N-1)]+1)/(2*k[:min(M, N-1)]+3)}, shape=(M, N))
+
     def get_bc_basis(self):
         if self._bc_basis:
             return self._bc_basis
@@ -313,31 +308,6 @@ class Orthogonal(SpectralBase):
             output_array[:] = input_array
             return output_array
         return input_array
-
-    def _evaluate_expansion_all(self, input_array, output_array,
-                                x=None, kind='fast'):
-        if kind == 'vandermonde':
-            SpectralBase._evaluate_expansion_all(self, input_array, output_array, x, kind=kind)
-            return
-        mod = config['optimization']['mode']
-        legn = importlib.import_module('.'.join(('shenfun.optimization', mod, 'legendre')))
-        if x is None:
-            x = self.mesh(False, False)
-        legn.evaluate_expansion_all(input_array, output_array, x, self.axis)
-
-    def _evaluate_scalar_product(self, kind='fast'):
-        input_array = self.scalar_product.input_array
-        output_array = self.scalar_product.tmp_array
-        if kind == 'vandermonde':
-            SpectralBase._evaluate_scalar_product(self)
-            return
-        M = self.shape(False)
-        xj, wj = self.points_and_weights(M)
-        if self.domain_factor() != 1:
-            wj /= float(self.domain_factor())
-        mod = config['optimization']['mode']
-        legn = importlib.import_module('.'.join(('shenfun.optimization', mod, 'legendre')))
-        legn.scalar_product(input_array, output_array, xj, wj, self.axis)
 
 CompositeBase = getCompositeBase(Orthogonal)
 

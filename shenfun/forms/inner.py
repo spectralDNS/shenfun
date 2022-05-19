@@ -87,6 +87,7 @@ def inner(expr0, expr1, output_array=None, assemble=None, kind=None, fixed_resol
         - 'stencil'
         - 'vandermonde'
         - 'fast' (only for linear forms)
+        - 'recursive' - Use low-memory implementation (only for polynomials and linear forms)
 
         The default is to first try to look for implemented kind, and if that
         fails try first 'stencil' and then finally fall back on vandermonde.

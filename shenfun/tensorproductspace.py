@@ -438,8 +438,9 @@ class TensorProductSpace(PFFT):
 
         Parameters
         ----------
-        padding_factor : number, optional
-            Scale the number of quadrature points in self with this number
+        padding_factor : number or tuple, optional
+            Scale the number of quadrature points in self with this number, or
+            tuple of numbers, one for each dimension.
         dealias_direct : bool, optional
             Used only if ``padding_factor=1``. Sets the 1/3 highest frequencies
             to zeros.

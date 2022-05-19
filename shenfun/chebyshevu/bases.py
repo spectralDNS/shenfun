@@ -229,8 +229,8 @@ class Orthogonal(SpectralBase):
         return V[:, 1:]/i
 
     def _evaluate_scalar_product(self, kind='fast'):
-        if kind == 'vandermonde':
-            SpectralBase._evaluate_scalar_product(self)
+        if kind != 'fast':
+            SpectralBase._evaluate_scalar_product(self, kind=kind)
             return
 
         if self.quad == 'GU':
@@ -244,8 +244,8 @@ class Orthogonal(SpectralBase):
             out *= (np.pi/(2*self.N*self.padding_factor*self.domain_factor()))
 
     def _evaluate_expansion_all(self, input_array, output_array, x=None, kind='fast'):
-        if kind == 'vandermonde':
-            SpectralBase._evaluate_expansion_all(self, input_array, output_array, x, False)
+        if kind != 'fast':
+            SpectralBase._evaluate_expansion_all(self, input_array, output_array, x, kind=kind)
             return
 
         # Fast transform. Make sure arrays are correct. Fast transforms are only for planned size

@@ -282,7 +282,7 @@ class Orthogonal(SpectralBase):
         return V
 
     def _evaluate_expansion_all(self, input_array, output_array, x=None, kind='fast'):
-        if kind == 'vandermonde':
+        if kind != 'fast':
             SpectralBase._evaluate_expansion_all(self, input_array, output_array, x, kind=kind)
             return
 
@@ -305,7 +305,7 @@ class Orthogonal(SpectralBase):
             output_array[s2] -= input_array[s0]/2
 
     def _evaluate_scalar_product(self, kind='fast'):
-        if kind == 'vandermonde':
+        if kind != 'fast':
             SpectralBase._evaluate_scalar_product(self, kind=kind)
             return
 
@@ -487,7 +487,7 @@ class ShenDirichlet(CompositeBase):
         return 'SD'
 
     #def _evaluate_scalar_product(self, kind='fast'):
-    #    if kind == 'vandermonde':
+    #    if kind != 'fast':
     #        SpectralBase._evaluate_scalar_product(self, kind=kind)
     #        self.scalar_product.tmp_array[self.si[-2]] = 0
     #        self.scalar_product.tmp_array[self.si[-1]] = 0
@@ -1339,9 +1339,6 @@ class ShenBiPolar(CompositeBase):
     """
     def __init__(self, N, quad="GC", bc=(0, 0, 0, 0), domain=(-1, 1), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None, **kw):
-        #self.forward = functools.partial(self.forward, kind='vandermonde')
-        #self.backward = functools.partial(self.backward, kind='vandermonde')
-        #self.scalar_product = functools.partial(self.scalar_product, kind='vandermonde')
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)

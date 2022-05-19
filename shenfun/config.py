@@ -5,11 +5,6 @@ import yaml
 # The configuration can be overloaded by a local 'shenfun.yaml' file, or
 # in '~/.shenfun/shenfun.yaml'. A yaml file to work with can be created
 # using the `dumpconfig` function below
-try:
-    import numba
-    has_numba = True
-except:
-    has_numba = False
 
 config = {
     'optimization':
@@ -21,16 +16,16 @@ config = {
     'transforms':
     {
         'kind':
-            {
-                'chebyshev': 'fast',
-                'chebyshevu': 'fast',
-                'fourier': 'fast',
-                'legendre': 'fast' if has_numba else 'vandermonde',
-                'ultraspherical': 'vandermonde',
-                'hermite': 'vandermonde',
-                'laguerre': 'vandermonde',
-                'jacobi': 'vandermonde',
-            }
+        {
+            'chebyshev': 'fast',
+            'chebyshevu': 'fast',
+            'fourier': 'fast',
+            'legendre': 'recursive',
+            'ultraspherical': 'recursive',
+            'hermite': 'vandermonde',
+            'laguerre': 'vandermonde',
+            'jacobi': 'recursive',
+        }
     },
     'matrix':
     {

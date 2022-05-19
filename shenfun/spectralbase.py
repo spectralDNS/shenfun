@@ -223,6 +223,7 @@ class SpectralBase:
         kind : str, optional
             - 'fast' - use fast transform if implemented
             - 'vandermonde' - use Vandermonde matrix
+            - 'recursive' - Use low-memory implementation (only for polynomials)
 
         Note
         ----
@@ -231,7 +232,6 @@ class SpectralBase:
 
         """
         kind = kind if kind is not None else config['transforms']['kind'][self.family()]
-
         if input_array is not None:
             self.scalar_product.input_array[...] = input_array
 
@@ -258,6 +258,7 @@ class SpectralBase:
         kind : str, optional
             - 'fast' - use fast transform if implemented
             - 'vandermonde' - Use Vandermonde matrix
+            - 'recursive' - Use low-memory implementation (only for polynomials)
 
         Note
         ----
@@ -288,6 +289,7 @@ class SpectralBase:
 
             - 'fast' - Use fast transform on regular quadrature points
             - 'vandermonde' - use Vandermonde on regular quadrature points
+            - 'recursive' - Use low-memory implementation (only for polynomials)
             - 'uniform' - use Vandermonde on uniform mesh
             - instance of :class:`.SpectralBase` - use Vandermonde and quadrature
               mesh of this space.
@@ -298,6 +300,7 @@ class SpectralBase:
         as planned with self.plan
 
         """
+        from shenfun.tensorproductspace import TensorProductSpace
         kind = kind if kind is not None else config['transforms']['kind'][self.family()]
         if input_array is not None:
             self.backward.input_array[...] = input_array
@@ -309,7 +312,7 @@ class SpectralBase:
         if kind == 'uniform':
             kind = 'vandermonde'
             mesh = self.mesh(bcast=False, map_true_domain=False, uniform=True)
-        elif isinstance(kind, SpectralBase):
+        elif isinstance(kind, (SpectralBase, TensorProductSpace)):
             mesh = kind.mesh()
             if len(kind) > 1:
                 mesh = np.squeeze(mesh[self.axis])
@@ -455,7 +458,7 @@ class SpectralBase:
         return V
 
     def _evaluate_expansion_all(self, input_array, output_array,
-                                x=None, kind='fast'):
+                                x=None, kind=None):
         r"""Evaluate expansion on 'x' or entire mesh
 
         .. math::
@@ -474,18 +477,30 @@ class SpectralBase:
 
             - 'fast' - use fast transform if implemented
             - 'vandermonde' - Use Vandermonde matrix
+            - 'recursive' - Use low-memory recursive implementation
+              (only for polynomials)
 
         """
-        P = self.evaluate_basis_all(x=x, argument=1)
-        if output_array.ndim == 1:
-            output_array = np.dot(P, input_array, out=output_array)
-        else:
-            fc = np.moveaxis(input_array, self.axis, -2)
-            shape = [slice(None)]*input_array.ndim
-            N = self.shape(False)
-            shape[-2] = slice(0, N)
-            array = np.dot(P, fc[tuple(shape)])
-            output_array[:] = np.moveaxis(array, 0, self.axis)
+        assert kind in ('vandermonde', 'recursive')
+        if kind == 'vandermonde':
+            P = self.evaluate_basis_all(x=x, argument=1)
+            if output_array.ndim == 1:
+                output_array = np.dot(P, input_array, out=output_array)
+            else:
+                fc = np.moveaxis(input_array, self.axis, -2)
+                shape = [slice(None)]*input_array.ndim
+                N = self.shape(False)
+                shape[-2] = slice(0, N)
+                array = np.dot(P, fc[tuple(shape)])
+                output_array[:] = np.moveaxis(array, 0, self.axis)
+        elif kind == 'recursive':
+            mod = config['optimization']['mode']
+            lib = importlib.import_module('.'.join(('shenfun.optimization', mod, 'transforms')))
+            if x is None:
+                x = self.mesh(False, False)
+            N = len(x)
+            a = self.get_recursion_matrix(N+3, N+3).diags('dia').data
+            lib.evaluate_expansion_all(input_array, output_array, x, self.axis, a)
 
     def eval(self, x, u, output_array=None):
         """Evaluate :class:`.Function` ``u`` at position ``x``
@@ -525,23 +540,33 @@ class SpectralBase:
         ``self.scalar_product.output_array``
 
         """
-        # This is the slow Vandermonde type implementation
+        assert kind in ('vandermonde', 'recursive')
         input_array = self.scalar_product.input_array
         output_array = self.scalar_product.tmp_array
         M = self.shape(False)
-        weights = self.points_and_weights(M)[1]
+        xj, weights = self.points_and_weights(M)
         if self.domain_factor() != 1:
             weights /= float(self.domain_factor())
-        P = self.evaluate_basis_all(argument=0)
-        if input_array.ndim == 1:
-            output_array[slice(0, M)] = np.dot(input_array*weights, np.conj(P))
-
-        else: # broadcasting
-            bc_shape = [np.newaxis,]*input_array.ndim
-            bc_shape[self.axis] = slice(None)
-            fc = np.moveaxis(input_array*weights[tuple(bc_shape)], self.axis, -1)
-            output_array[self.sl[slice(0, M)]] = np.moveaxis(np.dot(fc, np.conj(P)), -1, self.axis)
-            #output_array[:] = np.moveaxis(np.tensordot(input_array*weights[bc_shape], np.conj(P), (self.axis, 0)), -1, self.axis)
+        if kind == 'vandermonde':
+            # Slow, memory demanding, Vandermonde type implementation
+            P = self.evaluate_basis_all(argument=0)
+            if input_array.ndim == 1:
+                output_array[slice(0, M)] = np.dot(input_array*weights, np.conj(P))
+            else: # broadcasting
+                bc_shape = [np.newaxis,]*input_array.ndim
+                bc_shape[self.axis] = slice(None)
+                fc = np.moveaxis(input_array*weights[tuple(bc_shape)], self.axis, -1)
+                output_array[self.sl[slice(0, M)]] = np.moveaxis(np.dot(fc, np.conj(P)), -1, self.axis)
+                #output_array[:] = np.moveaxis(np.tensordot(input_array*weights[bc_shape], np.conj(P), (self.axis, 0)), -1, self.axis)
+        elif kind == 'recursive':
+            # Vandermonde type, but using less memory
+            mod = config['optimization']['mode']
+            lib = importlib.import_module('.'.join(('shenfun.optimization', mod, 'transforms')))
+            if xj is None:
+                xj = self.mesh(False, False)
+            N = len(xj)
+            a = self.get_recursion_matrix(N+3, N+3).diags('dia').data
+            lib.scalar_product(input_array, output_array, xj, weights, self.axis, a)
 
     def apply_inverse_mass(self, array):
         """Apply inverse mass matrix
@@ -1331,6 +1356,10 @@ class SpectralBase:
         """
         raise NotImplementedError
 
+    def get_recursion_matrix(self, M, N):
+        from shenfun.jacobi.recursions import a, pmat
+        return pmat(a, 1, self.alpha, self.beta, M, N, self.gn)
+
     def count_trailing_zeros(self, u, reltol=1e-12, abstol=1e-15):
         assert u.function_space() == self
         assert u.ndim == 1
@@ -1427,10 +1456,10 @@ def getCompositeBase(Orthogonal):
 
         def _evaluate_expansion_all(self, input_array, output_array, x=None, kind=None):
             if kind == 'fast':
-                assert self.family() in ('fourier', 'chebyshev', 'chebyshevu', 'legendre'),\
+                assert self.family() in ('fourier', 'chebyshev', 'chebyshevu'),\
                     f'Fast method not implemented for {self.family()} family'
             if kind == 'vandermonde':
-                SpectralBase._evaluate_expansion_all(self, input_array, output_array, x, kind)
+                SpectralBase._evaluate_expansion_all(self, input_array, output_array, x, kind=kind)
                 return
             assert input_array is self.backward.tmp_array
             assert output_array is self.backward.output_array
@@ -1440,10 +1469,10 @@ def getCompositeBase(Orthogonal):
         def _evaluate_scalar_product(self, kind=None):
             output = self.scalar_product.tmp_array
             if kind == 'fast':
-                assert self.family() in ('fourier', 'chebyshev', 'chebyshevu', 'legendre'),\
+                assert self.family() in ('fourier', 'chebyshev', 'chebyshevu'),\
                     f'Fast method not implemented for {self.family()} family'
             if kind == 'vandermonde':
-                SpectralBase._evaluate_scalar_product(self)
+                SpectralBase._evaluate_scalar_product(self, kind=kind)
                 output[self.sl[slice(-(self.N-self.dim()), None)]] = 0
                 return
             Orthogonal._evaluate_scalar_product(self, kind)
@@ -2046,11 +2075,18 @@ def inner_product(test, trial, measure=1, assemble=None, kind=None, fixed_resolu
     measure: function of coordinate, optional
         The measure is in physical coordinates, not in the reference domain.
     assemble : None or str, optional
-        Determines how to perform the integration, either 'exact',
-        'quadrature' or 'adaptive', see `config['matrix']['assemble']['kind']`
+        Determines how to perform the integration
+
+        - 'quadrature' (default)
+        - 'exact'
+        - 'adaptive'
+
     kind : None or str, optional
-        The kind of method used to do quadrature. See
-        `config['quadrature']['kind']`
+        The kind of method used to do quadrature.
+
+        - 'implemented'
+        - 'stencil'
+        - 'vandermonde'
 
     Note
     ----
