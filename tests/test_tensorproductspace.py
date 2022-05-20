@@ -64,8 +64,8 @@ def test_transform(typecode, dim):
 
             # Alternative method
             fft.forward.input_array[...] = U
-            fft.forward(kind='vandermonde')
-            fft.backward(kind='vandermonde')
+            fft.forward(kind={'fourier': 'vandermonde'})
+            fft.backward(kind={'fourier': 'vandermonde'})
             V = fft.backward.output_array
             assert allclose(V, U)
 
@@ -611,12 +611,12 @@ def test_eval_expression2(fam):
 
 
 if __name__ == '__main__':
-    #test_transform('f', 3)
+    test_transform('F', 2)
     #test_transform('d', 2)
     #test_shentransform('d', 2, jbases.Phi4, 'JG')
     #test_eval_expression()
     #test_eval_expression2('L')
-    test_project('d', 2, ltrialBasis[0], 'GL')
+    #test_project('d', 2, ltrialBasis[0], 'GL')
     #test_project_lag('d', 2)
     #test_project_hermite('d', 2)
     #test_project2('d', 2, lbases.ShenNeumann, 'LG')

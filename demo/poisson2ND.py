@@ -47,7 +47,7 @@ def main(N, family, bci, bcj, plotting=False):
     BX = FunctionSpace(N, family=family, bc=bcx[bci], domain=xdomain)
     BY = FunctionSpace(N, family=family, bc=bcy[bcj], domain=ydomain)
     trialspace = TensorProductSpace(comm, (BX, BY))
-    testspace = trialspace.get_testspace(PG=True)
+    testspace = trialspace.get_testspace(kind='PG')
     u = TrialFunction(trialspace)
     v = TestFunction(testspace)
 

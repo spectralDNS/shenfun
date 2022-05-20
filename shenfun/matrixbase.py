@@ -10,7 +10,8 @@ from collections import defaultdict
 from numbers import Number
 import numpy as np
 import sympy as sp
-from scipy.sparse import bmat, dia_matrix, csr_matrix, kron, diags as sp_diags
+from scipy.sparse import bmat, spmatrix, dia_matrix, csr_matrix, kron, \
+    diags as sp_diags
 from mpi4py import MPI
 from shenfun.config import config
 from .utilities import integrate_sympy
@@ -443,7 +444,8 @@ class SparseMatrix(MutableMapping):
         Fall back on generic Solve, which is using Scipy sparse
         matrices with splu/spsolve. This is still pretty fast.
         """
-        from .la import Solve, TDMA, TDMA_O, FDMA, TwoDMA, ThreeDMA, PDMA, DiagMA
+        from .la import (Solve, TDMA, TDMA_O, FDMA, TwoDMA, ThreeDMA, PDMA,
+            DiagMA, HeptaDMA)
         if len(self) == 1:
             if list(self.keys())[0] == 0:
                 return DiagMA
@@ -463,6 +465,9 @@ class SparseMatrix(MutableMapping):
         elif len(self) == 5:
             if np.all(self.sorted_keys() == (-4, -2, 0, 2, 4)):
                 return PDMA
+        elif len(self) == 7:
+            if np.all(self.sorted_keys() == (-4, -2, 0, 2, 4, 6, 8)):
+                return HeptaDMA
         return Solve
 
     def isdiagonal(self):
@@ -554,11 +559,11 @@ class SpectralMatrix(SparseMatrix):
         integral using `Sympy integrate <https://docs.sympy.org/latest/modules/integrals/integrals.html>`_,
         whereas adaptive makes use of adaptive quadrature through `quadpy <adaptive quadrature through>`_.
     kind : None or str, optional
-        The kind of method used to do quadrature.
+        Alternatie kinds of methods.
 
-        - 'implemented'
-        - 'stencil'
-        - 'vandermonde'
+        - 'implemented' - Hardcoded implementations
+        - 'stencil' - Use orthogonal bases and stencil-matrices
+        - 'vandermonde' - Use Vandermonde matrix
 
         The default is to first try to look for implemented kind, and if that
         fails try first 'stencil' and then finally fall back on vandermonde.
@@ -691,8 +696,8 @@ class SpectralMatrix(SparseMatrix):
         method : str
             Type of integration
 
-            - exact
-            - quadrature
+            - 'exact'
+            - 'quadrature'
 
         Note
         ----
@@ -1733,6 +1738,8 @@ def extract_diagonal_matrix(M, lowerband=None, upperband=None, abstol=1e-10, rel
 
     """
     d = {}
+    if isinstance(M, spmatrix):
+        M = M.tocsr()
     relmax = abs(M).max()
     dtype = float if M.dtype == 'O' else M.dtype # For mpf object
     upperband = M.shape[1] if upperband is None else min(upperband+1, M.shape[1])
@@ -2088,7 +2095,7 @@ def _assemble_phi_bc(test, trial, measure=1):
     else:
         K = trial[0].stencil_matrix()
         d = extract_diagonal_matrix(D*extract_diagonal_matrix(K).diags('csr').T, lowerband=N+q, upperband=N)
-    d = d._storage
+        d = d._storage
     return d
 
 def assemble_sympy(test, trial, measure=1, implicit=True, assemble='exact'):
@@ -2106,8 +2113,8 @@ def assemble_sympy(test, trial, measure=1, implicit=True, assemble='exact'):
         Whether to use unevaluated Sympy functions instead of the actual values
         of the diagonals.
     assemble : str, optional
-        - exact
-        - quadrature
+        - 'exact'
+        - 'quadrature'
 
     Example
     -------

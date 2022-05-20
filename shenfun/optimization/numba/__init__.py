@@ -6,6 +6,7 @@ from .twodma import *
 from .tdma import *
 from .pdma import *
 from .fdma import *
+from .heptadma import *
 from .la import *
 from .helmholtz import *
 from .biharmonic import *

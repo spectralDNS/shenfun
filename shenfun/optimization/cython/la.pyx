@@ -135,6 +135,22 @@ def FDMA_Solve(u, data, axis=0):
         elif u.ndim == 3:
             Solve_axis_3D[np.float64_t](u, data, FDMA_inner_solve_ptr, axis)
 
+def HeptaDMA_Solve(u, data, axis=0):
+    if u.dtype.char in 'FDG':
+        if u.ndim == 1:
+            HeptaDMA_inner_solve[np.complex128_t](u, data)
+        elif u.ndim == 2:
+            Solve_axis_2D[np.complex128_t](u, data, HeptaDMA_inner_solve_ptr, axis)
+        elif u.ndim == 3:
+            Solve_axis_3D[np.complex128_t](u, data, HeptaDMA_inner_solve_ptr, axis)
+    else:
+        if u.ndim == 1:
+            HeptaDMA_inner_solve[np.float64_t](u, data)
+        elif u.ndim == 2:
+            Solve_axis_2D[np.float64_t](u, data, HeptaDMA_inner_solve_ptr, axis)
+        elif u.ndim == 3:
+            Solve_axis_3D[np.float64_t](u, data, HeptaDMA_inner_solve_ptr, axis)
+
 # LU - decomposition
 
 def FDMA_LU(real_t[:, ::1] data):
@@ -203,6 +219,46 @@ def TDMA_O_LU(real_t[:, ::1] data):
         ld[i-1] = ld[i-1]/d[i-1]
         d[i] = d[i] - ld[i-1]*ud[i-1]
 
+def HeptaDMA_LU(real_t[:, ::1] data):
+    cdef:
+        int i, n, m, k
+        real_t[::1] a = data[0, :-4]
+        real_t[::1] b = data[1, :-2]
+        real_t[::1] d = data[2, :]
+        real_t[::1] e = data[3, 2:]
+        real_t[::1] f = data[4, 4:]
+        real_t[::1] g = data[5, 6:]
+        real_t[::1] h = data[6, 8:]
+        real_t lam
+    n = d.shape[0]
+    m = e.shape[0]
+    k = n - m
+    for i in range(n-2*k):
+        lam = b[i]/d[i]
+        d[i+k] -= lam*e[i]
+        e[i+k] -= lam*f[i]
+        if i < n-6:
+            f[i+k] -= lam*g[i]
+        if i < n-8:
+            g[i+k] -= lam*h[i]
+        b[i] = lam
+        lam = a[i]/d[i]
+        b[i+k] -= lam*e[i]
+        d[i+2*k] -= lam*f[i]
+        if i < n-6:
+            e[i+2*k] -= lam*g[i]
+        if i < n-8:
+            f[i+2*k] -= lam*h[i]
+        a[i] = lam
+    i = n-4
+    lam = b[i]/d[i]
+    d[i+k] -= lam*e[i]
+    b[i] = lam
+    i = n-3
+    lam = b[i]/d[i]
+    d[i+k] -= lam*e[i]
+    b[i] = lam
+
 # Map Python functions to pure C functions
 
 cdef innerfunc func_from_name(fun_name) except NULL:
@@ -220,6 +276,8 @@ cdef innerfunc func_from_name(fun_name) except NULL:
         return TwoDMA_inner_solve_ptr
     elif fun_name == "DiagMA_inner_solve":
         return DiagMA_inner_solve_ptr
+    elif fun_name == "HeptaDMA_inner_solve":
+        return HeptaDMA_inner_solve_ptr
     else:
         return NULL
 
@@ -355,6 +413,36 @@ cdef void Solve_axis_2D(T[:, ::1] u, real_t[:, ::1] data, funcT sol, int naxes):
     elif naxes == 1:
         for i in range(u.shape[0]):
             sol(&u[i, 0], st, &data[0, 0], data.shape[0], data.shape[1])
+
+cpdef HeptaDMA_inner_solve(T[:] u, real_t[:, ::1] data):
+    HeptaDMA_inner_solve_ptr[T](&u[0], u.strides[0]/u.itemsize, &data[0, 0], data.shape[0], data.shape[1])
+
+@cython.cdivision(True)
+cdef void HeptaDMA_inner_solve_ptr(T* u, int st, real_t* data, int m0, int m1):
+    cdef:
+        int n = m1
+        int k
+        real_t* a = &data[0]
+        real_t* b = &data[m1]
+        real_t* d = &data[2*m1]
+        real_t* e = &data[3*m1+2]
+        real_t* f = &data[4*m1+4]
+        real_t* g = &data[5*m1+6]
+        real_t* h = &data[6*m1+8]
+    u[2*st] -= b[0]*u[0]
+    u[3*st] -= b[1]*u[st]
+    for k in range(4, n):
+        u[k*st] -= (b[k-2]*u[(k-2)*st] + a[k-4]*u[(k-4)*st])
+    u[(n-1)*st] /= d[n-1]
+    u[(n-2)*st] /= d[n-2]
+    u[(n-3)*st] = (u[(n-3)*st]-e[n-3]*u[(n-1)*st])/d[n-3]
+    u[(n-4)*st] = (u[(n-4)*st]-e[n-4]*u[(n-2)*st])/d[n-4]
+    u[(n-5)*st] = (u[(n-5)*st]-e[n-5]*u[(n-3)*st]-f[n-5]*u[(n-1)*st])/d[n-5]
+    u[(n-6)*st] = (u[(n-6)*st]-e[n-6]*u[(n-4)*st]-f[n-6]*u[(n-2)*st])/d[n-6]
+    u[(n-7)*st] = (u[(n-7)*st]-e[n-7]*u[(n-5)*st]-f[n-7]*u[(n-3)*st]-g[n-7]*u[(n-1)*st])/d[n-7]
+    u[(n-8)*st] = (u[(n-8)*st]-e[n-8]*u[(n-6)*st]-f[n-8]*u[(n-4)*st]-g[n-8]*u[(n-2)*st])/d[n-8]
+    for k in range(n-9, -1, -1):
+        u[k*st] = (u[k*st]-e[k]*u[(k+2)*st]-f[k]*u[(k+4)*st]-g[k]*u[(k+6)*st]-h[k]*u[(k+8)*st])/d[k]
 
 cpdef PDMA_inner_solve(T[:] u, real_t[:, ::1] data):
     PDMA_inner_solve_ptr[T](&u[0], u.strides[0]/u.itemsize, &data[0, 0], data.shape[0], data.shape[1])

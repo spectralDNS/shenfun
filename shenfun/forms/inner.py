@@ -79,25 +79,40 @@ def inner(expr0, expr1, output_array=None, assemble=None, kind=None, fixed_resol
         Exact and adaptive should result in the same matrix. Exact computes the
         integral using `Sympy integrate <https://docs.sympy.org/latest/modules/integrals/integrals.html>`_,
         whereas adaptive makes use of adaptive quadrature through `quadpy <https://github.com/sigma-py/quadpy>`_.
+        For most bilinear forms quadrature will also return the same matrix as exact.
+        With non-constant measures (like for curvilinear coordinates) there is more
+        likely to be differences.
 
-    kind : None or str, optional
-        The kind of method used to do quadrature.
+    kind : None, str or dict, optional
+        Alternative methods.
 
-        - 'implemented'
-        - 'stencil'
-        - 'vandermonde'
-        - 'fast' (only for linear forms)
-        - 'recursive' - Use low-memory implementation (only for polynomials and linear forms)
+        For bilinear forms (matrices) kind is a string:
 
-        The default is to first try to look for implemented kind, and if that
-        fails try first 'stencil' and then finally fall back on vandermonde.
-        Vandermonde creates a dense matrix of size NxN, so it should be avoided
-        (e.g., by implementing the matrix) for large N.
+        - 'implemented' - Hardcoded implementations
+        - 'stencil' - Use orthogonal bases and stencil-matrices
+        - 'vandermonde' - Use Vandermonde matrix
 
-    fixed_resolution : None or str, optional
-        A fixed number of quadrature points used to compute the inner product.
-        If 'fixed_resolution' is set, then assemble is set to 'quadrature' and
-        kind is set to 'vandermonde'.
+        The default (for kind=None) is to first try to look for implemented kind,
+        and if that fails try first 'stencil' and then finally fall back on
+        vandermonde. Vandermonde creates a dense matrix of size NxN, so it should
+        be avoided (e.g., by implementing the matrix) for large N.
+
+        For linear forms (vectors) the kind keyword can be used to overload
+        the default methods for transforms set in config['transforms']['kind'].
+        Hence, kind is a dictionary with family as key and values either one of
+        the possible methods
+
+        - 'fast' - Use FFT (only Fourier and Chebyshev first and second kind)
+        - 'recursive' - Low-memory implementation (only for Jacobi polynomials)
+        - 'vandermonde' - Use Vandermonde matrix
+
+        E.g., kind={'chebyshev': 'recursive'}.
+
+    fixed_resolution : Number or sequence of integers, optional
+        A fixed number of quadrature points used to compute the inner product
+        along each dimension of the domain. If 'fixed_resolution' is set, then
+        assemble is set to 'quadrature' and kind is set to 'vandermonde'.
+        fixed_resolution is argument to :meth:`.TensorProductSpace.get_refined`.
 
     Note
     ----

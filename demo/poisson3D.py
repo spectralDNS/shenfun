@@ -66,7 +66,7 @@ def main(N, family, bc):
     # Try the uncommon approach of squeezing SD between the two Fourier spaces
     subcomms = Subcomm(MPI.COMM_WORLD, [0, 0, 1])
     T = TensorProductSpace(subcomms, (K1, SD, K2), axes=(1, 0, 2))
-    B = T.get_testspace(PG=True)
+    B = T.get_testspace(kind='PG')
 
     u = TrialFunction(T)
     v = TestFunction(B)

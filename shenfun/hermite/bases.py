@@ -53,9 +53,6 @@ class Orthogonal(SpectralBase):
         SpectralBase.__init__(self, N, quad="HG", domain=(-sp.S.Infinity, sp.S.Infinity),
                               dtype=dtype, padding_factor=padding_factor,
                               dealias_direct=dealias_direct, coordinates=coordinates)
-        self.forward = functools.partial(self.forward, kind='vandermonde')
-        self.backward = functools.partial(self.backward, kind='vandermonde')
-        self.scalar_product = functools.partial(self.scalar_product, kind='vandermonde')
         self.plan(int(N*padding_factor), 0, dtype, {})
 
     @staticmethod

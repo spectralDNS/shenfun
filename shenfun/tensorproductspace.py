@@ -2,9 +2,11 @@
 Module for implementation of the :class:`.TensorProductSpace` class and
 related methods.
 """
+import copy
 from numbers import Number
 import sympy as sp
 import numpy as np
+from shenfun import config
 from shenfun.fourier.bases import R2C, C2C
 from shenfun.utilities import apply_mask
 from shenfun.forms.arguments import Function, Array
@@ -20,6 +22,61 @@ comm = MPI.COMM_WORLD
 __all__ = ('TensorProductSpace', 'VectorSpace', 'TensorSpace',
            'CompositeSpace', 'Convolve')
 
+@staticmethod
+def _get_kind(xfftn, kind):
+    if isinstance(kind, (TensorProductSpace, CompositeSpace)):
+        return kind
+    family = xfftn.func.func.__self__.family()
+    kind = {} if kind is None else kind
+    return kind.get(family, config['transforms']['kind'][family])
+
+# Monkey-patch
+Transform._get_kind = _get_kind
+
+class BackwardTransform(Transform):
+    def __call__(self, input_array=None, output_array=None, kind=None, **kw):
+        """Compute transform
+
+        Parameters
+        ----------
+        input_array : array, optional
+        output_array : array, optional
+        kind : dict, optional
+            Alternatives for implementation. Can be used to overload
+            config['transforms']['kind'], with a dictionary with family as key
+            and values either one of the strings
+            - 'fast'
+            - 'recursive'
+            - 'vandermonde'
+            For example kind={'chebyshev': 'vandermonde'}
+        kw : dict
+            parameters to serial transforms
+            Note in particular that the keyword ``'normalize'=True/False`` can be
+            used to turn normalization on or off. Default is to enable
+            normalization for forward transforms and disable it for backward.
+
+        Note
+        ----
+        If input_array/output_array are not given, then use predefined arrays
+        as planned with serial transform object ``_xfftn``.
+
+        """
+
+        if input_array is not None:
+            self.input_array[...] = input_array
+
+        for i in range(len(self._transfer)):
+            self._xfftn[i](kind=self._get_kind(self._xfftn[i], kind), **kw)
+            arrayA = self._xfftn[i].output_array
+            arrayB = self._xfftn[i+1].input_array
+            self._transfer[i](arrayA, arrayB)
+        self._xfftn[-1](kind=self._get_kind(self._xfftn[-1], kind), **kw)
+
+        if output_array is not None:
+            output_array[...] = self.output_array
+            return output_array
+        else:
+            return self.output_array
 
 class ScalarTransform(Transform):
     """Class for performing the scalar product in parallel
@@ -69,13 +126,21 @@ class ScalarTransform(Transform):
         self.input_array[...] = self.input_array*xj
         return
 
-    def __call__(self, input_array=None, output_array=None, **kw):
+    def __call__(self, input_array=None, output_array=None, kind=None, **kw):
         """Compute transform
 
         Parameters
         ----------
         input_array : array, optional
         output_array : array, optional
+        kind : dict, optional
+            Alternatives for implementation. Can be used to overload
+            config['transforms']['kind'], with a dictionary with family as key
+            and values either one of the strings
+            - 'fast'
+            - 'recursive'
+            - 'vandermonde'
+            For example kind={'chebyshev': 'vandermonde'}
         kw : dict
             parameters to serial transforms
             Note in particular that the keyword ``'normalize'=True/False`` can be
@@ -95,11 +160,11 @@ class ScalarTransform(Transform):
             self.get_measured_input_array()
 
         for i in range(len(self._transfer)):
-            self._xfftn[i](**kw)
+            self._xfftn[i](kind=self._get_kind(self._xfftn[i], kind), **kw)
             arrayA = self._xfftn[i].output_array
             arrayB = self._xfftn[i+1].input_array
             self._transfer[i](arrayA, arrayB)
-        self._xfftn[-1](**kw)
+        self._xfftn[-1](kind=self._get_kind(self._xfftn[-1], kind), **kw)
 
         if output_array is not None:
             output_array[...] = self.output_array
@@ -120,7 +185,8 @@ class ForwardTransform(ScalarTransform):
         the distributed global arrays
     T : :class:`.TensorProductSpace`
     """
-    def __call__(self, input_array=None, output_array=None, **kw):
+    def __call__(self, input_array=None, output_array=None, kind=None, **kw):
+
         if input_array is not None:
             self.input_array[...] = input_array
 
@@ -132,19 +198,19 @@ class ForwardTransform(ScalarTransform):
             assert self._T.dimensions == 2, 'Two inhomogeneous boundary directions only implemented for 2D'
             u = TrialFunction(self._T)
             v = TestFunction(self._T)
-            B = inner(u, v)
-            b = inner(v, input_array)
+            B = inner(u, v, kind=kind)
+            b = inner(v, input_array, kind=kind)
             sol = la.Solver2D(B)
             self.output_array[:] = sol(b)
 
         else:
 
             for i in range(len(self._transfer)):
-                self._xfftn[i](**kw)
+                self._xfftn[i](kind=self._get_kind(self._xfftn[i], kind), **kw)
                 arrayA = self._xfftn[i].output_array
                 arrayB = self._xfftn[i+1].input_array
                 self._transfer[i](arrayA, arrayB)
-            self._xfftn[-1](**kw)
+            self._xfftn[-1](kind=self._get_kind(self._xfftn[-1], kind), **kw)
 
         if output_array is not None:
             output_array[...] = self.output_array
@@ -232,7 +298,7 @@ class TensorProductSpace(PFFT):
             return
 
         if axes is not None:
-            axes = list(axes) if np.ndim(axes) else [axes]
+            axes = list(axes) if not isinstance(axes, int) else [axes]
         else:
             axes = list(range(len(shape)))
 
@@ -344,7 +410,7 @@ class TensorProductSpace(PFFT):
                 [o.forward for o in self.xfftn],
                 [o.forward for o in self.transfer],
                 self.pencil, self)
-            self.backward = Transform(
+            self.backward = BackwardTransform(
                 [o.backward for o in self.xfftn[::-1]],
                 [o.backward for o in self.transfer[::-1]],
                 self.pencil[::-1])
@@ -420,7 +486,7 @@ class TensorProductSpace(PFFT):
 
         self.pencil[1] = pencilA
 
-        self.backward = Transform(
+        self.backward = BackwardTransform(
             [o.backward for o in self.xfftn],
             [o.forward for o in self.transfer],
             self.pencil)
@@ -1042,27 +1108,32 @@ class TensorProductSpace(PFFT):
                                   dtype=self.forward.input_array.dtype,
                                   coordinates=self.coors.coordinates)
 
-    def get_testspace(self, PG=False, **kwargs):
+    def get_testspace(self, kind='Galerkin', **kwargs):
         r"""Return appropriate test space
-
-        If `PG` is True and it exists, the returned test space makes use of the
-        testbases `Phi1`, `Phi2`, `Phi3` or `Phi4`, where the choice is made
-        on the number of boundary conditions in self. One boundary condition
-        uses `Phi1`, two uses `Phi2` etc.
-
-        If `PG` is False (or if `PhiX` does not exist for a given basis), then
-        return what is already in self.bases, corresponding to a regular Galerkin
-        method where the test space is the same as the trial space.
 
         Parameters
         ----------
-        PG : bool, optional
-            If True, and if they exists, make use of `Phi1`, `Phi2`, `Phi3`
-            or `Phi4`. If False, then simply use the same test space as trial.
+        kind : str, optional
+
+            - 'Galerkin' - or 'G'
+            - 'Petrov-Galerkin' - or 'PG'
+
+            If kind = 'Galerkin', then return self, corresponding to a regular
+            Galerkin method.
+
+            If kind = 'Petrov-Galerkin' or 'PG', then return a test space that makes
+            use of the testbases `Phi1`, `Phi2`, `Phi3` or `Phi4`, where the choice
+            is made based on the number of boundary conditions in self. One boundary
+            condition uses `Phi1`, two uses `Phi2` etc.
 
         kwargs : keyword arguments, optional
             Any other keyword arguments used in the creation of the test bases.
-            Only used if PG=True.
+
+        Note
+        ----
+        Petrov-Galerkin is only possible for Jacobi polynomials. If mixed with,
+        e.g., Fourier spaces, then regular Galerkin is used for the non-polynomial
+        bases.
 
         Returns
         -------
@@ -1070,7 +1141,7 @@ class TensorProductSpace(PFFT):
         """
         test = []
         for base in self.bases:
-            test.append(base.get_testspace(PG=PG, **kwargs))
+            test.append(base.get_testspace(kind=kind, **kwargs))
         return TensorProductSpace(self.subcomm, test, axes=self.axes,
                                   dtype=self.forward.input_array.dtype,
                                   coordinates=self.coors.coordinates)
@@ -1592,10 +1663,12 @@ class VectorTransform:
             return obj
         return getattr(obj[0], name)
 
-    def __call__(self, input_array, output_array, **kw):
+    def __call__(self, input_array, output_array, kind=None, **kw):
         for i, transform in enumerate(self._transforms):
+            k = kind[i] if isinstance(kind, CompositeSpace) else kind
             output_array.__array__()[i] = transform(input_array.__array__()[i],
-                                                    output_array.__array__()[i], **kw)
+                                                    output_array.__array__()[i],
+                                                    kind=k, **kw)
         return output_array
 
 

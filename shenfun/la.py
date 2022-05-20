@@ -2,12 +2,13 @@ r"""
 This module contains linear algebra solvers for SparseMatrices,
 TPMatrices and BlockMatrices.
 """
+from ipaddress import ip_address
 from numbers import Number, Integral
 import numpy as np
 from scipy.sparse import spmatrix, kron
 from scipy.sparse.linalg import splu
 from shenfun.config import config
-from shenfun.optimization import optimizer, get_optimized
+from shenfun.optimization import optimizer, runtimeoptimizer
 from shenfun.matrixbase import SparseMatrix, extract_bc_matrices, \
     BlockMatrix, get_simplified_tpmatrices
 from shenfun.forms.arguments import Function
@@ -311,15 +312,18 @@ class DiagMA(BandedMatrixSolver):
         return b
 
     @staticmethod
-    @optimizer
     def inner_solve(u, lu):
         d = lu[0]
         u[:d.shape[0]] /= d
 
     @staticmethod
-    @optimizer
+    @runtimeoptimizer
     def Solve(u, data, axis=0):
-        raise NotImplementedError('Only optimized version')
+        if axis > 0:
+            u = np.moveaxis(u, axis, 0)
+        DiagMA.inner_solve(u, data)
+        if axis > 0:
+            u = np.moveaxis(u, 0, axis)
 
 
 class TDMA(BandedMatrixSolver):
@@ -336,7 +340,7 @@ class TDMA(BandedMatrixSolver):
         self.issymmetric = self.mat.issymmetric
 
     @staticmethod
-    @optimizer
+    @runtimeoptimizer
     def LU(data):
         ld = data[0, :-2]
         d = data[1, :]
@@ -364,7 +368,6 @@ class TDMA(BandedMatrixSolver):
         return self._lu
 
     @staticmethod
-    @optimizer
     def inner_solve(u, data):
         ld = data[0, :-2]
         d = data[1, :]
@@ -379,9 +382,13 @@ class TDMA(BandedMatrixSolver):
             u[i] = (u[i] - ud[i]*u[i+2])/d[i]
 
     @staticmethod
-    @optimizer
+    @runtimeoptimizer
     def Solve(u, data, axis=0):
-        raise NotImplementedError('Only optimized version')
+        if axis > 0:
+            u = np.moveaxis(u, axis, 0)
+        TDMA.inner_solve(u, data)
+        if axis > 0:
+            u = np.moveaxis(u, 0, axis)
 
 
 class TDMA_O(BandedMatrixSolver):
@@ -405,7 +412,7 @@ class TDMA_O(BandedMatrixSolver):
         return self._lu
 
     @staticmethod
-    @optimizer
+    @runtimeoptimizer
     def LU(data):
         ld = data[0, :-1]
         d = data[1, :]
@@ -416,7 +423,6 @@ class TDMA_O(BandedMatrixSolver):
             d[i] -= ld[i-1]*ud[i-1]
 
     @staticmethod
-    @optimizer
     def inner_solve(u, data):
         ld = data[0, :-1]
         d = data[1, :]
@@ -430,9 +436,13 @@ class TDMA_O(BandedMatrixSolver):
             u[i] = (u[i] - ud[i]*u[i+1])/d[i]
 
     @staticmethod
-    @optimizer
+    @runtimeoptimizer
     def Solve(u, data, axis=0):
-        raise NotImplementedError('Only optimized version')
+        if axis > 0:
+            u = np.moveaxis(u, axis, 0)
+        TDMA_O.inner_solve(u, data)
+        if axis > 0:
+            u = np.moveaxis(u, 0, axis)
 
 
 class PDMA(BandedMatrixSolver):
@@ -466,7 +476,7 @@ class PDMA(BandedMatrixSolver):
         return b
 
     @staticmethod
-    @optimizer
+    @runtimeoptimizer
     def LU(data): # pragma: no cover
         a = data[0, :-4]
         b = data[1, :-2]
@@ -503,7 +513,6 @@ class PDMA(BandedMatrixSolver):
         return self._lu
 
     @staticmethod
-    @optimizer
     def inner_solve(u, data):
         a = data[0, :-4]
         b = data[1, :-2]
@@ -523,10 +532,13 @@ class PDMA(BandedMatrixSolver):
             u[k] = (u[k]-e[k]*u[k+2]-f[k]*u[k+4])/d[k]
 
     @staticmethod
-    @optimizer
+    @runtimeoptimizer
     def Solve(u, data, axis=0):
-        raise NotImplementedError('Only optimized version')
-
+        if axis > 0:
+            u = np.moveaxis(u, axis, 0)
+        PDMA.inner_solve(u, data)
+        if axis > 0:
+            u = np.moveaxis(u, 0, axis)
 
 class FDMA(BandedMatrixSolver):
     """4-diagonal matrix solver
@@ -548,7 +560,7 @@ class FDMA(BandedMatrixSolver):
         return self._lu
 
     @staticmethod
-    @optimizer
+    @runtimeoptimizer
     def LU(data):
         ld = data[0, :-2]
         d = data[1, :]
@@ -564,7 +576,7 @@ class FDMA(BandedMatrixSolver):
     def apply_constraints(self, b, constraints, axis=0):
         if len(constraints) > 0:
             assert len(constraints) == 1
-            assert constraints[0][0] == 0, 'Can only fix first row of TDMA'
+            assert constraints[0][0] == 0, 'Can only fix first row of FDMA'
             self._lu.diagonal(0)[0] = 1
             self._lu.diagonal(2)[0] = 0
             self._lu.diagonal(4)[0] = 0
@@ -574,7 +586,6 @@ class FDMA(BandedMatrixSolver):
         return b
 
     @staticmethod
-    @optimizer
     def inner_solve(u, data):
         ld = data[0, :-2]
         d = data[1, :]
@@ -591,9 +602,13 @@ class FDMA(BandedMatrixSolver):
             u[i] = (u[i] - u1[i]*u[i+2] - u2[i]*u[i+4])/d[i]
 
     @staticmethod
-    @optimizer
+    @runtimeoptimizer
     def Solve(u, data, axis=0):
-        raise NotImplementedError('Only optimized version')
+        if axis > 0:
+            u = np.moveaxis(u, axis, 0)
+        FDMA.inner_solve(u, data)
+        if axis > 0:
+            u = np.moveaxis(u, 0, axis)
 
 class TwoDMA(BandedMatrixSolver):
     """2-diagonal matrix solver
@@ -623,7 +638,6 @@ class TwoDMA(BandedMatrixSolver):
         return self._lu
 
     @staticmethod
-    @optimizer
     def inner_solve(u, data):
         d = data[0, :]
         u1 = data[1, 2:]
@@ -634,9 +648,13 @@ class TwoDMA(BandedMatrixSolver):
             u[i] = (u[i] - u1[i]*u[i+2])/d[i]
 
     @staticmethod
-    @optimizer
+    @runtimeoptimizer
     def Solve(u, data, axis=0):
-        raise NotImplementedError('Only optimized version')
+        if axis > 0:
+            u = np.moveaxis(u, axis, 0)
+        TwoDMA.inner_solve(u, data)
+        if axis > 0:
+            u = np.moveaxis(u, 0, axis)
 
 class ThreeDMA(BandedMatrixSolver):
     """3-diagonal matrix solver - all diagonals upper
@@ -667,7 +685,6 @@ class ThreeDMA(BandedMatrixSolver):
         return self._lu
 
     @staticmethod
-    @optimizer
     def inner_solve(u, data):
         d = data[0, :]
         u1 = data[1, 2:]
@@ -681,9 +698,125 @@ class ThreeDMA(BandedMatrixSolver):
             u[i] = (u[i] - u1[i]*u[i+2] - u2[i]*u[i+4])/d[i]
 
     @staticmethod
-    @optimizer
+    @runtimeoptimizer
     def Solve(u, data, axis=0):
-        raise NotImplementedError('Only optimized version')
+        if axis > 0:
+            u = np.moveaxis(u, axis, 0)
+        ThreeDMA.inner_solve(u, data)
+        if axis > 0:
+            u = np.moveaxis(u, 0, axis)
+
+class HeptaDMA(BandedMatrixSolver):
+    """Heptadiagonal matrix solver
+
+    Parameters
+    ----------
+    mats : :class:`.SparseMatrix` or list of :class:`.SparseMatrix` instances
+        Heptadiagonal matrix with diagonals in offsets
+        -4, -2, 0, 2, 4, 6, 8
+
+    """
+    def __init__(self, mats):
+        BandedMatrixSolver.__init__(self, mats)
+        assert len(self.mat) == 7
+
+    def apply_constraints(self, b, constraints, axis=0):
+        if len(constraints) > 0:
+            assert len(constraints) == 1
+            assert constraints[0][0] == 0, 'Can only fix first row of HeptaDMA'
+            self._lu.diagonal(0)[0] = 1
+            self._lu.diagonal(2)[0] = 0
+            self._lu.diagonal(4)[0] = 0
+            self._lu.diagonal(6)[0] = 0
+            self._lu.diagonal(8)[0] = 0
+            if b.ndim > 1:
+                s = [slice(None)]*len(b.shape)
+                s[axis] = 0
+                b[tuple(s)] = constraints[0][1]
+            else:
+                b[0] = constraints[0][1]
+            self._inner_arg = self._lu.data
+        return b
+
+    @staticmethod
+    @runtimeoptimizer
+    def LU(data): # pragma: no cover
+        a = data[0, :-4]
+        b = data[1, :-2]
+        d = data[2, :]
+        e = data[3, 2:]
+        f = data[4, 4:]
+        g = data[5, 6:]
+        h = data[6, 8:]
+        n = d.shape[0]
+        m = e.shape[0]
+        k = n - m
+        for i in range(n-2*k):
+            lam = b[i]/d[i]
+            d[i+k] -= lam*e[i]
+            e[i+k] -= lam*f[i]
+            if i < n-6:
+                f[i+k] -= lam*g[i]
+            if i < n-8:
+                g[i+k] -= lam*h[i]
+            b[i] = lam
+            lam = a[i]/d[i]
+            b[i+k] -= lam*e[i]
+            d[i+2*k] -= lam*f[i]
+            if i < n-6:
+                e[i+2*k] -= lam*g[i]
+            if i < n-8:
+                f[i+2*k] -= lam*h[i]
+            a[i] = lam
+        i = n-4
+        lam = b[i]/d[i]
+        d[i+k] -= lam*e[i]
+        b[i] = lam
+        i = n-3
+        lam = b[i]/d[i]
+        d[i+k] -= lam*e[i]
+        b[i] = lam
+
+    def perform_lu(self):
+        if self._inner_arg is None:
+            self.LU(self._lu.data)
+            self._inner_arg = self._lu.data
+        return self._lu
+
+    @staticmethod
+    def inner_solve(u, data):
+        a = data[0, :-4]
+        b = data[1, :-2]
+        d = data[2, :]
+        e = data[3, 2:]
+        f = data[4, 4:]
+        g = data[5, 6:]
+        h = data[6, 8:]
+        n = d.shape[0]
+        u[2] -= b[0]*u[0]
+        u[3] -= b[1]*u[1]
+        for k in range(4, n):
+            u[k] -= (b[k-2]*u[k-2] + a[k-4]*u[k-4])
+        u[n-1] /= d[n-1]
+        u[n-2] /= d[n-2]
+        u[n-3] = (u[n-3]-e[n-3]*u[n-1])/d[n-3]
+        u[n-4] = (u[n-4]-e[n-4]*u[n-2])/d[n-4]
+        u[n-5] = (u[n-5]-e[n-5]*u[n-3]-f[n-5]*u[n-1])/d[n-5]
+        u[n-6] = (u[n-6]-e[n-6]*u[n-4]-f[n-6]*u[n-2])/d[n-6]
+        u[n-7] = (u[n-7]-e[n-7]*u[n-5]-f[n-7]*u[n-3]-g[n-7]*u[n-1])/d[n-7]
+        u[n-8] = (u[n-8]-e[n-8]*u[n-6]-f[n-8]*u[n-4]-g[n-8]*u[n-2])/d[n-8]
+        for k in range(n-9, -1, -1):
+            u[k] = (u[k]-e[k]*u[k+2]-f[k]*u[k+4]-g[k]*u[k+6]-h[k]*u[k+8])/d[k]
+
+    @staticmethod
+    @runtimeoptimizer
+    def Solve(u, data, axis=0):
+        if axis > 0:
+            u = np.moveaxis(u, axis, 0)
+        HeptaDMA.inner_solve(u, data)
+        if axis > 0:
+            u = np.moveaxis(u, 0, axis)
+
 
 class Solve(SparseMatrixSolver):
     """Generic solver class for ::class:`.SparseMatrix`
@@ -1185,7 +1318,7 @@ class SolverGeneric1ND:
         return data
 
     @staticmethod
-    @optimizer
+    @runtimeoptimizer
     def solve_data(u, data, sol, naxes, is_rank_zero):
         s = [0]*u.ndim
         s[naxes] = slice(None)
@@ -1226,7 +1359,7 @@ class SolverGeneric1ND:
             sol0.inner_solve(u[s], sol0._inner_arg)
 
         data = self.get_data(is_rank_zero)
-        sol = get_optimized(sol1.inner_solve, mode=config['optimization']['mode'])
+        sol = optimizer(sol1.inner_solve, False)
         u = self.solve_data(u, data, sol, naxes, is_rank_zero)
 
     def solve(self, u, b, solvers1D, naxes):

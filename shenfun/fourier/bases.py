@@ -126,8 +126,7 @@ class FourierBase(SpectralBase):
 
     # Reimplemented for efficiency (smaller array in *= when truncated)
     def forward(self, input_array=None, output_array=None, kind='fast'):
-
-        if kind == 'vandermonde':
+        if kind != 'fast':
             return SpectralBase.forward(self, input_array, output_array, kind=kind)
 
         if input_array is not None:
@@ -152,7 +151,7 @@ class FourierBase(SpectralBase):
         return array
 
     def _evaluate_scalar_product(self, kind='fast'):
-        if kind == 'vandermonde':
+        if kind != 'fast':
             SpectralBase._evaluate_scalar_product(self, kind=kind)
             return
         output = self.scalar_product.xfftn()
@@ -398,6 +397,7 @@ class R2C(FourierBase):
 
                 output_array[:] = np.moveaxis(array, 0, self.axis)
             return
+        assert kind == 'fast'
         assert input_array is self.backward.tmp_array
         assert output_array is self.backward.output_array
         self.backward.xfftn(normalise_idft=False)
@@ -523,6 +523,7 @@ class C2C(FourierBase):
         if kind == 'vandermonde':
             SpectralBase._evaluate_expansion_all(self, input_array, output_array, x, kind=kind)
             return
+        assert kind == 'fast'
         assert input_array is self.backward.tmp_array
         assert output_array is self.backward.output_array
         self.backward.xfftn(normalise_idft=False)

@@ -61,7 +61,7 @@ def main(N, family, bc):
     SD = FunctionSpace(N, family=family, bc=bcs[bc], domain=domain, alpha=1, beta=1) # alpha and beta are neglected for all but Jacobi
     K1 = FunctionSpace(N, family='F', dtype='d', domain=(-2*sp.pi, 2*sp.pi))
     T = TensorProductSpace(comm, (SD, K1), axes=(0, 1))
-    B = T.get_testspace(PG=True)
+    B = T.get_testspace(kind='PG')
 
     u = TrialFunction(T)
     v = TestFunction(B)

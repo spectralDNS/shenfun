@@ -11,7 +11,7 @@ import math
 import numpy as np
 import sympy as sp
 from scipy.fftpack import dct
-from shenfun.optimization import optimizer
+from shenfun.optimization import runtimeoptimizer
 from shenfun.config import config
 from .findbasis import get_bc_basis, get_stencil_matrix, n
 
@@ -153,7 +153,7 @@ def outer(a, b, c):
         outer3D(av, bv, cv, symmetric)
     return c
 
-@optimizer
+@runtimeoptimizer
 def outer2D(a, b, c, symmetric):
     c[0] = a[0]*b[0]
     c[1] = a[0]*b[1]
@@ -163,7 +163,7 @@ def outer2D(a, b, c, symmetric):
         c[2] = a[1]*b[0]
     c[3] = a[1]*b[1]
 
-@optimizer
+@runtimeoptimizer
 def outer3D(a, b, c, symmetric):
     c[0] = a[0]*b[0]
     c[1] = a[0]*b[1]
@@ -359,7 +359,7 @@ def dot(u, v, output_array=None, forward_output=True):
     return uv
 
 
-@optimizer
+@runtimeoptimizer
 def apply_mask(u_hat, mask):
     if mask is not None:
         u_hat *= mask

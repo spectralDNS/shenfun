@@ -106,9 +106,6 @@ class Orthogonal(SpectralBase):
         self.alpha = alpha
         self.beta = beta
         self.gn = 1
-        self.forward = functools.partial(self.forward, kind='vandermonde')
-        self.backward = functools.partial(self.backward, kind='vandermonde')
-        self.scalar_product = functools.partial(self.scalar_product, kind='vandermonde')
         self.plan(int(N*padding_factor), 0, dtype, {})
 
     @staticmethod

@@ -3,6 +3,7 @@ import sympy as sp
 import numpy as np
 from shenfun import FunctionSpace, Function, project, TensorProductSpace, \
     comm, Array
+from shenfun.tensorproductspace import CompositeSpace
 
 x, y = sp.symbols('x,y', real=True)
 f = sp.sin(sp.cos(x))
@@ -54,6 +55,16 @@ def test_backward2D():
 
     u2 = uL.backward(kind=TT)
     uT2 = project(u2, TT)
+    assert np.linalg.norm(uT2-uT)
+
+    TTC = CompositeSpace((TT, TT))
+    TTL = CompositeSpace((TL, TL))
+
+    uT = Function(TTC, buffer=(f, f))
+    uL = Function(TTL, buffer=(f, f))
+
+    u2 = uL.backward(kind=TTC)
+    uT2 = project(u2, TTC)
     assert np.linalg.norm(uT2-uT)
 
 def test_backward2ND():
@@ -250,8 +261,8 @@ def test_padding_biharmonic(family):
 
 if __name__ == '__main__':
     #test_backward()
-    #test_backward2D()
-    test_padding('C')
+    test_backward2D()
+    #test_padding('C')
     #test_padding_biharmonic('J')
     #test_padding_neumann('C')
     #test_padding_orthogonal('F')

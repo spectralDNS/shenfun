@@ -1159,38 +1159,45 @@ class SpectralBase:
         d.update(kwargs)
         return self.__class__(self.N, **d)
 
-    def get_testspace(self, PG=False, **kwargs):
+    def get_testspace(self, kind='Galerkin', **kwargs):
         r"""Return appropriate test space
-
-        If `PG` is True and it exists, the returned test space is one of the
-        testbases `Phi1`, `Phi2`, `Phi3` or `Phi4`, where the choice is made
-        on the number of boundary conditions in self. One boundary condition
-        uses `Phi1`, two uses `Phi2` etc. The returned basis then corresponds
-        to :math:`\{\phi^{(k)}_n\}`, where
-
-        .. math::
-
-            \phi_n^{(k)} = \frac{(1-x^2)^k}{h^{(k)}_{n+k}}\frac{d^k}{dx^k}Q_{n+k}
-
-        If `PG` is False (or if `PhiX` does not exist), then return self,
-        corresponding to a regular Galerkin method where the test space is the
-        same as the trial space.
 
         Parameters
         ----------
-        PG : bool, optional
-            If True, and if they exists, return one of `Phi1`, `Phi2`, `Phi3`
-            or `Phi4`. If False, then simply use the same test space as trial.
+        kind : str, optional
+
+            - 'Galerkin' - or 'G'
+            - 'Petrov-Galerkin' - or 'PG'
+
+            If kind = 'Galerkin' or 'G', then return self, corresponding to a
+            regular Galerkin method.
+
+            If kind = 'Petrov-Galerkin' or 'PG', then return a test space that
+            makes use of the testbases `Phi1`, `Phi2`, `Phi3` or `Phi4`, where
+            the actual choice is made based on the number of boundary conditions
+            in self. One boundary condition uses `Phi1`, two uses `Phi2` etc.
+
+            For Petrov-Galerkin the returned basis corresponds to
+            :math:`\{\phi^{(k)}_n\}`, where
+
+            .. math::
+
+                \phi_n^{(k)} = \frac{(1-x^2)^k}{h^{(k)}_{n+k}}\frac{d^k}{dx^k}Q_{n+k}
 
         kwargs : keyword arguments, optional
             Any other keyword arguments used in the creation of the test bases.
-            Only used if PG=True.
+            Only used if kind='Petrov-Galerkin'.
+
+        Note
+        ----
+        If self is not a Jacobi polynomial basis, then return self,
+        corresponding to a regular Galerkin method.
 
         Returns
         -------
         Instance of :class:`.SpectralBase`
         """
-        if not PG:
+        if kind == 'Galerkin' or kind == 'G':
             return self
 
         d = dict(domain=self.domain,
@@ -2158,8 +2165,8 @@ def get_norm_sq(v, u, method):
     method : str
         Type of integration
 
-        - exact
-        - quadrature
+        - 'exact'
+        - 'quadrature'
     """
     if method == 'quadrature':
         return v.l2_norm_sq()[:min(v.N, u.N)]

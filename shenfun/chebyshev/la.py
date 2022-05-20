@@ -2,7 +2,7 @@
 
 from copy import copy
 import numpy as np
-from shenfun.optimization import optimizer
+from shenfun.optimization import runtimeoptimizer
 from shenfun.la import SparseMatrixSolver
 from shenfun.matrixbase import TPMatrix, SpectralMatrix, extract_bc_matrices,\
     get_simplified_tpmatrices
@@ -24,7 +24,7 @@ class ADDSolver(SparseMatrixSolver):
         return 1
 
     @staticmethod
-    @optimizer
+    @runtimeoptimizer
     def Poisson_Solve_ADD(A, b, u, axis=0):
         s = A.trialfunction[0].slice()
 
@@ -276,12 +276,12 @@ class Helmholtz:
                           self.u1, self.u2, self.L, self.axis)
 
     @staticmethod
-    @optimizer
+    @runtimeoptimizer
     def LU_Helmholtz(A, B, As, Bs, neumann, u0, u1, u2, L, axis=0):
         raise NotImplementedError
 
     @staticmethod
-    @optimizer
+    @runtimeoptimizer
     def Solve_Helmholtz(b, u, neumann, u0, u1, u2, L, axis=0):
         raise NotImplementedError
 
@@ -341,12 +341,12 @@ class Helmholtz:
         return c
 
     @staticmethod
-    @optimizer
+    @runtimeoptimizer
     def Helmholtz_matvec(v, b, alfa, beta, A, B, axis=0):
         raise NotImplementedError("Use Cython or Numba")
 
     @staticmethod
-    @optimizer
+    @runtimeoptimizer
     def Helmholtz_Neumann_matvec(v, b, alfa, beta, A, B, axis=0):
         raise NotImplementedError("Use Cython or Numba")
 
@@ -503,23 +503,23 @@ class Biharmonic:
         self.Biharmonic_factor_pr(self.ak, self.bk, self.l0, self.l1, self.axis)
 
     @staticmethod
-    @optimizer
+    @runtimeoptimizer
     def LU_Biharmonic(a0, alfa, beta, sii, siu, siuu, ail, aii, aiu,
                       bill, bil, bii, biu, biuu, u0, u1, u2, l0, l1, axis):
         raise NotImplementedError('Use Cython or Numba')
 
     @staticmethod
-    @optimizer
+    @runtimeoptimizer
     def Biharmonic_factor_pr(ak, bk, l0, l1, axis):
         raise NotImplementedError('Use Cython or Numba')
 
     @staticmethod
-    @optimizer
+    @runtimeoptimizer
     def Biharmonic_Solve(axis, b, u, u0, u1, u2, l0, l1, ak, bk, a0):
         raise NotImplementedError('Use Cython or Numba')
 
     @staticmethod
-    @optimizer
+    @runtimeoptimizer
     def Biharmonic_matvec(v, b, a0, alfa, beta,
                           sii, siu, siuu, ail, aii, aiu,
                           bill, bil, bii, biu, biuu, axis=0):
