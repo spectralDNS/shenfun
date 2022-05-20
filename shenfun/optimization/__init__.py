@@ -8,6 +8,11 @@ from within the regular Python modules.
 """
 import importlib
 from functools import wraps
+from . import cython
+try:
+    from . import numba
+except ModuleNotFoundError:
+    numba = None
 
 class runtimeoptimizer:
     """Decorator that chooses optimized function at runtime
