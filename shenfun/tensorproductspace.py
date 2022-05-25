@@ -24,18 +24,24 @@ __all__ = ('TensorProductSpace', 'VectorSpace', 'TensorSpace',
 
 @staticmethod
 def _get_kind(xfftn, kind):
-    if isinstance(kind, (TensorProductSpace, CompositeSpace)):
-        return kind
     family = xfftn.func.func.__self__.family()
     kind = {} if kind is None else kind
     return kind.get(family, config['transforms']['kind'][family])
 
+@staticmethod
+def _get_mesh(xfftn, mesh):
+    axis = xfftn.func.func.__self__.axis
+    if isinstance(mesh, TensorProductSpace):
+        return mesh.bases[axis]
+    return mesh
+
 # Monkey-patch
 Transform._get_kind = _get_kind
+Transform._get_mesh = _get_mesh
 
 class BackwardTransform(Transform):
-    def __call__(self, input_array=None, output_array=None, kind=None, **kw):
-        """Compute transform
+    def __call__(self, input_array=None, output_array=None, kind=None, mesh=None, **kw):
+        """Compute backward transform
 
         Parameters
         ----------
@@ -49,6 +55,14 @@ class BackwardTransform(Transform):
             - 'recursive'
             - 'vandermonde'
             For example kind={'chebyshev': 'vandermonde'}
+
+        mesh : str or functionspace, optional
+            - 'quadrature' - use quadrature mesh
+            - 'uniform' - use uniform mesh
+            - instance of :class:`.TensorProductSpace` or :class:`.CompositeSpace`
+              Use Vandermonde and the quadrature mesh of this space.
+              The space must have the same underlying mesh distribution as self
+
         kw : dict
             parameters to serial transforms
             Note in particular that the keyword ``'normalize'=True/False`` can be
@@ -66,11 +80,11 @@ class BackwardTransform(Transform):
             self.input_array[...] = input_array
 
         for i in range(len(self._transfer)):
-            self._xfftn[i](kind=self._get_kind(self._xfftn[i], kind), **kw)
+            self._xfftn[i](kind=self._get_kind(self._xfftn[i], kind), mesh=self._get_mesh(self._xfftn[i], mesh), **kw)
             arrayA = self._xfftn[i].output_array
             arrayB = self._xfftn[i+1].input_array
             self._transfer[i](arrayA, arrayB)
-        self._xfftn[-1](kind=self._get_kind(self._xfftn[-1], kind), **kw)
+        self._xfftn[-1](kind=self._get_kind(self._xfftn[-1], kind), mesh=self._get_mesh(self._xfftn[-1], mesh), **kw)
 
         if output_array is not None:
             output_array[...] = self.output_array
@@ -127,7 +141,7 @@ class ScalarTransform(Transform):
         return
 
     def __call__(self, input_array=None, output_array=None, kind=None, **kw):
-        """Compute transform
+        """Compute scalar product
 
         Parameters
         ----------
@@ -186,7 +200,32 @@ class ForwardTransform(ScalarTransform):
     T : :class:`.TensorProductSpace`
     """
     def __call__(self, input_array=None, output_array=None, kind=None, **kw):
+        """Compute forward transform
 
+        Parameters
+        ----------
+        input_array : array, optional
+        output_array : array, optional
+        kind : dict, optional
+            Alternatives for implementation. Can be used to overload
+            config['transforms']['kind'], with a dictionary with family as key
+            and values either one of the strings
+            - 'fast'
+            - 'recursive'
+            - 'vandermonde'
+            For example kind={'chebyshev': 'vandermonde'}
+        kw : dict
+            parameters to serial transforms
+            Note in particular that the keyword ``'normalize'=True/False`` can be
+            used to turn normalization on or off. Default is to enable
+            normalization for forward transforms and disable it for backward.
+
+        Note
+        ----
+        If input_array/output_array are not given, then use predefined arrays
+        as planned with serial transform object ``_xfftn``.
+
+        """
         if input_array is not None:
             self.input_array[...] = input_array
 
@@ -202,9 +241,7 @@ class ForwardTransform(ScalarTransform):
             b = inner(v, input_array, kind=kind)
             sol = la.Solver2D(B)
             self.output_array[:] = sol(b)
-
         else:
-
             for i in range(len(self._transfer)):
                 self._xfftn[i](kind=self._get_kind(self._xfftn[i], kind), **kw)
                 arrayA = self._xfftn[i].output_array
@@ -848,66 +885,82 @@ class TensorProductSpace(PFFT):
             return [np.broadcast_to(m, self.shape()) for m in lk]
         return lk
 
-    def mesh(self, uniform=False):
+    def mesh(self, map_true_domain=True, kind='quadrature'):
         """Return list of 1D physical meshes for each dimension of
         :class:`.TensorProductSpace`
 
         Parameters
         ----------
-        uniform : bool, optional
-            Use uniform mesh for non-periodic bases
+        map_true_domain : bool, optional
+            Whether or not to map points to true domain
+        kind : str, optional
+
+            - 'quadrature' - Use quadrature mesh
+            - 'uniform' - Use uniform mesh
         """
         X = []
         for base in self:
-            X.append(base.mesh(uniform=uniform))
+            X.append(base.mesh(bcast=True, map_true_domain=map_true_domain, kind=kind))
         return X
 
-    def local_mesh(self, broadcast=False, uniform=False):
+    def local_mesh(self, bcast=False, map_true_domain=True, kind='quadrature'):
         """Return list of local 1D physical meshes for each dimension of
         :class:`.TensorProductSpace`
 
         Parameters
         ----------
-        broadcast : bool, optional
+        bcast : bool, optional
             Broadcast each 1D mesh to real shape of
             :class:`.TensorProductSpace`
-        uniform : bool, optional
-            Use uniform mesh for non-periodic bases
+        map_true_domain : bool, optional
+            Whether or not to map points to true domain
+        kind : str, optional
+
+            - 'quadrature' - Use quadrature mesh
+            - 'uniform' - Use uniform mesh
         """
-        mesh = self.mesh(uniform=uniform)
+        mesh = self.mesh(map_true_domain=map_true_domain, kind=kind)
         lm = []
         for axis, (n, s) in enumerate(zip(mesh, self.local_slice(False))):
             ss = [slice(None)]*len(mesh)
             ss[axis] = s
             lm.append(n[tuple(ss)])
-        if broadcast is True:
+        if bcast is True:
             return [np.broadcast_to(m, self.shape(False)) for m in lm]
         return lm
 
-    def local_cartesian_mesh(self, uniform=False):
+    def local_cartesian_mesh(self, map_true_domain=True, kind='quadrature'):
         """Return local Cartesian mesh
 
         Parameters
         ----------
-        uniform : bool, optional
-            Use uniform mesh for non-periodic bases
+        map_true_domain : bool, optional
+            Whether or not to map points to true domain
+        kind : str, optional
+
+            - 'quadrature' - Use quadrature mesh
+            - 'uniform' - Use uniform mesh
         """
-        X = self.local_mesh(broadcast=True, uniform=uniform)
+        X = self.local_mesh(bcast=True, map_true_domain=map_true_domain, kind=kind)
         xx = []
         psi = self.coors.coordinates[0]
         for rv in self.coors.coordinates[1]:
             xx.append(sp.lambdify(psi, rv)(*X))
         return xx
 
-    def cartesian_mesh(self, uniform=False):
+    def cartesian_mesh(self, map_true_domain=True, kind='quadrature'):
         """Return Cartesian mesh
 
         Parameters
         ----------
-        uniform : bool, optional
-            Use uniform mesh for non-periodic bases
+        map_true_domain : bool, optional
+            Whether or not to map points to true domain
+        kind : str, optional
+
+            - 'quadrature' - Use quadrature mesh
+            - 'uniform' - Use uniform mesh
         """
-        X = self.mesh(uniform=uniform)
+        X = self.mesh(map_true_domain=map_true_domain, kind=kind)
         xx = []
         psi = self.coors.coordinates[0]
         for rv in self.coors.coordinates[1]:
@@ -1664,11 +1717,14 @@ class VectorTransform:
         return getattr(obj[0], name)
 
     def __call__(self, input_array, output_array, kind=None, **kw):
+        mesh = kw.get('mesh', None) # only backward transform
         for i, transform in enumerate(self._transforms):
-            k = kind[i] if isinstance(kind, CompositeSpace) else kind
+            if mesh is not None:
+                mi = mesh[i] if isinstance(mesh, CompositeSpace) else mesh
+                kw['mesh'] = mi
             output_array.__array__()[i] = transform(input_array.__array__()[i],
                                                     output_array.__array__()[i],
-                                                    kind=k, **kw)
+                                                    kind=kind, **kw)
         return output_array
 
 

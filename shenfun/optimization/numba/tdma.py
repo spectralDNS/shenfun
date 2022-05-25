@@ -1,4 +1,5 @@
 import numba as nb
+import numpy as np
 from .la import Solve_axis_2D, Solve_axis_3D, Solve_axis_4D
 
 __all__ = ['TDMA_LU', 'TDMA_Solve',
@@ -15,6 +16,12 @@ def TDMA_Solve(x, data, axis=0):
         Solve_axis_3D(data, x, TDMA_inner_solve, axis)
     elif n == 4:
         Solve_axis_4D(data, x, TDMA_inner_solve, axis)
+    else:
+        if axis > 0:
+            x = np.moveaxis(x, axis, 0)
+        TDMA_inner_solve(x, data)
+        if axis > 0:
+            x = np.moveaxis(x, 0, axis)
 
 def TDMA_O_Solve(x, data, axis=0):
     n = x.ndim
@@ -26,6 +33,12 @@ def TDMA_O_Solve(x, data, axis=0):
         Solve_axis_3D(data, x, TDMA_O_inner_solve, axis)
     elif n == 4:
         Solve_axis_4D(data, x, TDMA_O_inner_solve, axis)
+    else:
+        if axis > 0:
+            x = np.moveaxis(x, axis, 0)
+        TDMA_O_inner_solve(x, data)
+        if axis > 0:
+            x = np.moveaxis(x, 0, axis)
 
 @nb.jit(nopython=True, fastmath=True, cache=True)
 def TDMA_LU(data):

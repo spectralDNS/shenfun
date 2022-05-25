@@ -7,7 +7,7 @@ import numpy as np
 import sympy as sp
 from shenfun.config import config
 from shenfun.optimization.cython import evaluate
-from shenfun.spectralbase import BoundaryConditions
+from shenfun.spectralbase import BoundaryConditions, SpectralBase
 from mpi4py_fft import DistArray
 
 __all__ = ('Expr', 'BasisFunction', 'TestFunction', 'TrialFunction', 'Function',
@@ -1537,21 +1537,27 @@ class Function(ShenfunBaseArray, BasisFunction):
         """
         return self.function_space().eval(x, self, output_array)
 
-    def backward(self, output_array=None, kind=None, padding_factor=None):
+    def backward(self, output_array=None, kind=None, mesh=None, padding_factor=None):
         """Return Function evaluated on some quadrature mesh
 
         Parameters
         ----------
         output_array : array, optional
             Return array, Function evaluated on mesh
-        kind : str or function space, optional
+        kind : dict or str, optional
+            Can be used to overload config['transforms']['kind'], using a
+            dictionary with family as key and values either one of the strings
+            - 'fast'
+            - 'recursive'
+            - 'vandermonde'
+            For example kind={'chebyshev': 'vandermonde'}
+            Note that for one-dimensional problems one can use just the string
+            value and no dict
 
-            - 'fast' - Use fast transform on regular quadrature points
-            - 'vandermonde' - use Vandermonde on regular quadrature points
-            - 'recursive' - Use low-memory implementation (only for polynomials)
-            - 'uniform' - use Vandermonde on uniform mesh
-            - instance of :class:`.SpectralBase` - use Vandermonde and quadrature
-              mesh of this space.
+        mesh : str, list or functionspace, optional
+            - 'quadrature' - use quadrature mesh of self
+            - 'uniform' - use uniform mesh
+            - A function space with the same mesh distribution as self
 
         padding_factor : None or number or tuple, optional
             If padding_factor is a number different from 1, then perform a
@@ -1574,16 +1580,16 @@ class Function(ShenfunBaseArray, BasisFunction):
                 else:
                     output_array = Array(space)
                     space._backward_work_array = output_array
-            output_array = space.backward(self, output_array, kind=kind)
+            output_array = space.backward(self, output_array, kind=kind, mesh=mesh)
             return output_array
 
         space = self.function_space()
         if output_array is None:
-            if hasattr(kind, 'mesh'):
-                output_array = Array(kind)
+            if hasattr(mesh, 'mesh'):
+                output_array = Array(mesh)
             else:
                 output_array = Array(space)
-        output_array = space.backward(self, output_array, kind=kind)
+        output_array = space.backward(self, output_array, kind=kind, mesh=mesh)
         return output_array
 
     def get_dealiased_space(self, padding_factor):

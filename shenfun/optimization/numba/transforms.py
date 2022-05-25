@@ -13,6 +13,14 @@ def scalar_product(input_array, output_array, x, w, axis, a):
         fun_3D(_scalar_product, input_array, output_array, axis, x, w, a)
     elif n == 4:
         fun_4D(_scalar_product, input_array, output_array, axis, x, w, a)
+    else:
+        if axis > 0:
+            input_array = np.moveaxis(input_array, axis, 0)
+            output_array = np.moveaxis(output_array, axis, 0)
+        _scalar_product(input_array, output_array, x, w, a)
+        if axis > 0:
+            input_array = np.moveaxis(input_array, 0, axis)
+            output_array = np.moveaxis(output_array, 0, axis)
 
 def evaluate_expansion_all(input_array, output_array, x, axis, a):
     n = input_array.ndim
@@ -24,6 +32,14 @@ def evaluate_expansion_all(input_array, output_array, x, axis, a):
         fun_3D(_evaluate_expansion_all, input_array, output_array, axis, x, a)
     elif n == 4:
         fun_4D(_evaluate_expansion_all, input_array, output_array, axis, x, a)
+    else:
+        if axis > 0:
+            input_array = np.moveaxis(input_array, axis, 0)
+            output_array = np.moveaxis(output_array, axis, 0)
+        _evaluate_expansion_all(input_array, output_array, x, a)
+        if axis > 0:
+            input_array = np.moveaxis(input_array, 0, axis)
+            output_array = np.moveaxis(output_array, 0, axis)
 
 @nb.jit(nopython=True, fastmath=True, cache=True)
 def fun_2D(fun, input_array, output_array, axis, *args):

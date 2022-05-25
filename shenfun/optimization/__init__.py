@@ -17,7 +17,7 @@ except ModuleNotFoundError:
 class runtimeoptimizer:
     """Decorator that chooses optimized function at runtime
 
-    At runtime the decorator looks at
+    At runtime the decorator looks at::
 
         config['optimization']['mode']
         config['optimization']['verbose']
@@ -32,6 +32,12 @@ class runtimeoptimizer:
 
 def optimizer(func, wrap=True):
     """Decorator used to wrap calls to optimized versions of functions.
+
+    The optimized version must be implemented in the cython or numba modules.
+    For example, the :class:`.la.TDMA` linear algebra solver has a method called
+    :meth:`~shenfun.la.TDMA.Solve`, which is implemented with faster (optimized) code in
+    :meth:`~shenfun.optimization.cython.la.TDMA_Solve` and
+    :meth:`~shenfun.optimization.numba.tdma.TDMA_Solve`.
 
     Parameters
     ----------

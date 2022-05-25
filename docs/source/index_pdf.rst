@@ -27,7 +27,6 @@ Demos
    stokes
    drivencavity
    rayleighbenard
-   fasttransforms
    mixingbases
    tau
    sparsity

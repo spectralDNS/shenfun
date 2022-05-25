@@ -37,6 +37,11 @@ shenfun.optimization.cython module
     :undoc-members:
     :show-inheritance:
 
+.. automodule:: shenfun.optimization.cython.transforms
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 shenfun.optimization.numba module
 ---------------------------------
 
@@ -61,6 +66,36 @@ shenfun.optimization.numba module
     :show-inheritance:
 
 .. automodule:: shenfun.optimization.numba.tdma
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+.. automodule:: shenfun.optimization.numba.heptedma
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+.. automodule:: shenfun.optimization.numba.threedma
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+.. automodule:: shenfun.optimization.numba.twodma
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+.. automodule:: shenfun.optimization.numba.diagma
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+.. automodule:: shenfun.optimization.numba.fdma
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+.. automodule:: shenfun.optimization.numba.transforms
     :members:
     :undoc-members:
     :show-inheritance:

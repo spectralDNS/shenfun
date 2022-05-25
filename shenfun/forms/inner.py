@@ -107,6 +107,8 @@ def inner(expr0, expr1, output_array=None, assemble=None, kind=None, fixed_resol
         - 'vandermonde' - Use Vandermonde matrix
 
         E.g., kind={'chebyshev': 'recursive'}.
+        Note that for one-dimensional problems it is enough to use just the
+        value of the dictionary.
 
     fixed_resolution : Number or sequence of integers, optional
         A fixed number of quadrature points used to compute the inner product

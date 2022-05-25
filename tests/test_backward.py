@@ -7,6 +7,7 @@ from shenfun.tensorproductspace import CompositeSpace
 
 x, y = sp.symbols('x,y', real=True)
 f = sp.sin(sp.cos(x))
+ff = sp.sin(x)*sp.cos(y)
 h = sp.sin(sp.cos(x))*sp.atan2(y, x)
 N = 16
 
@@ -17,11 +18,11 @@ def test_backward():
     uT = Function(T, buffer=f)
     uL = Function(L, buffer=f)
 
-    uLT = uL.backward(kind=T)
+    uLT = uL.backward(mesh=T)
     uT2 = project(uLT, T)
     assert np.linalg.norm(uT2-uT) < 1e-8
 
-    uTL = uT.backward(kind=L)
+    uTL = uT.backward(mesh=L)
     uL2 = project(uTL, L)
     assert np.linalg.norm(uL2-uL) < 1e-8
 
@@ -31,7 +32,7 @@ def test_backward():
     uT = Function(T2, buffer=f)
     uL = Function(L, buffer=f)
 
-    uLT = uL.backward(kind=T2)
+    uLT = uL.backward(mesh=T2)
     uT2 = project(uLT, T2)
     assert np.linalg.norm(uT2-uT) < 1e-8
 
@@ -41,31 +42,26 @@ def test_backward2D():
     F = FunctionSpace(N, 'F', dtype='d')
     TT = TensorProductSpace(comm, (T, F))
     TL = TensorProductSpace(comm, (L, F))
-    uT = Function(TT, buffer=f)
-    uL = Function(TL, buffer=f)
-
-    u2 = uL.backward(kind=TT)
+    uT = Function(TT, buffer=ff)
+    uL = Function(TL, buffer=ff)
+    u2 = uL.backward(mesh=TT)
     uT2 = project(u2, TT)
-    assert np.linalg.norm(uT2-uT)
+    assert np.linalg.norm(uT2-uT) < 1e-8, np.linalg.norm(uT2-uT)
 
     TT = TensorProductSpace(comm, (F, T))
     TL = TensorProductSpace(comm, (F, L))
-    uT = Function(TT, buffer=f)
-    uL = Function(TL, buffer=f)
-
-    u2 = uL.backward(kind=TT)
+    uT = Function(TT, buffer=ff)
+    uL = Function(TL, buffer=ff)
+    u2 = uL.backward(mesh=TT)
     uT2 = project(u2, TT)
-    assert np.linalg.norm(uT2-uT)
-
+    assert np.linalg.norm(uT2-uT) < 1e-8
     TTC = CompositeSpace((TT, TT))
     TTL = CompositeSpace((TL, TL))
-
-    uT = Function(TTC, buffer=(f, f))
-    uL = Function(TTL, buffer=(f, f))
-
-    u2 = uL.backward(kind=TTC)
+    uT = Function(TTC, buffer=(ff, ff))
+    uL = Function(TTL, buffer=(ff, ff))
+    u2 = uL.backward(mesh=TTC)
     uT2 = project(u2, TTC)
-    assert np.linalg.norm(uT2-uT)
+    assert np.linalg.norm(uT2-uT) < 1e-8
 
 def test_backward2ND():
     T0 = FunctionSpace(N, 'C', domain=(-2, 2))
@@ -76,7 +72,7 @@ def test_backward2ND():
     LL = TensorProductSpace(comm, (L0, L1))
     uT = Function(TT, buffer=h)
     uL = Function(LL, buffer=h)
-    u2 = uL.backward(kind=TT)
+    u2 = uL.backward(mesh=TT)
     uT2 = project(u2, TT)
     assert np.linalg.norm(uT2-uT)
 
@@ -90,7 +86,7 @@ def test_backward3D():
     uT = Function(TT, buffer=h)
     uL = Function(TL, buffer=h)
 
-    u2 = uL.backward(kind=TT)
+    u2 = uL.backward(mesh=TT)
     uT2 = project(u2, TT)
     assert np.linalg.norm(uT2-uT)
 
@@ -98,8 +94,8 @@ def test_backward3D():
 def test_backward_uniform(family):
     T = FunctionSpace(2*N, family, domain=(-2, 2))
     uT = Function(T, buffer=f)
-    ub = uT.backward(kind='uniform')
-    xj = T.mesh(uniform=True)
+    ub = uT.backward(mesh='uniform')
+    xj = T.mesh(kind='uniform')
     fj = sp.lambdify(x, f)(xj)
     assert np.linalg.norm(fj-ub) < 1e-8
 

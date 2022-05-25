@@ -14,6 +14,7 @@ Subpackages
     shenfun.laguerre
     shenfun.hermite
     shenfun.jacobi
+    shenfun.ultraspherical
     shenfun.optimization
     shenfun.utilities
 
@@ -27,6 +28,7 @@ shenfun.la module
     :members:
     :special-members: __call__
     :show-inheritance:
+    :undoc-members: Solve, LU
 
 shenfun.matrixbase module
 -------------------------

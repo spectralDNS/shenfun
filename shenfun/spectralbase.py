@@ -110,18 +110,22 @@ class SpectralBase:
         """
         return self.points_and_weights(N=N, map_true_domain=map_true_domain, weighted=weighted, **kw)
 
-    def mesh(self, bcast=True, map_true_domain=True, uniform=False):
+    def mesh(self, bcast=True, map_true_domain=True, kind='quadrature'):
         """Return the computational mesh
 
         Parameters
         ----------
         bcast : bool
             Whether or not to broadcast to :meth:`.dimensions` if an instance
-            of this basis belongs to a :class:`.TensorProductSpace`
+            of this basis belongs to a :class:`.TensorProductSpace`.
+            The returned mesh then has shape one in all ndims-1 dimensions
+            apart from self.axis.
         map_true_domain : bool, optional
             Whether or not to map points to true domain
-        uniform : bool, optional
-            Use uniform mesh instead of quadrature if True
+        kind : str, optional
+
+            - 'quadrature' - Use quadrature mesh
+            - 'uniform' - Use uniform mesh
 
         Note
         ----
@@ -130,8 +134,8 @@ class SpectralBase:
         """
         N = self.shape(False)
         if self.family() == 'fourier':
-            uniform = False
-        if uniform is False:
+            kind = 'quadrature'
+        if kind == 'quadrature':
             X = self.points_and_weights(N=N, map_true_domain=map_true_domain)[0]
 
         else:
@@ -144,19 +148,21 @@ class SpectralBase:
             X = self.broadcast_to_ndims(X)
         return X
 
-    def cartesian_mesh(self, uniform=False):
+    def cartesian_mesh(self, kind='quadrature'):
         """Return Cartesian mesh
 
         Parameters
         ----------
-        uniform : bool, optional
-            Use uniform mesh
+        kind : str, optional
+
+            - 'quadrature' - Use quadrature mesh
+            - 'uniform' - Use uniform mesh
 
         Note
         ----
         For Cartesian problems this function returns the same mesh as :meth:`.mesh`
         """
-        x = self.mesh(uniform=uniform)
+        x = self.mesh(kind=kind)
         if self.coors.is_cartesian:
             return x
         psi = self.coors.psi
@@ -276,7 +282,7 @@ class SpectralBase:
             return output_array
         return self.forward.output_array
 
-    def backward(self, input_array=None, output_array=None, kind=None):
+    def backward(self, input_array=None, output_array=None, kind=None, mesh=None):
         """Compute backward (inverse) transform
 
         Parameters
@@ -285,14 +291,14 @@ class SpectralBase:
             Expansion coefficients
         output_array : array, optional
             Function values on quadrature mesh
-        kind : str or functionspace, optional
-
+        kind : str, optional
             - 'fast' - Use fast transform on regular quadrature points
-            - 'vandermonde' - use Vandermonde on regular quadrature points
             - 'recursive' - Use low-memory implementation (only for polynomials)
-            - 'uniform' - use Vandermonde on uniform mesh
-            - instance of :class:`.SpectralBase` - use Vandermonde and quadrature
-              mesh of this space.
+            - 'vandermonde' - use Vandermonde on regular quadrature points
+        mesh : str or functionspace, optional
+            - 'quadrature' - use quadrature mesh of self
+            - 'uniform' - use uniform mesh
+            - A function space with the same mesh distribution as self
 
         Note
         ----
@@ -300,7 +306,6 @@ class SpectralBase:
         as planned with self.plan
 
         """
-        from shenfun.tensorproductspace import TensorProductSpace
         kind = kind if kind is not None else config['transforms']['kind'][self.family()]
         if input_array is not None:
             self.backward.input_array[...] = input_array
@@ -308,15 +313,14 @@ class SpectralBase:
         self._padding_backward(self.backward.input_array,
                                self.backward.tmp_array)
 
-        mesh = None
-        if kind == 'uniform':
-            kind = 'vandermonde'
-            mesh = self.mesh(bcast=False, map_true_domain=False, uniform=True)
-        elif isinstance(kind, (SpectralBase, TensorProductSpace)):
-            mesh = kind.mesh()
-            if len(kind) > 1:
-                mesh = np.squeeze(mesh[self.axis])
-            kind = 'vandermonde'
+        if isinstance(mesh, str):
+            assert mesh in ('quadrature', 'uniform')
+            mesh = self.mesh(bcast=False, map_true_domain=False, kind=mesh)
+            kind = 'vandermonde' if kind == 'fast' else kind
+        elif isinstance(mesh, SpectralBase):
+            mesh = mesh.mesh(bcast=False, map_true_domain=False)
+            kind = 'vandermonde' if kind == 'fast' else kind
+
         self._evaluate_expansion_all(self.backward.tmp_array,
                                      self.backward.output_array,
                                      x=mesh, kind=kind)
@@ -1199,7 +1203,7 @@ class SpectralBase:
         """
         if kind == 'Galerkin' or kind == 'G':
             return self
-
+        assert kind == 'Petrov-Galerkin' or kind == 'PG'
         d = dict(domain=self.domain,
                  dtype=self.dtype,
                  padding_factor=self.padding_factor,

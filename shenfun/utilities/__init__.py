@@ -516,13 +516,16 @@ def wrap_periodic(xs, axes=()):
         return ys[0]
     return ys
 
-def surf3D(u, mesh=None, backend='plotly', wrapaxes=(), slices=None, fig=None, kind='normal', **kw):
+def surf3D(u, mesh=None, backend='plotly', wrapaxes=(), slices=None, fig=None, **kw):
     """Plot surface embedded in 3D
 
     Parameters
     ----------
     u : Function or Array
-    mesh : list of Cartesian meshes [x, y, z], optional
+    mesh : list, str or None, optional
+        - list of Cartesian meshes [x, y, z]
+        - 'quadrature' - use quadrature mesh
+        - 'uniform' - use uniform mesh
     backend : str, optional
         plotly or mayavi
     wrapaxes : sequence of integers, optional
@@ -530,23 +533,22 @@ def surf3D(u, mesh=None, backend='plotly', wrapaxes=(), slices=None, fig=None, k
     slices : None or sequence of slices, optional
         If only part of u should be plotted
     fig : Figure instance, optional
-    kind : str, optional
-        normal or uniform
     kw : Keyword arguments, optional
         Used by plotly Surface. Possibly colorscale.
     """
     from shenfun.forms.arguments import Function, Array
 
-    if mesh is None:
+    if isinstance(mesh, (str, None)):
         assert isinstance(u, (Function, Array)), "u must be Function/Array if mesh is not given"
         T = u.function_space()
-        uniform = True if kind == 'uniform' else False
-        x, y, z = T.local_cartesian_mesh(uniform=uniform)
+        if mesh is None:
+            mesh = 'quadrature'
+        x, y, z = T.local_cartesian_mesh(mesh=mesh)
     else:
         x, y, z = mesh
 
     if isinstance(u, Function):
-        u = u.backward(kind=kind)
+        u = u.backward(mesh=mesh)
 
     x, y, z, u = wrap_periodic([x, y, z, u], wrapaxes)
 
@@ -573,7 +575,7 @@ def surf3D(u, mesh=None, backend='plotly', wrapaxes=(), slices=None, fig=None, k
 
     return fig
 
-def quiver3D(u, mesh=None, wrapaxes=(), slices=None, fig=None, kind='normal', **kw):
+def quiver3D(u, mesh=None, wrapaxes=(), slices=None, fig=None, kind='quadrature', **kw):
     """
 
     Parameters
@@ -589,7 +591,8 @@ def quiver3D(u, mesh=None, wrapaxes=(), slices=None, fig=None, kind='normal', **
     slices : None or sequence of slices, optional
         If only part of u should be plotted
     kind : str, optional
-        normal or uniform
+        - 'quadrature' - Use quadrature mesh
+        - 'uniform' - Use uniform mesh
     kw : Keyword arguments, optional
         Arguments to mlab.quiver3d, for example 'scale_factor',
         'color' or ''mode
@@ -607,8 +610,7 @@ def quiver3D(u, mesh=None, wrapaxes=(), slices=None, fig=None, kind='normal', **
     if mesh is None:
         assert isinstance(u, (Function, Array)), "u must be Function/Array if mesh is not given"
         T = u.function_space()
-        uniform = True if kind == 'uniform' else False
-        x, y, z = T.local_cartesian_mesh(uniform=uniform)
+        x, y, z = T.local_cartesian_mesh(kind=kind)
     else:
         x, y, z = mesh
 

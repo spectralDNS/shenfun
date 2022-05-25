@@ -2,7 +2,6 @@ r"""
 This module contains linear algebra solvers for SparseMatrices,
 TPMatrices and BlockMatrices.
 """
-from ipaddress import ip_address
 from numbers import Number, Integral
 import numpy as np
 from scipy.sparse import spmatrix, kron

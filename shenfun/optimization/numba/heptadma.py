@@ -1,4 +1,5 @@
 import numba as nb
+import numpy as np
 from .la import Solve_axis_2D, Solve_axis_3D, Solve_axis_4D
 
 __all__ = ['HeptaDMA_LU', 'HeptaDMA_Solve', 'HeptaDMA_inner_solve']
@@ -52,6 +53,12 @@ def HeptaDMA_Solve(x, data, axis=0):
         Solve_axis_3D(data, x, HeptaDMA_inner_solve, axis)
     elif n == 4:
         Solve_axis_4D(data, x, HeptaDMA_inner_solve, axis)
+    else:
+        if axis > 0:
+            x = np.moveaxis(x, axis, 0)
+        HeptaDMA_inner_solve(x, data)
+        if axis > 0:
+            x = np.moveaxis(x, 0, axis)
 
 @nb.jit(nopython=True, fastmath=True, cache=True)
 def HeptaDMA_inner_solve(u, data):

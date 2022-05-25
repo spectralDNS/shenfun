@@ -19,7 +19,6 @@ DEMO          = Poisson/poisson.rst \
 				Functions/functions.ipynb \
 				Integration/surfaceintegration.ipynb \
 				Moebius/moebius.ipynb \
-				FastTransforms/fasttransforms.ipynb	\
 				MixingBases/mixingbases.ipynb \
 				Tau/tau.ipynb \
 				SparsityChebyshev/sparsity.ipynb
@@ -35,7 +34,6 @@ NDEMO         = Poisson/poisson.ipynb2 \
 				Functions/functions.ipynb2 \
 				Integration/surfaceintegration.ipynb2 \
 				Moebius/moebius.ipynb2 \
-				FastTransforms/fasttransforms.ipynb2 \
 				MixingBases/mixingbases.ipynb2 \
 				Tau/tau.ipynb2 \
 				SparsityChebyshev/sparsity.ipynb2
