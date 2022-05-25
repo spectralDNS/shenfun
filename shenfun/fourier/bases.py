@@ -332,7 +332,7 @@ class R2C(FourierBase):
         if self.N % 2 == 0 and eliminate_highest_freq:
             k[-1] = 0
         if scaled:
-            k = k*self.domain_factor()
+            k = k*float(self.domain_factor())
         if bcast is True:
             k = self.broadcast_to_ndims(k)
         return k
@@ -533,7 +533,7 @@ class C2C(FourierBase):
         if self.N % 2 == 0 and eliminate_highest_freq:
             k[self.N//2] = 0
         if scaled:
-            k = k*self.domain_factor()
+            k = k*float(self.domain_factor())
         if bcast is True:
             k = self.broadcast_to_ndims(k)
         return k

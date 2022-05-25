@@ -496,7 +496,6 @@ class Biharmonic:
         self.l1 = np.zeros(ss)
         self.ak = np.zeros(ss)
         self.bk = np.zeros(ss)
-
         self.LU_Biharmonic(a0, alfa, beta, sii, siu, siuu, ail, aii, aiu,
                            bill, bil, bii, biu, biuu, self.u0, self.u1,
                            self.u2, self.l0, self.l1, self.axis)
