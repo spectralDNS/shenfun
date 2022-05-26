@@ -1812,8 +1812,7 @@ class BoundaryValues:
     def update_bcs_time(self, time):
         tt = sp.symbols('t', real=True)
         update_time = False
-        self.bcs = self.bc.orderedvals()
-        self.bcs_final = self.bc.orderedvals()
+        bcs = self.bc.orderedvals()
         for i, bci in enumerate(self.bcs):
             if isinstance(bci, sp.Expr):
                 if tt in bci.free_symbols:
@@ -1822,6 +1821,7 @@ class BoundaryValues:
                     update_time = True
 
         if update_time:
+            self.bcs = bcs
             self.bcs_final[:] = self.bcs
             if self.tensorproductspace is not None:
                 self.set_tensor_bcs(self.base, self.tensorproductspace)

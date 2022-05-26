@@ -73,8 +73,8 @@ class RayleighBenard:
         self.dvdxp = Array(self.TCp)
         self.dvdyp = Array(self.TDp)
 
-        self.file_u = ShenfunFile('_'.join((filename, 'U')), self.BD, backend='hdf5', mode='w', uniform=True)
-        self.file_T = ShenfunFile('_'.join((filename, 'T')), self.TT, backend='hdf5', mode='w', uniform=True)
+        self.file_u = ShenfunFile('_'.join((filename, 'U')), self.BD, backend='hdf5', mode='w', mesh='uniform')
+        self.file_T = ShenfunFile('_'.join((filename, 'T')), self.TT, backend='hdf5', mode='w', mesh='uniform')
 
         self.mask = self.TB.get_mask_nyquist()
         self.K = self.TB.local_wavenumbers(scaled=True)
@@ -260,8 +260,8 @@ class RayleighBenard:
                 plt.pause(1e-6)
 
     def tofile(self, tstep):
-        ub = self.u_.backward(self.ub, kind='uniform')
-        T_b = self.T_.backward(kind='uniform')
+        ub = self.u_.backward(self.ub, mesh='uniform')
+        T_b = self.T_.backward(mesh='uniform')
         self.file_u.write(tstep, {'u': [ub]}, as_scalar=True)
         self.file_T.write(tstep, {'T': [T_b]})
 
@@ -284,7 +284,7 @@ class RayleighBenard:
                 T_ = self.solverT[rk](rhs_T[1], self.T_)
                 T_.mask_nyquist(self.mask)
                 self.T_1 = T_
-            print(self.T0.bc.bcs_final)
+            #print(self.T0.bc.bcs_final)
             t += self.dt
             self.end_of_tstep()
             tstep += 1
