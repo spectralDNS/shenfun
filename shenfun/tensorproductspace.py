@@ -1813,11 +1813,11 @@ class BoundaryValues:
         tt = sp.symbols('t', real=True)
         update_time = False
         bcs = self.bc.orderedvals()
-        for i, bci in enumerate(self.bcs):
+        for i, bci in enumerate(bcs):
             if isinstance(bci, sp.Expr):
                 if tt in bci.free_symbols:
                     self.bc_time = time
-                    self.bcs[i] = bci.subs(tt, time)
+                    bcs[i] = bci.subs(tt, time)
                     update_time = True
 
         if update_time:

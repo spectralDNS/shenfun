@@ -427,8 +427,8 @@ if __name__ == '__main__':
         'conv': 1,
         'modplot': 100,
         'modsave': 50,
-        #'bcT': (0.9+0.1*sympy.sin(2*(y-tt)), 0),
-        'bcT': (1, 0),
+        'bcT': (0.9+0.1*sympy.sin(2*(y-tt)), 0),
+        #'bcT': (1, 0),
         'family': 'C',
         'quad': 'GC'
         }
