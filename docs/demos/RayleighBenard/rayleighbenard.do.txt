@@ -100,7 +100,7 @@ of degree less than or equal to N and introduce the following finite-dimensional
 
 !et
 
-Here $\text{dim}(V_N^B) = N-4, \text{dim}(V_N^D) = \text{dim}(V_N^W) = N-2$, $\text{dim}(V_N^T) = N$
+Here $\text{dim}(V_N^B) = N-4, \text{dim}(V_N^D) = \text{dim}(V_N^W) = \text{dim}(V_N^T) = N-2$
 and $\text{dim}(V_M^F)=M$. We note that
 $V_N^B, V_N^D, V_N^W$ and $V_N^T$ can be used to approximate $u, v, T$ and $p$, respectively, in the $x$-direction.
 Also note that for $V_M^F$ it is assumed that $M$ is an even number.

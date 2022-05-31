@@ -184,7 +184,8 @@ class BSDSDmat(SpectralMatrix):
     def get_solver(self):
         return generic_TDMA
 
-    def matvec(self, v, c, format='cython', axis=0):
+    def matvec(self, v, c, format=None, axis=0):
+        format = 'cython' if format is None else format
         N, M = self.shape
         c.fill(0)
         # Cython implementation only handles square matrix
@@ -279,7 +280,8 @@ class BSDSNmat(SpectralMatrix):
         }
         return d
 
-    def matvec(self, v, c, format='cython', axis=0):
+    def matvec(self, v, c, format=None, axis=0):
+        format = 'cython' if format is None else format
         c.fill(0)
         N, M = self.shape
         if not M == N:
@@ -476,7 +478,8 @@ class BSBSBmat(SpectralMatrix):
     def get_solver(self):
         return generic_PDMA
 
-    def matvec(self, v, c, format='cython', axis=0):
+    def matvec(self, v, c, format=None, axis=0):
+        format = 'cython' if format is None else format
         c.fill(0)
         N, M = self.shape
         if not M == N:
@@ -554,7 +557,8 @@ class BSBSDmat(SpectralMatrix):
         }
         return d
 
-    def matvec(self, v, c, format='cython', axis=0):
+    def matvec(self, v, c, format=None, axis=0):
+        format = 'cython' if format is None else format
         c.fill(0)
         N = self.shape[0]
         if format == 'self':
@@ -637,7 +641,8 @@ class CSDSNmat(SpectralMatrix):
               1: (k[:-1]+1)*np.pi}
         return d
 
-    def matvec(self, v, c, format='cython', axis=0):
+    def matvec(self, v, c, format=None, axis=0):
+        format = 'cython' if format is None else format
         c.fill(0)
         if format == 'cython' and v.ndim == 3:
             cython.Matvec.CDN_matvec3D_ptr(v, c, self[-1], self[1], axis)
@@ -679,7 +684,8 @@ class CSDSDmat(SpectralMatrix):
               1: (k[:(N-3)]+1)*np.pi}
         return d
 
-    def matvec(self, v, c, format='cython', axis=0):
+    def matvec(self, v, c, format=None, axis=0):
+        format = 'cython' if format is None else format
         N = self.shape[0]
         c.fill(0)
         if format == 'self':
@@ -835,7 +841,8 @@ class CTTmat(SpectralMatrix):
         d = dict.fromkeys(np.arange(1, N, 2), _getkey)
         return d
 
-    def matvec(self, v, c, format='cython', axis=0):
+    def matvec(self, v, c, format=None, axis=0):
+        format = 'cython' if format is None else format
         c.fill(0)
         if format == 'cython' and v.ndim == 3:
             cython.Matvec.CTT_matvec3D_ptr(v, c, axis)
@@ -878,7 +885,8 @@ class CSBSDmat(SpectralMatrix):
               3: -(k[:N-5]+1)*np.pi}
         return d
 
-    def matvec(self, v, c, format='cython', axis=0):
+    def matvec(self, v, c, format=None, axis=0):
+        format = 'cython' if format is None else format
         N, M = self.shape
         c.fill(0)
         if format == 'self':
@@ -934,7 +942,8 @@ class CSDSBmat(SpectralMatrix):
               1: (k[:-5]+1)*np.pi}
         return d
 
-    def matvec(self, v, c, format='cython', axis=0):
+    def matvec(self, v, c, format=None, axis=0):
+        format = 'cython' if format is None else format
         N, M = self.shape
         c.fill(0)
         if format == 'self':
@@ -992,7 +1001,8 @@ class ASBSBmat(SpectralMatrix):
               2: 2*(k[:-2]+1)*(k[:-2]+2)*np.pi}
         return d
 
-    def matvec(self, v, c, format='cython', axis=0):
+    def matvec(self, v, c, format=None, axis=0):
+        format = 'cython' if format is None else format
         N = self.shape[0]
         c.fill(0)
         if format == 'self':
@@ -1062,7 +1072,8 @@ class ASDSDmat(SpectralMatrix):
     def get_solver(self):
         return ADDSolver
 
-    def matvec(self, v, c, format='cython', axis=0):
+    def matvec(self, v, c, format=None, axis=0):
+        format = 'cython' if format is None else format
         c.fill(0)
         if format == 'cython' and v.ndim == 3:
             cython.Matvec.ADD_matvec3D_ptr(v, c, self[0]/self._keyscale, axis)
@@ -1201,7 +1212,8 @@ class ATTmat(SpectralMatrix):
         d = dict.fromkeys(np.arange(2, N, 2), _getkey)
         return d
 
-    def matvec(self, v, c, format='cython', axis=0):
+    def matvec(self, v, c, format=None, axis=0):
+        format = 'cython' if format is None else format
         c.fill(0)
         if format == 'cython' and v.ndim == 3:
             cython.Matvec.ATT_matvec3D_ptr(v, c, axis)
@@ -1450,7 +1462,8 @@ class SSBSBmat(SpectralMatrix):
         d = dict.fromkeys(np.arange(0, N-4, 2), _getkey)
         return d
 
-    def matvec(self, v, c, format='cython', axis=0):
+    def matvec(self, v, c, format=None, axis=0):
+        format = 'cython' if format is None else format
         c.fill(0)
         if format == 'cython' and v.ndim == 3:
             cython.Matvec.SBB_matvec3D_ptr(v, c, self[0]/self._keyscale, axis)

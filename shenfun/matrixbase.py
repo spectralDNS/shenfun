@@ -681,7 +681,6 @@ class SpectralMatrix(SparseMatrix):
                 elif kind == 'vandermonde':
                     d = _get_matrix(test, trial, measure, assemble='quadrature', fixed_resolution=fixed_resolution)
                     _assembly_method += '_vandermonde'
-
         if test[0].domain_factor() != 1:
             scale *= float(test[0].domain_factor())**(test[1]+trial[1]-1)
         SparseMatrix.__init__(self, d, shape, scale)

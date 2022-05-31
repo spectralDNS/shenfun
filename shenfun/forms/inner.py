@@ -8,16 +8,16 @@ import numpy as np
 from shenfun.spectralbase import inner_product, SpectralBase, MixedFunctionSpace
 from shenfun.matrixbase import TPMatrix
 from shenfun.tensorproductspace import TensorProductSpace, CompositeSpace
-from shenfun.utilities import dx, split, scalar_product
+from shenfun.utilities import dx, split, scalar_product, CachedArrayDict
 from shenfun.config import config
 from .arguments import Expr, Function, BasisFunction, Array, TestFunction
 
-__all__ = ('inner',)
+__all__ = ('inner', 'Inner')
 
 #pylint: disable=line-too-long,inconsistent-return-statements,too-many-return-statements
 
 
-def inner(expr0, expr1, output_array=None, assemble=None, kind=None, fixed_resolution=None):
+def inner(expr0, expr1, output_array=None, assemble=None, kind=None, fixed_resolution=None, return_matrices=False):
     r"""
     Return (weighted or unweighted) discrete inner product
 
@@ -115,6 +115,10 @@ def inner(expr0, expr1, output_array=None, assemble=None, kind=None, fixed_resol
         along each dimension of the domain. If 'fixed_resolution' is set, then
         assemble is set to 'quadrature' and kind is set to 'vandermonde'.
         fixed_resolution is argument to :meth:`.TensorProductSpace.get_refined`.
+
+    return_matrices : bool, optional
+        For linear forms, whether to simply return the matrices that are used
+        to compute the result with matrix-vector products.
 
     Note
     ----
@@ -286,7 +290,7 @@ def inner(expr0, expr1, output_array=None, assemble=None, kind=None, fixed_resol
 
     if recursive: # Use recursive algorithm for vector expressions of expr_rank > 0, e.g., inner(v, grad(u))
         gij = test.function_space().coors.get_metric_tensor(config['basisvectors'])
-        if trial.argument == 2:
+        if trial.argument == 2 and not return_matrices:
             # linear form
             if output_array is None:
                 output_array = Function(test.function_space())
@@ -304,7 +308,7 @@ def inner(expr0, expr1, output_array=None, assemble=None, kind=None, fixed_resol
                                     continue
 
                                 w0.fill(0)
-                                xij += inner(teij*gij[i, k]*gij[j, l], trkl, output_array=w0, assemble=assemble, kind=kind, fixed_resolution=fixed_resolution)
+                                xij += inner(teij*gij[i, k]*gij[j, l], trkl, output_array=w0, assemble=assemble, kind=kind, fixed_resolution=fixed_resolution, return_matrices=return_matrices)
 
             elif test.tensor_rank == 1:
                 for i, (te, x) in enumerate(zip(test, output_array)):
@@ -312,7 +316,7 @@ def inner(expr0, expr1, output_array=None, assemble=None, kind=None, fixed_resol
                         if gij[i, j] == 0:
                             continue
                         w0.fill(0)
-                        x += inner(te*gij[i, j], tr, output_array=w0, assemble=assemble, kind=kind, fixed_resolution=fixed_resolution)
+                        x += inner(te*gij[i, j], tr, output_array=w0, assemble=assemble, kind=kind, fixed_resolution=fixed_resolution, return_matrices=return_matrices)
 
             return output_array
 
@@ -327,7 +331,7 @@ def inner(expr0, expr1, output_array=None, assemble=None, kind=None, fixed_resol
                         for l, trkl in enumerate(trk):
                             if gij[j, l] == 0:
                                 continue
-                            p = inner(teij*gij[i, k]*gij[j, l], trkl, assemble=assemble, kind=kind, fixed_resolution=fixed_resolution)
+                            p = inner(teij*gij[i, k]*gij[j, l], trkl, assemble=assemble, kind=kind, fixed_resolution=fixed_resolution, return_matrices=return_matrices)
                             result += p if isinstance(p, list) else [p]
 
         elif test.tensor_rank == 1:
@@ -335,7 +339,7 @@ def inner(expr0, expr1, output_array=None, assemble=None, kind=None, fixed_resol
                 for j, tr in enumerate(trial):
                     if gij[i, j] == 0:
                         continue
-                    l = inner(te, tr*gij[i, j], assemble=assemble, kind=kind, fixed_resolution=fixed_resolution)
+                    l = inner(te, tr*gij[i, j], assemble=assemble, kind=kind, fixed_resolution=fixed_resolution, return_matrices=return_matrices)
                     result += l if isinstance(l, list) else [l]
 
         return result[0] if len(result) == 1 else result
@@ -480,6 +484,9 @@ def inner(expr0, expr1, output_array=None, assemble=None, kind=None, fixed_resol
     if trial.argument == 1:
         return A[0] if len(A) == 1 else A
 
+    if return_matrices:
+        return A
+
     # Linear form, return output_array
     wh = np.zeros_like(output_array)
     for b in A:
@@ -492,3 +499,45 @@ def inner(expr0, expr1, output_array=None, assemble=None, kind=None, fixed_resol
         output_array += wh
         wh.fill(0)
     return output_array
+
+work = CachedArrayDict()
+
+class Inner:
+    """Return an instance of a class that can perform the inner product
+    of the linear form efficiently through a matrix-vector product
+
+    Parameters
+    ----------
+    v : :class:`.TestFunction`
+    uh : Instance of either one of
+        - :class:`.Expr`
+        - :class:`.BasisFunction`
+
+    Note
+    ----
+    This is an optimization only for linear forms, not bilinear.
+    There is no need to use this class for regular scalar products, where `uh`
+    is simply an Array.
+    """
+    def __init__(self, v, uh):
+        assert isinstance(uh, (Expr, BasisFunction))
+        assert isinstance(v, TestFunction)
+        assert uh.argument == 2
+        self.uh = uh
+        self.A = inner(v, uh, return_matrices=True)
+        self.output_array = Function(v.function_space())
+
+    def __call__(self):
+        wh = work[(self.output_array, 0, True)]
+        uh = self.uh.base
+        self.output_array.fill(0)
+        for b in self.A:
+            if uh.function_space().is_composite_space and wh.ndim == b.dimensions:
+                wh = b.matvec(uh.v[b.global_index[1]], wh)
+            elif uh.function_space().is_composite_space and wh.ndim > b.dimensions:
+                wh[b.global_index[0]] = b.matvec(uh.v[b.global_index[1]], wh[b.global_index[0]])
+            else:
+                wh = b.matvec(uh, wh)
+            self.output_array += wh
+            wh.fill(0)
+        return self.output_array

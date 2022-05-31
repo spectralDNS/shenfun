@@ -1565,6 +1565,12 @@ class Function(ShenfunBaseArray, BasisFunction):
             'self._backward_work_array'. Use a tuple for different padding in
             different directions.
 
+        Note
+        ----
+        If `output_array` is not provided, then a new Array is created and
+        returned.
+        If `padding_factor` is used, then the returned Array is cached and
+        reused for subsequent calls using the same padding_factor.
         """
         if padding_factor is not None:
             space = self.get_dealiased_space(padding_factor)

@@ -1,13 +1,17 @@
 import types
 import numpy as np
+from shenfun import la
+from shenfun.utilities import CachedArrayDict
 from shenfun.tensorproductspace import TensorProductSpace
-from shenfun.matrixbase import TPMatrix, BlockMatrix, SpectralMatrix
+from shenfun.matrixbase import TPMatrix, BlockMatrix, SpectralMatrix, \
+    SparseMatrix
 from .arguments import Expr, TestFunction, TrialFunction, BasisFunction, \
     Function, Array
 from .inner import inner
 
-__all__ = ('project',)
+__all__ = ('project', 'Project')
 
+work = CachedArrayDict()
 
 def project(uh, T, output_array=None, fill=True, use_to_ortho=True, use_assign=True):
     r"""
@@ -26,7 +30,7 @@ def project(uh, T, output_array=None, fill=True, use_to_ortho=True, use_assign=T
         - :class:`.BasisFunction`
         - :class:`.Array`
         - A sympy function
-    T : :class:`.TensorProductSpace` or :class:`.CompositeSpace`
+    T : :class:`.SpectralBase`, :class:`.TensorProductSpace` or :class:`.CompositeSpace`
     output_array : :class:`.Function`, optional
         Return array
     fill : bool, optional
@@ -163,3 +167,78 @@ def project(uh, T, output_array=None, fill=True, use_to_ortho=True, use_assign=T
         output_array = M.solve(output_array, output_array)
 
     return output_array
+
+
+class Project:
+    """Return an instance of a class that can perform projections efficiently
+
+    Parameters
+    ----------
+    uh : Instance of either one of
+        - :class:`.Expr`
+        - :class:`.BasisFunction`
+    T : :class:`.SpectralBase`, :class:`.TensorProductSpace` or :class:`.CompositeSpace`
+
+    Example
+    -------
+    >>> from shenfun import TestFunction, Function, Dx, Project, FunctionSpace
+    >>> T = FunctionSpace(8, 'C')
+    >>> u = Function(T)
+    >>> u[1] = 1
+    >>> dudx = Project(Dx(u, 0, 1), T)
+    >>> dudx()
+    Function([1., 0., 0., 0., 0., 0., 0., 0.])
+
+    Note that u[1] = 1 sets the coefficient of the second Chebyshev polynomial (i.e., x)
+    to 1. Hence the derivative of u is dx/dx=1, which is the result of dudx().
+    """
+    def __init__(self, uh, T):
+        assert isinstance(uh, (Expr, BasisFunction))
+        v = TestFunction(T)
+        u = TrialFunction(T)
+        self.B = inner(v, u)
+        # replace uh with trial function and assemble matrices used to compute
+        # right hand side through matrix vector product
+        self.uh = uh
+        self.A = inner(v, uh, return_matrices=True)
+        self.output_array = Function(T)
+        if T.dimensions == 1:
+            self.sol = la.Solver(self.B)
+        else:
+            if isinstance(self.B, TPMatrix):
+                if len(self.B.naxes) == 0:
+                    self.sol = la.SolverDiagonal([self.B])
+                elif len(self.B.naxes) == 1:
+                    self.sol = la.SolverGeneric1ND([self.B])
+                elif len(self.B.naxes) == 2:
+                    self.sol = la.SolverGeneric2ND([self.B])
+                else:
+                    self.sol = la.SolverND([self.B])
+            elif T.coors.is_orthogonal and (len(self.output_array) == len(self.B)):
+                # vector with uncoupled components
+                class sol:
+                    def __init__(self, B):
+                        self.B = B
+                    def __call__(self, u, c):
+                        for oa, b in zip(u.v, self.B):
+                            oa = b.solve(oa, oa)
+                        return u
+                self.sol = sol(self.B)
+            else:
+                self.sol = la.BlockMatrixSolver(BlockMatrix(self.B))
+
+    def __call__(self):
+        wh = work[(self.output_array, 0, True)]
+        uh = self.uh.base
+        self.output_array.fill(0)
+        for b in self.A:
+            if uh.function_space().is_composite_space and wh.ndim == b.dimensions:
+                wh = b.matvec(uh.v[b.global_index[1]], wh)
+            elif uh.function_space().is_composite_space and wh.ndim > b.dimensions:
+                wh[b.global_index[0]] = b.matvec(uh.v[b.global_index[1]], wh[b.global_index[0]])
+            else:
+                wh = b.matvec(uh, wh)
+            self.output_array += wh
+            wh.fill(0)
+        out = self.sol(self.output_array, self.output_array)
+        return out

@@ -315,11 +315,14 @@ class SpectralBase:
 
         if isinstance(mesh, str):
             assert mesh in ('quadrature', 'uniform')
+            if not self.family() == 'fourier' and mesh == 'uniform':
+                kind = 'vandermonde' if kind == 'fast' else kind
             mesh = self.mesh(bcast=False, map_true_domain=False, kind=mesh)
-            kind = 'vandermonde' if kind == 'fast' else kind
+
         elif isinstance(mesh, SpectralBase):
+            if not self.family() == 'fourier':
+                kind = 'vandermonde' if kind == 'fast' else kind
             mesh = mesh.mesh(bcast=False, map_true_domain=False)
-            kind = 'vandermonde' if kind == 'fast' else kind
 
         self._evaluate_expansion_all(self.backward.tmp_array,
                                      self.backward.output_array,
