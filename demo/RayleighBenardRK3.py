@@ -47,13 +47,13 @@ class RayleighBenard:
         self.padding_factor = padding_factor
         self.TBp = self.TB.get_dealiased(padding_factor)
         self.TDp = self.TD.get_dealiased(padding_factor)
-        self.BDp = VectorSpace([self.TBp, self.TDp])  # Velocity vector
+        self.BDp = self.BD.get_dealiased(padding_factor)
 
         self.u_ = Function(self.BD)      # Velocity solution
         self.uT_ = Function(self.BD)     # Velocity vector times T
         self.H_ = Function(self.CD)      # convection
         self.T_ = Function(self.TT)      # Temperature solution
-        self.rhs_u = Function(self.CD)   # Not important which space, just storage
+        self.rhs_u = Function(self.CD)
         self.rhs_T = Function(self.CD)
         self.u00 = Function(self.D00)
         self.b0 = np.zeros((2,)+self.u00.shape)
@@ -91,7 +91,7 @@ class RayleighBenard:
             self.update_bc(t)
             return t, tstep
 
-        X = self.TB.local_mesh(True)
+        X = self.X
         funT = 1 if self.bcT[0] == 1 else 2
         fun = {1: 1,
                2: (0.9+0.1*np.sin(2*X[1]))}[funT]
@@ -121,8 +121,7 @@ class RayleighBenard:
         for rk in range(3):
             mats = inner(v, div(grad(u)) - ((a[rk]+b[rk])*nu*dt/2.)*div(grad(div(grad(u)))))
             self.solver.append(sol1(mats))
-            self.Biharmonic_u.append(Inner(v, ((a[rk]+b[rk])*nu*dt/2.)*div(grad(div(grad(self.u_[0]))))))
-        self.Laplace_u = Inner(v, div(grad(self.u_[0])))
+            self.Biharmonic_u.append(Inner(v, div(grad(self.u_[0])) + ((a[rk]+b[rk])*nu*dt/2.)*div(grad(div(grad(self.u_[0]))))))
         self.convH = Inner(v, Dx(Dx(self.H_[1], 0, 1), 1, 1)-Dx(self.H_[0], 1, 2))
         self.d2Tdy2 = Inner(v, Dx(self.T_, 1, 2))
 
@@ -134,23 +133,20 @@ class RayleighBenard:
         self.rhsT = []
         for rk in range(3):
             matsT = inner(q, 2./(kappa*(a[rk]+b[rk])*dt)*p - div(grad(p)))
-            self.solverT.append(sol2(matsT))
+            self.solverT.append(sol2(matsT)) # boundary matrices are taken care of in solverT
             self.rhsT.append(Inner(q, 2./(self.kappa*(a[rk]+b[rk])*self.dt)*Expr(self.T_)+div(grad(self.T_))))
         self.div_uT = Inner(q, div(self.uT_))
 
-        # Eq for Fourier wavenumber 0
+        # v Eq for Fourier wavenumber 0
         u0 = TrialFunction(self.D00)
         v0 = TestFunction(self.D00)
+        sol3 = chebyshev.la.Helmholtz if self.B0.family() == 'chebyshev' else la.Solver
         self.solver0 = []
         self.rhsu0 = []
         for rk in range(3):
             mats0 = inner(v0, 2./(nu*(a[rk]+b[rk])*dt)*u0 - div(grad(u0)))
-            self.solver0.append(sol2(mats0))
+            self.solver0.append(sol3(mats0))
             self.rhsu0.append(Inner(v0, 2./(self.nu*(a[rk]+b[rk])*self.dt)*Expr(self.u00)+div(grad(self.u00))))
-
-    def end_of_tstep(self):
-        self.rhs_T[:] = 0
-        self.rhs_u[:] = 0
 
     def update_bc(self, t):
         # Update time-dependent bcs.
@@ -176,12 +172,10 @@ class RayleighBenard:
         return H
 
     def compute_rhs_u(self, rhs, rk):
-        v = TestFunction(self.TB)
-        a = self.a[rk]
-        b = self.b[rk]
-        H_ = self.convection(self.u_, self.H_)
+        a, b = self.a[rk], self.b[rk]
+        self.H_ = self.convection(self.u_, self.H_)
         rhs[1] = 0
-        rhs[1] += self.Laplace_u() + self.Biharmonic_u[rk]()
+        rhs[1] += self.Biharmonic_u[rk]()
         w0 = self.convH()
         w1 = self.d2Tdy2()
         rhs[1] += a*self.dt*(w0+w1)
@@ -191,8 +185,7 @@ class RayleighBenard:
         return rhs
 
     def compute_rhs_T(self, rhs, rk):
-        a = self.a[rk]
-        b = self.b[rk]
+        a, b = self.a[rk], self.b[rk]
         rhs[1] = self.rhsT[rk]()
         up = self.u_.backward(padding_factor=self.padding_factor)
         T_p = self.T_.backward(padding_factor=self.padding_factor)
@@ -227,8 +220,8 @@ class RayleighBenard:
         return u
 
     def init_plots(self):
-        ub = self.u_.backward()
-        T_b = self.T_.backward()
+        self.ub = ub = self.u_.backward()
+        self.T_b = T_b = self.T_.backward()
         if comm.Get_rank() == 0:
             plt.figure(1, figsize=(6, 3))
             self.im1 = plt.quiver(self.X[1][::4, ::4], self.X[0][::4, ::4], ub[1, ::4, ::4], ub[0, ::4, ::4], pivot='mid', scale=0.01)
@@ -240,16 +233,15 @@ class RayleighBenard:
 
     def plot(self, t, tstep):
         if tstep % self.modplot == 0:
-            ub = self.u_.backward()
+            ub = self.u_.backward(self.ub)
             e0 = dx(ub[0]*ub[0])
             e1 = dx(ub[1]*ub[1])
-            T_b = self.T_.backward()
+            T_b = self.T_.backward(self.T_b)
             e2 = inner(1, T_b*T_b)
             divu = self.divu().backward()
             e3 = dx(divu*divu)
             if comm.Get_rank() == 0:
                 print("Time %2.5f Energy %2.6e %2.6e %2.6e div %2.6e" %(t, e0, e1, e2, e3))
-
                 plt.figure(1)
                 self.im1.set_UVC(ub[1, ::4, ::4], ub[0, ::4, ::4])
                 self.im1.scale = np.linalg.norm(ub[1])
@@ -277,7 +269,7 @@ class RayleighBenard:
                 u_ = self.compute_v(self.u_, rk)
                 u_.mask_nyquist(self.mask)
                 self.update_bc(t+self.dt*self.c[rk+1])       # Solving for step k+1
-                T_ = self.solverT[rk](rhs_T[1], self.T_)
+                T_ = self.solverT[rk](rhs_T[1], self.T_)     # This sets boundary dofs for T_
                 T_.mask_nyquist(self.mask)
             t += self.dt
             self.end_of_tstep()
@@ -293,21 +285,23 @@ if __name__ == '__main__':
     t0 = time()
     d = {
         'N': (64, 128),
-        'Ra': 1000.,
+        'Ra': 100000.,
         'dt': 0.01,
-        'filename': 'RB_24_36',
-        'conv': 1,
-        'modplot': 10,
-        'modsave': 10,
-        'bcT': (0.9+0.1*sympy.sin(2*(y-tt)), 0),
-        #'bcT': (1, 0),
+        'filename': 'RB_64_128',
+        'conv': 0,
+        'modplot': 50,
+        'modsave': 100,
+        #'bcT': (0.9+0.1*sympy.sin(2*(y-tt)), 0),
+        #'bcT': (0.9+0.1*sympy.sin(2*y), 0),
+        'bcT': (1, 0),
         'family': 'C',
-        'checkpoint': 10
+        'checkpoint': 100,
+        #'padding_factor': 1
         }
     c = RayleighBenard(**d)
-    t, tstep = c.initialize(rand=0.0001, from_checkpoint=False)
+    t, tstep = c.initialize(rand=0.001, from_checkpoint=False)
     c.assemble()
-    c.solve(t=t, tstep=tstep, end_time=50)
+    c.solve(t=t, tstep=tstep, end_time=0.1)
     print('Computing time %2.4f'%(time()-t0))
     if comm.Get_rank() == 0:
         generate_xdmf('_'.join((d['filename'], 'U'))+'.h5')

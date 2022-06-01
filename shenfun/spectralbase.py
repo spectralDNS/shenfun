@@ -1150,6 +1150,9 @@ class SpectralBase:
         :class:`.SpectralBase`
             The space to be used for dealiasing
         """
+        if padding_factor == 1 and dealias_direct == False:
+            return self
+
         d = dict(quad=self.quad,
                  domain=self.domain,
                  dtype=self.dtype,

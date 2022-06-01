@@ -548,6 +548,8 @@ class TensorProductSpace(PFFT):
             Used only if ``padding_factor=1``. Sets the 1/3 highest frequencies
             to zeros.
         """
+        if padding_factor == 1 and dealias_direct is False:
+            return self
         if isinstance(padding_factor, Number):
             padding_factor = (padding_factor,)*len(self)
         elif isinstance(padding_factor, (tuple, list, np.ndarray)):
@@ -1652,6 +1654,8 @@ class VectorSpace(CompositeSpace):
         return VectorSpace([s.get_refined(N) for s in self.spaces])
 
     def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
+        if padding_factor == 1 and dealias_direct == False:
+            return self
         if np.all([s == self.spaces[0] for s in self.spaces[1:]]):
             return VectorSpace(self.spaces[0].get_dealiased(padding_factor, dealias_direct))
         return VectorSpace([s.get_dealiased(padding_factor, dealias_direct) for s in self.spaces])
@@ -1693,6 +1697,8 @@ class TensorSpace(VectorSpace):
         return TensorSpace(self.flatten()[0].get_refined(N))
 
     def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
+        if padding_factor == 1 and dealias_direct == False:
+            return self
         return TensorSpace(self.flatten()[0].get_dealiased(padding_factor, dealias_direct))
 
     def get_orthogonal(self):

@@ -1572,7 +1572,7 @@ class Function(ShenfunBaseArray, BasisFunction):
         If `padding_factor` is used, then the returned Array is cached and
         reused for subsequent calls using the same padding_factor.
         """
-        if padding_factor is not None:
+        if padding_factor is not None and padding_factor != 1:
             space = self.get_dealiased_space(padding_factor)
             if output_array is not None:
                 assert output_array.shape == space.shape(False)
