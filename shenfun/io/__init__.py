@@ -46,16 +46,13 @@ class Checkpoint:
     Data is provided as dictionaries. The checkpoint dictionary is represented
     as::
 
-        checkpoint = {'space': T,
-                      'data': {
-                          '0': {'U': [U_hat], 'phi': [phi_hat]},
-                          '1': {'U': [U0_hat], 'phi': [phi_hat0]},
-                          ...
-                          }
-                      }
+        data = {
+                '0': {'U': [U_hat], 'phi': [phi_hat]},
+                '1': {'U': [U0_hat], 'phi': [phi_hat0]},
+                 ...
+                }
 
-    where T is a function space using the mesh of the data to be stored, and
-    'data' contains solutions to be stored at possibly several different timesteps.
+    which contains solutions to be stored at possibly several different timesteps.
     The current timestep is 0, previous is 1 and so on if more is needed by the
     integrator. Note that checkpoint is storing results from spectral space.
 

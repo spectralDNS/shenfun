@@ -750,6 +750,96 @@ def CLL_matvec3D_ptr(T[:, :, ::1] v,
                 b_ptr = &b[i, j, 0]
                 CLL_matvec_ptr(v_ptr, b_ptr, N, strides)
 
+cdef void CTSD_matvec_ptr(T* v,
+                          T* b,
+                          int N,
+                          int st):
+    cdef:
+        int i, ii
+        T sum_u0, sum_u1
+        double pi = np.pi
+        double pi2 = 2*np.pi
+
+    sum_u0 = 0.0
+    sum_u1 = 0.0
+
+    b[(N-1)*st] = 0.0
+    b[(N-2)*st] = -(N-2+1)*pi*v[(N-3)*st]
+    b[(N-3)*st] = -(N-3+1)*pi*v[(N-4)*st]
+    for i in xrange(N-4, -1, -1):
+        ii = i*st
+        if i > 0:
+            b[ii] = -(i+1)*pi*v[(i-1)*st]
+        else:
+            b[ii] = 0
+        if i % 2 == 0:
+            sum_u0 = sum_u0 + v[(i+1)*st]
+            b[ii] -= sum_u0*pi2
+        else:
+            sum_u1 = sum_u1 + v[(i+1)*st]
+            b[ii] -= sum_u1*pi2
+
+def CTSD_matvec(np.ndarray[T, ndim=1] v,
+                np.ndarray[T, ndim=1] b):
+    cdef:
+        T* v_ptr=&v[0]
+        T* b_ptr=&b[0]
+    CTSD_matvec_ptr(v_ptr, b_ptr, v.shape[0], 1)
+
+def CTSD_matvec2D_ptr(T[:, ::1] v,
+                      T[:, ::1] b,
+                      int axis):
+    cdef:
+        int i, j, k, strides
+        int N = v.shape[axis]
+        T* v_ptr
+        T* b_ptr
+
+    strides = v.strides[axis]/v.itemsize
+    if axis == 0:
+        for j in range(v.shape[1]):
+            v_ptr = &v[0, j]
+            b_ptr = &b[0, j]
+            CTSD_matvec_ptr(v_ptr, b_ptr, N, strides)
+
+    elif axis == 1:
+       for i in range(v.shape[0]):
+            v_ptr = &v[i, 0]
+            b_ptr = &b[i, 0]
+            CTSD_matvec_ptr(v_ptr, b_ptr, N, strides)
+
+def CTSD_matvec3D_ptr(T[:, :, ::1] v,
+                      T[:, :, ::1] b,
+                      int axis):
+    cdef:
+        int i, j, k, strides
+        int N = v.shape[axis]
+        T* v_ptr
+        T* b_ptr
+
+    strides = v.strides[axis]/v.itemsize
+    if axis == 0:
+        for j in range(v.shape[1]):
+            for k in range(v.shape[2]):
+                v_ptr = &v[0, j, k]
+                b_ptr = &b[0, j, k]
+                CTSD_matvec_ptr(v_ptr, b_ptr, N, strides)
+
+    elif axis == 1:
+       for i in range(v.shape[0]):
+            for k in range(v.shape[2]):
+                v_ptr = &v[i, 0, k]
+                b_ptr = &b[i, 0, k]
+                CTSD_matvec_ptr(v_ptr, b_ptr, N, strides)
+
+    elif axis == 2:
+        for i in range(v.shape[0]):
+            for j in range(v.shape[1]):
+                v_ptr = &v[i, j, 0]
+                b_ptr = &b[i, j, 0]
+                CTSD_matvec_ptr(v_ptr, b_ptr, N, strides)
+
+
 cdef void CTT_matvec_ptr(T* v,
                          T* b,
                          int N,

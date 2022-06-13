@@ -1392,8 +1392,17 @@ class TPMatrix:
         self._issimplified = True
 
     def solve(self, b, u=None, constraints=()):
+        if u is None:
+            u = b
+        else:
+            assert u.shape == b.shape
+            u[:] = b
+
         tpmat = self.get_simplified()
         if len(tpmat.naxes) == 0:
+            if np.all([isinstance(m, Identity) for m in tpmat.mats]) and isinstance(tpmat.scale, Number):
+                if abs(tpmat.scale-1) < 1e-8:
+                    return u
             sl = tuple([s.slice() for s in tpmat.trialspace.bases])
             d = tpmat.scale
             with np.errstate(divide='ignore'):
@@ -1402,9 +1411,6 @@ class TPMatrix:
                 assert constraints[0] == (0, 0)
             # Constraint is enforced automatically
             d = np.where(np.isfinite(d), d, 0)
-            if u is None:
-                from .forms.arguments import Function
-                u = Function(tpmat.space)
             u[sl] = b[sl] * d[sl]
 
         elif len(tpmat.naxes) == 1:

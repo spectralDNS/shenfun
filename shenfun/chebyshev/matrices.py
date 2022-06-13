@@ -771,6 +771,22 @@ class CTSDmat(SpectralMatrix):
         d[-1] = -(k[1:N-1]+1)*np.pi
         return d
 
+    def matvec(self, v, c, format=None, axis=0):
+        format = 'cython' if format is None else format
+        c.fill(0)
+        if format == 'cython' and v.ndim == 3:
+            cython.Matvec.CTSD_matvec3D_ptr(v, c, axis)
+            self.scale_array(c, self.scale)
+        elif format == 'cython' and v.ndim == 2:
+            cython.Matvec.CTSD_matvec2D_ptr(v, c, axis)
+            self.scale_array(c, self.scale)
+        elif format == 'cython' and v.ndim == 1:
+            cython.Matvec.CTSD_matvec(v, c)
+            self.scale_array(c, self.scale)
+        else:
+            format = None if format in self._matvec_methods else format
+            c = super(CTSDmat, self).matvec(v, c, format=format, axis=axis)
+        return c
 
 class ASBTmat(SpectralMatrix):
     r"""Stiffness matrix :math:`A=(a_{kj}) \in \mathbb{R}^{M \times N}`, where

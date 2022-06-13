@@ -876,8 +876,8 @@ class Expr:
         if id(self._basis) == id(a._basis):
             basis = self._basis
         else:
-            assert id(self._basis.base) == id(a._basis.base)
-            basis = self._basis.base
+            assert id(self.base) == id(a.base)
+            basis = self.base
 
         # Concatenate terms
         terms, scales, indices = [], [], []
@@ -911,8 +911,8 @@ class Expr:
         if id(self._basis) == id(a._basis):
             basis = self._basis
         else:
-            assert id(self._basis.base) == id(a._basis.base)
-            basis = self._basis.base
+            assert id(self.base) == id(a.base)
+            basis = self.base
 
         # Concatenate terms
         terms, scales, indices = [], [], []
@@ -933,8 +933,8 @@ class Expr:
         if id(self._basis) == id(a._basis):
             basis = self._basis
         else:
-            assert id(self._basis.base) == id(a._basis.base)
-            basis = self._basis.base
+            assert id(self.base) == id(a.base)
+            basis = self.base
         self._basis = basis
         for i in range(self.num_components()):
             self._terms[i] += a.terms()[i]
@@ -1188,6 +1188,7 @@ class ShenfunBaseArray(DistArray):
                 shape = (space.num_components(),) + shape
 
             # if a list of sympy expressions
+            strides = None
             if isinstance(buffer, (list, tuple)):
                 assert len(buffer) == len(space.flatten())
                 sympy_buffer = buffer
@@ -1220,8 +1221,13 @@ class ShenfunBaseArray(DistArray):
                     buf = Function(space)
                     buf = buffer.forward(buf)
                     buffer = buf
+
+            elif isinstance(buffer, np.ndarray):
+                strides = buffer.strides
+                buffer = buffer if buffer.base is None else buffer.base
+
             val0 = val if isinstance(val, Number) else None
-            obj = DistArray.__new__(cls, shape, buffer=buffer, dtype=dtype,
+            obj = DistArray.__new__(cls, shape, buffer=buffer, strides=strides, dtype=dtype,
                                     val=val0, rank=space.is_composite_space)
             obj._space = space
             obj._offset = 0
@@ -1301,6 +1307,7 @@ class ShenfunBaseArray(DistArray):
         obj._space = space
         obj._offset = 0
         obj._rank = space.is_composite_space
+        obj._base = None
         if isinstance(val, (list, tuple)):
             for i, v in enumerate(val):
                 obj.v[i] = v
@@ -1316,6 +1323,7 @@ class ShenfunBaseArray(DistArray):
         self._p0 = getattr(obj, '_p0', None)
         self._rank = getattr(obj, '_rank', None)
         self._offset = getattr(obj, '_offset', None)
+        self._base = getattr(obj, '_base', None)
         if hasattr(obj, '_padded_space'):
             self._padded_space = obj._padded_space
 
@@ -1367,6 +1375,7 @@ class ShenfunBaseArray(DistArray):
             v0._space = space
             v0._offset = offset + self.offset()
             v0._rank = space.is_composite_space
+            v0._base = self.base
             return v0
 
         return np.ndarray.__getitem__(self.v, i)
@@ -1506,6 +1515,10 @@ class Function(ShenfunBaseArray, BasisFunction):
     @property
     def forward_output(self):
         return True
+
+    @property
+    def base(self):
+        return self._base if self._base is not None else self
 
     def __call__(self, x, output_array=None):
         return self.eval(x, output_array=output_array)

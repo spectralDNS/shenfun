@@ -142,11 +142,11 @@ class RayleighBenard:
         v0 = TestFunction(self.D00)
         sol3 = chebyshev.la.Helmholtz if self.B0.family() == 'chebyshev' else la.Solver
         self.solver0 = []
-        self.rhsu0 = []
+        self.linear_rhs_u0 = []
         for rk in range(3):
             mats0 = inner(v0, 2./(nu*(a[rk]+b[rk])*dt)*u0 - div(grad(u0)))
             self.solver0.append(sol3(mats0))
-            self.rhsu0.append(Inner(v0, 2./(self.nu*(a[rk]+b[rk])*self.dt)*Expr(self.u00)+div(grad(self.u00))))
+            self.linear_rhs_u0.append(Inner(v0, 2./(nu*(a[rk]+b[rk])*dt)*Expr(self.u00)+div(grad(self.u00))))
 
     def update_bc(self, t):
         # Update time-dependent bcs.
@@ -210,10 +210,9 @@ class RayleighBenard:
             v0 = TestFunction(self.D00)
             w00 = self.work[(self.u00, 0, True)]
             a, b = self.a[rk], self.b[rk]
-            self.b0[1] = self.rhsu0[rk]()
+            self.b0[1] = self.linear_rhs_u0[rk]()
             w00 = inner(v0, self.H_[1, :, 0], output_array=w00)
-            self.b0[1] -= (2.*a/self.nu/(a+b))*w00
-            self.b0[1] -= (2.*b/self.nu/(a+b))*self.b0[0]
+            self.b0[1] -= (2./self.nu/(a+b))*(a*w00+b*self.b0[0])
             self.u00 = self.solver0[rk](self.b0[1], self.u00)
             u[1, :, 0] = self.u00
             self.b0[0] = w00

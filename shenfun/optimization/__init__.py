@@ -28,7 +28,7 @@ class runtimeoptimizer:
         self.func = func
     def __call__(self, *args, **kwargs):
         fun = optimizer(self.func)
-        fun(*args, **kwargs)
+        return fun(*args, **kwargs)
 
 def optimizer(func, wrap=True):
     """Decorator used to wrap calls to optimized versions of functions.

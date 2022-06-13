@@ -50,7 +50,7 @@ def get_extensions():
                          sources=[os.path.join(cwd, "shenfun", "legendre", "fastgl", "fastgl_wrap.pyx")]))
     [e.extra_link_args.extend(["-std=c++11"]) for e in ext]
     #[e.extra_link_args.extend(["-std=c++11", "-fopenmp"]) for e in ext]
-    for s in ("Cheb", "convolve", "outer", "applymask"):
+    for s in ("Cheb", "convolve", "outer", "applymask", "cross"):
         ext.append(Extension("shenfun.optimization.cython.{0}".format(s),
                              libraries=['m'],
                              sources=[os.path.join(cdir, '{0}.pyx'.format(s))]))

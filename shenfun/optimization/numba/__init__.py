@@ -13,6 +13,38 @@ from .biharmonic import *
 from .chebyshev import *
 
 @nb.jit(nopython=True, fastmath=True, cache=True)
+def crossND(c, a, b):
+    c[0] = a[1]*b[2] - a[2]*b[1]
+    c[1] = a[2]*b[0] - a[0]*b[2]
+    c[2] = a[0]*b[1] - a[1]*b[0]
+    return c
+
+@nb.jit(nopython=True, fastmath=True, cache=True)
+def cross2D(c, a, b):
+    for i in range(a.shape[1]):
+        for j in range(a.shape[2]):
+                a0 = a[0, i, j]
+                a1 = a[1, i, j]
+                b0 = b[0, i, j]
+                b1 = b[1, i, j]
+                c[i, j] = a0*b1 - a1*b0
+
+@nb.jit(nopython=True, fastmath=True, cache=True)
+def cross3D(c, a, b):
+    for i in range(a.shape[1]):
+        for j in range(a.shape[2]):
+            for k in range(a.shape[3]):
+                a0 = a[0, i, j, k]
+                a1 = a[1, i, j, k]
+                a2 = a[2, i, j, k]
+                b0 = b[0, i, j, k]
+                b1 = b[1, i, j, k]
+                b2 = b[2, i, j, k]
+                c[0, i, j, k] = a1*b2 - a2*b1
+                c[1, i, j, k] = a2*b0 - a0*b2
+                c[2, i, j, k] = a0*b1 - a1*b0
+
+@nb.jit(nopython=True, fastmath=True, cache=True)
 def outer2D(a, b, c, symmetric):
     N, M = a.shape[1:]
     if symmetric:

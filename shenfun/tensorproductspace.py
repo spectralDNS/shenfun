@@ -1010,6 +1010,21 @@ class TensorProductSpace(PFFT):
         """
         return tuple([base.shape(forward_output) for base in self])
 
+    @property
+    def domains(self):
+        """Return domains for all directions
+        """
+        return tuple([base.domain for base in self])
+
+    @property
+    def volume(self):
+        """Return computational volume
+        """
+        vol = 1
+        for d in self.domains:
+            vol *= (d[1]-d[0])
+        return vol
+
     def mask_nyquist(self, u_hat, mask=None):
         """Return :class:`.Function` ``u_hat`` with zero Nyquist coefficients
 

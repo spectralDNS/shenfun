@@ -4,7 +4,7 @@ from shenfun import la
 from shenfun.utilities import CachedArrayDict
 from shenfun.tensorproductspace import TensorProductSpace
 from shenfun.matrixbase import TPMatrix, BlockMatrix, SpectralMatrix, \
-    SparseMatrix
+    Identity
 from .arguments import Expr, TestFunction, TrialFunction, BasisFunction, \
     Function, Array
 from .inner import inner
@@ -192,7 +192,7 @@ class Project:
     Note that u[1] = 1 sets the coefficient of the second Chebyshev polynomial (i.e., x)
     to 1. Hence the derivative of u is dx/dx=1, which is the result of dudx().
     """
-    def __init__(self, uh, T):
+    def __init__(self, uh, T, output_array=None):
         assert isinstance(uh, (Expr, BasisFunction))
         v = TestFunction(T)
         u = TrialFunction(T)
@@ -201,7 +201,10 @@ class Project:
         # right hand side through matrix vector product
         self.uh = uh
         self.A = inner(v, uh, return_matrices=True)
-        self.output_array = Function(T)
+        self.output_array = output_array
+        if output_array is None:
+            self.output_array = Function(T)
+
         if T.dimensions == 1:
             self.sol = la.Solver(self.B)
         else:
@@ -209,7 +212,20 @@ class Project:
                 if len(self.B.naxes) == 0:
                     self.sol = la.SolverDiagonal([self.B])
                 elif len(self.B.naxes) == 1:
-                    self.sol = la.SolverGeneric1ND([self.B])
+                    if len(self.A) == 1:
+                        axis = self.B.naxes.item()
+                        if self.B.mats[axis] == self.A[0].mats[axis]:
+                            # If the non-diagonal matrices are the same, we can skip the solve step. This is simply an optimization.
+                            self.B.mats[axis] = Identity(shape=self.B.mats[axis].shape)
+                            self.A[0].mats[axis] = Identity(shape=self.B.mats[axis].shape)
+                            self.sol = la.SolverDiagonal([self.B])
+                            self.sol.mat.naxes = np.array([])
+                            self.A[0].naxes = np.array([])
+                            self.A[0].simplify_diagonal_matrices()
+                        else:
+                            self.sol = la.SolverGeneric1ND([self.B])
+                    else:
+                        self.sol = la.SolverGeneric1ND([self.B])
                 elif len(self.B.naxes) == 2:
                     self.sol = la.SolverGeneric2ND([self.B])
                 else:
@@ -218,10 +234,19 @@ class Project:
                 # vector with uncoupled components
                 class sol:
                     def __init__(self, B):
-                        self.B = B
+                        self.solvers = []
+                        for b in B:
+                            if len(b.naxes) == 0:
+                                self.solvers.append(la.SolverDiagonal([b]))
+                            elif len(b.naxes) == 1:
+                                self.solvers.append(la.SolverGeneric1ND([b]))
+                            elif len(b.naxes) == 2:
+                                self.solvers.append(la.SolverGeneric2ND([b]))
+                            else:
+                                self.solvers.append(la.SolverND([b]))
                     def __call__(self, u, c):
-                        for oa, b in zip(u.v, self.B):
-                            oa = b.solve(oa, oa)
+                        for oa, solver in zip(u.v, self.solvers):
+                            oa = solver(oa, oa)
                         return u
                 self.sol = sol(self.B)
             else:

@@ -7,7 +7,6 @@ try:
 except ImportError:
     from collections import MutableMapping
 from collections import defaultdict
-import math
 import numpy as np
 import sympy as sp
 from scipy.fftpack import dct
@@ -18,7 +17,7 @@ from .findbasis import get_bc_basis, get_stencil_matrix, n
 __all__ = ['dx', 'clenshaw_curtis1D', 'CachedArrayDict', 'surf3D',
            'wrap_periodic', 'outer', 'dot', 'apply_mask', 'integrate_sympy',
            'mayavi_show', 'quiver3D', 'get_bc_basis', 'get_stencil_matrix',
-           'scalar_product', 'n']
+           'scalar_product', 'n', 'cross']
 
 def dx(u, weighted=False):
     r"""Compute integral of u over domain
@@ -130,6 +129,41 @@ class CachedArrayDict(MutableMapping):
 
     def values(self):
         raise TypeError('Cached work arrays not iterable')
+
+def cross(c, a, b):
+    """Cross product c = a x b
+
+    Parameters
+    ----------
+    c : Array
+    a : Array
+    b : Array
+
+    Returns
+    -------
+    c : Array
+    """
+    if a.ndim == 3:
+        cross2D(c, a, b)
+    elif a.ndim == 4:
+        cross3D(c, a, b)
+    else:
+        crossND(c, a, b)
+    return c
+
+@runtimeoptimizer
+def cross2D(c, a, b):
+    c[:] = a[0]*b[1]-a[1]*b[0]
+
+@runtimeoptimizer
+def cross3D(c, a, b):
+    c[0] = a[1]*b[2] - a[2]*b[1]
+    c[1] = a[2]*b[0] - a[0]*b[2]
+    c[2] = a[0]*b[1] - a[1]*b[0]
+
+@runtimeoptimizer
+def crossND(c, a, b):
+    cross3D(c, a, b)
 
 def outer(a, b, c):
     r"""Return outer product $c_{i,j} = a_i b_j$

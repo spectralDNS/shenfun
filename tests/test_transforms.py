@@ -1,5 +1,4 @@
 from itertools import product
-import functools
 import pytest
 from scipy.linalg import solve
 import scipy.sparse.linalg as la
@@ -352,10 +351,10 @@ def test_CXXmat(test, trial):
     S2 = Cm.trialfunction[0]
     S1 = Cm.testfunction[0]
 
-    fj = shenfun.Array(S2, buffer=np.random.randn(N))
-    # project to S2
-    f_hat = fj.forward()
-    fj = f_hat.backward(fj)
+    #initialize random vector
+    f_hat = shenfun.Function(S2)
+    f_hat[:S2.dim()] = np.random.rand(S2.dim())
+    fj = f_hat.backward()
 
     # Check S1.scalar_product(f) equals Cm*S2.forward(f)
     f_hat = S2.forward(fj, f_hat)
@@ -530,6 +529,7 @@ def test_ASBSBmat(SB, quad):
     assert np.allclose(z0, u0, rtol=1e-5, atol=1e-6)
 
 if __name__ == '__main__':
+    config['optimization']['mode'] = 'cython'
     #test_to_ortho(cBasisGC[1], 'GC')
     # test_convolve(fbases.R2C, 8)
     #test_ASDSDmat(cbases.ShenNeumann, "GC")
@@ -537,8 +537,8 @@ if __name__ == '__main__':
     #test_CDDmat("GL")
     #for i in range(len(ctrialBasis)):
     #    test_massmatrices(ctestBasis[-4], ctrialBasis[i], 'GL')
-    test_massmatrices(ctestBasis[-4], ctrialBasis[2], 'GL')
-    #test_CXXmat(cBasis[2], cBasis[1])
+    #test_massmatrices(ctestBasis[-4], ctrialBasis[2], 'GL')
+    test_CXXmat(ctestBasis[3], ctrialBasis[1])
     #test_transforms(cBasisGC[3], 'GC')
     #test_project_1D(cBasis[0])
     #test_scalarproduct(cBasis[2], 'GC')
