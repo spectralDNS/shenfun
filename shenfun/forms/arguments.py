@@ -1188,7 +1188,6 @@ class ShenfunBaseArray(DistArray):
                 shape = (space.num_components(),) + shape
 
             # if a list of sympy expressions
-            strides = None
             if isinstance(buffer, (list, tuple)):
                 assert len(buffer) == len(space.flatten())
                 sympy_buffer = buffer
@@ -1223,11 +1222,10 @@ class ShenfunBaseArray(DistArray):
                     buffer = buf
 
             elif isinstance(buffer, np.ndarray):
-                strides = buffer.strides
                 buffer = buffer if buffer.base is None else buffer.base
 
             val0 = val if isinstance(val, Number) else None
-            obj = DistArray.__new__(cls, shape, buffer=buffer, strides=strides, dtype=dtype,
+            obj = DistArray.__new__(cls, shape, buffer=buffer, dtype=dtype,
                                     val=val0, rank=space.is_composite_space)
             obj._space = space
             obj._offset = 0
