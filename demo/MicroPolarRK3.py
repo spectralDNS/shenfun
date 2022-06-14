@@ -53,9 +53,9 @@ class MicroPolar:
 
         # Regular tensor product spaces
         # x, y, z is wall-normal, streamwise and spanwise, respectively
-        self.TB = TensorProductSpace(comm, (self.B0, self.F1, self.F2), modify_spaces_inplace=True) # Wall-normal velocity
-        self.TD = TensorProductSpace(comm, (self.D0, self.F1, self.F2), modify_spaces_inplace=True) # Streamwise velocity
-        self.TC = TensorProductSpace(comm, (self.C0, self.F1, self.F2), modify_spaces_inplace=True) # No bc
+        self.TB = TensorProductSpace(comm, (self.B0, self.F1, self.F2), slab=True, modify_spaces_inplace=True) # Wall-normal velocity
+        self.TD = TensorProductSpace(comm, (self.D0, self.F1, self.F2), slab=True, modify_spaces_inplace=True) # Streamwise velocity
+        self.TC = TensorProductSpace(comm, (self.C0, self.F1, self.F2), slab=True, modify_spaces_inplace=True) # No bc
         self.BD = VectorSpace([self.TB, self.TD, self.TD])  # Velocity vector space
         self.CD = VectorSpace(self.TD)  # Convection vector space
         self.CC = VectorSpace([self.TD, self.TC, self.TC])  # Curl vector space
@@ -175,7 +175,7 @@ class MicroPolar:
         self.linear_rhs_g = []
         for rk in range(3):
             matsG = inner(h, 2./(nu*(a[rk]+b[rk])*dt)*g - div(grad(g)))
-            self.solverG.append(sol2(matsG)) # boundary matrices are taken care of in solverT
+            self.solverG.append(sol2(matsG))
             self.linear_rhs_g.append(Inner(h, 2./(nu*(a[rk]+b[rk])*dt)*Expr(self.g_)+div(grad(self.g_))))
         ccw_ = self.curlcurlw.output_array
         self.nonlinear_rhs_g = Inner(h, Dx(self.H_[1], 2, 1) - Dx(self.H_[2], 1, 1))\
@@ -331,7 +331,6 @@ class MicroPolar:
 
         # Still have to compute for wavenumber = 0, 0
         if comm.Get_rank() == 0:
-            v0 = TestFunction(self.D00)
             w_ = self.work[(self.v00, 0, True)]
             a, b = self.a[rk], self.b[rk]
 

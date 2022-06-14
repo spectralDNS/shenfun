@@ -117,36 +117,38 @@ class RayleighBenard:
         # u equation
         a, b = self.a, self.b
         self.solver = []
-        self.Biharmonic_u = []
+        self.linear_rhs_u = []
         for rk in range(3):
             mats = inner(v, div(grad(u)) - ((a[rk]+b[rk])*nu*dt/2.)*div(grad(div(grad(u)))))
             self.solver.append(sol1(mats))
-            self.Biharmonic_u.append(Inner(v, div(grad(self.u_[0])) + ((a[rk]+b[rk])*nu*dt/2.)*div(grad(div(grad(self.u_[0]))))))
-        self.convH = Inner(v, Dx(Dx(self.H_[1], 0, 1), 1, 1)-Dx(self.H_[0], 1, 2))
-        self.d2Tdy2 = Inner(v, Dx(self.T_, 1, 2))
+            self.linear_rhs_u.append(Inner(v, div(grad(self.u_[0])) + ((a[rk]+b[rk])*nu*dt/2.)*div(grad(div(grad(self.u_[0]))))))
+        self.nonlinear_rhs_u = Inner(v, Dx(Dx(self.H_[1], 0, 1), 1, 1)
+                                       -Dx(self.H_[0], 1, 2))\
+                              +Inner(v, Dx(self.T_, 1, 2))
 
         # Note that linear forms use Inner, which creates a class that computes
         # the inner product with a fast matrix-vector product when called
 
         # T equation
         self.solverT = []
-        self.rhsT = []
+        self.linear_rhs_T = []
         for rk in range(3):
             matsT = inner(q, 2./(kappa*(a[rk]+b[rk])*dt)*p - div(grad(p)))
             self.solverT.append(sol2(matsT)) # boundary matrices are taken care of in solverT
-            self.rhsT.append(Inner(q, 2./(self.kappa*(a[rk]+b[rk])*self.dt)*Expr(self.T_)+div(grad(self.T_))))
-        self.div_uT = Inner(q, div(self.uT_))
+            self.linear_rhs_T.append(Inner(q, 2./(self.kappa*(a[rk]+b[rk])*self.dt)*Expr(self.T_)+div(grad(self.T_))))
+        self.nonlinear_rhs_T = Inner(q, -div(self.uT_))
 
         # v Eq for Fourier wavenumber 0
         u0 = TrialFunction(self.D00)
         v0 = TestFunction(self.D00)
+        self.h1 = Function(self.D00)
         sol3 = chebyshev.la.Helmholtz if self.B0.family() == 'chebyshev' else la.Solver
         self.solver0 = []
-        self.linear_rhs_u0 = []
+        self.linear_rhs_v = []
         for rk in range(3):
             mats0 = inner(v0, 2./(nu*(a[rk]+b[rk])*dt)*u0 - div(grad(u0)))
             self.solver0.append(sol3(mats0))
-            self.linear_rhs_u0.append(Inner(v0, 2./(nu*(a[rk]+b[rk])*dt)*Expr(self.u00)+div(grad(self.u00))))
+            self.linear_rhs_v.append(Inner(v0, 2./(nu*(a[rk]+b[rk])*dt)*Expr(self.u00)+div(grad(self.u00))))
 
     def update_bc(self, t):
         # Update time-dependent bcs.
@@ -175,24 +177,21 @@ class RayleighBenard:
         a, b = self.a[rk], self.b[rk]
         self.H_ = self.convection(self.u_, self.H_)
         rhs[1] = 0
-        rhs[1] += self.Biharmonic_u[rk]()
-        w0 = self.convH()
-        w1 = self.d2Tdy2()
-        rhs[1] += a*self.dt*(w0+w1)
-        rhs[1] += b*self.dt*rhs[0]
-        rhs[0] = w0+w1
+        rhs[1] += self.linear_rhs_u[rk]()
+        w0 = self.nonlinear_rhs_u()
+        rhs[1] += self.dt*(a*w0+b*rhs[0])
+        rhs[0] = w0
         rhs.mask_nyquist(self.mask)
         return rhs
 
     def compute_rhs_T(self, rhs, rk):
         a, b = self.a[rk], self.b[rk]
-        rhs[1] = self.rhsT[rk]()
+        rhs[1] = self.linear_rhs_T[rk]()
         up = self.u_.backward(padding_factor=self.padding_factor)
         T_p = self.T_.backward(padding_factor=self.padding_factor)
         self.uT_ = self.BDp.forward(up*T_p, self.uT_)
-        w0 = self.div_uT()
-        rhs[1] -= (2.*a/self.kappa/(a+b))*w0
-        rhs[1] -= (2.*b/self.kappa/(a+b))*rhs[0]
+        w0 = self.nonlinear_rhs_T()
+        rhs[1] += (2./self.kappa/(a+b))*(a*w0+b*rhs[0])
         rhs[0] = w0
         rhs.mask_nyquist(self.mask)
         return rhs
@@ -202,17 +201,17 @@ class RayleighBenard:
             self.u00[:] = u[1, :, 0].real
 
         # Find second velocity component
-        with np.errstate(divide='ignore'):
-            u[1] = 1j * self.dudx() / self.K[1]
+        u[1] = 1j * self.dudx() / self.K[1]
 
         # Still have to compute for wavenumber = 0
         if comm.Get_rank() == 0:
             v0 = TestFunction(self.D00)
             w00 = self.work[(self.u00, 0, True)]
             a, b = self.a[rk], self.b[rk]
-            self.b0[1] = self.linear_rhs_u0[rk]()
-            w00 = inner(v0, self.H_[1, :, 0], output_array=w00)
-            self.b0[1] -= (2./self.nu/(a+b))*(a*w00+b*self.b0[0])
+            self.b0[1] = self.linear_rhs_v[rk]()
+            self.h1[:] = -self.H_[1, :, 0]
+            w00 = inner(v0, self.h1.backward(), output_array=w00)
+            self.b0[1] += (2./self.nu/(a+b))*(a*w00+b*self.b0[0])
             self.u00 = self.solver0[rk](self.b0[1], self.u00)
             u[1, :, 0] = self.u00
             self.b0[0] = w00
@@ -263,15 +262,11 @@ class RayleighBenard:
                 rhs_u = self.compute_rhs_u(self.rhs_u, rk)   # rhs assembled for step k
                 rhs_T = self.compute_rhs_T(self.rhs_T, rk)
                 self.u_[0] = self.solver[rk](rhs_u[1], self.u_[0])
-                if comm.Get_rank() == 0:
-                    self.u_[0, :, 0] = 0
-                u_ = self.compute_v(self.u_, rk)
-                u_.mask_nyquist(self.mask)
+                self.u_ = self.compute_v(self.u_, rk)
                 self.update_bc(t+self.dt*self.c[rk+1])       # Solving for step k+1
-                T_ = self.solverT[rk](rhs_T[1], self.T_)     # This sets boundary dofs for T_
-                T_.mask_nyquist(self.mask)
+                self.T_ = self.solverT[rk](rhs_T[1], self.T_)     # This sets boundary dofs for T_
+
             t += self.dt
-            self.end_of_tstep()
             tstep += 1
             self.plot(t, tstep)
             self.checkpoint.update(t, tstep)
@@ -284,12 +279,12 @@ if __name__ == '__main__':
     t0 = time()
     d = {
         'N': (64, 128),
-        'Ra': 100000.,
+        'Ra': 1000000.,
         'dt': 0.01,
         'filename': 'RB_64_128',
         'conv': 0,
         'modplot': 50,
-        'modsave': 100,
+        'modsave': 50,
         #'bcT': (0.9+0.1*sympy.sin(2*(y-tt)), 0),
         #'bcT': (0.9+0.1*sympy.sin(2*y), 0),
         'bcT': (1, 0),
@@ -300,7 +295,7 @@ if __name__ == '__main__':
     c = RayleighBenard(**d)
     t, tstep = c.initialize(rand=0.001, from_checkpoint=False)
     c.assemble()
-    c.solve(t=t, tstep=tstep, end_time=0.1)
+    c.solve(t=t, tstep=tstep, end_time=100)
     print('Computing time %2.4f'%(time()-t0))
     if comm.Get_rank() == 0:
         generate_xdmf('_'.join((d['filename'], 'U'))+'.h5')

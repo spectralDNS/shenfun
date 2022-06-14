@@ -33,7 +33,7 @@ class MKM(MicroPolar):
         self.rand = rand
         self.Volume = inner(1, Array(self.TD, val=1))
         self.flux = np.array([618.97]) # Re_tau=180
-        self.stats = Stats(N, filename=filename+'_stats')
+        self.stats = Stats(N, self.TD.local_slice(False), filename=filename+'_stats')
 
     def initialize(self, from_checkpoint=False):
         if from_checkpoint:
@@ -86,9 +86,10 @@ class MKM(MicroPolar):
             plt.colorbar(self.im3)
             plt.draw()
 
-            plt.figure(4, figsize=(6, 3))
-            self.im4 = plt.plot(self.X[0][:, 0, 0], ub[0, :, 0, 0])[0]
-            plt.draw()
+            if comm.Get_size() == 1:
+                plt.figure(4, figsize=(6, 3))
+                self.im4 = plt.plot(self.X[0][:, 0, 0], ub[0, :, 0, 0])[0]
+                plt.draw()
 
 
     def plot(self, t, tstep):
@@ -141,14 +142,15 @@ class MKM(MicroPolar):
             wb = self.w_.backward(self.wb)
             self.stats(ub, wb)
 
-            stats = self.stats.get_stats()
-            u0, w0, uu, ww = stats
-            x = c.B0.mesh(bcast=False)
-            self.im4.axes.clear()
-            self.im4.axes.plot(x, u0[1], 'b')
-            self.im4.axes.plot(x, w0[2], 'r')
-            plt.figure(4)
-            plt.pause(1e-6)
+            if comm.Get_size() == 1:
+                stats = self.stats.get_stats()
+                u0, w0, uu, ww = stats
+                x = c.B0.mesh(bcast=False)
+                self.im4.axes.clear()
+                self.im4.axes.plot(x, u0[1], 'b')
+                self.im4.axes.plot(x, w0[2], 'r')
+                plt.figure(4)
+                plt.pause(1e-6)
 
         # Dynamically adjust flux
         if tstep % 1 == 0:
@@ -160,14 +162,16 @@ class MKM(MicroPolar):
 
 class Stats(object):
 
-    def __init__(self, N, fromstats="", filename=""):
-        self.N = N
-        self.Umean = np.zeros((3, N[0]))
-        self.Wmean = np.zeros((3, N[0]))
-        self.UU = np.zeros((6, N[0]))
-        self.WW = np.zeros((6, N[0]))
+    def __init__(self, N, s, fromstats="", filename=""):
+        self.N = N # global shape
+        self.s = s # local slice
+        M = self.s[0].stop-self.s[0].start # local x shape
+        self.Q = (self.s[1].stop-self.s[1].start)*(self.s[2].stop-self.s[2].start)
+        self.Umean = np.zeros((3, M))
+        self.Wmean = np.zeros((3, M))
+        self.UU = np.zeros((6, M))
+        self.WW = np.zeros((6, M))
         self.num_samples = 0
-        self.rank = comm.Get_rank()
         self.fname = filename
         self.f0 = None
         if fromstats:
@@ -206,9 +210,8 @@ class Stats(object):
         self.get_stats()
 
     def get_stats(self, tofile=True):
-        N = self.N[0]
-        s = slice(self.rank*N, (self.rank+1)*N, 1)
-        Nd = self.num_samples*self.N[1]*self.N[2]
+        s = self.s[0]
+        Nd = self.num_samples*self.Q
         comm.barrier()
         if tofile:
             if self.f0 is None:
@@ -229,7 +232,16 @@ class Stats(object):
 
         if comm.Get_size() == 1:
             return self.Umean/Nd, self.Wmean/Nd, self.UU/Nd, self.WW/Nd
-        return 0
+
+        if comm.Get_rank() == 0:
+            # Return the whole, collected array on rank 0
+            f0 = h5py.File(self.fname+".h5", "r", driver='mpio', comm=MPI.COMM_SELF)
+            data = (np.array([f0[f'Average Velocity/{name}'] for name in 'UVW']),
+                    np.array([f0[f'Average Angular Velocity/{name}'] for name in 'UVW']),
+                    np.array([f0[f'Reynolds Stress Velocity/{name}'] for name in ('UU', 'VV', 'WW', 'UV', 'UW', 'VW')]),
+                    np.array([f0[f'Reynolds Stress Angular Velocity/{name}'] for name in ('UU', 'VV', 'WW', 'UV', 'UW', 'VW')]))
+            f0.close()
+            return data
 
     def reset_stats(self):
         self.num_samples = 0
@@ -241,10 +253,10 @@ class Stats(object):
     def fromfile(self, filename="stats"):
         self.fname = filename
         self.f0 = h5py.File(filename+".h5", "a", driver="mpio", comm=comm)
-        N = self.N[0]
         self.num_samples = self.f0.attrs["num_samples"]
-        Nd = self.num_samples*self.N[1]*self.N[2]
-        s = slice(self.rank*N, (self.rank+1)*N, 1)
+        M = (self.s[1].stop-self.s[1].start)*(self.s[2].stop-self.s[2].start)
+        Nd = self.num_samples*M
+        s = self.s[0]
         for i, name in enumerate(("U", "V", "W")):
             self.Umean[i, :] = self.f0["Average Velocity/"+name][s]*Nd
             self.Wmean[i, :] = self.f0["Average Angular Velocity/"+name][s]*Nd
@@ -269,21 +281,21 @@ if __name__ == '__main__':
         'moderror': 10,
         'family': 'C',
         'checkpoint': 100,
-        'sample_stats': 100,
+        'sample_stats': 10,
         'padding_factor': (1.5, 1.5, 1.5)
         }
     c = MKM(**d)
-    t, tstep = c.initialize(from_checkpoint=False)
+    t, tstep = c.initialize(from_checkpoint=True)
     c.assemble()
-    c.solve(t=t, tstep=tstep, end_time=20)
+    c.solve(t=t, tstep=tstep, end_time=20.105)
     print('Computing time %2.4f'%(time()-t0))
     if comm.Get_rank() == 0:
         generate_xdmf('_'.join((d['filename'], 'U'))+'.h5')
         generate_xdmf('_'.join((d['filename'], 'W'))+'.h5')
-    if comm.Get_size() == 1:
-        stats = c.stats.get_stats()
+    stats = c.stats.get_stats()
+    if comm.Get_rank() == 0:
         u0, w0, uu, ww = stats
-        x = c.X[0][:, 0, 0]
+        x = c.B0.mesh(bcast=False)
         plt.figure()
         plt.semilogx((1-x[:32])*180, u0[1, :32], 'r', (1+x[32:])*180, u0[1, 32:], 'b')
         plt.figure()
@@ -291,5 +303,4 @@ if __name__ == '__main__':
         plt.figure()
         # multiply by utau=0.0635 to get the same scaling as fig 7
         plt.semilogx((x[32:] + 1)*180, np.sqrt(ww[1, 32:])*0.0635, 'b', (1 - x[:32])*180, np.sqrt(ww[1, :32])*0.0635, 'r')
-        plt.plot(x, w0[2], 'r')
         plt.show()
