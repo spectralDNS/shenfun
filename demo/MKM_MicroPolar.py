@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 from shenfun import *
-from MicroPolarRK3 import MicroPolar
+from MicroPolar import MicroPolar
 import h5py
 
 
@@ -23,16 +23,15 @@ class MKM(MicroPolar):
                  family='C',
                  padding_factor=(1, 1.5, 1.5),
                  checkpoint=1000,
+                 timestepper='PDEIRK3',
                  rand=1e-7):
         MicroPolar.__init__(self, N=N, domain=domain, Re=Re, J=J, m=m, NP=NP, dt=dt, conv=conv, modplot=modplot,
-                            modsave=modsave, moderror=moderror, sample_stats=sample_stats, filename=filename, family=family,
-                            padding_factor=padding_factor, checkpoint=checkpoint)
-        self.Re = Re
-        utau = self.Re*self.nu # 1
-        self.dpdy_source = utau**2
+                            modsave=modsave, moderror=moderror, filename=filename, family=family,
+                            padding_factor=padding_factor, checkpoint=checkpoint, timestepper=timestepper)
         self.rand = rand
         self.Volume = inner(1, Array(self.TD, val=1))
         self.flux = np.array([618.97]) # Re_tau=180
+        self.sample_stats = sample_stats
         self.stats = Stats(N, self.TD.local_slice(False), filename=filename+'_stats')
 
     def initialize(self, from_checkpoint=False):
@@ -278,16 +277,16 @@ if __name__ == '__main__':
         'conv': 1,
         'modplot': 100,
         'modsave': 100,
-        'moderror': 10,
+        'moderror': 1,
         'family': 'C',
-        'checkpoint': 100,
+        'checkpoint': 1,
         'sample_stats': 10,
-        'padding_factor': (1.5, 1.5, 1.5)
+        'padding_factor': (1.5, 1.5, 1.5),
+        'timestepper': 'PDEIRK3', # IMEXRK222, IMEXRK443
         }
     c = MKM(**d)
-    t, tstep = c.initialize(from_checkpoint=True)
-    c.assemble()
-    c.solve(t=t, tstep=tstep, end_time=20.105)
+    t, tstep = c.initialize(from_checkpoint=False)
+    c.solve(t=t, tstep=tstep, end_time=0.01)
     print('Computing time %2.4f'%(time()-t0))
     if comm.Get_rank() == 0:
         generate_xdmf('_'.join((d['filename'], 'U'))+'.h5')
@@ -303,4 +302,4 @@ if __name__ == '__main__':
         plt.figure()
         # multiply by utau=0.0635 to get the same scaling as fig 7
         plt.semilogx((x[32:] + 1)*180, np.sqrt(ww[1, 32:])*0.0635, 'b', (1 - x[:32])*180, np.sqrt(ww[1, :32])*0.0635, 'r')
-        plt.show()
+        #plt.show()

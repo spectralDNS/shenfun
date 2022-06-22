@@ -25,13 +25,15 @@ Note
 as they assume all matrices are diagonal.
 
 """
+import copy
 import types
 import numpy as np
 from shenfun import Function, TPMatrix, TrialFunction, TestFunction,\
     inner, la, Expr, CompositeSpace, BlockMatrix, SparseMatrix, \
-    get_simplified_tpmatrices, ScipyMatrix
+    get_simplified_tpmatrices, ScipyMatrix, Inner
 
-__all__ = ('IRK3', 'BackwardEuler', 'RK4', 'ETDRK4', 'ETD')
+__all__ = ('IRK3', 'BackwardEuler', 'RK4', 'ETDRK4', 'ETD',
+           'IMEXRK3', 'IMEXRK111', 'IMEXRK222', 'IMEXRK443', 'ABCN')
 
 #pylint: disable=unused-variable
 
@@ -179,7 +181,7 @@ class IRK3(IntegratorBase):
         b = self.b[rk]
         dt = self.params['dt']
         dU = self.NonlinearRHS(u, u_hat, dU, **self.params)
-        if self.mask:
+        if self.mask is not None:
             dU.mask_nyquist(self.mask)
         w1 = dU*a*dt + dU1*b*dt
         dU1[:] = dU
@@ -199,7 +201,7 @@ class IRK3(IntegratorBase):
                 dU = self.compute_rhs(u, u_hat, self.dU, self.dU1, rk)
                 dU += self.rhs_mats[rk].matvec(u_hat, self.w0)
                 u_hat = self.solver[rk](dU, u=u_hat)
-                if self.mask:
+                if self.mask is not None:
                     u_hat.mask_nyquist(self.mask)
 
             t += dt
@@ -579,3 +581,430 @@ class RK4(IntegratorBase):
             u_hat[:] = self. U_hat1
             self.update(u, u_hat, t, tstep, **self.params)
         return u_hat
+
+
+class IMEXRK3:
+    r"""Solve partial differential equations of the form
+
+    .. math::
+
+        \frac{\partial u}{\partial t} = N+Lu, \quad (1)
+
+    where :math:`N` is a nonlinear term and :math:`L` is a linear operator.
+
+    This is a third order accurate implicit Runge-Kutta solver
+
+    Parameters
+    ----------
+    v : :class:`.TestFunction`
+    u : :class:`.Expr` or :class:`.Function`
+        Representing :math:`u` in (1)
+        If an :class:`.Expr`, then its basis must be a :class:`.Function`
+        The :class:`.Function` will then hold the solution.
+        If :math:`u` is a :class:`.Function`, then this will hold the solution.
+    L : Linear operator
+        Operates on :math:`u`
+    N : :class:`.Expr` or sequence of :class:`.Expr`
+        Nonlinear terms
+    dt : number
+        Time step
+    solver : Linear solver, optional
+    name : str, optional
+    """
+    def __init__(self, v, u, L, N, dt, solver=None, name='U-equation', latex=None):
+        self.v = v
+        self.u = u if isinstance(u, Expr) else Expr(u)
+        self.u_ = self.u.basis()
+        self.L = L
+        self.N = N
+        self.dt = dt
+        T = self.T = v.function_space()
+        self._solver = solver
+        if solver is None:
+            if v.dimensions == 1:
+                self._solver = la.Solver
+            elif len(T.get_nondiagonal_axes().ndim) == 1:
+                self._solver = la.SolverGeneric1ND
+            elif len(T.get_nondiagonal_axes().ndim) == 2:
+               self._solver = la.SolverGeneric2ND
+            else:
+                raise NotImplementedError
+
+        self.solvers = []
+        self.linear_rhs = []
+        self.nonlinear_rhs = None
+        self.name = name
+        self.latex = latex
+        W = CompositeSpace([T, T])
+        self.rhs = Function(W).v
+        self.mask = None
+        if hasattr(T, 'get_mask_nyquist'):
+            self.mask = T.get_mask_nyquist()
+
+    @classmethod
+    def steps(cls):
+        return 3
+
+    def stages(self):
+        a = (8./15., 5./12., 3./4.)
+        b = (0.0, -17./60., -5./12.)
+        c = (0.0, 8./15., 2./3., 1)
+        return a, b, c
+
+    def assemble(self):
+        a, b, _ = self.stages()
+        dt = self.dt
+        ul = copy.copy(self.u)
+        ul._basis = TrialFunction(self.u.function_space())
+        L1 = self.L(ul)
+        L2 = self.L(self.u)
+        for rk in range(len(a)):
+            mats = inner(self.v, ul - (a[rk]+b[rk])*dt/2*L1)
+            self.solvers.append(self._solver(mats))
+            self.linear_rhs.append(Inner(self.v, self.u + (a[rk]+b[rk])*dt/2*L2))
+        if isinstance(self.N, (Expr, Function)):
+            self.nonlinear_rhs = Inner(self.v, self.N)
+        elif isinstance(self.N, list):
+            self.nonlinear_rhs = sum([Inner(self.v, f) for f in self.N[1:]], start=Inner(self.v, self.N[0]))
+        else:
+            raise RuntimeError('Wrong type of nonlinear expression')
+
+    def compute_rhs(self, rk=0):
+        a, b, _ = self.stages()
+        w0 = self.nonlinear_rhs()
+        self.rhs[1] = self.dt*(a[rk]*w0+b[rk]*self.rhs[0])
+        self.rhs[1] += self.linear_rhs[rk]()
+        self.rhs[0] = w0
+        if self.mask is not None:
+            self.T.mask_nyquist(self.rhs[1], self.mask)
+        return self.rhs
+
+    def update(self, t, tstep):
+        pass
+
+    def initialize(self):
+        pass
+
+    def prepare_step(self):
+        pass
+
+    def solve_step(self, rk):
+        return self.solvers[rk](self.rhs[-1], self.u_)
+
+    def solve(self, t=0, tstep=0, end_time=1000):
+        while t < end_time-1e-8:
+            for rk in range(3):
+                self.prepare_step(rk)
+                self.compute_rhs(rk)
+                u = self.solve_step(rk)
+            t += self.dt
+            tstep += 1
+            self.update(t, tstep)
+        return u
+
+class PDEIMEXRK:
+    r"""Solve partial differential equations of the form
+
+    .. math::
+
+        \frac{\partial u}{\partial t} = N+Lu, \quad (1)
+
+    where :math:`N` is a nonlinear term and :math:`L` is a linear operator.
+
+    The solvers in this subclass are taken from::
+
+        Ascher, Ruuth and Spiteri 'Implicit-explicit Runge-Kutta methods for
+        time-dependent partial differential equations' Applied Numerical
+        Mathematics, 25 (1997) 151-167
+
+    Note in particular that we only use solvers satisfying condition
+    (2.3).
+
+    Parameters
+    ----------
+    v : :class:`.TestFunction`
+    u : :class:`.Expr` or :class:`.Function`
+        Representing :math:`u` in (1)
+        If an :class:`.Expr`, then its basis must be a :class:`.Function`
+        The :class:`.Function` will then hold the solution.
+        If :math:`u` is a :class:`.Function`, then this will hold the solution.
+    L : Linear operator
+        Operates on :math:`u`
+    N : :class:`.Expr` or sequence of :class:`.Expr`
+        Nonlinear terms
+    dt : number
+        Time step
+    solver : Linear solver, optional
+    name : str, optional
+    latex : str, optional
+        optional representation of the equation to solve
+    """
+    def __init__(self, v, u, L, N, dt, solver=None, name='U-equation', latex=None):
+        self.v = v
+        self.u = u if isinstance(u, Expr) else Expr(u)
+        self.u_ = self.u.basis()
+        self.L = L
+        self.N = N
+        self.dt = dt
+        self._solver = solver
+        if solver is None:
+            if v.dimensions > 1:
+                self._solver = la.SolverGeneric1ND
+            else:
+                self._solver = la.Solver
+
+        self.solvers = []
+        self.linear_rhs = []
+        self.nonlinear_rhs = None
+        self.name = name
+        self.latex = latex
+        T = self.T = v.function_space()
+        self.rhs = Function(T).v
+        W = CompositeSpace([T]*self.steps())
+        self.Krhs = Function(W).v # nonlinear terms
+        if self.steps() == 1 and self.Krhs.ndim == 1:
+            self.Krhs = np.expand_dims(self.Krhs, 0)
+
+        if self.steps() > 1:
+            WL = CompositeSpace([T]*(self.steps()-1))
+            self.Lrhs = Function(WL).v # linear terms
+            if self.steps() == 2 and self.Lrhs.ndim == 1:
+                self.Lrhs = np.expand_dims(self.Lrhs, 0)
+
+        self.mask = None
+        if hasattr(T, 'get_mask_nyquist'):
+            self.mask = T.get_mask_nyquist()
+
+    @classmethod
+    def steps(cls):
+        raise NotImplementedError
+
+    def stages(self):
+        raise NotImplementedError
+
+    def assemble(self):
+        a = self.stages()[0]
+        dt = self.dt
+        ul = copy.copy(self.u)
+        ul._basis = TrialFunction(self.u.function_space())
+        mats = inner(self.v, ul - dt*a[1, 1]*self.L(ul))
+        self.solvers.append(self._solver(mats))
+        self.linear_rhs = Inner(self.v, self.L(self.u))
+        self.u0_rhs = Inner(self.v, self.u)
+        if isinstance(self.N, (Expr, Function)):
+            self.nonlinear_rhs = Inner(self.v, self.N)
+        elif isinstance(self.N, list):
+            self.nonlinear_rhs = sum([Inner(self.v, f) for f in self.N[1:]], start=Inner(self.v, self.N[0]))
+        else:
+            raise RuntimeError('Wrong type of nonlinear expression')
+
+    def compute_rhs(self, rk=0):
+        a, b = self.stages()[:2]
+        self.Krhs[rk] = self.nonlinear_rhs()
+        if rk == 0:
+            self.u0_rhs() # only at start
+        self.rhs[:] = self.u0_rhs.output_array
+        for j in range(0, rk+1):
+            self.rhs += self.dt*b[rk+1, j]*self.Krhs[j]
+        if rk > 0:
+            self.Lrhs[rk-1] = self.linear_rhs()
+            for j in range(0, rk):
+                self.rhs += self.dt*a[rk+1, j+1]*self.Lrhs[j]
+
+        if self.mask is not None:
+            self.T.mask_nyquist(self.rhs, self.mask)
+        return self.rhs
+
+    def initialize(self):
+        pass
+
+    def update(self, t, tstep):
+        pass
+
+    def prepare_step(self, rk=0):
+        pass
+
+    def solve_step(self, rk=0):
+        # only one solver since the diagonal of a is constant
+        return self.solvers[0](self.rhs, self.u_)
+
+    def solve(self, t=0, tstep=0, end_time=1000):
+        while t < end_time-1e-8:
+            for rk in range(self.steps()):
+                self.prepare_step(rk)
+                self.compute_rhs(rk)
+                u = self.solve_step(rk)
+            t += self.dt
+            tstep += 1
+            self.update(t, tstep)
+        return u
+
+class IMEXRK111(PDEIMEXRK):
+
+    @classmethod
+    def steps(cls):
+        return 1
+
+    def stages(self):
+        a = np.array([
+            [0, 0],
+            [0, 1]])
+        b = np.array([
+            [0, 0],
+            [1, 0]])
+        c = (0, 1)
+        return a, b, c
+
+class IMEXRK222(PDEIMEXRK):
+
+    @classmethod
+    def steps(cls):
+        return 2
+
+    def stages(self):
+        gamma = self.gamma = (2-np.sqrt(2))/2
+        delta = self.delta = 1-1/(2*self.gamma)
+        a = np.array([
+            [0, 0, 0],
+            [0, gamma, 0],
+            [0, 1-gamma, gamma]])
+        b = np.array([
+            [0, 0, 0],
+            [gamma, 0, 0],
+            [delta, 1-delta, 0]])
+        c = (0, gamma, 1)
+        return a, b, c
+
+class IMEXRK443(PDEIMEXRK):
+
+    @classmethod
+    def steps(cls):
+        return 4
+
+    def stages(self):
+        a = np.array([
+            [0, 0, 0, 0, 0],
+            [0, 1/2, 0, 0, 0],
+            [0, 1/6, 1/2, 0, 0],
+            [0, -1/2, 1/2, 1/2, 0],
+            [0, 3/2, -3/2, 1/2, 1/2]])
+        b = np.array([
+            [0, 0, 0, 0, 0],
+            [1/2, 0, 0, 0, 0],
+            [11/18, 1/18, 0, 0, 0],
+            [5/6, -5/6, 1/2, 0, 0],
+            [1/4, 7/4, 3/4, -7/4, 0]])
+        c = (0, 1/2, 2/3, 1/2, 1)
+        return a, b, c
+
+
+class ABCN:
+    r"""Solve partial differential equations of the form
+
+    .. math::
+
+        \frac{\partial u}{\partial t} = N+Lu, \quad (1)
+
+    where :math:`N` is a nonlinear term and :math:`L` is a linear operator.
+
+    This class handles only spaces with one non-periodic direction.
+
+    Parameters
+    ----------
+    v : :class:`.TestFunction`
+    u : :class:`.Expr` or :class:`.Function`
+        Representing :math:`u` in (1)
+        If an :class:`.Expr`, then its basis must be a :class:`.Function`
+        The :class:`.Function` will hold the solution.
+    L : Linear operator
+        Operates on :math:`u`
+    N : :class:`.Expr` or sequence of :class:`.Expr`
+        Nonlinear terms
+    dt : number
+        Time step
+    solver : Linear solver, optional
+    name : str, optional
+    """
+    def __init__(self, v, u, L, N, dt, solver=None, name='U-equation', latex=None):
+        self.v = v
+        self.u = u if isinstance(u, Expr) else Expr(u)
+        self.u_ = self.u.basis()
+        self.L = L
+        self.N = N
+        self.dt = dt
+        self._solver = solver
+        if solver is None:
+            if v.dimensions > 1:
+                self._solver = la.SolverGeneric1ND
+            else:
+                self._solver = la.Solver
+
+        self.solvers = []
+        self.linear_rhs = []
+        self.nonlinear_rhs = None
+        self.name = name
+        self.latex = latex
+        T = self.T = v.function_space()
+        W = CompositeSpace([T, T])
+        self.rhs = Function(W).v
+        self.mask = None
+        if hasattr(T, 'get_mask_nyquist'):
+            self.mask = T.get_mask_nyquist()
+
+    @classmethod
+    def steps(cls):
+        return 1
+
+    def stages(self):
+        a = (1.5,)
+        b = (-0.5,)
+        c = (0, 1)
+        return a, b, c
+
+    def assemble(self):
+        dt = self.dt
+        ul = copy.copy(self.u)
+        ul._basis = TrialFunction(self.u.function_space())
+        L1 = self.L(ul)
+        L2 = self.L(self.u)
+        mats = inner(self.v, ul - dt/2*L1)
+        self.solvers.append(self._solver(mats))
+        self.linear_rhs.append(Inner(self.v, self.u + dt/2*L2))
+        if isinstance(self.N, (Expr, Function)):
+            self.nonlinear_rhs = Inner(self.v, self.N)
+        elif isinstance(self.N, list):
+            self.nonlinear_rhs = sum([Inner(self.v, f) for f in self.N[1:]], start=Inner(self.v, self.N[0]))
+        else:
+            raise RuntimeError('Wrong type of nonlinear expression')
+
+    def compute_rhs(self, rk=0):
+        a, b = self.stages()[:2]
+        w0 = self.nonlinear_rhs()
+        self.rhs[1] = self.dt*(a[rk]*w0+b[rk]*self.rhs[0])
+        self.rhs[1] += self.linear_rhs[rk]()
+        self.rhs[0] = w0
+        if self.mask is not None:
+            self.T.mask_nyquist(self.rhs[1], self.mask)
+        return self.rhs
+
+    def initialize(self):
+        self.rhs[0] = self.nonlinear_rhs()
+
+    def update(self, t, tstep):
+        pass
+
+    def prepare_step(self, rk=0):
+        pass
+
+    def solve_step(self, rk=0):
+        return self.solvers[rk](self.rhs[-1], self.u_)
+
+    def solve(self, t=0, tstep=0, end_time=1000):
+        while t < end_time-1e-8:
+            self.prepare_step()
+            self.compute_rhs()
+            u = self.solve_step()
+            t += self.dt
+            tstep += 1
+            self.update(t, tstep)
+        return u

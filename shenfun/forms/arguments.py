@@ -480,7 +480,6 @@ class Expr:
     is a vector, the 1 because each vector item contains one term, and the
     final 3 since it is a 3-dimensional tensor product space.
     """
-
     def __init__(self, basis, terms=None, scales=None, indices=None):
         self._basis = basis
         self._terms = terms
@@ -521,6 +520,10 @@ class Expr:
     def argument(self):
         """Return argument of Expr's basis"""
         return self._basis.argument
+
+    def set_basis(self, u):
+        """Change the basis function this Expr applies to"""
+        self._basis = u
 
     def expr_rank(self):
         """Return rank of Expr"""

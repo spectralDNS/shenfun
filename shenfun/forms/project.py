@@ -259,11 +259,13 @@ class Project:
         for b in self.A:
             if uh.function_space().is_composite_space and wh.ndim == b.dimensions:
                 wh = b.matvec(uh.v[b.global_index[1]], wh)
+                self.output_array += wh
             elif uh.function_space().is_composite_space and wh.ndim > b.dimensions:
                 wh[b.global_index[0]] = b.matvec(uh.v[b.global_index[1]], wh[b.global_index[0]])
+                self.output_array.v[b.global_index[0]] += wh[b.global_index[0]]
             else:
                 wh = b.matvec(uh, wh)
-            self.output_array += wh
+                self.output_array += wh
             wh.fill(0)
         out = self.sol(self.output_array, self.output_array)
         return out

@@ -1696,8 +1696,13 @@ class TensorSpace(VectorSpace):
 
     def __init__(self, space):
         if isinstance(space, list):
+            assert isinstance(space[0], VectorSpace)
+            assert len(space) == space[0].dimensions
             spaces = space
+        elif isinstance(space, VectorSpace):
+            spaces = [space]*space.dimensions
         else:
+            assert isinstance(space, TensorProductSpace)
             spaces = [VectorSpace(space)]*space.dimensions
         CompositeSpace.__init__(self, spaces)
 
@@ -1709,15 +1714,21 @@ class TensorSpace(VectorSpace):
         return 2
 
     def get_refined(self, N):
-        return TensorSpace(self.flatten()[0].get_refined(N))
+        if np.all([s == self.spaces[0] for s in self.spaces[1:]]):
+            return TensorSpace(self.spaces[0].get_refined(N))
+        return TensorSpace([s.get_refined(N) for s in self.spaces])
 
     def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
         if padding_factor == 1 and dealias_direct == False:
             return self
-        return TensorSpace(self.flatten()[0].get_dealiased(padding_factor, dealias_direct))
+        if np.all([s == self.spaces[0] for s in self.spaces[1:]]):
+            return TensorSpace(self.spaces[0].get_dealiased(padding_factor, dealias_direct))
+        return TensorSpace([s.get_dealiased(padding_factor, dealias_direct) for s in self.spaces])
 
     def get_orthogonal(self):
-        return TensorSpace(self.flatten()[0].get_orthogonal())
+        if np.all([s == self.spaces[0] for s in self.spaces[1:]]):
+            return TensorSpace(self.spaces[0].get_orthogonal())
+        return TensorSpace([s.get_orthogonal() for s in self.spaces])
 
 class VectorTransform:
 

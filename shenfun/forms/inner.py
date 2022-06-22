@@ -520,26 +520,38 @@ class Inner:
     is simply an Array.
     """
     def __init__(self, v, uh):
-        assert isinstance(uh, (Expr, BasisFunction))
+        from shenfun.matrixbase import get_simplified_tpmatrices
+        assert isinstance(uh, (Expr, BasisFunction, Array))
         assert isinstance(v, TestFunction)
         assert uh.argument == 2
         self.uh = [uh]
-        self.A = [inner(v, uh, return_matrices=True)]
+        A = inner(v, uh, return_matrices=True)
+        if isinstance(A[0], TPMatrix):
+            A = get_simplified_tpmatrices(A)
+        elif isinstance(A, Function):
+            A = [A]
+        self.A = [A]
         self.output_array = Function(v.function_space())
 
     def __call__(self):
         wh = work[(self.output_array, 0, True)]
         self.output_array.fill(0)
         for uh, A in zip(self.uh, self.A):
-            uh = uh.base
+            uh = uh.base if uh.base is not None else uh
             for b in A:
-                if uh.function_space().is_composite_space and wh.ndim == b.dimensions:
+                if isinstance(b, Function) and isinstance(uh, Array):
+                    V = b.function_space()
+                    wh = V.scalar_product(uh, wh)
+                    self.output_array += wh
+                elif uh.function_space().is_composite_space and wh.ndim == b.dimensions:
                     wh = b.matvec(uh.v[b.global_index[1]], wh)
+                    self.output_array += wh
                 elif uh.function_space().is_composite_space and wh.ndim > b.dimensions:
                     wh[b.global_index[0]] = b.matvec(uh.v[b.global_index[1]], wh[b.global_index[0]])
+                    self.output_array.v[b.global_index[0]] += wh[b.global_index[0]]
                 else:
                     wh = b.matvec(uh, wh)
-                self.output_array += wh
+                    self.output_array += wh
                 wh.fill(0)
         return self.output_array
 

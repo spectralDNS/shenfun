@@ -1316,7 +1316,7 @@ cdef void BBD_matvec_ptr(T* v,
                          int N,
                          int st):
     cdef:
-        int i
+        int k
 
     b[0] = dd[0]*v[0] + ud[0]*v[2*st] + uud[0]*v[4*st]
     b[st] = dd[1]*v[st] + ud[1]*v[3*st] + uud[1]*v[5*st]
