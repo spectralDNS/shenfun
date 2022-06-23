@@ -838,9 +838,6 @@ class SpectralBase:
         Parameters
         ----------
         i : Sympy Symbol, optional
-        implicit : bool, optional
-            Whether to use an unevaluated Sympy function instead of the
-            actual value of the l2-norm.
 
         Returns
         -------

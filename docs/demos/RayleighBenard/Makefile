@@ -22,6 +22,11 @@ ${name}.rst: ${name}.do.txt
 	doconce format sphinx ${name} --sphinx_preserve_bib_keys
 	doconce subst 'XXX' '   ' $(basename $@).rst
 
+${name}.ipynb: ${name}.do.txt
+	doconce format ipynb $(basename $@).do.txt
+	#python add_metadata.py $(basename $@).ipynb
+	#jupyter nbconvert --inplace --execute ${basename $@}.ipynb
+
 view:
 	open ${name}.pdf &
 

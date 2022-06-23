@@ -29,11 +29,6 @@ class OrrSommerfeld(KMM):
         # This is the convection at t=0
         self.e0 = 0.5*dx(ub[0]**2+(ub[1]-(1-self.X[0]**2))**2)
         self.acc = np.zeros(1)
-        self.convection()
-        for pde in self.pdes.values():
-            pde.initialize()
-        for pde in self.pdes1d.values():
-            pde.initialize()
         return 0, 0
 
     def initOS(self, OS, eigvals, eigvectors, U, t=0.):
@@ -63,7 +58,7 @@ class OrrSommerfeld(KMM):
     def init_plots(self):
         self.ub = ub = self.u_.backward()
         self.im1 = 1
-        if comm.Get_rank() == 0:
+        if comm.Get_rank() == 0 and comm.Get_size() == 1:
             plt.figure(1, figsize=(6, 3))
             self.im1 = plt.contourf(self.X[1][:, :, 0], self.X[0][:, :, 0], ub[0, :, :, 0], 100)
             plt.colorbar(self.im1)
@@ -84,7 +79,7 @@ class OrrSommerfeld(KMM):
             self.init_plots()
 
         if tstep % self.modplot == 0 and self.modplot > 0:
-            if comm.Get_rank() == 0:
+            if comm.Get_rank() == 0 and comm.Get_size() == 1:
                 ub = self.u_.backward(self.ub)
                 X = self.X
                 self.im1.axes.clear()

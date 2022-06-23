@@ -2,6 +2,7 @@ from shenfun import *
 from ChannelFlow2D import KMM
 import matplotlib.pyplot as plt
 import sympy
+
 np.warnings.filterwarnings('ignore')
 
 # pylint: disable=attribute-defined-outside-init
@@ -153,7 +154,7 @@ class RayleighBenard(KMM):
 
         if tstep % self.modplot == 0 and self.modplot > 0:
             ub = self.u_.backward(self.ub)
-            Tb = self.T_.backward(self.Tb)
+            self.Tb = self.T_.backward(self.Tb)
             if comm.Get_rank() == 0:
                 plt.figure(1)
                 #self.im1.set_UVC(ub[1, ::4, ::4], ub[0, ::4, ::4])
@@ -162,7 +163,7 @@ class RayleighBenard(KMM):
                 plt.pause(1e-6)
                 plt.figure(2)
                 self.im2.axes.clear()
-                self.im2.axes.contourf(self.X[1][:, :], self.X[0][:, :], Tb[:, :], 100)
+                self.im2.axes.contourf(self.X[1][:, :], self.X[0][:, :], self.Tb[:, :], 100)
                 self.im2.autoscale()
                 plt.pause(1e-6)
 
@@ -188,16 +189,16 @@ class RayleighBenard(KMM):
 
 if __name__ == '__main__':
     from time import time
-    N = (256, 512)
+    N = (64, 128)
     d = {
         'N': N,
         'Ra': 1000000.,
         'Pr': 0.7,
-        'dt': 0.0025,
+        'dt': 0.025,
         'filename': f'RB_{N[0]}_{N[1]}',
         'conv': 1,
-        'modplot': 100,
-        'moderror': 100,
+        'modplot': 10,
+        'moderror': 10,
         'modsave': 100,
         #'bcT': (0.9+0.1*sp.sin(2*(y-tt)), 0),
         #'bcT': (0.9+0.1*sympy.sin(2*y), 0),
@@ -205,11 +206,11 @@ if __name__ == '__main__':
         'family': 'C',
         'checkpoint': 100,
         #'padding_factor': 1,
-        'timestepper': 'IMEXRK222'
+        'timestepper': 'IMEXRK3'
         }
     c = RayleighBenard(**d)
     t, tstep = c.initialize(rand=0.001, from_checkpoint=False)
     t0 = time()
-    c.solve(t=t, tstep=tstep, end_time=100)
+    c.solve(t=t, tstep=tstep, end_time=15)
     print('Computing time %2.4f'%(time()-t0))
 

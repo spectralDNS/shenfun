@@ -337,8 +337,8 @@ for xj in X[0]:
 We may alternatively plot on a uniform mesh
 
 !bc pycod
-X = T.local_mesh(broadcast=True, uniform=True)
-plt.contourf(X[0], X[1], u.backward(kind='uniform'))
+X = T.local_mesh(bcast=True, kind='uniform')
+plt.contourf(X[0], X[1], u.backward(mesh='uniform'))
 !ec
 
 ===== Curvilinear coordinates =====

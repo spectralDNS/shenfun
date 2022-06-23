@@ -138,7 +138,7 @@ spiral below, the result looks reasonable.
 !bc pycod
 import matplotlib.pyplot as plt
 fig = plt.figure(figsize=(4, 3))
-X = C.cartesian_mesh(uniform=True)
+X = C.cartesian_mesh(kind='uniform')
 ax = fig.add_subplot(111, projection='3d')
 p = ax.plot(X[0], X[1], X[2], 'r')
 hx = ax.set_xticks(np.linspace(-1, 1, 5))

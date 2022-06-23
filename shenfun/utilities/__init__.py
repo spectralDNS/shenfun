@@ -572,12 +572,13 @@ def surf3D(u, mesh=None, backend='plotly', wrapaxes=(), slices=None, fig=None, *
     """
     from shenfun.forms.arguments import Function, Array
 
-    if isinstance(mesh, (str, None)):
+    if mesh is None:
+        mesh = 'quadrature'
+
+    if isinstance(mesh, str):
         assert isinstance(u, (Function, Array)), "u must be Function/Array if mesh is not given"
         T = u.function_space()
-        if mesh is None:
-            mesh = 'quadrature'
-        x, y, z = T.local_cartesian_mesh(mesh=mesh)
+        x, y, z = T.local_cartesian_mesh(kind=mesh)
     else:
         x, y, z = mesh
 
@@ -649,7 +650,7 @@ def quiver3D(u, mesh=None, wrapaxes=(), slices=None, fig=None, kind='quadrature'
         x, y, z = mesh
 
     if isinstance(u, Function):
-        u = u.backward(kind=kind)
+        u = u.backward(mesh=kind)
 
     if u.dtype.char in 'FDG':
         u = abs(u)

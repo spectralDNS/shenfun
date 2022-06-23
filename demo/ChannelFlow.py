@@ -62,7 +62,7 @@ class KMM:
                  modsave=1e8,
                  moderror=100,
                  checkpoint=1000,
-                 timestepper='PDEIRK3'):
+                 timestepper='IMEXRK3'):
         self.nu = nu
         self.dt = dt
         self.conv = conv
@@ -292,8 +292,9 @@ class KMM:
     def assemble(self):
         for pde in self.pdes.values():
             pde.assemble()
-        for pde in self.pdes1d.values():
-            pde.assemble()
+        if comm.Get_rank() == 0:
+            for pde in self.pdes1d.values():
+                pde.assemble()
 
     def solve(self, t=0, tstep=0, end_time=1000):
         self.assemble()

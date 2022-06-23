@@ -393,7 +393,7 @@ class BSDTmat(SpectralMatrix):
         h = get_norm_sq(test[0], trial[0], method)
         M, N = test[0].N-2, trial[0].N
         d = {
-            0: h[:-2],
+            0: h[:min(M, N)],
             2: -h[2:(dmax(M, N, 2)+2)]
         }
         return d
@@ -417,7 +417,7 @@ class BTSDmat(SpectralMatrix):
         h = get_norm_sq(test[0], trial[0], method)
         M, N = test[0].N, trial[0].N-2
         d = {
-            0: h[:-2],
+            0: h[:min(M, N)],
             -2: -h[2:(dmax(M, N, -2)+2)]
         }
         return d

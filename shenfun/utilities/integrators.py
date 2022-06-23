@@ -1,6 +1,18 @@
 r"""
 Module for some integrators.
 
+Integrators are set up to solve equations like
+
+.. math::
+
+    \frac{\partial u}{\partial t} = L u + N(u)
+
+where :math:`u` is the solution, :math:`L` is a linear operator and
+:math:`N(u)` is the nonlinear part of the right hand side.
+
+There are two kinds of integrators, or time steppers. The first are
+ment to be subclassed and used one at the time. These are
+
     - IRK3:     Implicit third order Runge-Kutta
     - RK4:      Runge-Kutta fourth order
     - ETD:      Exponential time differencing Euler method
@@ -10,14 +22,17 @@ See, e.g.,
 H. Montanelli and N. Bootland "Solving periodic semilinear PDEs in 1D, 2D and
 3D with exponential integrators", https://arxiv.org/pdf/1604.08900.pdf
 
-Integrators are set up to solve equations like
+The second kind is ment to be used in collaboration, one class
+instance for each equation for a system of equations. These are
+mainly IMEX Runge Kutta integrators:
 
-.. math::
+    - IMEXRK3
+    - IMEXRK111
+    - IMEXRK222
+    - IMEXRK443
 
-    \frac{\partial u}{\partial t} = L u + N(u)
-
-where :math:`u` is the solution, :math:`L` is a linear operator and
-:math:`N(u)` is the nonlinear part of the right hand side.
+See, e.g., https://github.com/spectralDNS/shenfun/blob/master/demo/ChannelFlow
+for an example of use.
 
 Note
 ----
@@ -862,8 +877,8 @@ class IMEXRK222(PDEIMEXRK):
         return 2
 
     def stages(self):
-        gamma = self.gamma = (2-np.sqrt(2))/2
-        delta = self.delta = 1-1/(2*self.gamma)
+        gamma = (2-np.sqrt(2))/2
+        delta = 1-1/(2*gamma)
         a = np.array([
             [0, 0, 0],
             [0, gamma, 0],

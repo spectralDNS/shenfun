@@ -23,7 +23,7 @@ class MKM(MicroPolar):
                  family='C',
                  padding_factor=(1, 1.5, 1.5),
                  checkpoint=1000,
-                 timestepper='PDEIRK3',
+                 timestepper='IMEXRK3',
                  rand=1e-7):
         MicroPolar.__init__(self, N=N, domain=domain, Re=Re, J=J, m=m, NP=NP, dt=dt, conv=conv, modplot=modplot,
                             modsave=modsave, moderror=moderror, filename=filename, family=family,
@@ -282,7 +282,7 @@ if __name__ == '__main__':
         'checkpoint': 1,
         'sample_stats': 10,
         'padding_factor': (1.5, 1.5, 1.5),
-        'timestepper': 'PDEIRK3', # IMEXRK222, IMEXRK443
+        'timestepper': 'IMEXRK222', # IMEXRK222, IMEXRK443
         }
     c = MKM(**d)
     t, tstep = c.initialize(from_checkpoint=False)

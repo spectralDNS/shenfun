@@ -2128,10 +2128,8 @@ def assemble_sympy(test, trial, measure=1, implicit=True, assemble='exact'):
     >>> D = FunctionSpace(N, 'C', bc=(0, 0))
     >>> v = TestFunction(D)
     >>> u = TrialFunction(D)
-    >>> assemble_sympy(v, u, implicit=True)
+    >>> assemble_sympy(v, u)
     (KroneckerDelta(i, j) - KroneckerDelta(i, j + 2))*h(i) - (KroneckerDelta(j, i + 2) - KroneckerDelta(i + 2, j + 2))*h(i + 2)
-    >>> assemble_sympy(v, u, implicit=False)
-    pi*(KroneckerDelta(i, j) - KroneckerDelta(i, j + 2))/2 - pi*(KroneckerDelta(j, i + 2) - KroneckerDelta(i + 2, j + 2))/2
 
     Note that when implicit is True, then h(i) represents the l2-norm,
     or the L2-norm (if exact) of the orthogonal basis.
@@ -2142,7 +2140,7 @@ def assemble_sympy(test, trial, measure=1, implicit=True, assemble='exact'):
     >>> assemble_sympy(v, u, implicit=True)
     (KroneckerDelta(i, j) + KroneckerDelta(i, j + 2)*s2(j))*h(i) + (KroneckerDelta(j, i + 2) + KroneckerDelta(i + 2, j + 2)*s2(j))*h(i + 2)*k2(i)
     >>> assemble_sympy(v, u, implicit=False)
-    -pi*i**2*(-j**2*KroneckerDelta(i + 2, j + 2)/(j + 2)**2 + KroneckerDelta(j, i + 2))/(2*(i + 2)**2) + pi*(-j**2*KroneckerDelta(i, j + 2)/(j + 2)**2 + KroneckerDelta(i, j))/2
+    -i**2*(-j**2*KroneckerDelta(i + 2, j + 2)/(j + 2)**2 + KroneckerDelta(j, i + 2))*h(i + 2)/(i + 2)**2 + (-j**2*KroneckerDelta(i, j + 2)/(j + 2)**2 + KroneckerDelta(i, j))*h(i)
 
     Here the implicit version uses 'k' for the diagonals of the test function,
     and 's' for the trial function. The number represents the location of the
@@ -2179,7 +2177,7 @@ def assemble_sympy(test, trial, measure=1, implicit=True, assemble='exact'):
     gn = test.gn
     Tv = test.get_orthogonal(domain=(-1, 1))
     i, j, k, l, m = sp.symbols('i,j,k,l,m', integer=True)
-    K = test.sympy_stencil(i, k, implicit='k' if implicit else False)
+    K = test.sympy_stencil(i, k, implicit='k' if implicit is True else False)
     q = sp.degree(measure)
     if measure != 1:
         from shenfun.jacobi.recursions import a, matpow
@@ -2196,7 +2194,7 @@ def assemble_sympy(test, trial, measure=1, implicit=True, assemble='exact'):
             B = Tv.sympy_L2_norm_sq(l)*sp.KroneckerDelta(l, m)
         else:
             B = Tv.sympy_l2_norm_sq(l)*sp.KroneckerDelta(l, m)
-        S = trial[0].sympy_stencil(j, m, implicit='s' if implicit else False)
+        S = trial[0].sympy_stencil(j, m, implicit='s' if implicit is True else False)
         A = K * A * B * S
         M = sp.S(0)
         nd = test.N-test.dim()
@@ -2212,7 +2210,7 @@ def assemble_sympy(test, trial, measure=1, implicit=True, assemble='exact'):
             B = Tv.sympy_L2_norm_sq(k)*sp.KroneckerDelta(k, l)
         else:
             B = Tv.sympy_l2_norm_sq(k)*sp.KroneckerDelta(k, l)
-        S = trial.sympy_stencil(j, l, implicit='s' if implicit else False)
+        S = trial.sympy_stencil(j, l, implicit='s' if implicit is True else False)
         A = K * B * S
         M = sp.S(0)
         nd = test[0].N-test[0].dim()

@@ -87,7 +87,7 @@ class KMM:
         self.TD = TensorProductSpace(comm, (self.D0, self.F1), collapse_fourier=False, modify_spaces_inplace=True) # Streamwise velocity
         self.TC = TensorProductSpace(comm, (self.C0, self.F1), collapse_fourier=False, modify_spaces_inplace=True) # No bc
         self.BD = VectorSpace([self.TB, self.TD])  # Velocity vector space
-        self.CD = VectorSpace(self.TD)                      # Convection vector space
+        self.CD = VectorSpace(self.TD)             # Convection vector space
         self.CC = VectorSpace([self.TD, self.TC])  # Curl vector space
 
         # Padded space for dealiasing
@@ -124,12 +124,12 @@ class KMM:
                                      data={'0': {'U': [self.u_]}})
 
         # set up equations
+        #v = TestFunction(self.TB.get_testspace(kind='PG'))
         v = TestFunction(self.TB)
-        h = TestFunction(self.TD)
 
         # Chebyshev matrices are not sparse, so need a tailored solver. Legendre has simply 5 nonzero diagonals and can use generic solvers.
         sol1 = chebyshev.la.Biharmonic if self.B0.family() == 'chebyshev' else la.SolverGeneric1ND
-        sol2 = chebyshev.la.Helmholtz if self.B0.family() == 'chebyshev' else la.SolverGeneric1ND
+        #sol1 = la.SolverGeneric1ND
 
         self.pdes = {
 
@@ -238,8 +238,9 @@ class KMM:
     def assemble(self):
         for pde in self.pdes.values():
             pde.assemble()
-        for pde in self.pdes1d.values():
-            pde.assemble()
+        if comm.Get_rank() == 0:
+            for pde in self.pdes1d.values():
+                pde.assemble()
 
     def solve(self, t=0, tstep=0, end_time=1000):
         self.assemble()
@@ -250,7 +251,7 @@ class KMM:
                     eq.compute_rhs(rk)
                 for eq in self.pdes.values():
                     eq.solve_step(rk)
-                self.compute_vw(rk)
+                self.compute_v(rk)
             t += self.dt
             tstep += 1
             self.update(t, tstep)
