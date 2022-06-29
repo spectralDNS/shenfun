@@ -22,9 +22,8 @@ See, e.g.,
 H. Montanelli and N. Bootland "Solving periodic semilinear PDEs in 1D, 2D and
 3D with exponential integrators", https://arxiv.org/pdf/1604.08900.pdf
 
-The second kind is ment to be used in collaboration, one class
-instance for each equation for a system of equations. These are
-mainly IMEX Runge Kutta integrators:
+The second kind is ment to be used for systems of equations, one class
+instance for each equation. These are mainly IMEX Runge Kutta integrators:
 
     - IMEXRK3
     - IMEXRK111
@@ -48,7 +47,7 @@ from shenfun import Function, TPMatrix, TrialFunction, TestFunction,\
     get_simplified_tpmatrices, ScipyMatrix, Inner
 
 __all__ = ('IRK3', 'BackwardEuler', 'RK4', 'ETDRK4', 'ETD',
-           'IMEXRK3', 'IMEXRK111', 'IMEXRK222', 'IMEXRK443', 'ABCN')
+           'IMEXRK3', 'IMEXRK111', 'IMEXRK222', 'IMEXRK443')
 
 #pylint: disable=unused-variable
 
@@ -694,28 +693,8 @@ class IMEXRK3:
             self.T.mask_nyquist(self.rhs[1], self.mask)
         return self.rhs
 
-    def update(self, t, tstep):
-        pass
-
-    def initialize(self):
-        pass
-
-    def prepare_step(self):
-        pass
-
     def solve_step(self, rk):
         return self.solvers[rk](self.rhs[-1], self.u_)
-
-    def solve(self, t=0, tstep=0, end_time=1000):
-        while t < end_time-1e-8:
-            for rk in range(3):
-                self.prepare_step(rk)
-                self.compute_rhs(rk)
-                u = self.solve_step(rk)
-            t += self.dt
-            tstep += 1
-            self.update(t, tstep)
-        return u
 
 class PDEIMEXRK:
     r"""Solve partial differential equations of the form
@@ -830,29 +809,9 @@ class PDEIMEXRK:
             self.T.mask_nyquist(self.rhs, self.mask)
         return self.rhs
 
-    def initialize(self):
-        pass
-
-    def update(self, t, tstep):
-        pass
-
-    def prepare_step(self, rk=0):
-        pass
-
     def solve_step(self, rk=0):
         # only one solver since the diagonal of a is constant
         return self.solvers[0](self.rhs, self.u_)
-
-    def solve(self, t=0, tstep=0, end_time=1000):
-        while t < end_time-1e-8:
-            for rk in range(self.steps()):
-                self.prepare_step(rk)
-                self.compute_rhs(rk)
-                u = self.solve_step(rk)
-            t += self.dt
-            tstep += 1
-            self.update(t, tstep)
-        return u
 
 class IMEXRK111(PDEIMEXRK):
 
@@ -911,115 +870,3 @@ class IMEXRK443(PDEIMEXRK):
             [1/4, 7/4, 3/4, -7/4, 0]])
         c = (0, 1/2, 2/3, 1/2, 1)
         return a, b, c
-
-
-class ABCN:
-    r"""Solve partial differential equations of the form
-
-    .. math::
-
-        \frac{\partial u}{\partial t} = N+Lu, \quad (1)
-
-    where :math:`N` is a nonlinear term and :math:`L` is a linear operator.
-
-    This class handles only spaces with one non-periodic direction.
-
-    Parameters
-    ----------
-    v : :class:`.TestFunction`
-    u : :class:`.Expr` or :class:`.Function`
-        Representing :math:`u` in (1)
-        If an :class:`.Expr`, then its basis must be a :class:`.Function`
-        The :class:`.Function` will hold the solution.
-    L : Linear operator
-        Operates on :math:`u`
-    N : :class:`.Expr` or sequence of :class:`.Expr`
-        Nonlinear terms
-    dt : number
-        Time step
-    solver : Linear solver, optional
-    name : str, optional
-    """
-    def __init__(self, v, u, L, N, dt, solver=None, name='U-equation', latex=None):
-        self.v = v
-        self.u = u if isinstance(u, Expr) else Expr(u)
-        self.u_ = self.u.basis()
-        self.L = L
-        self.N = N
-        self.dt = dt
-        self._solver = solver
-        if solver is None:
-            if v.dimensions > 1:
-                self._solver = la.SolverGeneric1ND
-            else:
-                self._solver = la.Solver
-
-        self.solvers = []
-        self.linear_rhs = []
-        self.nonlinear_rhs = None
-        self.name = name
-        self.latex = latex
-        T = self.T = v.function_space()
-        W = CompositeSpace([T, T])
-        self.rhs = Function(W).v
-        self.mask = None
-        if hasattr(T, 'get_mask_nyquist'):
-            self.mask = T.get_mask_nyquist()
-
-    @classmethod
-    def steps(cls):
-        return 1
-
-    def stages(self):
-        a = (1.5,)
-        b = (-0.5,)
-        c = (0, 1)
-        return a, b, c
-
-    def assemble(self):
-        dt = self.dt
-        ul = copy.copy(self.u)
-        ul._basis = TrialFunction(self.u.function_space())
-        L1 = self.L(ul)
-        L2 = self.L(self.u)
-        mats = inner(self.v, ul - dt/2*L1)
-        self.solvers.append(self._solver(mats))
-        self.linear_rhs.append(Inner(self.v, self.u + dt/2*L2))
-        if isinstance(self.N, (Expr, Function)):
-            self.nonlinear_rhs = Inner(self.v, self.N)
-        elif isinstance(self.N, list):
-            self.nonlinear_rhs = sum([Inner(self.v, f) for f in self.N[1:]], start=Inner(self.v, self.N[0]))
-        else:
-            raise RuntimeError('Wrong type of nonlinear expression')
-
-    def compute_rhs(self, rk=0):
-        a, b = self.stages()[:2]
-        w0 = self.nonlinear_rhs()
-        self.rhs[1] = self.dt*(a[rk]*w0+b[rk]*self.rhs[0])
-        self.rhs[1] += self.linear_rhs[rk]()
-        self.rhs[0] = w0
-        if self.mask is not None:
-            self.T.mask_nyquist(self.rhs[1], self.mask)
-        return self.rhs
-
-    def initialize(self):
-        self.rhs[0] = self.nonlinear_rhs()
-
-    def update(self, t, tstep):
-        pass
-
-    def prepare_step(self, rk=0):
-        pass
-
-    def solve_step(self, rk=0):
-        return self.solvers[rk](self.rhs[-1], self.u_)
-
-    def solve(self, t=0, tstep=0, end_time=1000):
-        while t < end_time-1e-8:
-            self.prepare_step()
-            self.compute_rhs()
-            u = self.solve_step()
-            t += self.dt
-            tstep += 1
-            self.update(t, tstep)
-        return u

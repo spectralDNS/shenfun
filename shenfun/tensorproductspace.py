@@ -661,7 +661,7 @@ class TensorProductSpace(PFFT):
         Parameters
         ----------
         points : float or array of floats
-            Array must be of shape (D, N), for  N points in D dimensions
+            Array must be of shape (D, N), for N points in D dimensions
         coefficients : array
             Expansion coefficients, or instance of :class:`.Function`
         output_array : array, optional
@@ -1822,8 +1822,8 @@ class Convolve:
 
 
 class BoundaryValues:
-    """Class for setting nonhomogeneous boundary conditions for a 1D Dirichlet
-    base inside a multidimensional TensorProductSpace.
+    """Class for setting nonhomogeneous boundary conditions inside a multi-
+    dimensional :class:`.TensorProductSpace`.
 
     Parameters
     ----------
@@ -1841,18 +1841,22 @@ class BoundaryValues:
         self.axis = 0
         self.bc_time = 0
 
-    def update_bcs_time(self, time):
+    def update(self, time):
+        from shenfun.forms.project import Project
         tt = sp.symbols('t', real=True)
-        update_time = False
         bcs = self.bc.orderedvals()
-        for i, bci in enumerate(bcs):
-            if isinstance(bci, sp.Expr):
-                if tt in bci.free_symbols:
-                    self.bc_time = time
-                    bcs[i] = bci.subs(tt, time)
-                    update_time = True
-
-        if update_time:
+        update_tensor = False
+        if self.has_nonhomogeneous_bcs:
+            for i, bci in enumerate(bcs):
+                if isinstance(bci, Project):
+                    bci()
+                    update_tensor = True
+                elif isinstance(bci, sp.Expr):
+                    if tt in bci.free_symbols:
+                        self.bc_time = time
+                        bcs[i] = bci.subs(tt, time)
+                        update_tensor = True
+        if update_tensor:
             self.bcs = bcs
             self.bcs_final[:] = self.bcs
             if self.tensorproductspace is not None:
@@ -1861,6 +1865,13 @@ class BoundaryValues:
     def set_tensor_bcs(self, this_base, T):
         """Set correct boundary values for tensor, using values in self.bc
 
+        Parameters
+        ----------
+        this_base : instance of :class:`.SpectralBase`
+        T : instance of :class:`.TensorProductSpace`
+
+        Note
+        ----
         To modify boundary conditions on the fly, modify first self.bc and then
         call this function. The boundary condition can then be applied as before.
         """
@@ -1921,6 +1932,28 @@ class BoundaryValues:
                     if s.stop == int(this_base.N*this_base.padding_factor):
                         b[this_base.si[-num_bcs+j]] = f_bci
 
+                elif isinstance(bci, Function):
+                    # if bci is some Function that needs to be evaluated at the boundary
+                    sl = list(T.local_slice(False))
+                    sl.pop(self.axis)
+                    sl = tuple(sl)
+                    gs = list(T.global_shape())
+                    gs.pop(self.axis)
+                    gs = tuple(gs)
+                    mesh = []
+                    sj = this_base.si[0]
+                    for axis, mj in enumerate(T.mesh(True)):
+                        mj = np.broadcast_to(mj[sj], gs)
+                        if axis != self.axis:
+                            mesh.append(mj.flatten())
+                    name = self.bc.orderednames()[j]
+                    dm = this_base.domain[0] if 'L' in name else this_base.domain[1]
+                    mesh.insert(self.axis, np.ones(len(mesh[0]))*dm)
+                    xj = np.vstack(mesh)
+                    newb = bci.function_space().eval(xj, bci).reshape(gs)
+                    if s.stop == int(this_base.N*this_base.padding_factor):
+                        b[this_base.si[-num_bcs+j]] = newb[sl]
+
                 elif isinstance(bci, (Number, np.ndarray)):
                     if s.stop == int(this_base.N*this_base.padding_factor):
                         b[this_base.si[-num_bcs+j]] = bci
@@ -1931,11 +1964,9 @@ class BoundaryValues:
             if len(T.get_nonhomogeneous_axes()) == 1:
                 for j, bci in enumerate(self.bc.orderedvals()):
                     from .spectralbase import FuncWrap
-
                     if number_of_bases_after_this == 0:
                         # Inhomogeneous base is the first to be transformed
                         b_hat = b
-
                     else:
                         i = number_of_bases_after_this
                         u_hat = T.forward._xfftn[i].input_array
@@ -1943,12 +1974,10 @@ class BoundaryValues:
                         fwd = Transform(list(T.forward._xfftn[:i])+[fun],
                                         T.forward._transfer[:i], [[], []])
                         b_hat = fwd(b).copy()
-
                     # Now b_hat contains the correct slices in slm1 and slm2
                     # These are the values to use on intermediate steps.
                     # If for example a Dirichlet space is squeezed between two Fourier spaces
                     self.bcs[j] = b_hat[this_base.si[-num_bcs+j]].copy()
-
                 b_hat = T.forward(b).copy()
                 for j in range(self.bc.num_bcs()):
                     self.bcs_final[j] = b_hat[this_base.si[-num_bcs+j]].copy()

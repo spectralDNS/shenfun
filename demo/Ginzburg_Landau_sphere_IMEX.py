@@ -19,7 +19,7 @@ tt = sp.Symbol('t', real=True, positive=True)
 class GinzburgLandau:
     def __init__(self, N=(32, 64), dt=0.25, refineplot=False,
                  modplot=100, modsave=1e8, filename='GL',
-                 family='C', quad='GC', timestepper='PDEIRK3'):
+                 family='C', quad='GC', timestepper='IMEXRK3'):
         self.dt = dt
         self.N = np.array(N)
         self.modplot = modplot
@@ -32,11 +32,10 @@ class GinzburgLandau:
         rv = (r*sp.sin(theta)*sp.cos(phi), r*sp.sin(theta)*sp.sin(phi), r*sp.cos(theta))
 
         # Regular spaces
-        L0 = self.L0 = FunctionSpace(N[0], family, domain=(0, np.pi), dtype='D')
-        F1 = self.F1 = FunctionSpace(N[1], 'F', dtype='D')
+        L0 = FunctionSpace(N[0], family, domain=(0, np.pi), dtype='D')
+        F1 = FunctionSpace(N[1], 'F', dtype='D')
         self.T = TensorProductSpace(comm, (L0, F1), dtype='D', coordinates=(psi, rv, sp.Q.positive(sp.sin(theta))))
 
-        self.Tp = self.T.get_dealiased((1.5, 1.5))
         self.u_hat = Function(self.T) # Solution
         self.H_ = Function(self.T)    # Nonlinear term in spectral space
 
@@ -45,12 +44,12 @@ class GinzburgLandau:
         self.pde = PDE(v,
                        self.u_hat,
                        lambda f: div(grad(f))+f,
-                       -(1+1.5j)*Expr(self.H_),  # Note requires Expr since (1+1.5j)*self.H_ creates a new array. We want to update the array H_
+                       -(1+1.5j)*Expr(self.H_),  # Note requires Expr since (1+1.5j)*self.H_ would create a new array. We want to update the array H_
                        self.dt)
+        self.pde.assemble()
 
         # Stuff for plotting and saving results
         self.ub = Array(self.T)
-        self.up = Array(self.Tp)
         self.T2 = self.T.get_refined(2*self.N)
         self.T3 = self.T.get_refined([2*N[0], 2*N[1]+1]) # For wrapping around
         self.u2_hat = Function(self.T2)
@@ -65,7 +64,7 @@ class GinzburgLandau:
 
     def prepare_step(self, rk=0):
         up = self.u_hat.backward(padding_factor=(1.5, 1.5))
-        self.H_ = self.Tp.forward(up*abs(up)**2, self.H_)
+        self.H_ = up.function_space().forward(up*abs(up)**2, self.H_)
 
     def initialize(self):
         sph = sp.functions.special.spherical_harmonics.Ynm

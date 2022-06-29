@@ -72,7 +72,7 @@ gu = gu_hat.backward()
 g_, u_ = gu
 
 # Exact Cartesian gradient
-gradue = Array(VT, buffer=(ue.diff(theta, 1), ue.diff(phi, 1)/sp.sin(theta)**2))
+gradue = Array(VT, buffer=(ue.diff(theta, 1), ue.diff(phi, 1)/sp.sin(theta)))
 
 uj = Array(T, buffer=ue)
 
@@ -85,8 +85,8 @@ if comm.Get_rank() == 0:
     #assert np.all(abs(np.array(error)) < 1e-8), error
 
 from mayavi import mlab
-xx, yy, zz = T.local_cartesian_mesh(uniform=True)
-gu = gu_hat.backward(kind='uniform')
+xx, yy, zz = T.local_cartesian_mesh(kind='uniform')
+gu = gu_hat.backward(mesh='uniform')
 g_, u_ = gu
 
 # For plotting - get gradient as Cartesian vector

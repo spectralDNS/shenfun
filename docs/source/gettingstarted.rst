@@ -705,28 +705,44 @@ Integrators
 -----------
 
 The :mod:`.integrators` module contains some interator classes that can be
-used to integrate a solution forward in time. For now there is only one integrator
-:class:`.IRK3` that can be used for non-Fourier function spaces. The other
-three integrators can only be used for purely Fourier tensor product spaces.
+used to integrate a solution forward in time. Integrators are set up to solve
+initial value problems like
+
+.. math::
+
+    \frac{\partial u}{\partial t} = L u + N(u)
+
+where :math:`u` is the solution, :math:`L` is a linear operator and
+:math:`N(u)` is the nonlinear part of the right hand side.
+
+There are two kinds of integrators, or time steppers. The first are
+ment to be subclassed and used one at the time. These are
 
     * :class:`.IRK3`: Third order implicit Runge-Kutta
     * :class:`.RK4`: Explicit Runge-Kutta fourth order (Fourier only)
     * :class:`.ETD`: Exponential time differencing Euler method (Fourier only)
     * :class:`.ETDRK4`: Exponential time differencing Runge-Kutta fourth order (Fourier only)
 
-See, e.g.,
-H. Montanelli and N. Bootland "Solving periodic semilinear PDEs in 1D, 2D and
-3D with exponential integrators", https://arxiv.org/pdf/1604.08900.pdf
+See, e.g.::
 
-Integrators are set up to solve equations like
+    H. Montanelli and N. Bootland "Solving periodic semilinear PDEs in 1D, 2D and
+    3D with exponential integrators", https://arxiv.org/pdf/1604.08900.pdf
 
-.. math::
-   :label: eq:nlsolver
+The second kind is ment to be used for systems of equations, one class
+instance for each equation. These are mainly IMEX Runge Kutta integrators:
 
-    \frac{\partial u}{\partial t} = L u + N(u)
+    * :class:`.IMEXRK3`
+    * :class:`.IMEXRK111`
+    * :class:`.IMEXRK222`
+    * :class:`.IMEXRK443`
 
-where :math:`u` is the solution, :math:`L` is a linear operator and
-:math:`N(u)` is the nonlinear part of the right hand side.
+See, e.g., https://github.com/spectralDNS/shenfun/blob/master/demo/ChannelFlow
+for an example of use for the Navier-Stokes equations. The IMEX solvers
+are described by::
+
+    Ascher, Ruuth and Spiteri 'Implicit-explicit Runge-Kutta methods for
+    time-dependent partial differential equations' Applied Numerical
+    Mathematics, 25 (1997) 151-167
 
 To illustrate, we consider the time-dependent 1-dimensional Kortveeg-de Vries
 equation
@@ -789,7 +805,6 @@ We then create two functions representing the linear and nonlinear part of
         rhs = T.forward(-0.5*u_**2, rhs)
         rhs *= 1j*k
         return rhs   # return inner(grad(-0.5*Up**2), v)
-
 
 Note that we differentiate in ``NonlinearRHS`` by using the wavenumbers ``k``
 directly. Alternative notation, that is given in commented out text, is slightly

@@ -42,8 +42,9 @@ class MicroPolar(KMM):
         Sample statistics every sample_stats timestep
     timestepper : str, optional
         Choose timestepper
-        - 'PDEIRK3'
-        - 'PDEABCN'
+        - 'IMEXRK222'
+        - 'IMEXRK3'
+        - 'IMEXRK443'
 
     Note
     ----

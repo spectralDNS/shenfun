@@ -39,6 +39,8 @@ class KMM:
         Print diagnostics every moderror timestep
     checkpoint : int, optional
         Save required data for restart to hdf5 every checkpoint timestep.
+    timestepper : str, optional
+        Choose timestepper
 
     Note
     ----
@@ -62,6 +64,7 @@ class KMM:
                  moderror=100,
                  checkpoint=1000,
                  timestepper='IMEXRK3'):
+        self.N = N
         self.nu = nu
         self.dt = dt
         self.conv = conv
@@ -83,12 +86,11 @@ class KMM:
         self.C00 = self.D00.get_orthogonal()
 
         # Regular tensor product spaces
-        self.TB = TensorProductSpace(comm, (self.B0, self.F1), collapse_fourier=False, modify_spaces_inplace=True) # Wall-normal velocity
-        self.TD = TensorProductSpace(comm, (self.D0, self.F1), collapse_fourier=False, modify_spaces_inplace=True) # Streamwise velocity
-        self.TC = TensorProductSpace(comm, (self.C0, self.F1), collapse_fourier=False, modify_spaces_inplace=True) # No bc
+        self.TB = TensorProductSpace(comm, (self.B0, self.F1), modify_spaces_inplace=True) # Wall-normal velocity
+        self.TD = TensorProductSpace(comm, (self.D0, self.F1), modify_spaces_inplace=True) # Streamwise velocity
+        self.TC = TensorProductSpace(comm, (self.C0, self.F1), modify_spaces_inplace=True) # No bc
         self.BD = VectorSpace([self.TB, self.TD])  # Velocity vector space
-        self.CD = VectorSpace(self.TD)             # Convection vector space
-        self.CC = VectorSpace([self.TD, self.TC])  # Curl vector space
+        self.CD = VectorSpace(self.TD)             # Dirichlet vector space
 
         # Padded space for dealiasing
         self.TDp = self.TD.get_dealiased(padding_factor)
@@ -114,6 +116,7 @@ class KMM:
 
         self.curl = Project(curl(self.u_), self.TC)
         self.divu = Project(div(self.u_), self.TC)
+        self.solP = None # For computing pressure
 
         # File for storing the results
         self.file_u = ShenfunFile('_'.join((filename, 'U')), self.BD, backend='hdf5', mode='w', mesh='uniform')
@@ -124,12 +127,10 @@ class KMM:
                                      data={'0': {'U': [self.u_]}})
 
         # set up equations
-        #v = TestFunction(self.TB.get_testspace(kind='PG'))
         v = TestFunction(self.TB)
 
         # Chebyshev matrices are not sparse, so need a tailored solver. Legendre has simply 5 nonzero diagonals and can use generic solvers.
         sol1 = chebyshev.la.Biharmonic if self.B0.family() == 'chebyshev' else la.SolverGeneric1ND
-        #sol1 = la.SolverGeneric1ND
 
         self.pdes = {
 
@@ -164,9 +165,9 @@ class KMM:
             }
 
     def convection(self):
-        u = self.u_
-        H = self.H_
-        up = self.up = u.backward(padding_factor=self.padding_factor).v
+        H = self.H_.v
+        self.up = self.u_.backward(padding_factor=self.padding_factor)
+        up = self.up.v
         if self.conv == 0:
             dudxp = self.dudx().backward(padding_factor=self.padding_factor).v
             dudyp = self.dudy().backward(padding_factor=self.padding_factor).v
@@ -179,11 +180,10 @@ class KMM:
             curl = self.curl().backward(padding_factor=self.padding_factor)
             H[0] = self.TDp.forward(-curl*up[1])
             H[1] = self.TDp.forward(curl*up[0])
-
-        H.mask_nyquist(self.mask)
+        self.H_.mask_nyquist(self.mask)
 
     def compute_v(self, rk):
-        u = self.u_
+        u = self.u_.v
         if comm.Get_rank() == 0:
             self.v00[:] = u[1, :, 0].real
             self.h1[:] = self.H_[1, :, 0].real
@@ -198,6 +198,21 @@ class KMM:
             u[1, :, 0] = self.pdes1d['v0'].solve_step(rk)
 
         return u
+
+    def compute_pressure(self):
+        if self.solP is None:
+            self.d2udx2 = Project(self.nu*Dx(self.u_[0], 0, 2), self.TC)
+            N0 = self.N0 = FunctionSpace(self.N[0], self.B0.family(), bc={'left': {'N': self.d2udx2()}, 'right': {'N': self.d2udx2()}})
+            TN = self.TN = TensorProductSpace(comm, (N0, self.F1), modify_spaces_inplace=True)
+            sol = chebyshev.la.Helmholtz if self.B0.family() == 'chebyshev' else la.SolverGeneric1ND
+            self.divH = Inner(TestFunction(TN), -div(self.H_))
+            self.solP = sol(inner(TestFunction(TN), div(grad(TrialFunction(TN)))))
+            self.p_ = Function(TN)
+
+        self.d2udx2()
+        self.N0.bc.set_tensor_bcs(self.N0, self.TN)
+        p_ = self.solP(self.divH(), self.p_, constraints=((0, 0),))
+        return p_
 
     def print_energy_and_divergence(self, t, tstep):
         if tstep % self.moderror == 0 and self.moderror > 0:

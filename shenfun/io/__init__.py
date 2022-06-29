@@ -80,6 +80,8 @@ class Checkpoint:
 
         kill = self.check_if_kill()
         if tstep % self.checkevery == 0 or kill:
+            if comm.Get_rank() == 0: # for safety
+                os.system(f'cp {self.filename}.chk.h5 {self.filename}.old.chk.h5')
             self.open()
             for key, val in self.data.items():
                 self.write(int(key), val)

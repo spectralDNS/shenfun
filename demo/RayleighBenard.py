@@ -41,7 +41,6 @@ class RayleighBenard(KMM):
         self.uT_ = Function(self.BD)     # Velocity vector times T
         self.T_ = Function(self.TT)      # Temperature solution
         self.Tb = Array(self.TT)
-        self.BDp = self.BD.get_dealiased(padding_factor)
 
         self.file_T = ShenfunFile('_'.join((filename, 'T')), self.TT, backend='hdf5', mode='w', mesh='uniform')
 
@@ -76,16 +75,13 @@ class RayleighBenard(KMM):
 
     def update_bc(self, t):
         # Update time-dependent bcs.
-        bc0 = self.T_.function_space().bases[0].bc
-        bcp0 = self.T_.get_dealiased_space(self.padding_factor).bases[0].bc
-        bc0.update_bcs_time(t)
-        bcp0.update_bcs_time(t)
+        self.T0.bc.update(t)
+        self.T_.get_dealiased_space(self.padding_factor).bases[0].bc.update(t)
 
     def prepare_step(self, rk):
         self.convection()
-        up = self.u_.get_dealiased_space(self.padding_factor)._backward_work_array
         Tp = self.T_.backward(padding_factor=self.padding_factor)
-        self.uT_ = self.BDp.forward(up*Tp, self.uT_)
+        self.uT_ = self.up.function_space().forward(self.up*Tp, self.uT_)
 
     def tofile(self, tstep):
         self.file_u.write(tstep, {'u': [self.u_.backward(mesh='uniform')]}, as_scalar=True)
@@ -195,23 +191,23 @@ if __name__ == '__main__':
         'N': N,
         'Ra': 1000000.,
         'Pr': 0.7,
-        'dt': 0.01,
+        'dt': 0.1,
         'filename': f'RB_{N[0]}_{N[1]}_{N[1]}',
         'conv': 1,
         'modplot': 100,
-        'moderror': 100,
+        'moderror': 10,
         'modsave': 100,
-        #'bcT': (0.9+0.1*sp.sin(2*(y-tt)), 0),
+        'bcT': (0.9+0.1*sympy.sin(2*(y-tt)), 0),
         #'bcT': (0.9+0.1*sympy.sin(2*y), 0),
-        'bcT': (1, 0),
+        #'bcT': (1, 0),
         'family': 'C',
         'checkpoint': 100,
         #'padding_factor': 1,
-        'timestepper': 'IMEXRK222'
+        'timestepper': 'IMEXRK3'
         }
     c = RayleighBenard(**d)
     t, tstep = c.initialize(rand=0.001, from_checkpoint=False)
     t0 = time()
-    c.solve(t=t, tstep=tstep, end_time=100)
+    c.solve(t=t, tstep=tstep, end_time=2)
     print('Computing time %2.4f'%(time()-t0))
 

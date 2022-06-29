@@ -40,7 +40,8 @@ class KMM:
         Print diagnostics every moderror timestep
     checkpoint : int, optional
         Save required data for restart to hdf5 every checkpoint timestep.
-
+    timestepper : str, optional
+        Choose timestepper
     Note
     ----
     Simulations may be killed gracefully by placing a file named 'killshenfun'
@@ -63,6 +64,7 @@ class KMM:
                  moderror=100,
                  checkpoint=1000,
                  timestepper='IMEXRK3'):
+        self.N = N
         self.nu = nu
         self.dt = dt
         self.conv = conv
@@ -85,9 +87,9 @@ class KMM:
         self.C00 = self.D00.get_orthogonal()
 
         # Regular tensor product spaces
-        self.TB = TensorProductSpace(comm, (self.B0, self.F1, self.F2), collapse_fourier=False, modify_spaces_inplace=True) # Wall-normal velocity
-        self.TD = TensorProductSpace(comm, (self.D0, self.F1, self.F2), collapse_fourier=False, modify_spaces_inplace=True) # Streamwise velocity
-        self.TC = TensorProductSpace(comm, (self.C0, self.F1, self.F2), collapse_fourier=False, modify_spaces_inplace=True) # No bc
+        self.TB = TensorProductSpace(comm, (self.B0, self.F1, self.F2), collapse_fourier=False, slab=True, modify_spaces_inplace=True) # Wall-normal velocity
+        self.TD = TensorProductSpace(comm, (self.D0, self.F1, self.F2), collapse_fourier=False, slab=True, modify_spaces_inplace=True) # Streamwise velocity
+        self.TC = TensorProductSpace(comm, (self.C0, self.F1, self.F2), collapse_fourier=False, slab=True, modify_spaces_inplace=True) # No bc
         self.BD = VectorSpace([self.TB, self.TD, self.TD])  # Velocity vector space
         self.CD = VectorSpace(self.TD)                      # Convection vector space
         self.CC = VectorSpace([self.TD, self.TC, self.TC])  # Curl vector space
@@ -108,6 +110,7 @@ class KMM:
         self.mask = self.TB.get_mask_nyquist() # Used to set the Nyquist frequency to zero
         self.X = self.TD.local_mesh(bcast=True)
         self.K = self.TD.local_wavenumbers(scaled=True)
+        self.solP = None
 
         # Classes for fast projections. All are not used except if self.conv=0
         self.dudx = Project(Dx(self.u_[0], 0, 1), self.TD)
@@ -193,9 +196,9 @@ class KMM:
             }
 
     def convection(self):
-        u = self.u_
-        H = self.H_
-        up = self.up = u.backward(padding_factor=self.padding_factor).v
+        H = self.H_.v # .v to access numpy array directly for faster lookup
+        self.up = self.u_.backward(padding_factor=self.padding_factor)
+        up = self.up.v
         if self.conv == 0:
             dudxp = self.dudx().backward(padding_factor=self.padding_factor).v
             dudyp = self.dudy().backward(padding_factor=self.padding_factor).v
@@ -218,10 +221,10 @@ class KMM:
             H[0] = self.TDp.forward(cb[0], H[0])
             H[1] = self.TDp.forward(cb[1], H[1])
             H[2] = self.TDp.forward(cb[2], H[2])
-        H.mask_nyquist(self.mask)
+        self.H_.mask_nyquist(self.mask)
 
     def compute_vw(self, rk):
-        u = self.u_
+        u = self.u_.v
         if comm.Get_rank() == 0:
             self.v00[:] = u[1, :, 0, 0].real
             self.w00[:] = u[2, :, 0, 0].real
@@ -245,6 +248,22 @@ class KMM:
             u[2, :, 0, 0] = self.pdes1d['w0'].solve_step(rk)
 
         return u
+
+    def compute_pressure(self):
+        if self.solP is None:
+            # The boundary condition of p is dp/dn=nu*d^2u/dn^2
+            self.d2udx2 = Project(self.nu*Dx(self.u_[0], 0, 2), self.TC)
+            N0 = self.N0 = FunctionSpace(self.N[0], self.B0.family(), bc={'left': {'N': self.d2udx2()}, 'right': {'N': self.d2udx2()}})
+            TN = self.TN = TensorProductSpace(comm, (N0, self.F1, self.F2), collapse_fourier=False, slab=True, modify_spaces_inplace=True)
+            sol = chebyshev.la.Helmholtz if self.B0.family() == 'chebyshev' else la.SolverGeneric1ND
+            self.divH = Inner(TestFunction(TN), -div(self.H_))
+            self.solP = sol(inner(TestFunction(TN), div(grad(TrialFunction(TN)))))
+            self.p_ = Function(TN)
+
+        self.d2udx2()
+        self.N0.bc.set_tensor_bcs(self.N0, self.TN)
+        p_ = self.solP(self.divH(), self.p_, constraints=((0, 0, 0),))
+        return p_
 
     def print_energy_and_divergence(self, t, tstep):
         if tstep % self.moderror == 0 and self.moderror > 0:
