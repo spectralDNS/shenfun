@@ -145,7 +145,8 @@ class MKM(MicroPolar):
             ub = self.u_.backward(self.ub)
             wb = self.w_.backward(self.wb)
             self.stats(ub, wb)
-            self.probes.tofile()
+            if self.probes is not None:
+                self.probes.tofile()
 
             if comm.Get_size() == 1:
                 stats = self.stats.get_stats()
@@ -364,7 +365,7 @@ if __name__ == '__main__':
     from time import time
     from mpi4py_fft import generate_xdmf
     t0 = time()
-    N = (64, 64, 32)
+    N = (128, 128, 64)
     d = {
         'N': N,
         'Re': 180.,
@@ -373,12 +374,12 @@ if __name__ == '__main__':
         'conv': 1,
         'modplot': 100,
         'modsave': 100,
-        'moderror': 1,
+        'moderror': 100,
         'family': 'C',
-        'checkpoint': 1,
-        'sample_stats': 10,
+        'checkpoint': 100,
+        'sample_stats': 100,
         'padding_factor': (1.5, 1.5, 1.5),
-        'probes': np.array([[0.1, 0.2], [0, 0], [0, 0]]), # Two probes at (0.1, 0, 0) and (0.2, 0, 0).
+        'probes': None, #np.array([[0.1, 0.2], [0, 0], [0, 0]]), # Two probes at (0.1, 0, 0) and (0.2, 0, 0).
         'timestepper': 'IMEXRK222', # IMEXRK222, IMEXRK443
         }
     c = MKM(**d)
