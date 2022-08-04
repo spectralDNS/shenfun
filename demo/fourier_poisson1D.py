@@ -53,7 +53,9 @@ uh = Function(ST)
 uh = ST.forward(uq, uh, kind='vandermonde')
 uq = ST.backward(uh, uq, kind='vandermonde')
 
-assert np.allclose(uj, uq)
+error = np.sqrt(inner(1, (uj-uq)**2))
+assert abs(error) < 1e-6
+print(f"fourier_poisson1D L2 error = {abs(error):2.6e}")
 
 point = np.array([0.1, 0.2])
 p = ST.eval(point, u_hat)

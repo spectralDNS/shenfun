@@ -155,37 +155,6 @@ class Orthogonal(SpectralBase):
         V *= self.factor(np.arange(V.shape[1]))[np.newaxis, :]*np.exp(-x**2/2)[:, np.newaxis]
         return V
 
-    def plan(self, shape, axis, dtype, options):
-        if shape in (0, (0,)):
-            return
-
-        if isinstance(axis, tuple):
-            assert len(axis) == 1
-            axis = axis[0]
-
-        if isinstance(self.forward, Transform):
-            if self.forward.input_array.shape == shape and self.axis == axis:
-                # Already planned
-                return
-
-        U = fftw.aligned(shape, dtype=dtype)
-        V = fftw.aligned(shape, dtype=dtype)
-        U.fill(0)
-        V.fill(0)
-        self.axis = axis
-        if self.padding_factor > 1.+1e-8:
-            trunc_array = self._get_truncarray(shape, V.dtype)
-            self.scalar_product = Transform(self.scalar_product, None, U, V, trunc_array)
-            self.forward = Transform(self.forward, None, U, V, trunc_array)
-            self.backward = Transform(self.backward, None, trunc_array, V, U)
-        else:
-            self.scalar_product = Transform(self.scalar_product, None, U, V, V)
-            self.forward = Transform(self.forward, None, U, V, V)
-            self.backward = Transform(self.backward, None, V, V, U)
-
-        self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
-        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
-
     def eval(self, x, u, output_array=None):
         x = np.atleast_1d(x)
         if output_array is None:

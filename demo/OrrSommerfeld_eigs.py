@@ -60,7 +60,8 @@ class OrrSommerfeld:
     def assemble(self):
         N = self.N
         SB = FunctionSpace(N, 'C', bc=(0, 0, 0, 0), quad=self.quad)
-        v = TestFunction(SB)
+        test = SB.get_testspace('PG')
+        v = TestFunction(test)
         u = TrialFunction(SB)
 
         # (u'', v)_w

@@ -354,6 +354,10 @@ def test_project_2dirichlet(quad):
     dudxy = project(Dx(us_hat, 0, 1) + Dx(us_hat, 1, 1), BB).backward()
     dxy = Array(BB, buffer=ue.diff(x, 1) + ue.diff(y, 1))
     assert np.allclose(dxy, dudxy, 0, 1e-5), np.linalg.norm(dxy-dudxy)
+    DD.destroy()
+    BD.destroy()
+    DB.destroy()
+    BB.destroy()
 
 @pytest.mark.parametrize('typecode', 'dD')
 @pytest.mark.parametrize('dim', (1, 2))
@@ -468,6 +472,7 @@ def test_eval_fourier(typecode, dim):
         result = fft.eval(points, u_hat, method=2)
         t_2 += time() - t0
         assert allclose(uq, result), print(uq, result)
+        fft.destroy()
 
     print('method=0', t_0)
     print('method=1', t_1)
@@ -489,6 +494,7 @@ def test_inner(f0, f1):
     c0 = inner(1, a0)
     L = np.array([b.domain[1]-b.domain[0] for b in (B0, B1)])
     assert abs(c0-np.prod(L)) < 1e-7
+    T.destroy()
 
     if not (f0 == 'F' or f1 == 'F'):
         B2 = FunctionSpace(8, f1, domain=(-2, 2))
@@ -497,6 +503,7 @@ def test_inner(f0, f1):
         c0 = inner(1, a0)
         L = np.array([b.domain[1]-b.domain[0] for b in (B0, B1, B2)])
         assert abs(c0-np.prod(L)) < 1e-7
+        T.destroy()
 
 @pytest.mark.parametrize('fam', ('C', 'L', 'F', 'La', 'H'))
 def test_assign(fam):
@@ -530,6 +537,8 @@ def test_assign(fam):
         ub_hat = Function(VTp)
         u_hat.assign(ub_hat)
         assert abs(inner((1, 1), u_hat)-inner((1, 1), ub_hat)) < tol
+        T.destroy()
+        Tp.destroy()
 
 def test_refine():
     assert comm.Get_size() < 7
@@ -557,6 +566,8 @@ def test_refine():
     up_hat = Function(Vp)
     assert up_hat.commsizes == u_hat.commsizes
     u3 = u_hat.refine(2*np.array(N))
+    T.destroy()
+    Tp.destroy()
 
 def test_eval_expression():
     import sympy as sp
@@ -583,6 +594,7 @@ def test_eval_expression():
     f2 = dfa.eval(xyz)
     assert np.allclose(f0, f1, 1e-7)
     assert np.allclose(f1, f2, 1e-7)
+    TB.destroy()
 
 @pytest.mark.parametrize('fam', ('C', 'L'))
 def test_eval_expression2(fam):
@@ -608,6 +620,7 @@ def test_eval_expression2(fam):
     f2 = dfa.eval(xy)
     assert np.allclose(f0, f1, 1e-7)
     assert np.allclose(f1, f2, 1e-7)
+    T.destroy()
 
 
 if __name__ == '__main__':

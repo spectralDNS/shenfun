@@ -16,7 +16,7 @@ from shenfun import *
 # Manufactured solution that satisfies boundary conditions
 x = sp.Symbol("x", real=True)
 
-def main(N, family, sol=0, alpha=0, beta=0):
+def main(N, family, sol=0, kind='G', alpha=0, beta=0):
 
     if sol == 0:
         domain = (-1, 1)
@@ -37,10 +37,10 @@ def main(N, family, sol=0, alpha=0, beta=0):
                     'N2': ue.diff(x, 2).subs(x, domain[1]).n()}}
 
     SD = FunctionSpace(N, family, domain=domain, bc=bc, alpha=alpha, beta=beta)
-
+    ST = SD.get_testspace(kind)
     X = SD.mesh()
     u = TrialFunction(SD)
-    v = TestFunction(SD)
+    v = TestFunction(ST)
 
     # Note - integration by parts only valid for alpha=beta=0
     #S = inner(Dx(v, 0, 3), -Dx(u, 0, 3))
@@ -50,11 +50,10 @@ def main(N, family, sol=0, alpha=0, beta=0):
         M = B + [S]
     else:
         M = B + S
-
     sol = la.Solver(M)
 
     # Get f on quad points
-    fj = Array(SD, buffer=fe)
+    fj = Array(ST, buffer=fe)
     f_hat = inner(v, fj)
 
     u_hat = Function(SD)
@@ -68,5 +67,6 @@ def main(N, family, sol=0, alpha=0, beta=0):
 if __name__ == '__main__':
     N = 24
     for sol in (0, 1):
-        for family in ('legendre', 'chebyshev', 'chebyshevu', 'jacobi'):
-            main(N, family, sol)
+        for family in ('legendre', 'chebyshev', 'chebyshevu'):#, 'ultraspherical'):
+            for kind in ('G', 'PG'):
+                main(N, family, sol, kind)

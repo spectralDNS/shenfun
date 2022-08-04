@@ -32,14 +32,14 @@ x = sp.symbols('x', real=True)
 xp = sp.symbols('x', real=True, positive=True)
 
 ctrialBasis = [cbases.__dict__.get(base) for base in cbases.bases[:-1]]
-ctestBasis = ctrialBasis + [cbases.__dict__.get(base) for base in cbases.testbases]
+ctestBasis = ctrialBasis + [cbases.__dict__.get(base) for base in cbases.testbases[:-1]]
 cutrialBasis = [cubases.__dict__.get(base) for base in cubases.bases[:-1]]
-cutestBasis = cutrialBasis + [cubases.__dict__.get(base) for base in cubases.testbases]
+cutestBasis = cutrialBasis + [cubases.__dict__.get(base) for base in cubases.testbases[:-1]]
 
 utrialBasis = [ubases.__dict__.get(base) for base in ubases.bases[:-1]]
-utestBasis = utrialBasis + [ubases.__dict__.get(base) for base in ubases.testbases]
+utestBasis = utrialBasis + [ubases.__dict__.get(base) for base in ubases.testbases[:-1]]
 ltrialBasis = [lbases.__dict__.get(base) for base in lbases.bases[:-1]]
-ltestBasis = ltrialBasis + [lbases.__dict__.get(base) for base in lbases.testbases]
+ltestBasis = ltrialBasis + [lbases.__dict__.get(base) for base in lbases.testbases[:-1]]
 latrialBasis = [lagbases.__dict__.get(base) for base in lagbases.bases[:-1]]
 htrialBasis = [hbases.__dict__.get(base) for base in hbases.bases]
 jtrialBasis = [jbases.__dict__.get(base) for base in jbases.bases[:-1]]
@@ -597,6 +597,7 @@ def test_helmholtz3D(family, axis):
     uc = Function(T)
     uc = H(f, uc)
     assert np.linalg.norm(uc-u) < 1e-12
+    T.destroy()
 
 @pytest.mark.parametrize('axis', (0, 1))
 @pytest.mark.parametrize('family', ('chebyshev',))
@@ -632,6 +633,7 @@ def test_helmholtz2D(family, axis):
 
     uc = H(f, uc)
     assert np.linalg.norm(uc-u) < 1e-12
+    T.destroy()
 
 @pytest.mark.parametrize('axis', (0, 1, 2))
 @pytest.mark.parametrize('family', ('chebyshev',))
@@ -665,6 +667,7 @@ def test_biharmonic3D(family, axis):
     g0 = M['SSBSBmat'].matvec(u, g0)
     g1 = M['ASBSBmat'].matvec(u, g1)
     g2 = M['BSBSBmat'].matvec(u, g2)
+    T.destroy()
 
     assert np.linalg.norm(f-(g0+g1+g2)) < 1e-8, np.linalg.norm(f-(g0+g1+g2))
 
@@ -697,7 +700,7 @@ def test_biharmonic2D(family, axis):
     g0 = M['SSBSBmat'].matvec(u, g0)
     g1 = M['ASBSBmat'].matvec(u, g1)
     g2 = M['BSBSBmat'].matvec(u, g2)
-
+    T.destroy()
     assert np.linalg.norm(f-(g0+g1+g2)) < 1e-8
 
 
@@ -732,14 +735,15 @@ def test_blockmatrix(bases):
     c2 = Function(VQ)
     c2 = B2.matvec(uh, c2, use_scipy=False)
     assert np.linalg.norm(c2-c) < 1e-8
+    T.destroy()
 
 @pytest.mark.parametrize('b0,b1', some_cbases2+some_lbases2)
 def test_stencil(b0, b1):
-    N = 10
+    N = 14
     b0 = b0(N)
     b1 = b1(N)
-    u = shenfun.TrialFunction(b0)
-    v = shenfun.TestFunction(b1)
+    u = shenfun.TrialFunction(b1)
+    v = shenfun.TestFunction(b0)
     B0 = inner(v, u, kind='vandermonde')
     B1 = inner(v, u, kind='stencil')
     C = B0-B1
@@ -756,8 +760,8 @@ def test_quadpy(b0, b1):
     N = 12
     b0 = b0(N)
     b1 = b1(N)
-    u = shenfun.TrialFunction(b0)
-    v = shenfun.TestFunction(b1)
+    u = shenfun.TrialFunction(b1)
+    v = shenfun.TestFunction(b0)
     B0 = inner(v, u, assemble='adaptive')
     B1 = inner(v, u, assemble='quadrature', kind='stencil')
     C = B0-B1
@@ -775,8 +779,8 @@ def test_exact(b0, b1):
     N = 10
     b0 = b0(N)
     b1 = b1(N)
-    u = shenfun.TrialFunction(b0)
-    v = shenfun.TestFunction(b1)
+    u = shenfun.TrialFunction(b1)
+    v = shenfun.TestFunction(b0)
     B0 = inner(v, u, assemble='exact')
     B1 = inner(v, u, fixed_resolution=20)
     C = B0-B1
@@ -791,7 +795,7 @@ if __name__ == '__main__':
     #test_exact(ctrialBasis[0], ctrialBasis[0])
     #test_mat(((ctestBasis[1], 0), (ctestBasis[1], 2), 1-x**2), cmatrices.ASDSDmatW, 'GC')
     #test_mat(*cmats_and_quads[12])
-    test_cmatvec(ctrialBasis[1], ctrialBasis[1], 'GC', 0)
+    #test_cmatvec(ctrialBasis[1], ctrialBasis[1], 'GC', 0)
     #test_lmatvec(lBasis[0], lBasis[0], 'LG', 2, 0)
     #test_lagmatvec(lagBasis[0], lagBasis[1], 'LG', 'python', 3, 2, 0)
     #test_hmatvec(hBasis[0], hBasis[0], 'HG', 'self', 3, 1, 1)
@@ -806,3 +810,4 @@ if __name__ == '__main__':
     #test_helmholtz3D('chebyshev', 0)
     #test_biharmonic3D('chebyshev', 0)
     #test_biharmonic2D('jacobi', 0)
+    test_stencil(cbases.Phi6, cbases.Compact3)

@@ -36,7 +36,7 @@ import sympy as sp
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, \
     Array, Function, FunctionSpace, TensorProductSpace, la, \
-    dx, MPI
+    dx, comm
 from mpi4py_fft.pencil import Subcomm
 
 # Use sympy to compute a rhs, given an analytical solution
@@ -64,7 +64,7 @@ def main(N, family, bc):
     K2 = FunctionSpace(N, family='F', dtype='d')
 
     # Try the uncommon approach of squeezing SD between the two Fourier spaces
-    subcomms = Subcomm(MPI.COMM_WORLD, [0, 0, 1])
+    subcomms = Subcomm(comm, [0, 0, 1])
     T = TensorProductSpace(subcomms, (K1, SD, K2), axes=(1, 0, 2))
     B = T.get_testspace(kind='PG')
 
@@ -97,9 +97,11 @@ def main(N, family, bc):
 
     # Compare with analytical solution
     uj = Array(T, buffer=ue)
-    print('L2 error = ', np.sqrt(inner(1, (uj-uq)**2)))
+    error = np.sqrt(inner(1, (uj-uq)**2))
+    if comm.Get_rank() == 0:
+        print(f'poisson3D L2 error = {error:2.6e}')
     if 'pytest 'in os.environ:
-        assert np.sqrt(inner(1, (uj-uq)**2)) < 1e-8
+        assert error < 1e-8
 
 if __name__ == '__main__':
     for family in ('legendre', 'chebyshev', 'chebyshevu', 'jacobi'):

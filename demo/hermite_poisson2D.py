@@ -20,9 +20,6 @@ import numpy as np
 from shenfun import inner, grad, TestFunction, TrialFunction, la, \
     Array, Function, FunctionSpace, TensorProductSpace, comm
 
-assert len(sys.argv) == 2, 'Call with one command-line argument'
-assert isinstance(int(sys.argv[-1]), int)
-
 # Use sympy to compute a rhs, given an analytical solution
 x, y = symbols("x,y", real=True)
 #ue = sin(4*x)*exp(-x**2)
@@ -30,7 +27,7 @@ ue = cos(4*y)*hermite(4, x)*exp(-x**2/2)
 fe = ue.diff(x, 2)+ue.diff(y, 2)
 
 # Size of discretization
-N = int(sys.argv[-1])
+N = 50
 
 SD = FunctionSpace(N, 'Hermite')
 K0 = FunctionSpace(N, 'Fourier', dtype='d')

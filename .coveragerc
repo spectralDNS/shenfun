@@ -1,4 +1,5 @@
 [run]
+parallel = true
 source = shenfun
 omit =
     */numba/*.py

@@ -25,13 +25,11 @@ The Chebyshev (first and second kind) and Legendre polynomials can be defined as
 
 """
 
-import functools
 import numpy as np
 import sympy as sp
 from scipy.special import eval_jacobi, roots_jacobi #, gamma
-from mpi4py_fft import fftw
-from shenfun.spectralbase import SpectralBase, Transform, islicedict, \
-    slicedict, getCompositeBase, BoundaryConditions
+from shenfun.matrixbase import SparseMatrix
+from shenfun.spectralbase import SpectralBase, getCompositeBase, BoundaryConditions
 from shenfun.jacobi.recursions import cn, h, alfa
 
 xp = sp.Symbol('x', real=True)
@@ -44,9 +42,10 @@ bases = ['Orthogonal',
          'CompactNeumann',
          'UpperDirichlet',
          'LowerDirichlet',
+         'CompactBiharmonic',
          'Generic']
 bcbases = ['BCGeneric']
-testbases = ['Phi1', 'Phi2', 'Phi3', 'Phi4']
+testbases = ['Phi1', 'Phi2', 'Phi3', 'Phi4', 'Phi6']
 __all__ = bases + bcbases + testbases
 
 
@@ -146,37 +145,6 @@ class Orthogonal(SpectralBase):
             V *= np.array([cn(self.alpha, self.alpha, n).subs(n, i) for i in np.arange(self.N)], dtype=V.dtype)[None, :]
         return V
 
-    def plan(self, shape, axis, dtype, options):
-        if shape in (0, (0,)):
-            return
-
-        if isinstance(axis, tuple):
-            assert len(axis) == 1
-            axis = axis[0]
-
-        if isinstance(self.forward, Transform):
-            if self.forward.input_array.shape == shape and self.axis == axis:
-                # Already planned
-                return
-
-        U = fftw.aligned(shape, dtype=dtype)
-        V = fftw.aligned(shape, dtype=dtype)
-        U.fill(0)
-        V.fill(0)
-        self.axis = axis
-        if self.padding_factor > 1.+1e-8:
-            trunc_array = self._get_truncarray(shape, V.dtype)
-            self.scalar_product = Transform(self.scalar_product, None, U, V, trunc_array)
-            self.forward = Transform(self.forward, None, U, V, trunc_array)
-            self.backward = Transform(self.backward, None, trunc_array, V, U)
-        else:
-            self.scalar_product = Transform(self.scalar_product, None, U, V, V)
-            self.forward = Transform(self.forward, None, U, V, V)
-            self.backward = Transform(self.backward, None, V, V, U)
-
-        self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
-        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
-
     @property
     def is_orthogonal(self):
         return True
@@ -184,6 +152,13 @@ class Orthogonal(SpectralBase):
     @staticmethod
     def short_name():
         return 'Q'
+
+    def stencil_matrix(self, N=None):
+        N = self.N if N is None else N
+        return SparseMatrix({0: 1}, (N, N))
+
+    def sympy_stencil(self, i=sp.Symbol('i', integer=True), j=sp.Symbol('j', integer=True)):
+        return sp.KroneckerDelta(i, j)
 
     def sympy_basis(self, i=0, x=xp):
         return cn(self.alpha, self.alpha, i)*sp.jacobi(i, self.alpha, self.alpha, x)
@@ -563,6 +538,90 @@ class Phi4(CompositeBase):
     def short_name():
         return 'P4'
 
+class Phi6(CompositeBase):
+    r"""Function space for 12th order equations
+
+    The basis functions :math:`\phi_k` for :math:`k=0, 1, \ldots, N-13` are
+
+    .. math::
+        \phi_k &= \frac{(1-x^2)^6}{h^{(6,\alpha)}_{k+6}} \frac{d^6 Q^{(\alpha)}_{k+6}}{dx^6}, \\
+
+    where
+
+    .. math::
+
+        h^{(6,\alpha)}_k&=\int_{-1}^1 \left(\frac{d^6 Q^{(\alpha)}_{k}}{dx^6}\right)^2 (1-x^2)^{\alpha+6}dx, \\
+            &=\frac{2^{2 a + 1} n \left(n - 5\right) \left(n - 4\right) \left(n - 3\right) \left(n - 2\right) \left(n - 1\right) \left(2 a + n + 1\right) \left(2 a + n + 2\right) \left(2 a + n + 3\right) \left(2 a + n + 4\right) \left(2 a + n + 5\right) \left(2 a + n + 6\right) \Gamma^{2}\left(a + 1\right) \Gamma\left(n + 1\right)}{\left(2 a + 2 n + 1\right) \Gamma\left(2 a + n + 1\right)},
+
+    The 12 boundary basis functions are computed using :func:`.jacobi.findbasis.get_bc_basis`,
+    but they are too messy to print here. We have
+
+    .. math::
+        u(x) &= \sum_{k=0}^{N-1} \hat{u}_k \phi_k(x), \\
+        u^{(k)}(-1)&=a_k, u^{(k)}(1)=b_k, k=0, 1, \ldots, 5
+
+    The last 12 basis functions are for boundary conditions and only used if there
+    are nonzero boundary conditions.
+
+    Parameters
+    ----------
+    N : int
+        Number of quadrature points
+    quad : str, optional
+        Type of quadrature
+
+        - QG - Jacobi-Gauss
+    bc : 12-tuple of numbers, optional
+        Boundary conditions.
+    alpha : number, optional
+        Parameter of the ultraspherical polynomial
+    domain : 2-tuple of numbers, optional
+        The computational domain
+    padding_factor : float, optional
+        Factor for padding backward transforms.
+    dealias_direct : bool, optional
+        Set upper 1/3 of coefficients to zero before backward transform
+    dtype : data-type, optional
+        Type of input data in real physical space. Will be overloaded when
+        basis is part of a :class:`.TensorProductSpace`.
+    coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
+        Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
+    """
+    def __init__(self, N, quad="QG", bc=(0,)*12, domain=(-1, 1), dtype=float,
+                 padding_factor=1, dealias_direct=False, alpha=0,
+                 coordinates=None, **kw):
+        CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
+                               padding_factor=padding_factor, dealias_direct=dealias_direct,
+                               alpha=alpha, coordinates=coordinates)
+        self._stencil_matrix = {}
+        #self._stencil = {
+        #   0: sp.simplify(matpow(b, 6, alpha, alpha, n+6, n, cn) / h(alpha, alpha, n, 0, cn)),
+        #   2: sp.simplify(matpow(b, 6, alpha, alpha, n+6, n+2, cn) / h(alpha, alpha, n+2, 0, cn)),
+        #   4: sp.simplify(matpow(b, 6, alpha, alpha, n+6, n+4, cn) / h(alpha, alpha, n+4, 0, cn)),
+        #   6: sp.simplify(matpow(b, 6, alpha, alpha, n+6, n+6, cn) / h(alpha, alpha, n+6, 0, cn)),
+        #   8: sp.simplify(matpow(b, 6, alpha, alpha, n+6, n+8, cn) / h(alpha, alpha, n+8, 0, cn)),
+        #  10: sp.simplify(matpow(b, 6, alpha, alpha, n+6, n+10, cn) / h(alpha, alpha, n+10, 0, cn)),
+        #  12: sp.simplify(matpow(b, 6, alpha, alpha, n+6, n+12, cn) / h(alpha, alpha, n+12, 0, cn))}
+        a = alpha
+        gamma = sp.gamma
+        self._stencil = {
+            0: gamma(2*a + n + 7)/(2*2**(2*a)*(2*a + 2*n + 3)*(2*a + 2*n + 5)*(2*a + 2*n + 7)*(2*a + 2*n + 9)*(2*a + 2*n + 11)*gamma(a + 1)**2*gamma(n + 7)),
+            2: -3*gamma(2*a + n + 7)/(4**a*(2*a + 2*n + 3)*(2*a + 2*n + 7)*(2*a + 2*n + 9)*(2*a + 2*n + 11)*(2*a + 2*n + 15)*gamma(a + 1)**2*gamma(n + 7)),
+            4: 15*gamma(2*a + n + 7)/(2*2**(2*a)*(2*a + 2*n + 5)*(2*a + 2*n + 7)*(2*a + 2*n + 11)*(2*a + 2*n + 15)*(2*a + 2*n + 17)*gamma(a + 1)**2*gamma(n + 7)),
+            6: -10*(2*a + 2*n + 13)*gamma(2*a + n + 7)/(2**(2*a)*(2*a + 2*n + 7)*(2*a + 2*n + 9)*(2*a + 2*n + 11)*(2*a + 2*n + 15)*(2*a + 2*n + 17)*(2*a + 2*n + 19)*gamma(a + 1)**2*gamma(n + 7)),
+            8: 15*gamma(2*a + n + 7)/(2*2**(2*a)*(2*a + 2*n + 9)*(2*a + 2*n + 11)*(2*a + 2*n + 15)*(2*a + 2*n + 19)*(2*a + 2*n + 21)*gamma(a + 1)**2*gamma(n + 7)),
+           10: -3*gamma(2*a + n + 7)/(4**a*(2*a + 2*n + 11)*(2*a + 2*n + 15)*(2*a + 2*n + 17)*(2*a + 2*n + 19)*(2*a + 2*n + 23)*gamma(a + 1)**2*gamma(n + 7)),
+           12: gamma(2*a + n + 7)/(2*2**(2*a)*(2*a + 2*n + 15)*(2*a + 2*n + 17)*(2*a + 2*n + 19)*(2*a + 2*n + 21)*(2*a + 2*n + 23)*gamma(a + 1)**2*gamma(n + 7))
+        }
+
+    @staticmethod
+    def boundary_condition():
+        return '12th order'
+
+    @staticmethod
+    def short_name():
+        return 'P6'
+
 
 class CompactDirichlet(CompositeBase):
     r"""Function space for Dirichlet boundary conditions
@@ -811,6 +870,83 @@ class LowerDirichlet(CompositeBase):
     @staticmethod
     def short_name():
         return 'LD'
+
+class CompactBiharmonic(CompositeBase):
+    r"""Function space for biharmonic equations
+
+    The basis functions :math:`\phi_k` for :math:`k=0, 1, \ldots, N-5` are
+
+    .. math::
+        \phi_k &= \frac{h_n}{b^{(2)}_{n+2,n}} \frac{(1-x^2)^2}{h^{(2,\alpha)}_{k+2}} \frac{d^2Q^{(\alpha)}_{k+2}}{dx^2},
+
+    where
+
+    .. math::
+
+        h^{(2,\alpha)}_k&=\int_{-1}^1 \left(\frac{d^2Q^{(\alpha)}_{k}}{dx^2}\right)^2 (1-x^2)^{\alpha+2}dx, \\
+            &= \frac{2^{2 \alpha + 1} \cdot \left(2 \alpha + n + 1\right) \left(2 \alpha + n + 2\right) \Gamma^{2}\left(\alpha + n + 1\right)}{\left(2 \alpha + 2 n + 1\right) \Gamma\left(n - 1\right) \Gamma\left(2 \alpha + n + 1\right)},
+
+    This is :class:`.Phi2` scaled such that the main diagonal of the stencil matrix is unity.
+
+    The 4 boundary basis functions are computed using :func:`.jacobi.findbasis.get_bc_basis`,
+    but they are too messy to print here. We have
+
+    .. math::
+        u(x) &= \sum_{k=0}^{N-1} \hat{u}_k \phi_k(x), \\
+        u(-1) &= a, u'(-1)=b, u(1)=c \text{ and } u'(1) = d.
+
+    The last 4 basis functions are for boundary conditions and only used if
+    a, b, c or d are different from 0. In one dimension :math:`\hat{u}_{N-4}=a`,
+    :math:`\hat{u}_{N-3}=b`, :math:`\hat{u}_{N-2}=c` and :math:`\hat{u}_{N-1}=d`.
+
+    Parameters
+    ----------
+    N : int
+        Number of quadrature points
+    quad : str, optional
+        Type of quadrature
+
+        - QG - Jacobi-Gauss
+    bc : 4-tuple of numbers, optional
+        Boundary conditions.
+    alpha : number, optional
+        Parameter of the ultraspherical polynomial
+    domain : 2-tuple of numbers, optional
+        The computational domain
+    padding_factor : float, optional
+        Factor for padding backward transforms.
+    dealias_direct : bool, optional
+        Set upper 1/3 of coefficients to zero before backward transform
+    dtype : data-type, optional
+        Type of input data in real physical space. Will be overloaded when
+        basis is part of a :class:`.TensorProductSpace`.
+    coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
+        Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
+    """
+
+    def __init__(self, N, quad="QG", bc=(0, 0, 0, 0), domain=(-1, 1), dtype=float,
+                 padding_factor=1, dealias_direct=False, alpha=0, coordinates=None, **kw):
+        CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
+                               padding_factor=padding_factor, dealias_direct=dealias_direct,
+                               alpha=alpha, coordinates=coordinates)
+        a = alpha
+        #self._stencil = {
+        #   0: 1,
+        #   2: sp.simplify(matpow(b, 2, alpha, alpha, n+2, n+2, cn) / matpow(b, 2, alpha, alpha, n+2, n, cn) * h(alpha, alpha, n, 0, cn) / h(alpha, alpha, n+2, 0, cn)),
+        #   4: sp.simplify(matpow(b, 2, alpha, alpha, n+2, n+4, cn) / matpow(b, 2, alpha, alpha, n+2, n, cn) * h(alpha, alpha, n, 0, cn) / h(alpha, alpha, n+4, 0, cn))}
+        self._stencil = {
+            0: 1,
+            2: -(4*a + 4*n + 10)/(2*a + 2*n + 7),
+            4: (2*a + 2*n + 3)/(2*a + 2*n + 7)
+        }
+
+    @staticmethod
+    def boundary_condition():
+        return 'Biharmonic'
+
+    @staticmethod
+    def short_name():
+        return 'C2'
 
 
 class Generic(CompositeBase):

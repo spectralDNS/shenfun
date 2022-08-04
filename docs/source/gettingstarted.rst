@@ -736,13 +736,16 @@ instance for each equation. These are mainly IMEX Runge Kutta integrators:
     * :class:`.IMEXRK222`
     * :class:`.IMEXRK443`
 
-See, e.g., https://github.com/spectralDNS/shenfun/blob/master/demo/ChannelFlow
+See, e.g., https://github.com/spectralDNS/shenfun/blob/master/demo/ChannelFlow.py
 for an example of use for the Navier-Stokes equations. The IMEX solvers
 are described by::
 
     Ascher, Ruuth and Spiteri 'Implicit-explicit Runge-Kutta methods for
     time-dependent partial differential equations' Applied Numerical
     Mathematics, 25 (1997) 151-167
+
+Note that the IMEX solvers are intended for use with problems consisting of one
+non-periodic direction.
 
 To illustrate, we consider the time-dependent 1-dimensional Kortveeg-de Vries
 equation

@@ -310,7 +310,7 @@ class Stats:
 
             for i, name in enumerate(("U", "V", "W")):
                 self.f0["Average Velocity/"+name][s] = self.Umean[i]/Nd
-                self.f0["Average Angular Velocity/"+name][s] = self.Umean[i]/Nd
+                self.f0["Average Angular Velocity/"+name][s] = self.Wmean[i]/Nd
 
             for i, name in enumerate(("UU", "VV", "WW", "UV", "UW", "VW")):
                 self.f0["Reynolds Stress Velocity/"+name][s] = self.UU[i]/Nd
@@ -373,7 +373,7 @@ if __name__ == '__main__':
         'filename': f'MKM_MP_{N[0]}_{N[1]}_{N[2]}',
         'conv': 1,
         'modplot': 100,
-        'modsave': 100,
+        'modsave': 1000,
         'moderror': 100,
         'family': 'C',
         'checkpoint': 100,
@@ -383,8 +383,8 @@ if __name__ == '__main__':
         'timestepper': 'IMEXRK222', # IMEXRK222, IMEXRK443
         }
     c = MKM(**d)
-    t, tstep = c.initialize(from_checkpoint=False)
-    c.solve(t=t, tstep=tstep, end_time=10)
+    t, tstep = c.initialize(from_checkpoint=True)
+    c.solve(t=t, tstep=tstep, end_time=50)
     print('Computing time %2.4f'%(time()-t0))
     if comm.Get_rank() == 0:
         generate_xdmf('_'.join((d['filename'], 'U'))+'.h5')

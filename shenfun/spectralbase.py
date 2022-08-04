@@ -381,13 +381,14 @@ class SpectralBase:
             output_array
 
         """
-        x = np.atleast_1d(x)
-        if output_array is None:
-            output_array = np.zeros(x.shape, dtype=self.dtype)
-        X = sp.symbols('x', real=True)
-        f = self.sympy_basis(i, X)
-        output_array[:] = sp.lambdify(X, f)(x)
-        return output_array
+        raise NotImplementedError
+        #x = np.atleast_1d(x)
+        #if output_array is None:
+        #    output_array = np.zeros(x.shape, dtype=self.dtype)
+        #X = sp.symbols('x', real=True)
+        #f = self.sympy_basis(i, X)
+        #output_array[:] = sp.lambdify(X, f)(x)
+        #return output_array
 
     def evaluate_basis_all(self, x=None, argument=0):
         """Evaluate basis at ``x`` or all quadrature points
@@ -457,12 +458,13 @@ class SpectralBase:
         array
             Vandermonde matrix
         """
-        if x is None:
-            x = self.mesh(False, False)
-        V = np.zeros((x.shape[0], self.N))
-        for i in range(self.dim()):
-            V[:, i] = self.evaluate_basis_derivative(x, i, k, output_array=V[:, i])
-        return V
+        raise NotImplementedError
+        #if x is None:
+        #    x = self.mesh(False, False)
+        #V = np.zeros((x.shape[0], self.N))
+        #for i in range(self.dim()):
+        #    V[:, i] = self.evaluate_basis_derivative(x, i, k, output_array=V[:, i])
+        #return V
 
     def _evaluate_expansion_all(self, input_array, output_array,
                                 x=None, kind=None):
@@ -540,6 +542,7 @@ class SpectralBase:
         kind : str, optional
             - 'fast' - use fast transform if implemented
             - 'vandermonde' - Use Vandermonde matrix
+            - 'recursive' - Use low-memory implementation (only for polynomials)
 
         Note
         ----
@@ -547,7 +550,7 @@ class SpectralBase:
         ``self.scalar_product.output_array``
 
         """
-        assert kind in ('vandermonde', 'recursive')
+        assert kind in ('vandermonde', 'recursive') # fast must be implemented in subclass
         input_array = self.scalar_product.input_array
         output_array = self.scalar_product.tmp_array
         M = self.shape(False)
@@ -610,11 +613,12 @@ class SpectralBase:
             output_array
 
         """
-        from shenfun import project
-        T = self.get_orthogonal()
-        output_array = project(input_array, T, output_array=output_array,
-                               use_to_ortho=False)
-        return output_array
+        raise NotImplementedError
+        #from shenfun import project
+        #T = self.get_orthogonal()
+        #output_array = project(input_array, T, output_array=output_array,
+        #                       use_to_ortho=False)
+        #return output_array
 
     def plan(self, shape, axis, dtype, options):
         """Plan transform
@@ -633,10 +637,12 @@ class SpectralBase:
         options : dict
             Options for planning transforms
         """
+        # Note - Only needs overloading for fast transforms (Fourier, Chebyshev)
         if shape in (0, (0,)):
             return
 
         if isinstance(axis, tuple):
+            assert len(axis) == 1
             axis = axis[0]
 
         if isinstance(self.forward, Transform):
@@ -644,42 +650,20 @@ class SpectralBase:
                 # Already planned
                 return
 
-        plan_fwd = self._xfftn_fwd
-        plan_bck = self._xfftn_bck
-
-        opts = dict(
-            overwrite_input='FFTW_DESTROY_INPUT',
-            planner_effort='FFTW_MEASURE',
-            threads=1,
-        )
-        opts.update(options)
-        flags = (fftw.flag_dict[opts['planner_effort']],
-                 fftw.flag_dict[opts['overwrite_input']])
-        threads = opts['threads']
-
-        n = (shape[axis],)
         U = fftw.aligned(shape, dtype=dtype)
-        xfftn_fwd = plan_fwd(U, n, (axis,), threads=threads, flags=flags)
-        V = xfftn_fwd.output_array
-
-        if np.issubdtype(dtype, np.floating):
-            flags = (fftw.flag_dict[opts['planner_effort']],)
-
-        xfftn_bck = plan_bck(V, n, (axis,), threads=threads, flags=flags, output_array=U)
-        V.fill(0)
+        V = fftw.aligned(shape, dtype=dtype)
         U.fill(0)
-        self._M = xfftn_fwd.get_normalization()
+        V.fill(0)
         self.axis = axis
-
-        if self.padding_factor != 1:
+        if self.padding_factor > 1.+1e-8:
             trunc_array = self._get_truncarray(shape, V.dtype)
-            self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, trunc_array)
-            self.forward = Transform(self.forward, xfftn_fwd, U, V, trunc_array)
-            self.backward = Transform(self.backward, xfftn_bck, trunc_array, V, U)
+            self.scalar_product = Transform(self.scalar_product, None, U, V, trunc_array)
+            self.forward = Transform(self.forward, None, U, V, trunc_array)
+            self.backward = Transform(self.backward, None, trunc_array, V, U)
         else:
-            self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)
-            self.forward = Transform(self.forward, xfftn_fwd, U, V, V)
-            self.backward = Transform(self.backward, xfftn_bck, V, V, U)
+            self.scalar_product = Transform(self.scalar_product, None, U, V, V)
+            self.forward = Transform(self.forward, None, U, V, V)
+            self.backward = Transform(self.backward, None, V, V, U)
 
         self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
@@ -1802,10 +1786,11 @@ class BoundaryConditions(dict):
                         bcs['right']['N4'] = float(x.group(2))
                     else:
                         raise RuntimeError('Boundary condition not matching domain')
+                    continue
                 raise RuntimeError(f'Boundary condition {bci} not understood')
 
         if isinstance(bc, tuple):
-            assert len(bc) in (1, 2, 4, 6, 8)
+            assert len(bc) in (1, 2, 4, 6, 8, 10, 12)
             assert np.all([isinstance(i, (sp.Expr, Number)) or i is None for i in bc])
             if len(bc) == 1: # Laguerre
                 bcs['left']['D'] = bc[0]
@@ -1823,6 +1808,13 @@ class BoundaryConditions(dict):
             elif len(bc) == 8:
                 bcs['left'].update({'D': bc[0], 'N': bc[1], 'N2': bc[2], 'N3': bc[3]})
                 bcs['right'].update({'D': bc[4], 'N': bc[5], 'N2': bc[6], 'N3': bc[7]})
+            elif len(bc) == 10:
+                bcs['left'].update({'D': bc[0], 'N': bc[1], 'N2': bc[2], 'N3': bc[3], 'N4': bc[4]})
+                bcs['right'].update({'D': bc[5], 'N': bc[6], 'N2': bc[7], 'N3': bc[8], 'N4': bc[9]})
+            elif len(bc) == 12:
+                bcs['left'].update({'D': bc[0], 'N': bc[1], 'N2': bc[2], 'N3': bc[3], 'N4': bc[4], 'N5': bc[5]})
+                bcs['right'].update({'D': bc[6], 'N': bc[7], 'N2': bc[8], 'N3': bc[9], 'N4': bc[10], 'N5': bc[11]})
+
         elif isinstance(bc, dict):
             if isinstance(bc.get("left", {}) or bc.get("right", {}), (tuple, list)):
                 # old form {'left': [('D', 0), ('N', 0)], 'right': [('D', 0)]}

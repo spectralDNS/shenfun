@@ -92,9 +92,11 @@ def main(N, family, bc):
 
     # Compare with analytical solution
     uj = Array(T, buffer=ue)
-    print('L2 error = ', np.sqrt(inner(1, (uj-uq)**2)))
+    error = np.sqrt(inner(1, (uj-uq)**2))
+    if comm.Get_rank() == 0:
+        print(f'poisson2D L2 error = {error:2.6e}')
     if 'pytest 'in os.environ:
-        assert np.sqrt(inner(1, (uj-uq)**2)) < 1e-8
+        assert error < 1e-8
 
 if __name__ == '__main__':
     for family in ('legendre', 'chebyshev', 'chebyshevu', 'jacobi'):

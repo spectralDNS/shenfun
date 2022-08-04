@@ -56,7 +56,8 @@ u_hat = Sol1(g_hat, u_hat)
 # Transform back to real space.
 uj = u_hat.backward()
 uq = Array(T, buffer=ue)
-print('Error =', np.linalg.norm(uj-uq))
+error = np.sqrt(inner(1, abs((uj-uq)**2)))
+print(f'sphere_helmholtz L2 error {error:2.6e}')
 
 if 'pytest' not in os.environ:
     # Postprocess
@@ -76,4 +77,6 @@ if 'pytest' not in os.environ:
     mlab.figure(bgcolor=(1, 1, 1), size=(400, 400))
     mlab.mesh(xx, yy, zz, scalars=ur.real, colormap='jet')
     mlab.savefig('spherewhite.png')
-    #mlab.show()
+    mlab.show()
+else:
+    assert error < 1e-6

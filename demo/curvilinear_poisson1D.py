@@ -1,4 +1,4 @@
-"""
+r"""
 Solve Poisson's equation on a curved line in 2D or 3D space.
 
 Define a position vector, `rv(t)`, as::
@@ -48,8 +48,8 @@ u_hat = sol(f_hat, u_hat)
 
 uj = u_hat.backward()
 uq = Array(L, buffer=ue)
-print('Error = ', np.linalg.norm(uj-uq))
-assert np.linalg.norm(uj-uq) < 1e-8
+error = np.sqrt(inner(1, (uj-uq)**2))
+print(f'curvilinear_poisson1D L2 error = {error:2.6e}')
 
 if 'pytest' not in os.environ:
     import matplotlib.pyplot as plt
@@ -57,7 +57,6 @@ if 'pytest' not in os.environ:
     ax = fig.add_subplot(111, projection='3d')
     uj = u_hat.backward(kind='uniform')
     X = L.cartesian_mesh(uniform=True)
-
     if len(rv) == 3:
         ax.plot(X[0], X[1], X[2], 'r')
         ax.plot(X[0], X[1], X[2]+uj, 'b')
@@ -67,5 +66,6 @@ if 'pytest' not in os.environ:
     elif len(rv) == 2:
         ax.plot(X[0], X[1], uj, 'b')
         ax.plot(X[0], X[1], 'r')
-
     plt.show()
+else:
+    assert error < 1e-6

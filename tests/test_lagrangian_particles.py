@@ -36,6 +36,7 @@ def test_lagrangian_particles():
 
     assert np.allclose(lp.x, np.array([[0.53986228], [0.74811753]]), 1e-6)
     assert np.allclose(lp.up, np.array([[0.99115526], [-0.09409196]]), 1e-6)
+    T.destroy()
 
 if __name__ == '__main__':
     test_lagrangian_particles()

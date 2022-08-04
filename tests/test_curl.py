@@ -73,6 +73,7 @@ def test_curl(typecode):
     uu = Tk.backward(u_hat, uu)
 
     assert allclose(u_hat, U_hat)
+    T.destroy()
 
 
 def test_curl2():
@@ -126,6 +127,8 @@ def test_curl2():
     w = Array(TTk)
     w = TTk.backward(w_hat, w)
     assert allclose(w, curl_)
+    T.destroy()
+    TT.destroy()
 
 def test_curl_cc():
     theta, phi = sp.symbols('x,y', real=True, positive=True)
@@ -155,12 +158,14 @@ def test_curl_cc():
     F0 = FunctionSpace(N, 'F', dtype='D')
     F1 = FunctionSpace(N, 'F', dtype='d')
     L = FunctionSpace(N, 'L', bc=(0, 0), domain=(0, 1))
+    T.destroy()
     T = TensorProductSpace(comm, (L, F0, F1), coordinates=(psi, rv))
     T1 = T.get_orthogonal()
     V = VectorSpace(T1)
     u_hat = Function(T, buffer=ue)
     d = curl(grad(u_hat))
     assert d.terms() == [[],[],[]]
+    T.destroy()
 
 if __name__ == '__main__':
     #test_curl('d')

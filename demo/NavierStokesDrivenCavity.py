@@ -78,13 +78,9 @@ A10 = inner(q, div(u))
 # Create Block matrix solver. This also takes care of boundary conditions.
 sol = la.BlockMatrixSolver(A00+A01+A10)
 
-# Create Function to hold solution
-uh_hat = Function(VQ).set_boundary_dofs()
-ui_hat = uh_hat[0]
-
-# New solution (iterative)
-uh_new = Function(VQ).set_boundary_dofs()
-ui_new = uh_new[0]
+# Create Functions to hold solution
+up_hat = Function(VQ)
+up_new = Function(VQ)
 
 # Create regular work arrays for right hand side.
 bh_hat = Function(VQ)
@@ -97,10 +93,11 @@ uiuj = Array(S1.get_dealiased())
 uiuj_hat = Function(S1)
 BS = BlockMatrix(inner(TestFunction(W1), div(TrialFunction(S1))))
 
-def compute_rhs(ui_hat, bh_hat):
+def compute_rhs(up_hat, bh_hat):
     global uiuj, uiuj_hat
     bh_hat.fill(0)
     bi_hat = bh_hat[0]
+    ui_hat = up_hat[0]
     # Get convection
     uip = ui_hat.backward(padding_factor=1.5)
     uiuj = outer(uip, uip, uiuj)
@@ -120,10 +117,10 @@ if 'pytest' in os.environ:
 t0 = time.time()
 while not converged:
     count += 1
-    bh_hat = compute_rhs(ui_hat, bh_hat)
-    uh_new = sol(bh_hat, u=uh_new, constraints=((2, 0, 0),)) # Constraint for component 2 of mixed space
-    error = np.linalg.norm(ui_hat-ui_new)
-    uh_hat[:] = alfa*uh_new + (1-alfa)*uh_hat
+    bh_hat = compute_rhs(up_hat, bh_hat)
+    up_new = sol(bh_hat, u=up_new, constraints=((2, 0, 0),)) # Constraint for component 2 of mixed space
+    error = np.linalg.norm(up_hat[0]-up_new[0])
+    up_hat[:] = alfa*up_new + (1-alfa)*up_hat
     converged = abs(error) < 1e-11 or count >= max_count
     if count % 1 == 0:
         print('Iteration %d Error %2.4e' %(count, error))
@@ -132,25 +129,25 @@ print('Time ', time.time()-t0)
 
 # Move solution to regular Function
 up = Array(VQ)
-up = uh_hat.backward(up)
+up = up_hat.backward(up)
 u_, p_ = up
 
 if 'pytest' in os.environ:
-    sys.exit(0)
+    sys.exit(1)
 
 # Postprocessing
 # Solve streamfunction
 r = TestFunction(V0)
 s = TrialFunction(V0)
 S = inner(r, div(grad(s)))
-h = inner(r, -curl(ui_hat))
+h = inner(r, -curl(up_hat[0]))
 H = la.SolverGeneric2ND(S)
 phi_h = H(h)
 phi = phi_h.backward()
 # Compute vorticity
 P = V1.get_orthogonal()
 w_h = Function(P)
-w_h = project(curl(ui_hat), P, output_array=w_h)
+w_h = project(curl(up_hat[0]), P, output_array=w_h)
 #p0 = np.array([[0.], [0.]])
 #print(w_h.eval(p0)*2)
 

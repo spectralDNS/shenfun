@@ -14,8 +14,7 @@ import os
 import sympy as sp
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, \
-    Array, Function, FunctionSpace, dx, legendre, extract_bc_matrices, \
-    TensorProductSpace, comm, la
+    Array, Function, FunctionSpace, dx, TensorProductSpace, comm, la
 
 # Use sympy to compute a rhs, given an analytical solution
 # Choose a solution with non-zero values
@@ -75,9 +74,6 @@ def main(N, family, bci, bcj, plotting=False):
     u_hat = sol(f_hat, u_hat, constraints=constraint)
     uj = u_hat.backward()
 
-    assert np.allclose(uj, ua), np.linalg.norm(uj-ua)
-    print("Error=%2.16e" %(np.sqrt(dx((uj-ua)**2))))
-
     if 'pytest' not in os.environ and plotting is True:
         import matplotlib.pyplot as plt
         X, Y = trialspace.local_mesh(True)
@@ -87,13 +83,17 @@ def main(N, family, bci, bcj, plotting=False):
         plt.figure()
         plt.contourf(X, Y, ua-uj, 100)
         plt.colorbar()
-        #plt.show()
-
+        plt.show()
+    else:
+        error = np.sqrt(inner(1, (uj-ua)**2))
+        bx = "x: L-" + "".join(list(BX.bc.bc["left"].keys())) + " R-" + "".join(list(BX.bc.bc["right"].keys()))
+        bx += " :: y: L-" + "".join(list(BY.bc.bc["left"].keys())) + " R-" + "".join(list(BY.bc.bc["right"].keys()))
+        print(f"poisson2ND {BX.family():14s} {bx} L2 error = {error:2.6e}")
+        assert error < 1e-6
 
 if __name__ == '__main__':
-    import sys
-    N = int(sys.argv[-1]) if len(sys.argv) == 2 else 16
-    for family in ('C', 'L'):
+    # Note - some are slower since the basis stencil is not precomputed
+    for family in ('C', 'L', 'U', 'Q', 'J'):
         for bci in range(4):
             for bcj in range(4):
-                main(N, family, bci, bcj)
+                main(16, family, bci, bcj)

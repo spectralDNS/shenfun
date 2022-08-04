@@ -79,6 +79,8 @@ class Coordinates:
 
     @property
     def is_cartesian(self):
+        if len(self.psi) != len(self.rv):
+            return False
         return sp.Matrix(self.get_covariant_metric_tensor()).is_Identity
 
     def get_det_g(self, covariant=True):

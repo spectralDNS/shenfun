@@ -18,6 +18,7 @@ def test_energy_fourier(N):
         e0 = comm.allreduce(np.sum(u.v*u.v)/np.prod(N))
         e1 = fourier.energy_fourier(u_hat, T)
         assert abs(e0-e1) < 1e-10
+        T.destroy()
 
 if __name__ == '__main__':
     test_energy_fourier((12, 12, 12))

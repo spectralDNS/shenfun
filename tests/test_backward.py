@@ -47,7 +47,8 @@ def test_backward2D():
     u2 = uL.backward(mesh=TT)
     uT2 = project(u2, TT)
     assert np.linalg.norm(uT2-uT) < 1e-8, np.linalg.norm(uT2-uT)
-
+    TT.destroy()
+    TL.destroy()
     TT = TensorProductSpace(comm, (F, T))
     TL = TensorProductSpace(comm, (F, L))
     uT = Function(TT, buffer=ff)
@@ -62,6 +63,8 @@ def test_backward2D():
     u2 = uL.backward(mesh=TTC)
     uT2 = project(u2, TTC)
     assert np.linalg.norm(uT2-uT) < 1e-8
+    TT.destroy()
+    TL.destroy()
 
 def test_backward2ND():
     T0 = FunctionSpace(N, 'C', domain=(-2, 2))
@@ -75,6 +78,8 @@ def test_backward2ND():
     u2 = uL.backward(mesh=TT)
     uT2 = project(u2, TT)
     assert np.linalg.norm(uT2-uT)
+    TT.destroy()
+    LL.destroy()
 
 def test_backward3D():
     T = FunctionSpace(N, 'C', domain=(-2, 2))
@@ -89,6 +94,8 @@ def test_backward3D():
     u2 = uL.backward(mesh=TT)
     uT2 = project(u2, TT)
     assert np.linalg.norm(uT2-uT)
+    TT.destroy()
+    TL.destroy()
 
 @pytest.mark.parametrize('family', 'CLJ')
 def test_backward_uniform(family):
@@ -127,6 +134,7 @@ def test_padding(family):
     uc = Tp.forward(up)
     assert up.shape == (int(N*3/2), int(N*3/2))
     assert np.linalg.norm(u-uc) < 1e-8
+    T.destroy()
 
     # Test padding 3D
     F1 = FunctionSpace(N, 'F', dtype='D')
@@ -138,6 +146,7 @@ def test_padding(family):
     up = Tp.backward(u)
     uc = Tp.forward(up)
     assert np.linalg.norm(u-uc) < 1e-8
+    T.destroy()
 
 @pytest.mark.parametrize('family', 'CL')
 def test_padding_neumann(family):
@@ -165,6 +174,8 @@ def test_padding_neumann(family):
     uc = Tp.forward(up)
     assert up.shape == (int(N*3/2), int(N*3/2))
     assert np.linalg.norm(u-uc) < 1e-8
+    T.destroy()
+    Tp.destroy()
 
     # Test padding 3D
     F1 = FunctionSpace(N, 'F', dtype='D')
@@ -176,6 +187,8 @@ def test_padding_neumann(family):
     up = Tp.backward(u)
     uc = Tp.forward(up)
     assert np.linalg.norm(u-uc) < 1e-8
+    T.destroy()
+    Tp.destroy()
 
 @pytest.mark.parametrize('family', ('C','L','J','Q','F','H','La'))
 def test_padding_orthogonal(family):
@@ -206,6 +219,8 @@ def test_padding_orthogonal(family):
     uc = Tp.forward(up)
     assert up.shape == (int(N*3/2), int(N*3/2))
     assert np.linalg.norm(u-uc) < 1e-8
+    T.destroy()
+    Tp.destroy()
 
     # Test padding 3D
     F1 = FunctionSpace(N, 'F', dtype='D')
@@ -217,6 +232,8 @@ def test_padding_orthogonal(family):
     up = Tp.backward(u)
     uc = Tp.forward(up)
     assert np.linalg.norm(u-uc) < 1e-8
+    T.destroy()
+    Tp.destroy()
 
 @pytest.mark.parametrize('family', 'CLJ')
 def test_padding_biharmonic(family):
@@ -243,6 +260,8 @@ def test_padding_biharmonic(family):
     up = Tp.backward(u)
     uc = Tp.forward(up)
     assert np.linalg.norm(u-uc) < 1e-8
+    T.destroy()
+    Tp.destroy()
 
     # Test padding 3D
     F1 = FunctionSpace(N, 'F', dtype='D')
@@ -254,6 +273,8 @@ def test_padding_biharmonic(family):
     up = Tp.backward(u)
     uc = Tp.forward(up)
     assert np.linalg.norm(u-uc) < 1e-8
+    T.destroy()
+    Tp.destroy()
 
 if __name__ == '__main__':
     #test_backward()

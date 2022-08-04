@@ -6,15 +6,11 @@ Solve biharmonic equation in 1D
 Use Biharmonic basis with four boundary conditions.
 
 """
-import sys
 import os
 import sympy as sp
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, FunctionSpace, Array, \
     Function, la
-
-# Collect basis and solver from either Chebyshev or Legendre submodules
-family = sys.argv[-1].lower()
 
 # Use sympy to compute a rhs, given an analytical solution
 # Allow for a non-standard domain. Reference domain is (-1, 1)
@@ -52,7 +48,8 @@ def main(N, family):
 
     # Compare with analytical solution
     uq = Array(SD, buffer=ue)
-    print("Error=%2.16e" %(np.linalg.norm(uj-uq)))
+    error = np.sqrt(inner(1, (uj-uq)**2))
+    print(f"biharmonic1D {SD.family():14s} L2 error = {error:2.6e}")
 
     if 'pytest' not in os.environ:
         import matplotlib.pyplot as plt
@@ -65,10 +62,11 @@ def main(N, family):
         plt.figure()
         plt.plot(X, uq-uj)
         plt.title('Error')
-        #plt.show()
+        plt.show()
+
     else:
-        assert np.linalg.norm(uj-uq) < 1e-6
+        assert error < 1e-6
 
 if __name__ == '__main__':
-    for family in ('legendre', 'chebyshev', 'chebyshevu', 'jacobi'):
+    for family in ('legendre', 'chebyshev', 'chebyshevu', 'ultraspherical', 'jacobi'):
         main(24, family)

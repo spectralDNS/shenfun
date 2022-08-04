@@ -65,7 +65,7 @@ bases = ['Orthogonal',
          'BeamFixedFree',
          'Generic']
 bcbases = ['BCGeneric']
-testbases = ['Phi1', 'Phi2', 'Phi3', 'Phi4']
+testbases = ['Phi1', 'Phi2', 'Phi3', 'Phi4', 'Phi6']
 __all__ = bases + bcbases + testbases
 
 #pylint: disable=method-hidden,no-else-return,not-callable,abstract-method,no-member,cyclic-import
@@ -170,37 +170,6 @@ class Orthogonal(SpectralBase):
     def reference_domain(self):
         return (-1, 1)
 
-    def plan(self, shape, axis, dtype, options):
-        if shape in (0, (0,)):
-            return
-
-        if isinstance(axis, tuple):
-            assert len(axis) == 1
-            axis = axis[0]
-
-        if isinstance(self.forward, Transform):
-            if self.forward.input_array.shape == shape and self.axis == axis:
-                # Already planned
-                return
-
-        U = fftw.aligned(shape, dtype=dtype)
-        V = fftw.aligned(shape, dtype=dtype)
-        U.fill(0)
-        V.fill(0)
-        self.axis = axis
-        if self.padding_factor > 1.+1e-8:
-            trunc_array = self._get_truncarray(shape, V.dtype)
-            self.scalar_product = Transform(self.scalar_product, None, U, V, trunc_array)
-            self.forward = Transform(self.forward, None, U, V, trunc_array)
-            self.backward = Transform(self.backward, None, trunc_array, V, U)
-        else:
-            self.scalar_product = Transform(self.scalar_product, None, U, V, V)
-            self.forward = Transform(self.forward, None, U, V, V)
-            self.backward = Transform(self.backward, None, V, V, U)
-
-        self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
-        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
-
     def get_orthogonal(self, **kwargs):
         d = dict(quad=self.quad,
                  domain=self.domain,
@@ -238,11 +207,6 @@ class Orthogonal(SpectralBase):
             output_array = np.zeros(x.shape)
         output_array = eval_legendre(i, x, out=output_array)
         return output_array
-
-    def evaluate_basis_all(self, x=None, argument=0):
-        if x is None:
-            x = self.mesh(False, False)
-        return self.vandermonde(x)
 
     def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
         if x is None:
@@ -779,6 +743,74 @@ class Phi4(CompositeBase):
     def short_name():
         return 'P4'
 
+class Phi6(CompositeBase):
+    r"""Function space for 12th order equation
+
+    The basis functions :math:`\phi_k` for :math:`k=0, 1, \ldots, N-9` are
+
+    .. math::
+
+        \phi_k &= \frac{(1-x^2)^6}{h^{(6)}_{k+6}} L^{(6)}_{k+6}, \\
+        h^{(6)}_{k+6} &= \int_{-1}^1 L^{(6)}_{k+6} L^{(6)}_{k+6} (1-x^2)^6 dx,
+
+    where :math:`L^{(6)}_k` is the 6'th derivative of :math:`L_k`.
+    The boundary basis for inhomogeneous boundary conditions is too
+    messy to print, but can be obtained using :func:`~shenfun.utilities.findbasis.get_bc_basis`.
+
+    Parameters
+    ----------
+    N : int, optional
+        Number of quadrature points
+    quad : str, optional
+        Type of quadrature
+        - LG - Legendre-Gauss
+        - GL - Legendre-Gauss-Lobatto
+    bc : 12-tuple of numbers
+    domain : 2-tuple of numbers, optional
+        The computational domain
+    dtype : data-type, optional
+        Type of input data in real physical space. Will be overloaded when
+        basis is part of a :class:`.TensorProductSpace`.
+    padding_factor : float, optional
+        Factor for padding backward transforms.
+    dealias_direct : bool, optional
+        Set upper 1/3 of coefficients to zero before backward transform
+    coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
+        Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
+
+    """
+    def __init__(self, N, quad="LG", bc=(0,)*12, domain=(-1, 1), dtype=float,
+                 padding_factor=1, dealias_direct=False, coordinates=None, **kw):
+        CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
+                               padding_factor=padding_factor, dealias_direct=dealias_direct,
+                               coordinates=coordinates)
+        #self._stencil = {
+        #   0: sp.simplify(matpow(b, 6, 0, 0, n+6, n) / h(0, 0, n, 0)),
+        #   2: sp.simplify(matpow(b, 6, 0, 0, n+6, n+2) / h(0, 0, n+2, 0)),
+        #   4: sp.simplify(matpow(b, 6, 0, 0, n+6, n+4) / h(0, 0, n+4, 0)),
+        #   6: sp.simplify(matpow(b, 6, 0, 0, n+6, n+6) / h(0, 0, n+6, 0)),
+        #   8: sp.simplify(matpow(b, 6, 0, 0, n+6, n+8) / h(0, 0, n+8, 0)),
+        #  10: sp.simplify(matpow(b, 6, 0, 0, n+6, n+10) / h(0, 0, n+10, 0)),
+        #  12: sp.simplify(matpow(b, 6, 0, 0, n+6, n+12) / h(0, 0, n+12, 0))}
+        # Below are the same but faster since already simplified
+        self._stencil = {
+            0: 1/(2*(2*n + 3)*(2*n + 5)*(2*n + 7)*(2*n + 9)*(2*n + 11)),
+            2: -3/((2*n + 3)*(2*n + 7)*(2*n + 9)*(2*n + 11)*(2*n + 15)),
+            4: 15/(2*(2*n + 5)*(2*n + 7)*(2*n + 11)*(2*n + 15)*(2*n + 17)),
+            6: -10*(2*n + 13)/((2*n + 7)*(2*n + 9)*(2*n + 11)*(2*n + 15)*(2*n + 17)*(2*n + 19)),
+            8: 15/(2*(2*n + 9)*(2*n + 11)*(2*n + 15)*(2*n + 19)*(2*n + 21)),
+            10: -3/((2*n + 11)*(2*n + 15)*(2*n + 17)*(2*n + 19)*(2*n + 23)),
+            12: 1/(2*(2*n + 15)*(2*n + 17)*(2*n + 19)*(2*n + 21)*(2*n + 23))
+        }
+
+    @staticmethod
+    def boundary_condition():
+        return '12th order'
+
+    @staticmethod
+    def short_name():
+        return 'P6'
+
 
 class BeamFixedFree(CompositeBase):
     r"""Function space for fixed free beams
@@ -1264,6 +1296,72 @@ class UpperDirichletNeumann(CompositeBase):
     def short_name():
         return 'UDN'
 
+class Compact3(CompositeBase):
+    r"""Function space for 6th order equations
+
+    The basis functions :math:`\phi_k` for :math:`k=0, 1, \ldots, N-7` are
+
+    .. math::
+        \phi_k &= \frac{h_k}{b^{(3)}_{k+3,k}}\frac{(1-x^2)^3}{h^{(3)}_{k+3}} L^{(3)}_{k+3}}, \, k=0, 1, \ldots, N-7, \\
+        h^{(3)}_{k+3} &= \frac{2\Gamma(k+7)}{\Gamma(k+1)(2k+7)} = \int_{-1}^1 L^{(3)}_{k+3} L^{(3)}_{k+3}(1-x^2)^3 dx,
+
+    where :math:`L^{(3)}_k` is the 3'rd derivative of :math:`L_k`.
+    The 6 boundary basis functions are computed using :func:`.jacobi.findbasis.get_bc_basis`,
+    but they are too messy to print here. We have
+
+    .. math::
+        u(x) &= \sum_{k=0}^{N-1} \hat{u}_k \phi_k(x), \\
+        u(-1) &= a, u'(-1)=b, u''(-1)=c, u(1)=d u'(1)=e, u''(1)=f.
+
+    The last 6 basis functions are for boundary conditions and only used if there
+    are nonzero boundary conditions.
+
+    Parameters
+    ----------
+    N : int
+        Number of quadrature points
+    quad : str, optional
+        Type of quadrature
+        - LG - Legendre-Gauss
+        - GL - Legendre-Gauss-Lobatto
+    bc : 6-tuple of numbers, optional
+        Boundary conditions.
+    domain : 2-tuple of numbers, optional
+        The computational domain
+    padding_factor : float, optional
+        Factor for padding backward transforms.
+    dealias_direct : bool, optional
+        Set upper 1/3 of coefficients to zero before backward transform
+    dtype : data-type, optional
+        Type of input data in real physical space. Will be overloaded when
+        basis is part of a :class:`.TensorProductSpace`.
+    coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
+        Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
+    """
+    def __init__(self, N, quad="LG", bc=(0,)*6, domain=(-1, 1), dtype=float,
+                 padding_factor=1, dealias_direct=False, coordinates=None, **kw):
+        CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
+                               padding_factor=padding_factor, dealias_direct=dealias_direct,
+                               coordinates=coordinates)
+        #self._stencil = {
+        #    0: 1,
+        #    2: sp.simplify(matpow(b, 3, 0, 0, n+3, n+2) / matpow(b, 3, 0, 0, n+3, n) * h(0, 0, n, 0) / h(0, 0, n+2, 0)),
+        #    4: sp.simplify(matpow(b, 3, 0, 0, n+3, n+4) / matpow(b, 3, 0, 0, n+3, n) * h(0, 0, n, 0) / h(0, 0, n+4, 0)),
+        #    6: sp.simplify(matpow(b, 3, 0, 0, n+3, n+6) / matpow(b, 3, 0, 0, n+3, n) * h(0, 0, n, 0) / h(0, 0, n+6, 0))}
+        self._stencil = {
+            0: 1,
+            2: -(6*n + 15)/(2*n + 9),
+            4: 3*(2*n + 3)/(2*n + 11),
+            6: -(2*n + 3)*(2*n + 5)/((2*n + 9)*(2*n + 11))
+        }
+
+    @staticmethod
+    def boundary_condition():
+        return '6th order'
+
+    @staticmethod
+    def short_name():
+        return 'C3'
 
 class Generic(CompositeBase):
     r"""Function space for space with any boundary conditions

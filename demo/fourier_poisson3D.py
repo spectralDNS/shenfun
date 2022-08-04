@@ -15,7 +15,7 @@ import os
 from sympy import symbols, cos, sin, lambdify
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, FunctionSpace, \
-    TensorProductSpace, Array, Function, dx, comm, la
+    TensorProductSpace, Array, Function, comm, la
 
 # Use sympy to compute a rhs, given an analytical solution
 x, y, z = symbols("x,y,z", real=True)
@@ -48,8 +48,10 @@ u_hat = sol(f_hat, u_hat, constraints=((0, 0),))
 uq = u_hat.backward()
 
 uj = Array(T, buffer=ue)
-print(np.sqrt(dx((uj-uq)**2)))
-assert np.allclose(uj, uq)
+error = np.sqrt(inner(1, (uj-uq)**2))
+assert abs(error) < 1e-6
+if comm.Get_rank() == 0:
+    print(f"fourier_poisson3D L2 error = {abs(error):2.6e}")
 
 # Test eval at point
 point = np.array([[0.1, 0.5], [0.5, 0.6], [0.1, 0.2]])
@@ -65,11 +67,9 @@ if 'pytest' not in os.environ:
     X = T.local_mesh(True) # With broadcasting=True the shape of X is local_shape, even though the number of datapoints are still the same as in 1D
     plt.contourf(X[0][:, :, 0], X[1][:, :, 0], uq[:, :, 0])
     plt.colorbar()
-
     plt.figure()
     plt.contourf(X[0][:, :, 0], X[1][:, :, 0], uj[:, :, 0])
     plt.colorbar()
-
     plt.figure()
     plt.contourf(X[0][:, :, 0], X[1][:, :, 0], uq[:, :, 0]-uj[:, :, 0])
     plt.colorbar()

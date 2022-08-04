@@ -15,7 +15,7 @@ import os
 from sympy import symbols, cos, sin, lambdify
 import numpy as np
 from shenfun import inner, grad, TestFunction, TrialFunction, Array, FunctionSpace, \
-    TensorProductSpace, Function, dx, comm, la
+    TensorProductSpace, Function, comm, la
 
 # Use sympy to compute a rhs, given an analytical solution
 x, y = symbols("x,y", real=True)
@@ -47,9 +47,11 @@ u_hat = sol(-f_hat, u_hat, constraints=((0, 0),))
 
 uq = Array(T)
 uq = T.backward(u_hat, uq)
-
 uj = Array(T, buffer=ue)
-assert np.allclose(uj, uq)
+error = np.sqrt(inner(1, (uj-uq)**2))
+assert abs(error) < 1e-6
+if comm.Get_rank() == 0:
+    print(f"fourier_poisson2D L2 error = {abs(error):2.6e}")
 
 # Test eval at point
 point = np.array([[0.1, 0.5], [0.5, 0.6]])
@@ -58,7 +60,6 @@ ul = lambdify((x, y), ue)
 assert np.allclose(p, ul(*point))
 p2 = u_hat.eval(point)
 assert np.allclose(p2, ul(*point))
-print(np.sqrt(dx((uj-uq)**2)))
 
 if 'pytest' not in os.environ:
     import matplotlib.pyplot as plt
@@ -66,11 +67,9 @@ if 'pytest' not in os.environ:
     X = T.local_mesh(True)
     plt.contourf(X[0], X[1], uq)
     plt.colorbar()
-
     plt.figure()
     plt.contourf(X[0], X[1], uj)
     plt.colorbar()
-
     plt.figure()
     plt.contourf(X[0], X[1], uq-uj)
     plt.colorbar()

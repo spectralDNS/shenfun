@@ -55,6 +55,7 @@ def test_regular_2D(backend, forward_output):
     read = reader(filename, T, backend=backend)
     read.read(u0, 'u', forward_output=forward_output, step=1)
     assert np.allclose(u0, u)
+    T.destroy()
     cleanup()
 
 
@@ -88,6 +89,7 @@ def test_mixed_2D(backend, forward_output, as_scalar):
         read = reader(filename, T, backend=backend)
         read.read(u0, 'uf0', step=1)
         assert np.allclose(u0, uf[0])
+    T.destroy()
     cleanup()
 
 @pytest.mark.parametrize('forward_output', (True, False))
@@ -117,6 +119,7 @@ def test_regular_3D(backend, forward_output):
     read = reader(filename, T, backend=backend)
     read.read(u0, 'u', forward_output=forward_output, step=1)
     assert np.allclose(u0, u)
+    T.destroy()
     cleanup()
 
 @pytest.mark.parametrize('forward_output', (True, False))
@@ -156,6 +159,7 @@ def test_mixed_3D(backend, forward_output, as_scalar):
         read = reader(filename, T, backend=backend)
         read.read(u0, 'u0', step=1)
         assert np.allclose(u0, uf[0])
+    T.destroy()
     cleanup()
 
 

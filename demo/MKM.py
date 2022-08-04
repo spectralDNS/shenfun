@@ -47,11 +47,6 @@ class MKM(KMM):
         U = u_.backward(U)
         u_ = U.forward(self.u_)
         self.g_[:] = 1j*self.K[1]*u_[2] - 1j*self.K[2]*u_[1]
-        self.convection()
-        for pde in self.pdes.values():
-            pde.initialize()
-        for pde in self.pdes1d.values():
-            pde.initialize()
         return 0, 0
 
     def init_plots(self):
@@ -105,21 +100,24 @@ class MKM(KMM):
             e1 = inner(1, ub[1]*ub[1])
             e2 = inner(1, ub[2]*ub[2])
             q = inner(1, ub[1])
+            dp = (self.flux[0]-inner(1, self.u_[1]))/self.TD.volume
+            #dp = self.pdes1d['v0'].N[1][0]
             divu = self.divu().backward()
             e3 = np.sqrt(inner(1, divu*divu))
             if comm.Get_rank() == 0:
-                print("Time %2.5f Energy %2.6e %2.6e %2.6e Flux %2.6e div %2.6e" %(t, e0, e1, e2, q, e3))
+                print("Time %2.5f Energy %2.6e %2.6e %2.6e Flux %2.12e %2.6e div %2.6e" %(t, e0, e1, e2, q, dp, e3))
 
     def update(self, t, tstep):
         self.plot(t, tstep)
         # Dynamically adjust flux
-        #if tstep % 1 == 0:
-        #    ub1 = self.u_[1].backward(self.ub[1])
-        #    beta = inner(1, ub1)
-        #    q = (self.flux[0] - beta)
-        #    V = self.TD.volume
-        #    if comm.Get_rank() == 0:
-        #        self.u_[1, 0, 0, 0] += q/V
+        if tstep % 1 == 0:
+            ub1 = self.u_[1].backward(self.ub[1])
+            beta = inner(1, ub1)
+            q = (self.flux[0] - beta)
+            V = self.TD.volume
+            if comm.Get_rank() == 0:
+                self.u_[1, :, 0, 0] *= (1+q/V/self.u_[1, 0, 0, 0])
+                #self.pdes1d['v0'].N[1][:] += q/V/beta/10
         self.print_energy_and_divergence(t, tstep)
 
 if __name__ == '__main__':
@@ -132,18 +130,18 @@ if __name__ == '__main__':
         'dt': 0.0005,
         'filename': f'MKM_{N[0]}_{N[1]}_{N[1]}',
         'conv': 1,
-        'modplot': 100,
+        'modplot': -100,
         'modsave': 1000,
-        'moderror': 10,
+        'moderror': 1,
         'family': 'C',
-        'checkpoint': 10000000,
+        'checkpoint': 100,
         'padding_factor': (1.5, 1.5, 1.5),
-        'timestepper': 'IMEXRK3'
+        'timestepper': 'IMEXRK222'
         }
     c = MKM(**d)
     t, tstep = c.initialize(from_checkpoint=False)
     t0 = time()
-    c.solve(t=t, tstep=tstep, end_time=2)
+    c.solve(t=t, tstep=tstep, end_time=40)
     print('Computing time %2.4f'%(time()-t0))
     if comm.Get_rank() == 0:
         generate_xdmf('_'.join((d['filename'], 'U'))+'.h5')

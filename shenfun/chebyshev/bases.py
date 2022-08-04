@@ -68,9 +68,10 @@ bases = ['Orthogonal',
          'ShenBiPolar',
          'DirichletNeumann',
          'NeumannDirichlet',
+         'Compact3',
          'Generic']
 bcbases = ['BCGeneric']
-testbases = ['Phi1', 'Phi2', 'Phi3', 'Phi4']
+testbases = ['Phi1', 'Phi2', 'Phi3', 'Phi4', 'Phi6']
 
 __all__ = bases + bcbases + testbases
 
@@ -250,11 +251,6 @@ class Orthogonal(SpectralBase):
         #output_array[:] = np.cos(i*np.arccos(x))
         output_array[:] = eval_chebyt(i, x)
         return output_array
-
-    #def evaluate_basis_all(self, x=None, argument=0):
-    #    if x is None:
-    #        x = self.mesh(False, False)
-    #    return self.vandermonde(x)
 
     def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
         if x is None:
@@ -1187,6 +1183,74 @@ class Phi4(CompositeBase):
     def short_name():
         return 'P4'
 
+class Phi6(CompositeBase):
+    r"""Function space for 12th order equation
+
+    The basis functions :math:`\phi_k` for :math:`k=0, 1, \ldots, N-13` are
+
+    .. math::
+
+        \phi_k &= \frac{(1-x^2)^6}{h^{(6)}_{k+6}} T^{(6)}_{k+6} \\
+        h^{(6)}_k &= \frac{\pi k (k+5)!}{2(k-6)!} = \int_{-1}^1 T^{(6)}_k T^{(6)}_k (1-x^2)^{5.5} dx,
+
+    where :math:`T^{(6)}_k` is the 6th derivative of :math:`T_k`. The boundary
+    basis for inhomogeneous boundary conditions is too messy to print, but can
+    be obtained using :func:`~shenfun.utilities.findbasis.get_bc_basis`.
+
+    Parameters
+    ----------
+    N : int, optional
+        Number of quadrature points
+    quad : str, optional
+        Type of quadrature
+
+        - GL - Chebyshev-Gauss-Lobatto
+        - GC - Chebyshev-Gauss
+    bc : 12-tuple of numbers
+    domain : 2-tuple of numbers, optional
+        The computational domain
+    dtype : data-type, optional
+        Type of input data in real physical space. Will be overloaded when
+        basis is part of a :class:`.TensorProductSpace`.
+    padding_factor : float, optional
+        Factor for padding backward transforms.
+    dealias_direct : bool, optional
+        Set upper 1/3 of coefficients to zero before backward transform
+    coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
+        Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
+
+    """
+    def __init__(self, N, quad="GC", bc=(0,)*12, domain=(-1, 1), dtype=float,
+                 padding_factor=1, dealias_direct=False, coordinates=None, **kw):
+        CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
+                               padding_factor=padding_factor, dealias_direct=dealias_direct,
+                               coordinates=coordinates)
+        #self._stencil = {
+        #    0: sp.simplify(matpow(b, 6, -half, -half, n+6, n, cn) / h(-half, -half, n, 0, cn)),
+        #    2: sp.simplify(matpow(b, 6, -half, -half, n+6, n+2, cn) / h(-half, -half, n+2, 0, cn)),
+        #    4: sp.simplify(matpow(b, 6, -half, -half, n+6, n+4, cn) / h(-half, -half, n+4, 0, cn)),
+        #    6: sp.simplify(matpow(b, 6, -half, -half, n+6, n+6, cn) / h(-half, -half, n+6, 0, cn)),
+        #    8: sp.simplify(matpow(b, 6, -half, -half, n+6, n+8, cn) / h(-half, -half, n+8, 0, cn)),
+        #   10: sp.simplify(matpow(b, 6, -half, -half, n+6, n+10, cn) / h(-half, -half, n+10, 0, cn)),
+        #   12: sp.simplify(matpow(b, 6, -half, -half, n+6, n+12, cn) / h(-half, -half, n+12, 0, cn))}
+        # Below is the same but faster since already simplified
+        self._stencil = {
+            0:  1/(32*sp.pi*(n + 1)*(n + 2)*(n + 3)*(n + 4)*(n + 5)*(n + 6)),
+            2: -3/(16*sp.pi*(n + 1)*(n + 3)*(n + 4)*(n + 5)*(n + 6)*(n + 7)),
+            4: 15/(32*sp.pi*(n + 2)*(n + 3)*(n + 5)*(n + 6)*(n + 7)*(n + 8)),
+            6: -5/(8*sp.pi*(n + 3)*(n + 4)*(n + 5)*(n + 7)*(n + 8)*(n + 9)),
+            8: 15/(32*sp.pi*(n + 4)*(n + 5)*(n + 6)*(n + 7)*(n + 9)*(n + 10)),
+           10: -3/(16*sp.pi*(n + 5)*(n + 6)*(n + 7)*(n + 8)*(n + 9)*(n + 11)),
+           12: 1/(32*sp.pi*(n + 6)*(n + 7)*(n + 8)*(n + 9)*(n + 10)*(n + 11))
+        }
+
+    @staticmethod
+    def boundary_condition():
+        return '12th order'
+
+    @staticmethod
+    def short_name():
+        return 'P6'
 
 class UpperDirichlet(CompositeBase):
     r"""Function space with single Dirichlet on upper edge
@@ -1645,6 +1709,80 @@ class LowerDirichletNeumann(CompositeBase):
     @staticmethod
     def short_name():
         return 'LS'
+
+class Compact3(CompositeBase):
+    r"""Function space for 6'th order equation
+
+    The basis functions :math:`\phi_k` for :math:`k=0, 1, \ldots, N-7` are
+
+    .. math::
+
+        \phi_k &= \frac{h_k}{b^{(3)}_{k+3,k}}\frac{(1-x^2)^3}{h^{(3)}_{k+3}} T^{(3)}_{k+3} \\
+        h^{(3)}_{k+3} &= \frac{\pi (k+3) \Gamma (k+6)}{2k!} = \int_{-1}^1 T^{(3)}_k T^{(3)}_k (1-x^2)^{2.5} dx.
+
+    where :math:`T^{(3)}_k` is the 3rd derivative of :math:`T_k`.
+    This is :class:`.Phi3` scaled such that the main diagonal of the stencil
+    matrix is unity.
+
+    The boundary basis for inhomogeneous boundary conditions is too messy to
+    print, but can be obtained using :func:`~shenfun.utilities.findbasis.get_bc_basis`.
+    We have
+
+    .. math::
+        u(x) &= \sum_{k=0}^{N-1} \hat{u}_k \phi_k(x), \\
+        u(-1) &= a, u'(-1)=b, u''(-1)=c, u(1)=d u'(1)=e, u''(1)=f.
+
+    The last 6 basis functions are for boundary conditions and only used if there
+    are nonzero boundary conditions.
+
+    Parameters
+    ----------
+    N : int, optional
+        Number of quadrature points
+    quad : str, optional
+        Type of quadrature
+
+        - GL - Chebyshev-Gauss-Lobatto
+        - GC - Chebyshev-Gauss
+    bc : 6-tuple of numbers
+    domain : 2-tuple of numbers, optional
+        The computational domain
+    dtype : data-type, optional
+        Type of input data in real physical space. Will be overloaded when
+        basis is part of a :class:`.TensorProductSpace`.
+    padding_factor : float, optional
+        Factor for padding backward transforms.
+    dealias_direct : bool, optional
+        Set upper 1/3 of coefficients to zero before backward transform
+    coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
+        Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
+
+    """
+    def __init__(self, N, quad="GC", bc=(0,)*6, domain=(-1, 1), dtype=float,
+                 padding_factor=1, dealias_direct=False, coordinates=None, **kw):
+        CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
+                               padding_factor=padding_factor, dealias_direct=dealias_direct,
+                               coordinates=coordinates)
+        #self._stencil = {
+        #    0: 1,
+        #    2: sp.simplify(matpow(b, 3, -half, -half, n+3, n+2, cn) / matpow(b, 3, -half, -half, n+3, n, cn) * h(-half, -half, n, 0, cn) / h(-half, -half, n+2, 0, cn)),
+        #    4: sp.simplify(matpow(b, 3, -half, -half, n+3, n+4, cn) / matpow(b, 3, -half, -half, n+3, n, cn) * h(-half, -half, n, 0, cn) / h(-half, -half, n+4, 0, cn)),
+        #    6: sp.simplify(matpow(b, 3, -half, -half, n+3, n+6, cn) / matpow(b, 3, -half, -half, n+3, n, cn) * h(-half, -half, n, 0, cn) / h(-half, -half, n+6, 0, cn))}
+        # Below is the same but faster since already simplified
+        self._stencil = {
+            0: 1,
+            2: -(3*n + 6)/(n + 4),
+            4: 3*(n + 1)/(n + 5),
+            6: -(n + 1)*(n + 2)/((n + 4)*(n + 5))
+        }
+
+    @staticmethod
+    def boundary_condition():
+        return '6th order'
+
+    @staticmethod
+    def short_name():
+        return 'C3'
 
 
 class Generic(CompositeBase):

@@ -1841,7 +1841,7 @@ class BoundaryValues:
         self.axis = 0
         self.bc_time = 0
 
-    def update(self, time):
+    def update(self, time=None):
         from shenfun.forms.project import Project
         tt = sp.symbols('t', real=True)
         bcs = self.bc.orderedvals()
@@ -1851,7 +1851,7 @@ class BoundaryValues:
                 if isinstance(bci, Project):
                     bci()
                     update_tensor = True
-                elif isinstance(bci, sp.Expr):
+                elif isinstance(bci, sp.Expr) and time is not None:
                     if tt in bci.free_symbols:
                         self.bc_time = time
                         bcs[i] = bci.subs(tt, time)

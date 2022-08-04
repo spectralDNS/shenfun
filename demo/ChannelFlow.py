@@ -214,7 +214,7 @@ class KMM:
             H[2] = self.TDp.forward(up[0]*dwdxp+up[1]*dwdyp+up[2]*dwdzp, H[2])
         elif self.conv == 1:
             self.curly() # Compute y-component of curl. Stored in self.curl[1]
-            self.curlz() # Compute y-component of curl. Stored in self.curl[2]
+            self.curlz() # Compute z-component of curl. Stored in self.curl[2]
             curl = self.curl.backward(padding_factor=self.padding_factor).v
             cb = self.work[(up, 1, True)]
             cb = cross(cb, curl, up)
@@ -253,7 +253,8 @@ class KMM:
         if self.solP is None:
             # The boundary condition of p is dp/dn=nu*d^2u/dn^2
             self.d2udx2 = Project(self.nu*Dx(self.u_[0], 0, 2), self.TC)
-            N0 = self.N0 = FunctionSpace(self.N[0], self.B0.family(), bc={'left': {'N': self.d2udx2()}, 'right': {'N': self.d2udx2()}})
+            d2udx2 = self.d2udx2.output_array
+            N0 = self.N0 = FunctionSpace(self.N[0], self.B0.family(), bc={'left': {'N': d2udx2}, 'right': {'N': d2udx2}})
             TN = self.TN = TensorProductSpace(comm, (N0, self.F1, self.F2), collapse_fourier=False, slab=True, modify_spaces_inplace=True)
             sol = chebyshev.la.Helmholtz if self.B0.family() == 'chebyshev' else la.SolverGeneric1ND
             self.divH = Inner(TestFunction(TN), -div(self.H_))
@@ -261,7 +262,7 @@ class KMM:
             self.p_ = Function(TN)
 
         self.d2udx2()
-        self.N0.bc.set_tensor_bcs(self.N0, self.TN)
+        self.N0.bc.update()
         p_ = self.solP(self.divH(), self.p_, constraints=((0, 0, 0),))
         return p_
 
@@ -283,11 +284,6 @@ class KMM:
         tstep = self.checkpoint.f.attrs['tstep']
         t = self.checkpoint.f.attrs['t']
         self.checkpoint.close()
-        self.convection()
-        for pde in self.pdes.values():
-            pde.initialize()
-        for pde in self.pdes1d.values():
-            pde.initialize()
         return t, tstep
 
     def initialize(self, from_checkpoint=False):

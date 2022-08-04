@@ -8,77 +8,73 @@ Use Fourier basis for the periodic direction and Shen's Biharmonic
 basis for the non-periodic direction.
 
 """
-import sys
 import os
 import sympy as sp
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Array, \
     Function, TensorProductSpace, FunctionSpace, comm, la, chebyshev
 
-# Collect basis and solver from either Chebyshev or Legendre submodules
-family = sys.argv[-1].lower() if len(sys.argv) == 2 else 'chebyshev'
-BiharmonicSolver = chebyshev.la.Biharmonic if family == 'chebyshev' else la.SolverGeneric1ND
-
 # Use sympy to compute a rhs, given an analytical solution
 x, y = sp.symbols("x,y", real=True)
 ue = x**4*sp.sin(2*y)
 fe = ue.diff(x, 4) + ue.diff(y, 4) + 2*ue.diff(x, 2, y, 2)
 
-# Size of discretization
-N = (30, 30)
+def main(N, family):
+    bcs = {'left': {'D': ue.subs(x, -1), 'N': ue.diff(x, 1).subs(x, -1)},
+           'right': {'D': ue.subs(x, 1), 'N': ue.diff(x, 1).subs(x, 1)}}
+    SD = FunctionSpace(N, family=family, bc=bcs)
+    K1 = FunctionSpace(N, family='F')
+    T = TensorProductSpace(comm, (SD, K1), axes=(0, 1))
 
-if family == 'chebyshev':
-    assert N[0] % 2 == 0, "Biharmonic solver only implemented for even numbers"
+    u = TrialFunction(T)
+    v = TestFunction(T)
 
-bcs = {'left': {'D': ue.subs(x, -1), 'N': ue.diff(x, 1).subs(x, -1)},
-       'right': {'D': ue.subs(x, 1), 'N': ue.diff(x, 1).subs(x, 1)}}
-SD = FunctionSpace(N[0], family=family, bc=bcs)
-K1 = FunctionSpace(N[1], family='F')
-T = TensorProductSpace(comm, (SD, K1), axes=(0, 1))
+    # Get f on quad points
+    fj = Array(T, buffer=fe)
 
-u = TrialFunction(T)
-v = TestFunction(T)
+    # Compute right hand side of biharmonic equation
+    f_hat = inner(v, fj)
 
-# Get f on quad points
-fj = Array(T, buffer=fe)
+    # Get left hand side of biharmonic equation
+    matrices = inner(v, div(grad(div(grad(u)))))
 
-# Compute right hand side of biharmonic equation
-f_hat = inner(v, fj)
+    u_hat = Function(T) # Solution spectral space
 
-# Get left hand side of biharmonic equation
-matrices = inner(v, div(grad(div(grad(u)))))
+    # Create linear algebra solver
+    BiharmonicSolver = chebyshev.la.Biharmonic if SD.family() == 'chebyshev' and N % 2 == 0 else la.SolverGeneric1ND
+    H = BiharmonicSolver(matrices)
 
-u_hat = Function(T) # Solution spectral space
+    # Solve and transform to real space
+    u_hat = H(f_hat, u_hat)
 
-# Create linear algebra solver
-H = BiharmonicSolver(matrices)
+    uq = u_hat.backward()
 
-# Solve and transform to real space
-u_hat = H(f_hat, u_hat)       # Solve
+    # Compare with analytical solution
+    uj = Array(T, buffer=ue)
+    error = np.sqrt(inner(1, (uj-uq)**2))
+    if comm.Get_rank() == 0:
+        print(f"biharmonic2D {SD.family():14s} L2 error = {error:2.6e}")
 
-#H = la.SolverGeneric1ND(matrices)
-#u_hat = H(f_hat, u_hat)
+    if 'pytest' not in os.environ:
+        import matplotlib.pyplot as plt
+        plt.figure()
+        X = T.local_mesh(True) # With broadcasting=True the shape of X is local_shape, even though the number of datapoints are still the same as in 1D
+        plt.contourf(X[0], X[1], uq)
+        plt.colorbar()
 
-uq = u_hat.backward()
+        plt.figure()
+        plt.contourf(X[0], X[1], uj)
+        plt.colorbar()
 
-# Compare with analytical solution
-uj = Array(T, buffer=ue)
-print(abs(uj-uq).max())
-assert np.allclose(uj, uq, 1e-8)
+        plt.figure()
+        plt.contourf(X[0], X[1], uq-uj)
+        plt.colorbar()
+        plt.title('Error')
+        plt.show()
 
-if 'pytest' not in os.environ:
-    import matplotlib.pyplot as plt
-    plt.figure()
-    X = T.local_mesh(True) # With broadcasting=True the shape of X is local_shape, even though the number of datapoints are still the same as in 1D
-    plt.contourf(X[0], X[1], uq)
-    plt.colorbar()
+    else:
+        assert error < 1e-6
 
-    plt.figure()
-    plt.contourf(X[0], X[1], uj)
-    plt.colorbar()
-
-    plt.figure()
-    plt.contourf(X[0], X[1], uq-uj)
-    plt.colorbar()
-    plt.title('Error')
-    #plt.show()
+if __name__ == '__main__':
+    for family in ('legendre', 'chebyshev', 'chebyshevu', 'ultraspherical', 'jacobi'):
+        main(24, family)

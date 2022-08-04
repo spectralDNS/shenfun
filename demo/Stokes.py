@@ -39,73 +39,78 @@ fx = -uex.diff(x, 2) - uex.diff(y, 2) - pe.diff(x, 1)
 fy = -uey.diff(x, 2) - uey.diff(y, 2) - pe.diff(y, 1)
 h = uex.diff(x, 1) + uey.diff(y, 1)
 
-N = (20, 20)
-family = sys.argv[-1] if len(sys.argv) == 2 else 'Legendre'
-K0 = FunctionSpace(N[0], 'Fourier', dtype='d', domain=(0, 2*np.pi))
-SD = FunctionSpace(N[1], family, bc=(0, 0))
-ST = FunctionSpace(N[1], family)
+def main(N, family):
+    K0 = FunctionSpace(N, 'Fourier', dtype='d', domain=(0, 2*np.pi))
+    SD = FunctionSpace(N, family, bc=(0, 0))
+    ST = FunctionSpace(N, family)
 
-TD = TensorProductSpace(comm, (K0, SD), axes=(1, 0))
-Q = TensorProductSpace(comm, (K0, ST), axes=(1, 0))
-V = VectorSpace(TD)
-VQ = CompositeSpace([V, Q])
+    TD = TensorProductSpace(comm, (K0, SD), axes=(1, 0))
+    Q = TensorProductSpace(comm, (K0, ST), axes=(1, 0))
+    V = VectorSpace(TD)
+    VQ = CompositeSpace([V, Q])
 
-up = TrialFunction(VQ)
-vq = TestFunction(VQ)
+    up = TrialFunction(VQ)
+    vq = TestFunction(VQ)
 
-u, p = up
-v, q = vq
+    u, p = up
+    v, q = vq
 
-# Assemble blocks of complete matrix
-if family.lower() == 'chebyshev':
-    A00 = inner(v, -div(grad(u)))
-    A01 = inner(v, -grad(p))
+    # Assemble blocks of complete matrix
+    if family.lower() == 'legendre':
+        A00 = inner(grad(v), grad(u))
+        A01 = inner(div(v), p)
+    else:
+        A00 = inner(v, -div(grad(u)))
+        A01 = inner(v, -grad(p))
 
-else:
-    A00 = inner(grad(v), grad(u))
-    A01 = inner(div(v), p)
-A10 = inner(q, div(u))
+    A10 = inner(q, div(u))
 
-# Create block matrix
-sol = la.BlockMatrixSolver(A00+A01+A10)
+    # Create block matrix
+    sol = la.BlockMatrixSolver(A00+A01+A10)
 
-# Get f and h on quad points
-fh = Array(VQ, buffer=(fx, fy, h))
-f_, h_ = fh
+    # Get f and h on quad points
+    fh = Array(VQ, buffer=(fx, fy, h))
+    f_, h_ = fh
 
-fh_hat = Function(VQ)
-f_hat, h_hat = fh_hat
-f_hat = inner(v, f_, output_array=f_hat)
-h_hat = inner(q, h_, output_array=h_hat)
-fh_hat.mask_nyquist()
+    fh_hat = Function(VQ)
+    f_hat, h_hat = fh_hat
+    f_hat = inner(v, f_, output_array=f_hat)
+    h_hat = inner(q, h_, output_array=h_hat)
+    fh_hat.mask_nyquist()
 
-# Solve problem using integral constraint on pressure
-up_hat = sol(fh_hat, constraints=((2, 0, 0), (2, N[1]-1, 0)))
-up_ = up_hat.backward()
-u_, p_ = up_
+    # Solve problem using integral constraint on pressure
+    up_hat = sol(fh_hat, constraints=((2, 0, 0), (2, N-1, 0)))
+    up_ = up_hat.backward()
+    u_, p_ = up_
 
-# Exact solution
-ux, uy = Array(V, buffer=(uex, uey))
-pe = Array(Q, buffer=pe)
+    # Exact solution
+    ux, uy = Array(V, buffer=(uex, uey))
+    pj = Array(Q, buffer=pe)
 
-error = [comm.reduce(np.linalg.norm(ux-u_[0])),
-         comm.reduce(np.linalg.norm(uy-u_[1])),
-         comm.reduce(np.linalg.norm(pe-p_))]
+    error = [np.sqrt(inner(1, (ux-u_[0])**2)),
+             np.sqrt(inner(1, (uy-u_[1])**2)),
+             np.sqrt(inner(1, (pj-p_)**2))]
 
-if comm.Get_rank() == 0:
-    print('Error    u          v          p')
-    print('     %2.4e %2.4e %2.4e' %(error[0], error[1], error[2]))
-    assert np.all(abs(np.array(error)) < 1e-8), error
+    if comm.Get_rank() == 0:
+        print(SD.family())
+        print('    L2 error      u          v          p')
+        print('         %2.4e %2.4e %2.4e' %(error[0], error[1], error[2]))
 
-if 'pytest' not in os.environ:
-    import matplotlib.pyplot as plt
-    plt.figure()
-    X = TD.local_mesh(True)
-    plt.contourf(X[0], X[1], p_, 100)
-    plt.figure()
-    plt.quiver(X[0], X[1], u_[0], u_[1])
-    plt.figure()
-    plt.spy(sol.mat.diags(0, 'csr')) # The matrix for Fourier given wavenumber
-    plt.figure()
-    plt.contourf(X[0], X[1], u_[0], 100)
-    #plt.show()
+    if 'pytest' not in os.environ:
+        import matplotlib.pyplot as plt
+        plt.figure()
+        X = TD.local_mesh(True)
+        plt.contourf(X[0], X[1], p_, 100)
+        plt.figure()
+        plt.quiver(X[0], X[1], u_[0], u_[1])
+        plt.figure()
+        plt.spy(sol.mat.diags(0, 'csr')) # The matrix for Fourier given wavenumber
+        plt.figure()
+        plt.contourf(X[0], X[1], u_[0], 100)
+        plt.show()
+    else:
+        assert np.all(abs(np.array(error)) < 1e-8), error
+
+if __name__ == '__main__':
+    for family in 'CULQJ':
+        main(24, family)
