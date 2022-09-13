@@ -137,10 +137,6 @@ def test_mat(key, mat, quad):
     testfunction = (t0(N, quad=quad), test[1])
     trialfunction = (t1(N, quad=quad), trial[1])
     mat = mat(testfunction, trialfunction, measure=measure)
-    #try:
-    #
-    #except AssertionError: # In case something is not implemented
-    #    return
     fixed_resolution = None if sp.degree(sp.sympify(measure)) < 2 else int(3*N/2)
     shenfun.check_sanity(mat, testfunction, trialfunction, measure, fixed_resolution=fixed_resolution)
     if test[0].family() == 'Legendre' and test[0].boundary_condition() == 'Dirichlet':
@@ -794,7 +790,7 @@ if __name__ == '__main__':
 
     #test_exact(ctrialBasis[0], ctrialBasis[0])
     #test_mat(((ctestBasis[1], 0), (ctestBasis[1], 2), 1-x**2), cmatrices.ASDSDmatW, 'GC')
-    #test_mat(*cmats_and_quads[12])
+    test_mat(((cbases.Orthogonal, 0), (lbases.Orthogonal, 0)), cmatrices.BTLmat, 'GL')
     #test_cmatvec(ctrialBasis[1], ctrialBasis[1], 'GC', 0)
     #test_lmatvec(lBasis[0], lBasis[0], 'LG', 2, 0)
     #test_lagmatvec(lagBasis[0], lagBasis[1], 'LG', 'python', 3, 2, 0)
@@ -810,4 +806,4 @@ if __name__ == '__main__':
     #test_helmholtz3D('chebyshev', 0)
     #test_biharmonic3D('chebyshev', 0)
     #test_biharmonic2D('jacobi', 0)
-    test_stencil(cbases.Phi6, cbases.Compact3)
+    #test_stencil(cbases.Phi6, cbases.Compact3)

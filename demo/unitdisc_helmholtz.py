@@ -15,8 +15,6 @@ from shenfun import *
 from shenfun.la import SolverGeneric1ND
 import sympy as sp
 
-by_parts = True
-
 # Define polar coordinates using angle along first axis and radius second
 theta, r = psi = sp.symbols('x,y', real=True, positive=True)
 rv = (r*sp.cos(theta), r*sp.sin(theta))
@@ -58,20 +56,10 @@ if comm.Get_rank() == 0:
     f0_hat = T0.scalar_product(gt, f0_hat)
 
 # Assemble matrices.
-if by_parts:
-    mats = inner(grad(v), grad(u))
-    if alpha > 0:
-        mats += [inner(v, alpha*u)]
-    # case m=0
-    if comm.Get_rank() == 0:
-        mats0 = inner(grad(v0), grad(u0))
-        if alpha > 0:
-            mats0 += [inner(v0, alpha*u0)]
-else:
-    mats = inner(v, -div(grad(u))+alpha*u)
-    # case m=0
-    if comm.Get_rank() == 0:
-        mats0 = inner(v0, -div(grad(u0))+alpha*u0)
+mats = inner(v, -div(grad(u))+alpha*u)
+# case m=0
+if comm.Get_rank() == 0:
+    mats0 = inner(v0, -div(grad(u0))+alpha*u0)
 
 # Solve
 # case m > 0
@@ -90,8 +78,9 @@ comm.Bcast(u0_hat, root=0)
 sl = T.local_slice(False)
 uj = u_hat.backward() + u0_hat.backward()[:, sl[1]]
 uq = Array(T, buffer=ue)
-print('Error =', np.linalg.norm(uj-uq))
-assert np.linalg.norm(uj-uq) < 1e-8
+err = np.sqrt(inner(1, (uj-uq)**2))
+print('Error =', err)
+assert err < 1e-8
 
 # Find and plot gradient of u. For this we need a space without
 # boundary conditions, and a vector space
@@ -113,7 +102,7 @@ du = dv.backward()
 gradue = Array(V, buffer=grad(u).tosympy(basis=ue, psi=psi))
 # Compute error sqrt(inner(|grad(u)-grad(ue)|**2))
 gij = T.coors.get_covariant_metric_tensor()
-ui, vi = TT.local_mesh(True, uniform=True)
+ui, vi = TT.local_mesh(True, kind='uniform')
 # Evaluate metric on computational mesh
 g = np.array(sp.lambdify(psi, gij)(ui, vi), dtype=object)
 errorg = inner(1, (du[0]-gradue[0])**2*g[0, 0]+ (du[1]-gradue[1])**2*g[1, 1])

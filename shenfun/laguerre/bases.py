@@ -1,13 +1,10 @@
-import functools
 import sympy as sp
 import numpy as np
 from numpy.polynomial import laguerre as lag
 from scipy.special import eval_laguerre
-from mpi4py_fft import fftw
 from shenfun.matrixbase import SparseMatrix
 from shenfun.jacobi.recursions import n
-from shenfun.spectralbase import SpectralBase, Transform, islicedict, \
-    slicedict, getCompositeBase, BoundaryConditions
+from shenfun.spectralbase import SpectralBase, getCompositeBase, getBCGeneric, BoundaryConditions
 
 #pylint: disable=method-hidden,no-else-return,not-callable,abstract-method,no-member,cyclic-import
 
@@ -180,7 +177,7 @@ class Orthogonal(SpectralBase):
         output_array[:] = lag.lagval(x, u)*np.exp(-x/2)
         return output_array
 
-    def sympy_basis(self, i=0, x=sp.symbols('x')):
+    def orthogonal_basis_function(self, i=0, x=sp.symbols('x')):
         return sp.laguerre(i, x)*sp.exp(-x/2)
 
     def L2_norm_sq(self, i):
@@ -209,13 +206,14 @@ class Orthogonal(SpectralBase):
     def short_name():
         return 'La'
 
-    def get_bc_basis(self):
-        if self._bc_basis:
-            return self._bc_basis
-        self._bc_basis = BCGeneric(self.N, bc=self.bcs)
-        return self._bc_basis
+    def get_bc_space(self):
+        if self._bc_space:
+            return self._bc_space
+        self._bc_space = BCGeneric(self.N, bc=self.bcs)
+        return self._bc_space
 
 CompositeBase = getCompositeBase(Orthogonal)
+BCGeneric = getBCGeneric(CompositeBase)
 
 class CompactDirichlet(CompositeBase):
     r"""Laguerre function space for Dirichlet boundary conditions
@@ -384,112 +382,3 @@ class Generic(CompositeBase):
     @staticmethod
     def short_name():
         return 'GL'
-
-
-class BCBase(CompositeBase):
-    """Function space for inhomogeneous boundary conditions
-
-    Parameters
-    ----------
-    N : int
-        Number of quadrature points in the homogeneous space.
-    bc : dict
-        The boundary conditions in dictionary form, see
-        :class:`.BoundaryConditions`.
-
-    """
-
-    def __init__(self, N, bc=None, **kw):
-        CompositeBase.__init__(self, N, bc=bc)
-        self._stencil_matrix = None
-
-    def stencil_matrix(self, N=None):
-        raise NotImplementedError
-
-    @staticmethod
-    def short_name():
-        raise NotImplementedError
-
-    @staticmethod
-    def boundary_condition():
-        return 'Apply'
-
-    @property
-    def is_boundary_basis(self):
-        return True
-
-    def shape(self, forward_output=True):
-        if forward_output:
-            return self.stencil_matrix().shape[0]
-        else:
-            return self.N
-
-    @property
-    def dim_ortho(self):
-        return self.stencil_matrix().shape[1]
-
-    def slice(self):
-        return slice(self.N-self.shape(), self.N)
-
-    def vandermonde(self, x):
-        V = lag.lagvander(x, self.dim_ortho-1)
-        V *= np.exp(-x/2)[:, None]
-        return V
-
-    def _composite(self, V, argument=1):
-        N = self.shape()
-        P = np.zeros(V[:, :N].shape)
-        P[:] = np.tensordot(V[:, :self.dim_ortho], self.stencil_matrix(), (1, 1))
-        return P
-
-    def sympy_basis(self, i=0, x=xp):
-        M = self.stencil_matrix()
-        return np.sum(M[i]*np.array([sp.laguerre(j, x)*sp.exp(-x/2) for j in range(self.dim_ortho)]))
-
-    def evaluate_basis(self, x, i=0, output_array=None):
-        x = np.atleast_1d(x)
-        if output_array is None:
-            output_array = np.zeros(x.shape)
-        V = self.vandermonde(x)
-        output_array[:] = np.dot(V, self.stencil_matrix()[i])
-        return output_array
-
-    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
-        output_array = SpectralBase.evaluate_basis_derivative(self, x=x, i=i, k=k, output_array=output_array)
-        return output_array
-
-    def to_ortho(self, input_array, output_array=None):
-        from shenfun import Function
-        T = self.get_orthogonal()
-        if output_array is None:
-            output_array = Function(T)
-        else:
-            output_array.fill(0)
-        M = self.stencil_matrix().T
-        for k, row in enumerate(M):
-            output_array[k] = np.dot(row, input_array)
-        return output_array
-
-    def eval(self, x, u, output_array=None):
-        v = self.to_ortho(u)
-        output_array = v.eval(x, output_array=output_array)
-        return output_array
-
-    def get_orthogonal(self, **kwargs):
-        d = dict(quad=self.quad,
-                 domain=self.domain,
-                 dtype=self.dtype)
-        d.update(kwargs)
-        return Orthogonal(self.dim_ortho, **d)
-
-class BCGeneric(BCBase):
-
-    @staticmethod
-    def short_name():
-        return 'BG'
-
-    def stencil_matrix(self, N=None):
-        if self._stencil_matrix is None:
-            from shenfun.utilities import get_bc_basis
-            self._stencil_matrix = np.array(get_bc_basis(self.bcs, 'laguerre'))
-        return self._stencil_matrix

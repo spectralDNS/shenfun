@@ -93,7 +93,7 @@ def main(N, family):
         plt.figure()
         plt.quiver(X[1], X[0], g_[1], g_[0])
         plt.figure()
-        plt.spy(M.diags((0, 0)).toarray()) # The matrix for given Fourier wavenumber
+        plt.spy(M.diags(0, format='csr').toarray()) # The matrix for given Fourier wavenumber
         plt.show()
     else:
         if comm.Get_rank() == 0:

@@ -387,7 +387,7 @@ The timesteppers are provided with :math:`\psi, \mathcal{L}` and :math:`\mathcal
 linear algebra solvers, and solvers are then further assembled under the hood.
 
 All the timesteppers split one time step into one or several stages.
-The classes $cls{('IMEXRK222')}, $cls{('IMEXRK3')} and $cls{('IMEXRK443')}
+The classes :class:`.IMEXRK222`, :class:`.IMEXRK3` and :class:`.IMEXRK443`
 have 2, 3 and 4 steps, respectively, and the cost is proportional.
 
 Implementation

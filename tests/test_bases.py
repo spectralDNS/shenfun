@@ -3,73 +3,16 @@ import numpy as np
 import sympy as sp
 from shenfun import chebyshev, chebyshevu, legendre, fourier, hermite, \
     laguerre, jacobi, ultraspherical
+import importlib
 
-bases = (
-    chebyshev.Orthogonal,
-    chebyshev.ShenDirichlet,
-    chebyshev.Heinrichs,
-    chebyshev.Phi1,
-    chebyshev.Phi2,
-    chebyshev.Phi3,
-    chebyshev.Phi4,
-    chebyshev.ShenNeumann,
-    chebyshev.MikNeumann,
-    chebyshev.CombinedShenNeumann,
-    chebyshev.ShenBiharmonic,
-    chebyshev.ShenBiPolar,
-    chebyshev.UpperDirichlet,
-    chebyshev.DirichletNeumann,
-    chebyshev.NeumannDirichlet,
-    chebyshev.UpperDirichletNeumann,
-    legendre.Orthogonal,
-    legendre.ShenDirichlet,
-    legendre.ShenNeumann,
-    legendre.ShenBiharmonic,
-    legendre.Phi1,
-    legendre.Phi2,
-    legendre.Phi3,
-    legendre.Phi4,
-    legendre.UpperDirichlet,
-    legendre.ShenBiPolar,
-    legendre.NeumannDirichlet,
-    legendre.DirichletNeumann,
-    legendre.LowerDirichlet,
-    legendre.UpperDirichletNeumann,
-    chebyshevu.Orthogonal,
-    chebyshevu.CompactDirichlet,
-    chebyshevu.CompactNeumann,
-    chebyshevu.Phi1,
-    chebyshevu.Phi2,
-    chebyshevu.Phi3,
-    chebyshevu.Phi4,
-    ultraspherical.Orthogonal,
-    ultraspherical.CompactDirichlet,
-    ultraspherical.CompactNeumann,
-    ultraspherical.Phi1,
-    ultraspherical.Phi2,
-    ultraspherical.Phi3,
-    ultraspherical.Phi4,
-    fourier.R2C,
-    fourier.C2C,
-    hermite.Orthogonal,
-    laguerre.Orthogonal,
-    laguerre.CompactDirichlet,
-    laguerre.CompactNeumann,
-    jacobi.Orthogonal,
-    jacobi.CompactDirichlet,
-    jacobi.CompactNeumann,
-    jacobi.Phi1,
-    jacobi.Phi2,
-    jacobi.Phi3,
-    jacobi.Phi4
-)
-
-bcbases = (
-    chebyshev.BCGeneric,
-    legendre.BCGeneric,
-    chebyshevu.BCGeneric,
-    ultraspherical.BCGeneric
-)
+trialbases = []
+testbases = []
+bcbases = []
+for family in ('chebyshev', 'chebyshevu', 'legendre', 'ultraspherical', 'jacobi', 'laguerre', 'hermite', 'fourier'):
+    base = importlib.import_module('.'.join(('shenfun', family.lower())))
+    trialbases += [base.bases.__dict__.get(b) for b in base.bases.bases if b != 'Generic']
+    testbases += [base.bases.__dict__.get(b) for b in base.bases.testbases if b != 'Phi6']
+    bcbases += [base.bases.__dict__.get(b) for b in base.bases.bcbases]
 
 nonBC = (
     'Apply',
@@ -77,38 +20,46 @@ nonBC = (
     'Biharmonic*2'
 )
 
-@pytest.mark.parametrize('base', bases+bcbases)
+@pytest.mark.parametrize('base', trialbases+testbases)
 def test_eval_basis(base):
     N = 8
-    d = {}
-    if base.short_name() == 'BG':
-        d = {'bc': (0, 0)}
-    B = base(N, **d)
+    B = base(N)
     x = sp.symbols('x', real=True)
-    M = B.dim() if B.boundary_condition() in nonBC else N
-    for i in range(M):
-        s = B.sympy_basis(i, x)
-        mesh = np.random.rand(3)
-        f0 = sp.lambdify(x, s, 'numpy')(mesh)
-        f1 = B.evaluate_basis(mesh, i=i)
-        assert np.allclose(f0, f1)
+    b = [B]
+    try:
+        b += [B.get_bc_space()]
+    except:
+        pass
 
-@pytest.mark.parametrize('base', bases+bcbases)
+    for basis in b:
+        M = basis.dim()
+        for i in range(M):
+            s = basis.basis_function(i, x)
+            mesh = np.random.rand(3)
+            f0 = sp.lambdify(x, s, 'numpy')(mesh)
+            f1 = basis.evaluate_basis(mesh, i=i)
+            assert np.allclose(f0, f1)
+
+
+@pytest.mark.parametrize('base', trialbases+testbases)
 def test_eval_basis_derivative(base):
     N = 8
-    d = {}
-    if base.short_name() == 'BG':
-        d = {'bc': (0, 0)}
-    B = base(N, **d)
-    M = B.dim() if B.boundary_condition() in nonBC else N
-    for i in range(M):
-        x = sp.symbols('x', real=True)
-        s = B.sympy_basis(i, x)
-        mesh = np.random.rand(3)
-        for k in (1, 2, 3):
-            f0 = sp.lambdify(x, s.diff(x, k), 'numpy')(mesh)
-            f1 = B.evaluate_basis_derivative(mesh, i=i, k=k)
-            assert np.allclose(f0, f1)
+    B = base(N)
+    b = [B]
+    try:
+        b += [B.get_bc_space()]
+    except:
+        pass
+    for basis in b:
+        M = basis.dim()
+        for i in range(M):
+            x = sp.symbols('x', real=True)
+            s = basis.basis_function(i, x)
+            mesh = np.random.rand(3)
+            for k in (1, 2, 3):
+                f0 = sp.lambdify(x, s.diff(x, k), 'numpy')(mesh)
+                f1 = basis.evaluate_basis_derivative(mesh, i=i, k=k)
+                assert np.allclose(f0, f1)
 
 if __name__ == '__main__':
     #test_eval_basis_derivative(chebyshev.Heinrichs)

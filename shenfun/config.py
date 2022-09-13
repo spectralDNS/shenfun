@@ -24,7 +24,7 @@ config = {
             'ultraspherical': 'recursive',
             'hermite': 'vandermonde',
             'laguerre': 'vandermonde',
-            'jacobi': 'recursive',
+            'jacobi': 'recursive'
         }
     },
     'matrix':
@@ -86,6 +86,11 @@ config = {
             'planner_effort': 'FFTW_MEASURE'
         },
         'ifft':
+        {
+            'threads': 1,
+            'planner_effort': 'FFTW_MEASURE'
+        },
+        'dlt':
         {
             'threads': 1,
             'planner_effort': 'FFTW_MEASURE'

@@ -12,20 +12,8 @@ The first letter refers to type of matrix.
 
 A matrix may consist of different types of test and trialfunctions as long as
 they are all in the Chebyshev family, either first or second kind.
-The next letters in the matrix name uses the short form for all these
-different bases according to
-
-    - T  = Orthogonal
-    - CD = CompactDirichlet
-    - CN = CompactNeumann
-    - BCG = BCGeneric
-    - P1 = Phi1
-    - P2 = Phi2
-    - P3 = Phi3
-    - P4 = Phi4
-
-So a mass matrix using CompactDirichlet trial and test is named
-BCDCDmat.
+The next letters in the matrix name uses the 'short_name' for all these
+different bases, see chebyshevu.bases.py.
 
 All matrices in this module may be looked up using the 'mat' dictionary,
 which takes test and trialfunctions along with the number of derivatives

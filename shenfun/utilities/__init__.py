@@ -740,7 +740,7 @@ def scalar_product(v, f, output_array=None, assemble='exact'):
         domain = T.reference_domain()
         f *= T.weight()
         for i in range(T.slice().start, T.slice().stop):
-            integrand = f*sp.conjugate(T.sympy_basis(i, x=x))
+            integrand = f*sp.conjugate(T.basis_function(i, x=x))
             if assemble == 'exact':
                 output_array[i] = sp.integrate(integrand, (x, (domain[0], domain[1])))
             elif assemble == 'adaptive':

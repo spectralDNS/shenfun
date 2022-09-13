@@ -11,25 +11,8 @@ The first letter refers to type of matrix.
     - Four derivatives (Biharmonic) start with `S`
 
 A matrix may consist of different types of test and trialfunctions. The next
-letters in the matrix name uses the short form for all these different bases
-according to
-
-    - T  = Orthogonal
-    - SD = ShenDirichlet
-    - HH = Heinrichs
-    - SB = ShenBiharmonic
-    - SN = ShenNeumann
-    - CN = CombinedShenNeumann
-    - MN = MikNeumann
-    - UD = UpperDirichlet
-    - LD = LowerDirichlet
-    - DN = DirichletNeumann
-    - P1 = Phi1
-    - P2 = Phi2
-    - P3 = Phi3
-    - P4 = Phi4
-    - BD = BCDirichlet
-    - BB = BCBiharmonic
+letters in the matrix name uses the 'short_name' method for all these different
+bases, see chebyshev.bases.py.
 
 So a mass matrix using ShenDirichlet test and ShenNeumann trial is named
 BSDSNmat.
@@ -79,6 +62,7 @@ To see that this is in fact the BSDSDmat:
 from __future__ import division
 
 import numpy as np
+import scipy
 from shenfun.optimization import cython, numba
 from shenfun.matrixbase import SpectralMatrix, SpectralMatDict
 from shenfun.spectralbase import get_norm_sq
@@ -87,6 +71,7 @@ from shenfun.la import PDMA as generic_PDMA
 from shenfun.la import TwoDMA
 from .la import ADDSolver, ANNSolver
 from . import bases
+from shenfun.legendre import bases as legendrebases
 
 
 # Short names for instances of bases
@@ -106,6 +91,7 @@ P1 = bases.Phi1
 P2 = bases.Phi2
 P3 = bases.Phi3
 P4 = bases.Phi4
+L = legendrebases.Orthogonal
 
 BCG = bases.BCGeneric
 
@@ -152,6 +138,40 @@ class BTTmat(SpectralMatrix):
             c = super(BTTmat, self).matvec(v, c, format=format, axis=axis)
 
         return c
+
+class BTLmat(SpectralMatrix):
+    r"""Mass matrix :math:`B=(b_{kj}) \in \mathbb{R}^{M \times N}`, where
+
+    .. math::
+
+        b_{kj}=(L_j, T_k)_w,
+
+    where :math:`T_k \in` :class:`.chebyshev.bases.Orthogonal`,
+    :math:`L_j \in` :class:`shenfun.legendre.bases.Orthogonal`,  and test
+    and trial spaces have dimensions of M and N, respectively.
+
+    """
+    def __init__(self, test, trial, scale=1, measure=1, assemble=None, kind=None, fixed_resolution=None):
+        assert isinstance(test[0], T)
+        assert isinstance(trial[0], L)
+        SpectralMatrix.__init__(self, test, trial, scale=scale, measure=measure, assemble=assemble, kind=kind, fixed_resolution=fixed_resolution)
+
+    def assemble(self, method):
+        gammaln = scipy.special.gammaln
+        test = self.testfunction
+        trial = self.trialfunction
+        M = test[0].N
+        N = trial[0].N
+        Q = min(M, N)
+        k = np.arange(Q)
+        #h = np.sqrt(np.pi) * np.exp(gammaln((2*k[:N]+1)/2) - gammaln((2*k[:N]+2)/2))
+        d = {}
+        for n in range(0, N, 2):
+            #d[n] = h[n:(N-n)]
+            d[n] = np.exp(gammaln((n+1)/2)-gammaln((n+2)/2)) * np.exp(gammaln((2*k[:N-n]+n+1)/2) - gammaln((2*k[:N-n]+n+2)/2))
+        if test[0].quad == 'GL':
+            d[0][-1] *= 2
+        return d
 
 
 class BSDSDmat(SpectralMatrix):
@@ -1500,6 +1520,7 @@ class SSBSBmat(SpectralMatrix):
 # When looked up, missing matrices will be generated automatically
 mat = SpectralMatDict({
     ((T,  0), (T , 0)): BTTmat,
+    ((T,  0), (L , 0)): BTLmat,
     ((SD, 0), (SD, 0)): BSDSDmat,
     ((SB, 0), (SB, 0)): BSBSBmat,
     ((SN, 0), (SN, 0)): BSNSNmat,

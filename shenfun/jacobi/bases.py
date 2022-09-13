@@ -25,14 +25,12 @@ for the intermediate assembly.
 
 """
 
-import functools
 import numpy as np
 import sympy as sp
 from scipy.special import eval_jacobi, roots_jacobi #, gamma
-from mpi4py_fft import fftw
 from shenfun.config import config
-from shenfun.spectralbase import SpectralBase, Transform, islicedict, \
-    slicedict, getCompositeBase, BoundaryConditions
+from shenfun.spectralbase import SpectralBase, getCompositeBase, getBCGeneric, \
+    BoundaryConditions
 from shenfun.matrixbase import SparseMatrix
 from .recursions import h, n
 
@@ -58,10 +56,95 @@ bases = ['Orthogonal',
          'Generic']
 bcbases = ['BCGeneric']
 testbases = ['Phi1', 'Phi2', 'Phi3', 'Phi4']
-__all__ = bases + bcbases + testbases
+__all__ = bases + bcbases + testbases + ['JacobiBase']
 
 
-class Orthogonal(SpectralBase):
+class JacobiBase(SpectralBase):
+    r"""Abstract base class for Jacobi function spaces
+    """
+    def __init__(self, N, quad='', alpha=0, beta=0, padding_factor=1, domain=(-1., 1.), dtype=None,
+                 dealias_direct=False, coordinates=None):
+        SpectralBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
+                              padding_factor=padding_factor, dealias_direct=dealias_direct,
+                              coordinates=coordinates)
+        self.alpha = alpha  # Jacobi parameter
+        self.beta = beta    # Jacobi parameter
+        self.gn = 1         # Jacobi scaling function
+
+    @property
+    def is_jacobi(self):
+        return True
+
+    def L2_norm_sq(self, i):
+        return h(self.alpha, self.beta, i, 0, gn=self.gn)
+
+    def l2_norm_sq(self, i=None):
+        if i is None:
+            return sp.lambdify(n, h(self.alpha, self.beta, n, 0, gn=self.gn))(np.arange(self.N))
+        return h(self.alpha, self.beta, i, 0, gn=self.gn)
+
+    @staticmethod
+    def bnd_values(k=0, alpha=None, beta=None, gn=None):
+        from shenfun.jacobi.recursions import bnd_values
+        return bnd_values(alpha, beta, k=k, gn=gn)
+
+    def reference_domain(self):
+        return (-1, 1)
+
+    def unweighted_quadrature_weights(self):
+        r"""Return quadrature weights for unweighted integrals
+
+        .. math::
+
+            \int_{-1}^{1} f dx \approx \sum_{j=0}^{N} f(x_j) w_j,
+
+        where `w_j` are the quadrature weights.
+
+        """
+        xj, wj = self.points_and_weights()
+        h = self.l2_norm_sq()
+        uj = np.zeros(len(xj))
+        b = self.vandermonde(xj)
+        for j in range(len(xj)):
+            for i in range(self.N):
+                if i == 0:
+                    fi = 2
+                else:
+                    fl = self.orthogonal_basis_function(i=i).as_poly().integrate()
+                    fi = fl(1)-fl(-1)
+                uj[j] += (b[j, i] / h[i]) * fi
+            uj[j] *= wj[j]
+        return uj
+
+    def lagrange_poly(self, i):
+        """Return i'th Lagrange polynomial of self
+
+        Parameters
+        ----------
+        i : int
+            For the i'th Lagrange polynomial
+
+        """
+        xj, wj = self.points_and_weights()
+        h = self.l2_norm_sq()
+        b = self.vandermonde(xj)
+        l = sp.S(0)
+        for j in range(self.N):
+            if j == 0:
+                fl = 1
+            else:
+                fl = self.orthogonal_basis_function(i=j).as_poly()
+            l += (b[i, j] / h[j]) * fl
+        l *= wj[i]
+        return l
+
+    def get_bc_space(self):
+        if self._bc_space:
+            return self._bc_space
+        self._bc_space = BCGeneric(self.N, bc=self.bcs, domain=self.domain, alpha=self.alpha, beta=self.alpha)
+        return self._bc_space
+
+class Orthogonal(JacobiBase):
     r"""Function space for regular (orthogonal) Jacobi functions
 
     The orthogonal basis is
@@ -100,12 +183,9 @@ class Orthogonal(SpectralBase):
 
     def __init__(self, N, quad="JG", alpha=0, beta=0, domain=(-1, 1),
                  dtype=float, padding_factor=1, dealias_direct=False, coordinates=None, **kw):
-        SpectralBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
-                              padding_factor=padding_factor, dealias_direct=dealias_direct,
-                              coordinates=coordinates)
-        self.alpha = alpha
-        self.beta = beta
-        self.gn = 1
+        JacobiBase.__init__(self, N, quad=quad, alpha=alpha, beta=beta, domain=domain, dtype=dtype,
+                            padding_factor=padding_factor, dealias_direct=dealias_direct,
+                            coordinates=coordinates)
         self.plan(int(N*padding_factor), 0, dtype, {})
 
     @staticmethod
@@ -115,9 +195,6 @@ class Orthogonal(SpectralBase):
     def stencil_matrix(self, N=None):
         N = self.N if N is None else N
         return SparseMatrix({0: 1}, (N, N))
-
-    def reference_domain(self):
-        return (-1, 1)
 
     def get_orthogonal(self, **kwargs):
         d = dict(quad=self.quad,
@@ -136,6 +213,9 @@ class Orthogonal(SpectralBase):
             N = self.shape(False)
         assert self.quad == "JG"
         points, weights = roots_jacobi(N, self.alpha, self.beta)
+        if weighted == False:
+            weights = self.unweighted_quadrature_weights()
+
         if map_true_domain is True:
             points = self.map_true_domain(points)
         return points, weights
@@ -149,6 +229,9 @@ class Orthogonal(SpectralBase):
         pw = quadpy.c1.gauss_jacobi(N, self.alpha, self.beta, 'mpmath')
         points = pw.points_symbolic
         weights = pw.weights_symbolic
+        if weighted == False:
+            weights = self.unweighted_quadrature_weights()
+
         if map_true_domain is True:
             points = self.map_true_domain(points)
         return points, weights
@@ -186,21 +269,8 @@ class Orthogonal(SpectralBase):
     def short_name():
         return 'J'
 
-    def sympy_basis(self, i=0, x=xp):
+    def orthogonal_basis_function(self, i=0, x=xp):
         return sp.jacobi(i, self.alpha, self.beta, x)
-
-    def L2_norm_sq(self, i):
-        return h(self.alpha, self.beta, i, 0)
-
-    def l2_norm_sq(self, i=None):
-        if i is None:
-            return sp.lambdify(n, h(self.alpha, self.beta, n, 0))(np.arange(self.N))
-        return h(self.alpha, self.beta, i, 0)
-
-    @staticmethod
-    def bnd_values(k=0, alpha=0, beta=0):
-        from shenfun.jacobi.recursions import bnd_values
-        return bnd_values(alpha, beta, k=k)
 
     def evaluate_basis(self, x, i=0, output_array=None):
         mode = config['bases']['jacobi']['mode']
@@ -210,7 +280,7 @@ class Orthogonal(SpectralBase):
         if mode == 'numpy':
             output_array = eval_jacobi(i, self.alpha, self.beta, x, out=output_array)
         else:
-            f = self.sympy_basis(i, xp)
+            f = self.orthogonal_basis_function(i, xp)
             output_array[:] = sp.lambdify(xp, f, 'mpmath')(x)
         return output_array
 
@@ -258,13 +328,14 @@ class Orthogonal(SpectralBase):
         output_array = np.dot(P, u, out=output_array)
         return output_array
 
-    def get_bc_basis(self):
-        if self._bc_basis:
-            return self._bc_basis
-        self._bc_basis = BCGeneric(self.N, bc=self.bcs, domain=self.domain, alpha=self.alpha, beta=self.beta)
-        return self._bc_basis
+    #def get_bc_space(self):
+    #    if self._bc_space:
+    #        return self._bc_space
+    #    self._bc_space = BCGeneric(self.N, bc=self.bcs, domain=self.domain, alpha=self.alpha, beta=self.beta)
+    #    return self._bc_space
 
 CompositeBase = getCompositeBase(Orthogonal)
+BCGeneric = getBCGeneric(CompositeBase)
 
 class Phi1(CompositeBase):
     r"""Function space for Dirichlet boundary conditions
@@ -929,7 +1000,7 @@ class Generic(CompositeBase):
                  padding_factor=1, dealias_direct=False, coordinates=None,
                  alpha=0, beta=0, **kw):
         from shenfun.utilities.findbasis import get_stencil_matrix
-        self._stencil = get_stencil_matrix(bc, 'jacobi', alpha, beta)
+        self._stencil = get_stencil_matrix(bc, 'jacobi', alpha, beta, 1)
         if not isinstance(bc, BoundaryConditions):
             bc = BoundaryConditions(bc, domain=domain)
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
@@ -943,119 +1014,3 @@ class Generic(CompositeBase):
     @staticmethod
     def short_name():
         return 'GJ'
-
-
-class BCBase(CompositeBase):
-    """Function space for inhomogeneous boundary conditions
-
-    Parameters
-    ----------
-    N : int
-        Number of quadrature points in the homogeneous space.
-    bc : dict
-        The boundary conditions in dictionary form, see
-        :class:`.BoundaryConditions`.
-    domain : 2-tuple of numbers, optional
-        The domain of the homogeneous space.
-    alpha : number, optional
-        Parameter of the Jacobi polynomial
-    beta : number, optional
-        Parameter of the Jacobi polynomial
-
-    """
-
-    def __init__(self, N, bc=(0, 0), domain=(-1, 1), alpha=0, beta=0, **kw):
-        CompositeBase.__init__(self, N, bc=bc, domain=domain, alpha=alpha, beta=beta)
-        self._stencil_matrix = None
-
-    def stencil_matrix(self, N=None):
-        raise NotImplementedError
-
-    @staticmethod
-    def short_name():
-        raise NotImplementedError
-
-    @staticmethod
-    def boundary_condition():
-        return 'Apply'
-
-    @property
-    def is_boundary_basis(self):
-        return True
-
-    def shape(self, forward_output=True):
-        if forward_output:
-            return self.stencil_matrix().shape[0]
-        else:
-            return self.N
-
-    @property
-    def dim_ortho(self):
-        return self.stencil_matrix().shape[1]
-
-    def slice(self):
-        return slice(self.N-self.shape(), self.N)
-
-    def vandermonde(self, x):
-        return self.jacobi(x, self.alpha, self.beta, self.dim_ortho)
-        #return Orthogonal.vandermonde(self, x)
-
-    def _composite(self, V, argument=1):
-        N = self.shape()
-        P = np.zeros(V[:, :N].shape)
-        P[:] = np.tensordot(V[:, :self.dim_ortho], self.stencil_matrix(), (1, 1))
-        return P
-
-    def sympy_basis(self, i=0, x=xp):
-        M = self.stencil_matrix()
-        return np.sum(M[i]*np.array([sp.jacobi(j, self.alpha, self.beta, x) for j in range(self.dim_ortho)]))
-
-    def evaluate_basis(self, x, i=0, output_array=None):
-        x = np.atleast_1d(x)
-        if output_array is None:
-            output_array = np.zeros(x.shape)
-        V = self.vandermonde(x)
-        output_array[:] = np.dot(V, self.stencil_matrix()[i])
-        return output_array
-
-    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
-        output_array = SpectralBase.evaluate_basis_derivative(self, x=x, i=i, k=k, output_array=output_array)
-        return output_array
-
-    def to_ortho(self, input_array, output_array=None):
-        from shenfun import Function
-        T = self.get_orthogonal()
-        if output_array is None:
-            output_array = Function(T)
-        else:
-            output_array.fill(0)
-        M = self.stencil_matrix().T
-        for k, row in enumerate(M):
-            output_array[k] = np.dot(row, input_array)
-        return output_array
-
-    def eval(self, x, u, output_array=None):
-        v = self.to_ortho(u)
-        output_array = v.eval(x, output_array=output_array)
-        return output_array
-
-    def get_orthogonal(self, **kwargs):
-        d = dict(quad=self.quad,
-                 domain=self.domain,
-                 alpha=self.alpha,
-                 beta=self.beta,
-                 dtype=self.dtype)
-        d.update(kwargs)
-        return Orthogonal(self.dim_ortho, **d)
-
-class BCGeneric(BCBase):
-
-    @staticmethod
-    def short_name():
-        return 'BG'
-
-    def stencil_matrix(self, N=None):
-        if self._stencil_matrix is None:
-            from shenfun.utilities.findbasis import get_bc_basis
-            self._stencil_matrix = np.array(get_bc_basis(self.bcs, 'jacobi', self.alpha, self.beta))
-        return self._stencil_matrix

@@ -41,8 +41,8 @@ x = sp.symbols("x", real=True)
 ue = sp.cos(5*sp.pi*(x+0.1)/2)
 fe = -ue.diff(x, 2)
 
-a = -2
-b = 2
+a = 0
+b = 1
 domain = (a, b)
 
 bcs = {
@@ -80,9 +80,10 @@ def main(N, family, bc):
     # Compare with analytical solution
     ua = Array(SD, buffer=ue)
     error = np.sqrt(inner(1, (uj-ua)**2))
-    print(f'poisson1D L2 error = {error:2.6e}')
+    print(f'poisson1D {SD.family()} L2 error = {error:2.6e}')
     if 'pytest 'in os.environ:
         assert error < 1e-5
+
     return error
 
 if __name__ == '__main__':

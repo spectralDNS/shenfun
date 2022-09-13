@@ -559,7 +559,7 @@ implemented as
 
     gradue = Array(V, buffer=grad(u).tosympy(basis=ue, psi=psi))
     gij = T.coors.get_covariant_metric_tensor()
-    ui, vi = TT.local_mesh(True, uniform=True)
+    ui, vi = TT.local_mesh(True, kind='uniform')
     # Evaluate metric on computational mesh
     g = np.array(sp.lambdify(psi, gij)(ui, vi), dtype=object)
     # Compute L2 error

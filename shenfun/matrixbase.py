@@ -659,7 +659,7 @@ class SpectralMatrix(SparseMatrix):
                             except AssertionError:
                                 kind = 'vandermonde'
                         else:
-                            if sp.sympify(measure).is_polynomial() and not (test[0].is_orthogonal and trial[0].is_orthogonal):
+                            if test[0].is_jacobi and sp.sympify(measure).is_polynomial() and not (test[0].is_orthogonal and trial[0].is_orthogonal):
                                 d = assemble_stencil(test, trial, measure)
                                 _assembly_method += '_stencil'
                             else:
@@ -971,7 +971,8 @@ class BlockMatrix:
     def __init__(self, tpmats):
         assert isinstance(tpmats, (list, tuple))
         if isinstance(tpmats[0], TPMatrix):
-            tpmats = get_simplified_tpmatrices(tpmats)
+            if len(tpmats[0].naxes) > 0:
+                tpmats = get_simplified_tpmatrices(tpmats)
         tpmats = [tpmats] if not isinstance(tpmats[0], (list, tuple)) else tpmats
         self.testbase = testbase = tpmats[0][0].testbase
         self.trialbase = trialbase = tpmats[0][0].trialbase
@@ -1076,20 +1077,25 @@ class BlockMatrix:
         if use_scipy:
             self.assemble(format)
             daxes = self.testbase.get_diagonal_axes()
-            if len(daxes) > 0:
-                daxes += 1
-            sl1, dims1 = self.trialbase._get_ndiag_slices_and_dims()
-            sl2, dims2 = self.testbase._get_ndiag_slices_and_dims()
-            gi = np.zeros(dims1[-1], dtype=v.dtype)
-            go = np.zeros(dims2[-1], dtype=v.dtype)
-            for key, val in self._Ai.items():
-                key = np.atleast_1d(key)
+            if len(daxes) == self.testbase.dimensions:
+                # Only Fourier
+                assert isinstance(self._Ai, spmatrix)
+                c.flatten()[:] = self._Ai * v.flatten()
+            else:
                 if len(daxes) > 0:
-                    sl1.T[daxes] = np.array(key)[:, None]
-                    sl2.T[daxes] = np.array(key)[:, None]
-                gi = v.copy_to_flattened(gi, key, dims1, sl1)
-                go[:] = val * gi
-                c = c.copy_from_flattened(go, key, dims2, sl2)
+                    daxes += 1
+                sl1, dims1 = self.trialbase._get_ndiag_slices_and_dims()
+                sl2, dims2 = self.testbase._get_ndiag_slices_and_dims()
+                gi = np.zeros(dims1[-1], dtype=v.dtype)
+                go = np.zeros(dims2[-1], dtype=v.dtype)
+                for key, val in self._Ai.items():
+                    key = np.atleast_1d(key)
+                    if len(daxes) > 0:
+                        sl1.T[daxes] = np.array(key)[:, None]
+                        sl2.T[daxes] = np.array(key)[:, None]
+                    gi = v.copy_to_flattened(gi, key, dims1, sl1)
+                    go[:] = val * gi
+                    c = c.copy_from_flattened(go, key, dims2, sl2)
 
         else:
             z = np.zeros_like(c.v[0])
@@ -1141,8 +1147,9 @@ class BlockMatrix:
             return
         self._Ai = {}
         N = self.testbase.forward.output_array.shape
+        dimensions = self.testbase.dimensions
         daxes = self.get_diagonal_axes()
-        ndindices = [(0,)] if len(daxes) == 0 else np.ndindex(tuple(np.array(N)[daxes]))
+        ndindices = [(0,)] if (len(daxes) == 0 or len(daxes) == dimensions) else np.ndindex(tuple(np.array(N)[daxes]))
         format = config['matrix']['block']['assemble'] if format is None else format
         for i in ndindices:
             i = i[0] if len(i) == 1 else i
@@ -1185,7 +1192,7 @@ class BlockMatrix:
                     bm[-1].append(None)
                 else:
                     m = mij[0]
-                    if isinstance(self.testbase, MixedFunctionSpace) or len(m.naxes) == len(m.mats):
+                    if isinstance(self.testbase, MixedFunctionSpace) or len(m.naxes) == len(m.mats) or len(m.naxes) == 0:
                         d = m.diags(format)
                         for mj in mij[1:]:
                             d = d + mj.diags(format)
@@ -1875,7 +1882,10 @@ def _get_matrix(test, trial, measure=1, assemble=None, fixed_resolution=None):
 
         # Exact integration is much more expensive than quadrature and
         # as such we use quadrature first simply to get the sparsity pattern.
-        R = _get_matrix(test, trial, measure=measure, assemble='quadrature')
+        try:
+            R = _get_matrix(test, trial, measure=measure, assemble='quadrature')
+        except:
+            R =  {k: None for k in np.arange(-test[0].dim(), test[0].dim()+1)}
         V = np.zeros((K0, K1), dtype=test[0].forward.output_array.dtype)
         if test[0].family() == 'chebyshev':
             # Transform integral using x=cos(theta)
@@ -1913,12 +1923,12 @@ def _get_matrix(test, trial, measure=1, assemble=None, fixed_resolution=None):
             measure *= test[0].weight() # Weight of weighted space (in reference domain)
             domain = test[0].reference_domain()
             for i in range(test[0].slice().start, test[0].slice().stop):
-                pi = np.conj(test[0].sympy_basis(i, x=x))
+                pi = np.conj(test[0].basis_function(i, x=x))
                 for jq in R.keys():
                     j = i+jq
                     if j < 0 or j >= K1:
                         continue
-                    pj = trial[0].sympy_basis(j, x=x)
+                    pj = trial[0].basis_function(j, x=x)
                     integrand = measure*pi.diff(x, test[1])*pj.diff(x, trial[1])
                     if assemble == 'exact':
                         V[i, j] = integrate_sympy(integrand, (x, domain[0], domain[1]))
@@ -1945,9 +1955,6 @@ def _assemble_stencil_bc(test, trial, measure=1):
     from shenfun.spectralbase import inner_product
     Tv = test[0].get_orthogonal(domain=(-1, 1))
     Tu = trial[0].get_orthogonal(domain=(-1, 1))
-    alpha = test[0].alpha
-    beta = test[0].beta
-    gn = test[0].gn
     B = inner_product((Tv, test[1]), (Tu, trial[1]))
     if len(B) == 0:
         return {}
@@ -1962,6 +1969,9 @@ def _assemble_stencil_bc(test, trial, measure=1):
         assert sp.sympify(measure).is_polynomial()
         A = sp.S(0)
         for dv in split(measure, expand=True):
+            alpha = test[0].alpha
+            beta = test[0].beta
+            gn = test[0].gn
             sc = dv['coeff']
             msi = dv['x']
             qi = sp.degree(msi)

@@ -14,6 +14,7 @@ See the [documentation](https://shenfun.readthedocs.io) for more details.
 """
 #pylint: disable=unused-argument, not-callable, no-self-use, protected-access, too-many-public-methods, missing-docstring
 
+import importlib
 import re
 import copy
 import importlib
@@ -26,6 +27,7 @@ from shenfun.utilities import get_stencil_matrix, n
 from .utilities import CachedArrayDict, split
 from .coordinates import Coordinates
 work = CachedArrayDict()
+xp = sp.Symbol('x', real=True)
 
 class SpectralBase:
     """Abstract base class for all spectral function spaces
@@ -38,12 +40,9 @@ class SpectralBase:
         self.quad = quad
         self.axis = 0
         self.bc = None
-        self._bc_basis = None
+        self._bc_space = None
         self._stencil = None
         self._stencil_matrix = {}
-        self.alpha = None  # Jacobi parameter
-        self.beta = None   # Jacobi parameter
-        self.gn = None     # Jacobi scaling function
         self.padding_factor = padding_factor
         if padding_factor != 1:
             self.padding_factor = np.floor(N*padding_factor)/N if N > 0 else 1
@@ -337,9 +336,9 @@ class SpectralBase:
         r"""Return Vandermonde matrix based on the primary (orthogonal) basis
         of the family.
 
-        Evaluates basis :math:`\psi_k(x)` for all wavenumbers, and all ``x``.
-        Returned Vandermonde matrix is an N x M matrix with N the length of
-        ``x`` and M the number of bases.
+        Evaluates basis function :math:`\psi_k(x)` for all wavenumbers, and all
+        ``x``. Returned Vandermonde matrix is an N x M matrix with N the length
+        of ``x`` and M the number of bases.
 
         .. math::
 
@@ -365,13 +364,13 @@ class SpectralBase:
         raise NotImplementedError
 
     def evaluate_basis(self, x, i=0, output_array=None):
-        """Evaluate basis ``i`` at points x
+        """Evaluate basis function ``i`` at points x
 
         Parameters
         ----------
         x : float or array of floats
         i : int, optional
-            Basis number
+            Basis function number
         output_array : array, optional
             Return result in output_array if provided
 
@@ -386,7 +385,7 @@ class SpectralBase:
         #if output_array is None:
         #    output_array = np.zeros(x.shape, dtype=self.dtype)
         #X = sp.symbols('x', real=True)
-        #f = self.sympy_basis(i, X)
+        #f = self.basis_function(i, X)
         #output_array[:] = sp.lambdify(X, f)(x)
         #return output_array
 
@@ -410,14 +409,15 @@ class SpectralBase:
         return self.vandermonde(x)
 
     def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
-        """Evaluate k'th derivative of basis ``i`` at ``x`` or all quadrature points
+        """Evaluate k'th derivative of basis function ``i`` at ``x`` or all
+        quadrature points
 
         Parameters
         ----------
         x : float or array of floats, optional
             If not provided use quadrature points of self
         i : int, optional
-            Basis number
+            Basis function number
         k : int, optional
             k'th derivative
         output_array : array, optional
@@ -436,7 +436,7 @@ class SpectralBase:
         if output_array is None:
             output_array = np.zeros(x.shape, dtype=self.dtype)
         X = sp.symbols('x', real=True)
-        basis = self.sympy_basis(i=i, x=X).diff(X, k)
+        basis = self.basis_function(i=i, x=X).diff(X, k)
         output_array[:] = sp.lambdify(X, basis, 'numpy')(x)
         return output_array
 
@@ -458,13 +458,12 @@ class SpectralBase:
         array
             Vandermonde matrix
         """
-        raise NotImplementedError
-        #if x is None:
-        #    x = self.mesh(False, False)
-        #V = np.zeros((x.shape[0], self.N))
-        #for i in range(self.dim()):
-        #    V[:, i] = self.evaluate_basis_derivative(x, i, k, output_array=V[:, i])
-        #return V
+        if x is None:
+            x = self.mesh(False, False)
+        V = np.zeros((x.shape[0], self.N))
+        for i in range(self.dim()):
+            V[:, i] = self.evaluate_basis_derivative(x, i, k, output_array=V[:, i])
+        return V
 
     def _evaluate_expansion_all(self, input_array, output_array,
                                 x=None, kind=None):
@@ -690,6 +689,7 @@ class SpectralBase:
                 x = float(c) + (x-float(a))*float(self.domain_factor())
             else:
                 x = c + (x-a)*self.domain_factor()
+
         return x
 
     def map_true_domain(self, x):
@@ -706,6 +706,7 @@ class SpectralBase:
                 x = float(a) + (x-float(c))/float(self.domain_factor())
             else:
                 x = a + (x-c)/self.domain_factor()
+
         return x
 
     def map_expression_true_domain(self, f, x=None):
@@ -727,8 +728,19 @@ class SpectralBase:
                 f = f.replace(x, xm)
         return f
 
-    def sympy_basis(self, i=0, x=sp.Symbol('x', real=True)):
-        """Return basis function `i` as sympy function
+    def basis_function(self, i=0, x=sp.Symbol('x', real=True)):
+        """Return basis function `i`
+
+        Parameters
+        ----------
+        i : int, optional
+            The degree of freedom of the basis function
+        x : sympy Symbol, optional
+        """
+        return self.orthogonal_basis_function(i=i, x=x)
+
+    def orthogonal_basis_function(self, i=0, x=sp.Symbol('x', real=True)):
+        """Return the orthogonal basis function `i`
 
         Parameters
         ----------
@@ -738,9 +750,8 @@ class SpectralBase:
         """
         raise NotImplementedError
 
-    def sympy_basis_all(self, x=sp.Symbol('x', real=True)):
-        """Return all basis functions as sympy functions"""
-        return np.array([self.sympy_basis(i, x=x) for i in range(self.slice().start, self.slice().stop)])
+    def sympy_basis(self, i=0, x=sp.Symbol('x', real=True)):
+        raise DeprecationWarning('Use basis_function instead')
 
     def L2_norm_sq(self, i):
         r"""Return square of L2-norm
@@ -957,6 +968,10 @@ class SpectralBase:
         return False
 
     @property
+    def is_jacobi(self):
+        return False
+
+    @property
     def rank(self):
         """Return rank of function space
 
@@ -1004,13 +1019,12 @@ class SpectralBase:
         if self.tensorproductspace:
             dx = self.tensorproductspace.coors.get_sqrt_det_g()
             msdict = split(dx)
-            assert len(msdict) == 1
+            #assert len(msdict) == 1
             dx = msdict[0]['xyzrs'[self.axis]]
             if self.axis == self.tensorproductspace.dimensions-1:
                 dx *= msdict[0]['coeff']
         if not dx == 1:
-            if not isinstance(dx, Number):
-                assert hasattr(dx, 'free_symbols')
+            if len(sp.sympify(dx).free_symbols) > 0:
                 x0 = dx.free_symbols
                 if len(x0) > 1:
                     raise NotImplementedError("Cannot use forward for Curvilinear coordinates with unseparable measure - Use inner with mass matrix for tensor product space")
@@ -1044,10 +1058,12 @@ class SpectralBase:
     def get_bcmass_matrix(self, dx=1):
         msx = 'xyzrs'[self.axis]
         dV = split(dx)
-        assert len(dV) == 1
+        #assert len(dV) == 1
         dv = dV[0]
         msi = dv[msx]
-        return inner_product((self, 0), (self.get_bc_basis(), 0), msi)
+        if self.axis == self.dimensions-1:
+            msi *= dv['coeff']
+        return inner_product((self, 0), (self.get_bc_space(), 0), msi)
 
     def get_measured_weights(self, N=None, measure=1, map_true_domain=False):
         """Return weights times ``measure``
@@ -1386,7 +1402,7 @@ class SpectralBase:
 
         # Fix boundary condition dofs
         if self.bc:
-            B = self.get_bc_basis()
+            B = self.get_bc_space()
             sl = B.slice()
             nd = sl.stop - sl.start
             if padded_array.ndim > 1:
@@ -1396,7 +1412,7 @@ class SpectralBase:
 
 
 def getCompositeBase(Orthogonal):
-    """Dynamic class factory for Composite bases
+    """Dynamic class factory for Composite base class
 
     Parameters
     ----------
@@ -1405,8 +1421,8 @@ def getCompositeBase(Orthogonal):
 
         - :class:`.chebyshev.bases.Orthogonal`
         - :class:`.chebyshevu.bases.Orthogonal`
-        - :class:`.ultraspherical.bases.Orthogonal`
         - :class:`.legendre.bases.Orthogonal`
+        - :class:`.ultraspherical.bases.Orthogonal`
         - :class:`.jacobi.bases.Orthogonal`
         - :class:`.laguerre.bases.Orthogonal`
     Returns
@@ -1422,7 +1438,7 @@ def getCompositeBase(Orthogonal):
 
     """
     class CompositeBase(Orthogonal):
-        """Common class for all spaces based on composite bases"""
+        """Common class for all composite spaces"""
 
         def __init__(self, *args, **kwargs):
             bc = kwargs.pop('bc', None)
@@ -1516,7 +1532,7 @@ def getCompositeBase(Orthogonal):
             """
             from .matrixbase import SparseMatrix
             if self._stencil is None:
-                self._stencil = get_stencil_matrix(self.bcs, self.family(), self.alpha, self.beta)
+                self._stencil = get_stencil_matrix(self.bcs, self.family(), self.alpha, self.beta, self.gn)
             N = self.N if N is None else N
             if N in self._stencil_matrix:
                 return self._stencil_matrix[N]
@@ -1566,7 +1582,7 @@ def getCompositeBase(Orthogonal):
 
             """
             if self._stencil is None:
-                self._stencil = get_stencil_matrix(self.bcs, self.family(), self.alpha, self.beta)
+                self._stencil = get_stencil_matrix(self.bcs, self.family(), self.alpha, self.beta, self.gn)
 
             def _named_diagonal(s, name, i):
                 class h(sp.Function):
@@ -1604,18 +1620,18 @@ def getCompositeBase(Orthogonal):
             P = np.zeros_like(V)
             P[:] = V * self.stencil_matrix(V.shape[1]).diags().T
             if argument == 1: # if trial function
-                P[:, slice(-(self.N-self.dim()), None)] = self.get_bc_basis()._composite(V)
+                P[:, slice(-(self.N-self.dim()), None)] = self.get_bc_space()._composite(V)
             return P
 
-        def sympy_basis(self, i=0, x=sp.Symbol('x', real=True)):
+        def basis_function(self, i=0, x=sp.Symbol('x', real=True)):
             assert i < self.N
             if i < self.dim():
                 row = self.stencil_matrix().diags().getrow(i)
                 f = 0
                 for j, val in zip(row.indices, row.data):
-                    f += sp.nsimplify(val)*Orthogonal.sympy_basis(self, i=j, x=x)
+                    f += sp.nsimplify(val)*self.orthogonal_basis_function(i=j, x=x)
             else:
-                f = self.get_bc_basis().sympy_basis(i=i-self.dim(), x=x)
+                f = self.get_bc_space().basis_function(i=i-self.dim(), x=x)
             return f
 
         def to_ortho(self, input_array, output_array=None):
@@ -1650,7 +1666,7 @@ def getCompositeBase(Orthogonal):
                     output_array[:] += val*Orthogonal.evaluate_basis(self, x, i=j, output_array=w0)
             else:
                 assert i < self.N
-                output_array = self.get_bc_basis().evaluate_basis(x, i=i-self.dim(), output_array=output_array)
+                output_array = self.get_bc_space().evaluate_basis(x, i=i-self.dim(), output_array=output_array)
             return output_array
 
         def evaluate_basis_derivative(self, x, i=0, k=0, output_array=None):
@@ -1665,7 +1681,7 @@ def getCompositeBase(Orthogonal):
                     output_array[:] += val*Orthogonal.evaluate_basis_derivative(self, x, i=j, k=k, output_array=w0)
             else:
                 assert i < self.N
-                output_array = self.get_bc_basis().evaluate_basis_derivative(x, i=i-self.dim(), k=k, output_array=output_array)
+                output_array = self.get_bc_space().evaluate_basis_derivative(x, i=i-self.dim(), k=k, output_array=output_array)
             return output_array
 
         def eval(self, x, u, output_array=None):
@@ -1678,6 +1694,148 @@ def getCompositeBase(Orthogonal):
             return output_array
 
     return CompositeBase
+
+def getBCGeneric(CompositeBase):
+    """Dynamic class factory for boundary spaces
+
+    Parameters
+    ----------
+    CompositeBase : :class:`.SpectralBase`
+        Dynamic inheritance, using base class as either one of
+
+        - :class:`.chebyshev.bases.CompositeBase`
+        - :class:`.chebyshevu.bases.CompositeBase`
+        - :class:`.legendre.bases.CompositeBase`
+        - :class:`.ultraspherical.bases.CompositeBase`
+        - :class:`.jacobi.bases.CompositeBase`
+        - :class:`.laguerre.bases.CompositeBase`
+    Returns
+    -------
+    Either one of the classes
+
+        - :class:`.chebyshev.bases.BCGeneric`
+        - :class:`.chebyshevu.bases.BCGeneric`
+        - :class:`.legendre.bases.BCGeneric`
+        - :class:`.ultraspherical.bases.BCGeneric`
+        - :class:`.jacobi.bases.BCGeneric`
+        - :class:`.laguerre.bases.BCGeneric`
+
+    """
+    class BCGeneric(CompositeBase):
+        """Function space for setting inhomogeneous boundary conditions
+
+        Parameters
+        ----------
+        N : int
+            Number of quadrature points in the homogeneous space.
+        bc : dict
+            The boundary conditions in dictionary form, see
+            :class:`.BoundaryConditions`.
+        domain : 2-tuple of numbers, optional
+            The domain of the homogeneous space.
+        alpha : number, optional
+            Parameter of the Jacobi polynomial
+        beta : number, optional
+            Parameter of the Jacobi polynomial
+
+        """
+        def __init__(self, N, bc=None, domain=None, alpha=0, beta=0, **kw):
+            CompositeBase.__init__(self, N, bc=bc, domain=domain, alpha=alpha, beta=beta)
+            self._stencil_matrix = None
+
+        def stencil_matrix(self, N=None):
+            if self._stencil_matrix is None:
+                from shenfun.utilities import get_bc_basis
+                d = {'alpha': self.alpha, 'beta': self.beta, 'gn': self.gn} if self.is_jacobi else {}
+                self._stencil_matrix = np.array(get_bc_basis(self.bcs, self.family(), **d))
+            return self._stencil_matrix
+
+        @staticmethod
+        def short_name():
+            return 'BG'
+
+        @staticmethod
+        def boundary_condition():
+            return 'Apply'
+
+        @property
+        def is_boundary_basis(self):
+            return True
+
+        def shape(self, forward_output=True):
+            if forward_output:
+                return self.stencil_matrix().shape[0]
+            else:
+                return self.N
+
+        @property
+        def dim_ortho(self):
+            return self.stencil_matrix().shape[1]
+
+        def slice(self):
+            return slice(self.N-self.shape(), self.N)
+
+        def vandermonde(self, x):
+            V = np.zeros((x.shape[0], self.dim_ortho))
+            for i in range(self.dim_ortho):
+                func = self.orthogonal_basis_function(i=i)
+                V[:, i] = sp.lambdify(xp, func)(x)
+            return V
+
+        def _composite(self, V, argument=1):
+            N = self.shape()
+            P = np.zeros(V[:, :N].shape)
+            P[:] = np.tensordot(V[:, :self.dim_ortho], self.stencil_matrix(), (1, 1))
+            return P
+
+        def basis_function(self, i=0, x=xp):
+            M = self.stencil_matrix()
+            return np.sum(M[i]*np.array([self.orthogonal_basis_function(j, x) for j in range(self.dim_ortho)]))
+
+        def evaluate_basis(self, x, i=0, output_array=None):
+            x = np.atleast_1d(x)
+            if output_array is None:
+                output_array = np.zeros(x.shape)
+            V = self.vandermonde(x)
+            output_array[:] = np.dot(V, self.stencil_matrix()[i])
+            return output_array
+
+        def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
+            output_array = SpectralBase.evaluate_basis_derivative(self, x=x, i=i, k=k, output_array=output_array)
+            return output_array
+
+        def to_ortho(self, input_array, output_array=None):
+            from shenfun import Function
+            T = self.get_orthogonal()
+            if output_array is None:
+                output_array = Function(T)
+            else:
+                output_array.fill(0)
+            M = self.stencil_matrix().T
+            for k, row in enumerate(M):
+                output_array[k] = np.dot(row, input_array)
+            return output_array
+
+        def eval(self, x, u, output_array=None):
+            v = self.to_ortho(u)
+            output_array = v.eval(x, output_array=output_array)
+            return output_array
+
+        def get_orthogonal(self, **kwargs):
+            d = dict(quad=self.quad,
+                     domain=self.domain,
+                     dtype=self.dtype,
+                     padding_factor=self.padding_factor,
+                     dealias_direct=self.dealias_direct,
+                     coordinates=self.coors.coordinates)
+            for kw in ('alpha', 'beta'):
+                if hasattr(self, kw):
+                    d[kw] = getattr(self, kw)
+            d.update(kwargs)
+            base = importlib.import_module('.'.join(('shenfun', self.family().lower())))
+            return base.Orthogonal(self.dim_ortho, **d)
+
+    return BCGeneric
 
 class BoundaryConditions(dict):
     """Boundary conditions for :class:`.SpectralBase`.
@@ -1830,6 +1988,7 @@ class BoundaryConditions(dict):
             assert isinstance(domain, (tuple, list))
             if np.isfinite(float(domain[0]*domain[1])):
                 df = 2/float(domain[1]-domain[0])
+
         for key, val in bcs.items():
             for bc, v in val.items():
                 if bc == 'N':
@@ -2074,7 +2233,7 @@ def inner_product(test, trial, measure=1, assemble=None, kind=None, fixed_resolu
         - :mod:`.hermite.bases`
         - :mod:`.jacobi.bases`
 
-        The integer determines the number of times the basis is
+        The integer determines the number of times the basis function is
         differentiated. The test represents the matrix row
     trial : 2-tuple of (Basis, integer)
         Like test
@@ -2116,7 +2275,7 @@ def inner_product(test, trial, measure=1, assemble=None, kind=None, fixed_resolu
     key = ((test[0].__class__, test[1]), (trial[0].__class__, trial[1]))
     mat = test[0]._get_mat()
 
-    if measure != 1:
+    if not isinstance(measure, Number):
         # replace y, z with x if multidimensional
         x0 = measure.free_symbols
         assert len(x0) == 1
@@ -2137,11 +2296,12 @@ def inner_product(test, trial, measure=1, assemble=None, kind=None, fixed_resolu
                 sci = dv['coeff']
                 msi = dv['x']
                 newkey = key + (msi,)
-                B.append(mat[newkey](test, trial, assemble=assemble, kind=kind, fixed_resolution=fixed_resolution))
-                B[-1].scale *= sci
+                B.append(mat[newkey](test, trial, scale=sci, assemble=assemble, kind=kind, fixed_resolution=fixed_resolution))
             A = B[0] if len(B) == 1 else np.sum(np.array(B, dtype=object))
     else:
         A = mat[key](test, trial, assemble=assemble, kind=kind, fixed_resolution=fixed_resolution)
+        if measure != 1:
+            A *= measure
 
     return A
 

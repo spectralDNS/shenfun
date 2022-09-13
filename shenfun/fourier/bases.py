@@ -43,7 +43,10 @@ from shenfun.spectralbase import SpectralBase, Transform, islicedict, slicedict
 from shenfun.optimization.cython import convolve
 from shenfun.config import config
 
-__all__ = ['R2C', 'C2C']
+bases = ['R2C', 'C2C']
+bcbases = []
+testbases = []
+__all__ = bases
 
 #pylint: disable=method-hidden, no-member, line-too-long, arguments-differ
 
@@ -78,7 +81,7 @@ class FourierBase(SpectralBase):
             return points, np.array([float(self.domain_factor())/N])
         return points, np.array([2*np.pi/N])
 
-    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
+    def orthogonal_basis_function(self, i=0, x=sp.symbols('x', real=True)):
         k = self.wavenumbers(bcast=False, scaled=False, eliminate_highest_freq=False)
         return sp.exp(sp.I*k[i]*x)
 
@@ -139,6 +142,7 @@ class FourierBase(SpectralBase):
         self.forward._output_array *= M
 
         self.apply_inverse_mass(self.forward.output_array)
+
         if output_array is not None:
             output_array[...] = self.forward.output_array
             return output_array

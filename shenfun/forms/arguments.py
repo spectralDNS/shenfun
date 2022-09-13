@@ -2,7 +2,7 @@ from numbers import Number, Integral
 from itertools import product
 from collections import defaultdict
 import copy
-from scipy.special import sph_harm, erf, airy
+from scipy.special import sph_harm, erf, airy, j0, jn
 import numpy as np
 import sympy as sp
 from shenfun.config import config
@@ -17,6 +17,7 @@ __all__ = ('Expr', 'BasisFunction', 'TestFunction', 'TrialFunction', 'Function',
 cot = lambda x: 1/np.tan(x)
 Ynm = lambda n, m, x, y : sph_harm(m, n, y, x)
 airyai = lambda x: airy(x)[0]
+besselj = lambda n, y: jn(n, y)
 
 def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
                   domain=None, scaled=None, padding_factor=1, basis=None,
@@ -819,8 +820,8 @@ class Expr:
 
         Parameters
         ----------
-        i : int
-            First vector component
+        i : int or None
+            First vector component. In 1D set i to None
         j : int, optional
             Second component of tensor
 
@@ -832,11 +833,22 @@ class Expr:
         normal vector components must be scaled in order to get to the
         contravariant components.
         """
+        if i is None:
+            # e.g., using grad in 1D
+            if config['basisvectors'] == 'normal':
+                assert self.dimensions == 1
+                return self*(1/self.function_space().coors.hi[0])
+            assert config['basisvectors'] == 'covariant'
+            return self
+
         if j is None:
             if i >= self.dimensions:
                 raise IndexError
 
             if config['basisvectors'] == 'normal':
+                if self.dimensions == 1: # e.g., using grad in 1D
+                    assert i == 0
+                    return self*(1/self.function_space().coors.hi[i])
                 return self[i]*(1/self.function_space().coors.hi[i])
             assert config['basisvectors'] == 'covariant'
             return self[i]
@@ -1277,7 +1289,7 @@ class ShenfunBaseArray(DistArray):
                     for sym in sym0:
                         j = 'xyzrs'.index(str(sym))
                         m.append(mesh[j])
-                    buffer.v[i] = sp.lambdify(sym0, buf0, modules=['numpy', {'airyai': airyai, 'cot': cot, 'Ynm': Ynm, 'erf': erf}])(*m).astype(adtype)
+                    buffer.v[i] = sp.lambdify(sym0, buf0, modules=['numpy', {'airyai': airyai, 'cot': cot, 'Ynm': Ynm, 'erf': erf, 'besselj': besselj}])(*m).astype(adtype)
                 else:
                     raise NotImplementedError
 
@@ -1295,7 +1307,7 @@ class ShenfunBaseArray(DistArray):
                 for sym in sym0:
                     j = 'xyzrs'.index(str(sym))
                     m.append(mesh[j])
-                buf = sp.lambdify(sym0, buffer, modules=['numpy', {'airyai': airyai, 'cot': cot, 'Ynm': Ynm, 'erf': erf}])(*m).astype(space.forward.input_array.dtype)
+                buf = sp.lambdify(sym0, buffer, modules=['numpy', {'airyai': airyai, 'cot': cot, 'Ynm': Ynm, 'erf': erf, 'besselj': besselj}])(*m).astype(space.forward.input_array.dtype)
             else:
                 buf = buffer
             buffer = Array(space)

@@ -50,10 +50,7 @@ def div(test):
     if coors.is_cartesian:
 
         if ndim == 1:      # 1D
-            v = np.array(test.terms())
-            v += 1
-            test._terms = v.tolist()
-            return test
+            return Dx(test, 0, 1)
 
         else:
             if test.num_components() == ndim**2: # second rank tensor
@@ -72,13 +69,13 @@ def div(test):
 
     else:
 
+        comp = test.get_contravariant_component
         if ndim == 1:      # 1D
             sg = coors.get_sqrt_det_g()
-            d = Dx(test*sg, 0, 1)*(1/sg)
+            d = Dx(comp(None)*sg, 0, 1)*(1/sg)
             return d
 
         else:
-            comp = test.get_contravariant_component
 
             if test.num_components() == ndim**2:
                 ct = coors.get_christoffel_second()
@@ -218,33 +215,28 @@ def Dx(test, x, k=1):
                  copy.deepcopy(test._scales),
                  copy.deepcopy(test._indices))
 
+    # product rule
+    # \frac{\partial scale(x) test(x)}{\partial x} = scale(x) \frac{\partial test(x)}{\partial x} + test(x) \frac{\partial scale(x)}{\partial x}
+
     coors = dtest.function_space().coors
-
-    if coors.is_cartesian:
-        v = np.array(dtest.terms())
-        v[..., x] += 1
-        dtest._terms = v.tolist()
-
-    else:
-        assert test.expr_rank() < 1, 'Cannot (yet) take derivative of tensor in curvilinear coordinates'
-        psi = coors.psi
-        v = copy.deepcopy(dtest.terms())
-        sc = copy.deepcopy(dtest.scales())
-        ind = copy.deepcopy(dtest.indices())
-        num_terms = dtest.num_terms()
-        for i in range(dtest.num_components()):
-            for j in range(num_terms[i]):
-                sc0 = sp.simplify(sp.diff(sc[i][j], psi[x], 1), measure=coors._measure)
-                sc0 = coors.refine(sc0)
-                if not sc0 == 0:
-                    v[i].append(copy.deepcopy(v[i][j]))
-                    sc[i].append(sc0)
-                    ind[i].append(ind[i][j])
-                v[i][j][x] += 1
-        dtest._terms = v
-        dtest._scales = sc
-        dtest._indices = ind
-
+    assert test.expr_rank() < 1 or coors.is_cartesian, 'Cannot (yet) take derivative of tensor in curvilinear coordinates'
+    psi = coors.psi
+    v = copy.deepcopy(dtest.terms())
+    sc = copy.deepcopy(dtest.scales())
+    ind = copy.deepcopy(dtest.indices())
+    num_terms = dtest.num_terms()
+    for i in range(dtest.num_components()):
+        for j in range(num_terms[i]):
+            sc0 = sp.simplify(sp.diff(sc[i][j], psi[x], 1), measure=coors._measure)
+            sc0 = coors.refine(sc0)
+            if not sc0 == 0:
+                v[i].append(copy.deepcopy(v[i][j]))
+                sc[i].append(sc0)
+                ind[i].append(ind[i][j])
+            v[i][j][x] += 1
+    dtest._terms = v
+    dtest._scales = sc
+    dtest._indices = ind
     return dtest
 
 def curl(test):

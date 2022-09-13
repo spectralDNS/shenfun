@@ -4,7 +4,6 @@ import sympy as sp
 from shenfun import Function, Array, FunctionSpace, VectorSpace, \
     TensorSpace, TensorProductSpace, dot, project, comm, div, grad, config
 
-config['basisvectors'] = 'normal'
 x, y =sp.symbols('x,y', real=True)
 
 def test_dot():
@@ -31,6 +30,8 @@ def test_dot():
 def test_dot_curvilinear():
     # Define spherical coordinates without the poles
     N = 10
+    basisvectors = config['basisvectors']
+    config['basisvectors'] = 'normal'
     r, theta, phi = psi =sp.symbols('x,y,z', real=True, positive=True)
     rv = (r*sp.sin(theta)*sp.cos(phi), r*sp.sin(theta)*sp.sin(phi), r*sp.cos(theta))
     L0 = FunctionSpace(N, 'L', domain=(0.5, 1))
@@ -56,6 +57,7 @@ def test_dot_curvilinear():
     ggt = Function(S, buffer=(-1, 0, 0, 0, -1, 0, 0, 0, 1/sp.tan(theta)**2))
     assert np.linalg.norm(gg-ggt) < 1e-4
     T.destroy()
+    config['basisvectors'] = basisvectors
 
 if __name__ == '__main__':
     import sys

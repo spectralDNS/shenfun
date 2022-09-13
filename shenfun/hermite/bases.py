@@ -93,7 +93,7 @@ class Orthogonal(SpectralBase):
         V = hermite.hermvander(x, self.shape(False)-1)
         return V
 
-    def sympy_basis(self, i=0, x=sp.symbols('x')):
+    def orthogonal_basis_function(self, i=0, x=sp.symbols('x')):
         return sp.hermite(i, x)*sp.exp(-x**2/2)*self.factor(i)
 
     def L2_norm_sq(self, i):

@@ -24,9 +24,12 @@ __all__ = ('TensorProductSpace', 'VectorSpace', 'TensorSpace',
 
 @staticmethod
 def _get_kind(xfftn, kind):
-    family = xfftn.func.func.__self__.family()
-    kind = {} if kind is None else kind
-    return kind.get(family, config['transforms']['kind'][family])
+    try:
+        family = xfftn.func.func.__self__.family()
+        kind = {} if kind is None else kind
+        return kind.get(family, config['transforms']['kind'][family])
+    except:
+        return None
 
 @staticmethod
 def _get_mesh(xfftn, mesh):
@@ -1876,6 +1879,7 @@ class BoundaryValues:
         call this function. The boundary condition can then be applied as before.
         """
         from shenfun import project
+        from shenfun.utilities import split
 
         self.axis = this_base.axis
         self.base = this_base
@@ -1927,7 +1931,6 @@ class BoundaryValues:
                         k = 'xyzrs'.index(str(sym))
                         Yi.append(X[k][this_base.si[j]])
                     f_bci = lbci(*Yi)
-
                     # Put the value in the position of the bc dofs
                     if s.stop == int(this_base.N*this_base.padding_factor):
                         b[this_base.si[-num_bcs+j]] = f_bci
@@ -1970,15 +1973,20 @@ class BoundaryValues:
                     else:
                         i = number_of_bases_after_this
                         u_hat = T.forward._xfftn[i].input_array
-                        fun = FuncWrap(lambda x, y: x, u_hat, u_hat) # Do-nothing
+                        dx = T.coors.get_sqrt_det_g()
+                        msdict = split(dx)
+                        c = msdict[0]['coeff']
+                        fun = FuncWrap(lambda x, y, **kw: x, u_hat, u_hat) # Do-nothing
                         fwd = Transform(list(T.forward._xfftn[:i])+[fun],
                                         T.forward._transfer[:i], [[], []])
-                        b_hat = fwd(b).copy()
+                        b_hat = fwd(c*b).copy()
+
                     # Now b_hat contains the correct slices in slm1 and slm2
                     # These are the values to use on intermediate steps.
                     # If for example a Dirichlet space is squeezed between two Fourier spaces
                     self.bcs[j] = b_hat[this_base.si[-num_bcs+j]].copy()
                 b_hat = T.forward(b).copy()
+
                 for j in range(self.bc.num_bcs()):
                     self.bcs_final[j] = b_hat[this_base.si[-num_bcs+j]].copy()
 
@@ -2028,7 +2036,7 @@ class BoundaryValues:
         uh : Function
             Containing correct boundary values of Function
         """
-        B = self.base.get_bc_basis()
+        B = self.base.get_bc_space()
         M = (B.stencil_matrix().T).astype(float)
         sl = B.slice()
         ds = uh.shape[self.base.axis] - B.N

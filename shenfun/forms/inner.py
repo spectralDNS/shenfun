@@ -425,7 +425,7 @@ def inner(expr0, expr1, output_array=None, assemble=None, kind=None, fixed_resol
                             M.append(AA)
 
                             if ts.has_nonhomogeneous_bcs:
-                                tsc = ts.get_bc_basis()
+                                tsc = ts.get_bc_space()
                                 BB = inner_product((tt, a), (tsc, b), msi, assemble=assemble, kind=kind, fixed_resolution=fixed_resolution)
                                 #if not abs(BB.scale-1.) < 1e-8:
                                 #    BB.incorporate_scale()
@@ -441,11 +441,13 @@ def inner(expr0, expr1, output_array=None, assemble=None, kind=None, fixed_resol
                         if sc == 0:
                             continue
                         sc = tt.broadcast_to_ndims(np.array([sc]))
+
                         if len(M) == 1: # 1D case
                             M[0].global_index = (test_ind[test_j], trial_ind[trial_j])
                             M[0].scale = sc[0]
                             M[0].testbase = testspace
                             M[0].trialbase = trialspace
+                            M[0].incorporate_scale()
                             A.append(M[0])
                         else:
                             A.append(TPMatrix(M, test_sp, trial_sp, sc, (test_ind[test_j], trial_ind[trial_j]), testspace, trialspace))

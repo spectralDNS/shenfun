@@ -9,10 +9,11 @@ import sympy as sp
 from scipy.special import eval_chebyu
 from mpi4py_fft import fftw
 from shenfun.spectralbase import SpectralBase, Transform, FuncWrap, \
-    islicedict, slicedict, getCompositeBase, BoundaryConditions
+    islicedict, slicedict, getCompositeBase, getBCGeneric, BoundaryConditions
 from shenfun.matrixbase import SparseMatrix
 from shenfun.config import config
 from shenfun.jacobi.recursions import half, un, n
+from shenfun.jacobi import JacobiBase
 
 #pylint: disable=abstract-method, not-callable, method-hidden, no-self-use, cyclic-import
 
@@ -57,7 +58,7 @@ class DCTWrap(FuncWrap):
             return output_array
         return self.output_array
 
-class Orthogonal(SpectralBase):
+class Orthogonal(JacobiBase):
     r"""Function space for Chebyshev series of second kind
 
     The orthogonal basis is
@@ -93,12 +94,10 @@ class Orthogonal(SpectralBase):
 
     def __init__(self, N, quad='GU', domain=(-1, 1), dtype=float, padding_factor=1,
                  dealias_direct=False, coordinates=None, **kw):
-        SpectralBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
-                              padding_factor=padding_factor, dealias_direct=dealias_direct,
-                              coordinates=coordinates)
+        JacobiBase.__init__(self, N, quad=quad, alpha=half, beta=half, domain=domain, dtype=dtype,
+                            padding_factor=padding_factor, dealias_direct=dealias_direct,
+                            coordinates=coordinates)
         assert quad in ('GU', 'GC')
-        self.alpha = half
-        self.beta = half
         self.gn = un
         if quad == 'GC':
             self._xfftn_fwd = functools.partial(fftw.dstn, type=2)
@@ -132,18 +131,15 @@ class Orthogonal(SpectralBase):
         else:
             if self.quad == "GU":
                 import quadpy
-                p = quadpy.c1.clenshaw_curtis(N)
+                p = quadpy.c1.fejer_2(N)
                 points = -p.points
                 weights = p.weights
 
             elif self.quad == "GC":
-                points = n_cheb.chebgauss(N)[0]
-                d = fftw.aligned(N, fill=0)
-                k = 2*(1 + np.arange((N-1)//2))
-                d[::2] = (2./N)/np.hstack((1., 1.-k*k))
-                w = fftw.aligned_like(d)
-                dct = fftw.dctn(w, axes=(0,), type=3)
-                weights = dct(d, w)
+                import quadpy
+                p = quadpy.c1.fejer_1(N)
+                points = -p.points
+                weights = p.weights
 
         if map_true_domain is True:
             points = self.map_true_domain(points)
@@ -156,9 +152,6 @@ class Orthogonal(SpectralBase):
     def weight(self, x=xp):
         return sp.sqrt(1-x**2)
 
-    def reference_domain(self):
-        return (-1, 1)
-
     def get_orthogonal(self, **kwargs):
         d = dict(quad=self.quad,
                  domain=self.domain,
@@ -169,7 +162,10 @@ class Orthogonal(SpectralBase):
         d.update(kwargs)
         return Orthogonal(self.N, **d)
 
-    def sympy_basis(self, i=0, x=xp):
+    def basis_function(self, i=0, x=xp):
+        return self.orthogonal_basis_function(i=i, x=x)
+
+    def orthogonal_basis_function(self, i=0, x=xp):
         return sp.chebyshevu(i, x)
 
     def L2_norm_sq(self, i):
@@ -184,11 +180,6 @@ class Orthogonal(SpectralBase):
         elif i == self.N-1 and self.quad == 'GC':
             return np.pi
         return np.pi/2
-
-    @staticmethod
-    def bnd_values(k=0, **kw):
-        from shenfun.jacobi.recursions import bnd_values, un, half
-        return bnd_values(half, half, k=k, gn=un)
 
     def evaluate_basis(self, x, i=0, output_array=None):
         x = np.atleast_1d(x)
@@ -288,11 +279,11 @@ class Orthogonal(SpectralBase):
     def stencil_matrix(self, N=None):
         return SparseMatrix({0: 1}, (N, N))
 
-    def get_bc_basis(self):
-        if self._bc_basis:
-            return self._bc_basis
-        self._bc_basis = BCGeneric(self.N, bc=self.bcs, domain=self.domain)
-        return self._bc_basis
+    def get_bc_space(self):
+        if self._bc_space:
+            return self._bc_space
+        self._bc_space = BCGeneric(self.N, bc=self.bcs, domain=self.domain)
+        return self._bc_space
 
     def plan(self, shape, axis, dtype, options):
         if shape in (0, (0,)):
@@ -348,6 +339,7 @@ class Orthogonal(SpectralBase):
         self.sl = slicedict(axis=self.axis, dimensions=U.ndim)
 
 CompositeBase = getCompositeBase(Orthogonal)
+BCGeneric = getBCGeneric(CompositeBase)
 
 class Phi1(CompositeBase):
     r"""Function space for Dirichlet boundary conditions
@@ -1173,10 +1165,10 @@ class Generic(CompositeBase):
         Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
 
     """
-    def __init__(self, N, quad="GC", bc={}, domain=(-1, 1), dtype=float,
+    def __init__(self, N, quad="GU", bc={}, domain=(-1, 1), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None, **kw):
         from shenfun.utilities.findbasis import get_stencil_matrix
-        self._stencil = get_stencil_matrix(bc, 'chebyshevu')
+        self._stencil = get_stencil_matrix(bc, 'chebyshevu', half, half, un)
         bc = BoundaryConditions(bc)
         CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
@@ -1190,113 +1182,6 @@ class Generic(CompositeBase):
     def short_name():
         return 'GU'
 
-
-class BCBase(CompositeBase):
-    """Function space for inhomogeneous boundary conditions
-
-    Parameters
-    ----------
-    N : int
-        Number of quadrature points in the homogeneous space.
-    bc : dict
-        The boundary conditions in dictionary form, see
-        :class:`.BoundaryConditions`.
-    domain : 2-tuple, optional
-        The domain of the homogeneous space.
-
-    """
-    def __init__(self, N, bc=None, domain=(-1, 1), **kw):
-        CompositeBase.__init__(self, N, bc=bc, domain=domain)
-        self._stencil_matrix = None
-
-    def stencil_matrix(self, N=None):
-        raise NotImplementedError
-
-    @staticmethod
-    def short_name():
-        raise NotImplementedError
-
-    @staticmethod
-    def boundary_condition():
-        return 'Apply'
-
-    @property
-    def is_boundary_basis(self):
-        return True
-
-    def shape(self, forward_output=True):
-        if forward_output:
-            return self.stencil_matrix().shape[0]
-        else:
-            return self.N
-
-    @property
-    def dim_ortho(self):
-        return self.stencil_matrix().shape[1]
-
-    def slice(self):
-        return slice(self.N-self.shape(), self.N)
-
-    def vandermonde(self, x):
-        return chebvanderU(x, self.dim_ortho-1)
-
-    def _composite(self, V, argument=1):
-        N = self.shape()
-        P = np.zeros(V[:, :N].shape)
-        P[:] = np.tensordot(V[:, :self.dim_ortho], self.stencil_matrix(), (1, 1))
-        return P
-
-    def sympy_basis(self, i=0, x=xp):
-        M = self.stencil_matrix()
-        return np.sum(M[i]*np.array([sp.chebyshevu(j, x) for j in range(self.dim_ortho)]))
-
-    def evaluate_basis(self, x, i=0, output_array=None):
-        x = np.atleast_1d(x)
-        if output_array is None:
-            output_array = np.zeros(x.shape)
-        V = self.vandermonde(x)
-        output_array[:] = np.dot(V, self.stencil_matrix()[i])
-        return output_array
-
-    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
-        output_array = SpectralBase.evaluate_basis_derivative(self, x=x, i=i, k=k, output_array=output_array)
-        return output_array
-
-    def to_ortho(self, input_array, output_array=None):
-        from shenfun import Function
-        T = self.get_orthogonal()
-        if output_array is None:
-            output_array = Function(T)
-        else:
-            output_array.fill(0)
-        M = self.stencil_matrix().T
-        for k, row in enumerate(M):
-            output_array[k] = np.dot(row, input_array)
-        return output_array
-
-    def eval(self, x, u, output_array=None):
-        v = self.to_ortho(u)
-        output_array = v.eval(x, output_array=output_array)
-        return output_array
-
-    def get_orthogonal(self, **kwargs):
-        d = dict(quad=self.quad,
-                 domain=self.domain,
-                 dtype=self.dtype)
-        d.update(kwargs)
-        return Orthogonal(self.dim_ortho, **d)
-
-class BCGeneric(BCBase):
-
-    @staticmethod
-    def short_name():
-        return 'BG'
-
-    def stencil_matrix(self, N=None):
-        if self._stencil_matrix is None:
-            from shenfun.utilities import get_bc_basis
-            self._stencil_matrix = np.array(get_bc_basis(self.bcs, 'chebyshevu'))
-        return self._stencil_matrix
 
 def chebvanderU(x, deg):
     """Pseudo-Vandermonde matrix of given degree for Chebyshev polynomials

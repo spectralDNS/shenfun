@@ -40,14 +40,16 @@ to the orthogonal basis.
 from __future__ import division
 import sympy as sp
 import numpy as np
+import functools
 from numpy.polynomial import legendre as leg
 from scipy.special import eval_legendre
 from mpi4py_fft import fftw
 from shenfun.config import config
-from shenfun.spectralbase import SpectralBase, Transform, islicedict, \
-    slicedict, getCompositeBase, BoundaryConditions
+from shenfun.spectralbase import Transform, getCompositeBase, getBCGeneric, \
+    BoundaryConditions, islicedict, slicedict
 from shenfun.matrixbase import SparseMatrix
 from shenfun.utilities import n
+from shenfun.jacobi import JacobiBase
 from .lobatto import legendre_lobatto_nodes_and_weights
 from . import fastgl
 
@@ -85,7 +87,7 @@ mode = mode if has_quadpy else 'numpy'
 xp = sp.Symbol('x', real=True)
 
 
-class Orthogonal(SpectralBase):
+class Orthogonal(JacobiBase):
     r"""Function space for a regular Legendre series
 
     The orthogonal basis is
@@ -121,12 +123,9 @@ class Orthogonal(SpectralBase):
 
     def __init__(self, N, quad="LG", domain=(-1, 1), dtype=float, padding_factor=1,
                  dealias_direct=False, coordinates=None, **kw):
-        SpectralBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
-                              padding_factor=padding_factor, dealias_direct=dealias_direct,
-                              coordinates=coordinates)
-        self.alpha = 0
-        self.beta = 0
-        self.gn = 1
+        JacobiBase.__init__(self, N, quad=quad, alpha=0, beta=0, domain=domain, dtype=dtype,
+                            padding_factor=padding_factor, dealias_direct=dealias_direct,
+                            coordinates=coordinates)
         self.plan(int(padding_factor*N), 0, dtype, {})
 
     @staticmethod
@@ -167,9 +166,6 @@ class Orthogonal(SpectralBase):
     def vandermonde(self, x):
         return leg.legvander(x, self.shape(False)-1)
 
-    def reference_domain(self):
-        return (-1, 1)
-
     def get_orthogonal(self, **kwargs):
         d = dict(quad=self.quad,
                  domain=self.domain,
@@ -180,7 +176,7 @@ class Orthogonal(SpectralBase):
         d.update(kwargs)
         return Orthogonal(self.N, **d)
 
-    def sympy_basis(self, i=0, x=xp):
+    def orthogonal_basis_function(self, i=0, x=xp):
         return sp.legendre(i, x)
 
     def L2_norm_sq(self, i):
@@ -195,11 +191,6 @@ class Orthogonal(SpectralBase):
         elif i == self.N-1 and self.quad == 'GL':
             return 2/(self.N-1)
         return 2/(2*i+1)
-
-    @staticmethod
-    def bnd_values(k=0, **kw):
-        from shenfun.jacobi.recursions import bnd_values
-        return bnd_values(0, 0, k=k)
 
     def evaluate_basis(self, x, i=0, output_array=None):
         x = np.atleast_1d(x)
@@ -233,6 +224,21 @@ class Orthogonal(SpectralBase):
             V = np.dot(V, D)
         return V
 
+    def _evaluate_expansion_all(self, input_array, output_array, x=None, kind='fast'):
+        if kind != 'fast' or self.quad != 'LG':
+            JacobiBase._evaluate_expansion_all(self, input_array, output_array, x, kind=kind)
+            return
+
+        assert input_array is self.backward.tmp_array
+        assert output_array is self.backward.output_array
+        output_array = self.backward.xfftn()
+
+    def _evaluate_scalar_product(self, kind='fast'):
+        if kind != 'fast' or self.quad != 'LG':
+            JacobiBase._evaluate_scalar_product(self, kind=kind)
+            return
+        out = self.scalar_product.xfftn()
+
     def eval(self, x, u, output_array=None):
         if output_array is None:
             output_array = np.zeros(x.shape, dtype=self.dtype)
@@ -260,11 +266,11 @@ class Orthogonal(SpectralBase):
         return SparseMatrix({-1: (k[:min(N, M-1)]+1)/(2*k[:min(N, M-1)]+1),
                              1: (k[:min(M, N-1)]+1)/(2*k[:min(M, N-1)]+3)}, shape=(M, N))
 
-    def get_bc_basis(self):
-        if self._bc_basis:
-            return self._bc_basis
-        self._bc_basis = BCGeneric(self.N, bc=self.bcs, domain=self.domain)
-        return self._bc_basis
+    def get_bc_space(self):
+        if self._bc_space:
+            return self._bc_space
+        self._bc_space = BCGeneric(self.N, bc=self.bcs, domain=self.domain)
+        return self._bc_space
 
     def to_ortho(self, input_array, output_array=None):
         assert input_array.__class__.__name__ == 'Orthogonal'
@@ -273,7 +279,61 @@ class Orthogonal(SpectralBase):
             return output_array
         return input_array
 
+    def plan(self, shape, axis, dtype, options):
+        from .dlt import DLT
+        from shenfun.chebyshev.bases import DCTWrap
+        if shape in (0, (0,)):
+            return
+
+        if isinstance(axis, tuple):
+            assert len(axis) == 1
+            axis = axis[-1]
+
+        if isinstance(self.forward, Transform):
+            if self.forward.input_array.shape == shape and self.axis == axis:
+                # Already planned
+                return
+
+        opts = config['fftw']['dlt']
+        opts['overwrite_input'] = 'FFTW_DESTROY_INPUT'
+        opts.update(options)
+        flags = (fftw.flag_dict[opts['planner_effort']],
+                 fftw.flag_dict[opts['overwrite_input']])
+        threads = opts['threads']
+
+        U = fftw.aligned(shape, dtype=float)
+        xfftn_fwd = DLT(U, axes=(axis,), forward=True, threads=threads, flags=flags)
+        V = xfftn_fwd.output_array
+        xfftn_bck = DLT(V, axes=(axis,), forward=False, threads=threads, flags=flags, output_array=U)
+        V.fill(0)
+        U.fill(0)
+
+        if np.dtype(dtype) is np.dtype('complex'):
+            # dct only works on real data, so need to wrap it
+            U = fftw.aligned(shape, dtype=complex)
+            V = fftw.aligned(shape, dtype=complex)
+            U.fill(0)
+            V.fill(0)
+            xfftn_fwd = DCTWrap(xfftn_fwd, U, V)
+            xfftn_bck = DCTWrap(xfftn_bck, V, U)
+
+        self.axis = axis
+        if self.padding_factor != 1:
+            trunc_array = self._get_truncarray(shape, V.dtype)
+            self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, trunc_array)
+            self.forward = Transform(self.forward, xfftn_fwd, U, V, trunc_array)
+            self.backward = Transform(self.backward, xfftn_fwd, trunc_array, V, U)
+        else:
+            self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)
+            self.forward = Transform(self.forward, xfftn_fwd, U, V, V)
+            self.backward = Transform(self.backward, xfftn_bck, V, V, U)
+
+        self.si = islicedict(axis=self.axis, dimensions=U.ndim)
+        self.sl = slicedict(axis=self.axis, dimensions=U.ndim)
+
+
 CompositeBase = getCompositeBase(Orthogonal)
+BCGeneric = getBCGeneric(CompositeBase)
 
 class ShenDirichlet(CompositeBase):
     r"""Function space for Dirichlet boundary conditions
@@ -1429,111 +1489,3 @@ class Generic(CompositeBase):
     def short_name():
         return 'GL'
 
-
-class BCBase(CompositeBase):
-    """Function space for inhomogeneous boundary conditions
-
-    Parameters
-    ----------
-    N : int
-        Number of quadrature points in the homogeneous space.
-    bc : dict
-        The boundary conditions in dictionary form, see
-        :class:`.BoundaryConditions`.
-    domain : 2-tuple of numbers, optional
-        The domain of the homogeneous space.
-
-    """
-
-    def __init__(self, N, bc=None, domain=(-1, 1), **kw):
-        CompositeBase.__init__(self, N, bc=bc, domain=domain)
-        self._stencil_matrix = None
-
-    def stencil_matrix(self, N=None):
-        raise NotImplementedError
-
-    @staticmethod
-    def short_name():
-        raise NotImplementedError
-
-    @staticmethod
-    def boundary_condition():
-        return 'Apply'
-
-    @property
-    def is_boundary_basis(self):
-        return True
-
-    def shape(self, forward_output=True):
-        if forward_output:
-            return self.stencil_matrix().shape[0]
-        else:
-            return self.N
-
-    @property
-    def dim_ortho(self):
-        return self.stencil_matrix().shape[1]
-
-    def slice(self):
-        return slice(self.N-self.shape(), self.N)
-
-    def vandermonde(self, x):
-        return leg.legvander(x, self.dim_ortho-1)
-
-    def _composite(self, V, argument=1):
-        N = self.shape()
-        P = np.zeros(V[:, :N].shape)
-        P[:] = np.tensordot(V[:, :self.dim_ortho], self.stencil_matrix(), (1, 1))
-        return P
-
-    def sympy_basis(self, i=0, x=xp):
-        M = self.stencil_matrix()
-        return np.sum(M[i]*np.array([sp.legendre(j, x) for j in range(self.dim_ortho)]))
-
-    def evaluate_basis(self, x, i=0, output_array=None):
-        x = np.atleast_1d(x)
-        if output_array is None:
-            output_array = np.zeros(x.shape)
-        V = self.vandermonde(x)
-        output_array[:] = np.dot(V, self.stencil_matrix()[i])
-        return output_array
-
-    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
-        output_array = SpectralBase.evaluate_basis_derivative(self, x=x, i=i, k=k, output_array=output_array)
-        return output_array
-
-    def to_ortho(self, input_array, output_array=None):
-        from shenfun import Function
-        T = self.get_orthogonal()
-        if output_array is None:
-            output_array = Function(T)
-        else:
-            output_array.fill(0)
-        M = self.stencil_matrix().T
-        for k, row in enumerate(M):
-            output_array[k] = np.dot(row, input_array)
-        return output_array
-
-    def eval(self, x, u, output_array=None):
-        v = self.to_ortho(u)
-        output_array = v.eval(x, output_array=output_array)
-        return output_array
-
-    def get_orthogonal(self, **kwargs):
-        d = dict(quad=self.quad,
-                 domain=self.domain,
-                 dtype=self.dtype)
-        d.update(kwargs)
-        return Orthogonal(self.dim_ortho, **d)
-
-class BCGeneric(BCBase):
-
-    @staticmethod
-    def short_name():
-        return 'BG'
-
-    def stencil_matrix(self, N=None):
-        if self._stencil_matrix is None:
-            from shenfun.utilities.findbasis import get_bc_basis
-            self._stencil_matrix = np.array(get_bc_basis(self.bcs, 'legendre'))
-        return self._stencil_matrix

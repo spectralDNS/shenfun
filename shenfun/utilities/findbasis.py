@@ -6,7 +6,7 @@ import numpy as np
 
 n = sp.Symbol('n', real=True, integer=True, positive=True)
 
-def get_stencil_matrix(bcs, family, alpha=None, beta=None):
+def get_stencil_matrix(bcs, family, alpha=None, beta=None, gn=1):
     """Return stencil matrix.
 
     Return the narrowest possible stencil matrix satisfying the
@@ -22,19 +22,22 @@ def get_stencil_matrix(bcs, family, alpha=None, beta=None):
     family : str
         Choose one of
 
-        - ``Chebyshev`` or ``C``
-        - ``Chebyshevu`` or ``U``
-        - ``Legendre`` or ``L``
-        - ``Ultraspherical`` or ``Q``
-        - ``Jacobi`` or ``J``
-        - ``Laguerre`` or ``La``
+        - ``Chebyshev``
+        - ``Chebyshevu``
+        - ``Legendre``
+        - ``Ultraspherical``
+        - ``Jacobi``
+        - ``Laguerre``
 
     alpha, beta : numbers, optional
         The Jacobi parameters, used only for ``Jacobi`` or ``Ultraspherical``
+
+    gn : Scaling function for Jacobi polynomials
+
     """
     from shenfun.spectralbase import BoundaryConditions
     base = importlib.import_module('.'.join(('shenfun', family.lower())))
-    bnd_values = functools.partial(base.Orthogonal.bnd_values, alpha=alpha, beta=beta)
+    bnd_values = functools.partial(base.Orthogonal.bnd_values, alpha=alpha, beta=beta, gn=gn)
     bcs = BoundaryConditions(bcs)
     bc = {'D': 0, 'N': 1, 'N2': 2, 'N3': 3, 'N4': 4}
     lr = {'L': 0, 'R': 1}
@@ -54,7 +57,7 @@ def get_stencil_matrix(bcs, family, alpha=None, beta=None):
             d[i+1] = s
     return d
 
-def get_bc_basis(bcs, family, alpha=None, beta=None):
+def get_bc_basis(bcs, family, alpha=None, beta=None, gn=1):
     """Return boundary basis satisfying `bcs`.
 
     Parameters
@@ -66,19 +69,22 @@ def get_bc_basis(bcs, family, alpha=None, beta=None):
     family : str
         Choose one of
 
-        - ``Chebyshev`` or ``C``
-        - ``Chebyshevu`` or ``U``
-        - ``Legendre`` or ``L``
-        - ``Ultraspherical`` or ``Q``
-        - ``Jacobi`` or ``J``
-        - ``Laguerre`` or ``La``
+        - ``Chebyshev``
+        - ``Chebyshevu``
+        - ``Legendre``
+        - ``Ultraspherical``
+        - ``Jacobi``
+        - ``Laguerre``
 
     alpha, beta : numbers, optional
         The Jacobi parameters, used only for ``Jacobi`` or ``Ultraspherical``
+
+    gn : Scaling function for Jacobi polynomials
+
     """
     from shenfun.spectralbase import BoundaryConditions
     base = importlib.import_module('.'.join(('shenfun', family.lower())))
-    bnd_values = functools.partial(base.Orthogonal.bnd_values, alpha=alpha, beta=beta)
+    bnd_values = functools.partial(base.Orthogonal.bnd_values, alpha=alpha, beta=beta, gn=gn)
     bcs = BoundaryConditions(bcs)
     def _computematrix(first):
         bc = {'D': 0, 'N': 1, 'N2': 2, 'N3': 3, 'N4': 4}

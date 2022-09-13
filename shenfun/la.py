@@ -1495,28 +1495,44 @@ class BlockMatrixSolver:
             self._lu = {}
 
         daxes = space.get_diagonal_axes()
-        sl, dims = space._get_ndiag_slices_and_dims()
-        gi = np.zeros(dims[-1], dtype=b.dtype)
-        for key, Ai in self.mat._Ai.items():
-            if len(daxes) > 0:
-                sl.T[daxes+1] = key if isinstance(key, int) else np.array(key)[:, None]
-            gi = b.copy_to_flattened(gi, key, dims, sl)
-            if key in self._lu:
-                lu = self._lu[key]
+        if len(daxes) == space.dimensions:
+            # Only Fourier spaces, all diagonal
+            assert len(daxes) == space.dimensions
+            Ai = self.mat._Ai[0]
+            gi = b.flatten()
+            if isinstance(self._lu, dict):
                 for con in constraints:
-                    _, gi = self.apply_constraint(None, gi, dims[con[0]], key, con)
+                    Ai, gi = self.apply_constraint(Ai, gi, np.sum(np.array(space.dims()[:con[0]])), 0, con)
             else:
                 for con in constraints:
-                    Ai, gi = self.apply_constraint(Ai, gi, dims[con[0]], key, con)
+                    _, gi = self.apply_constraint(None, gi, np.sum(np.array(space.dims()[:con[0]])), 0, con)
+            lu = sp.linalg.splu(Ai, permc_spec=config['matrix']['block']['permc_spec'])
+            self._lu = lu
+            u[:] = lu.solve(gi).reshape(u.shape)
 
-                lu = sp.linalg.splu(Ai, permc_spec=config['matrix']['block']['permc_spec'])
-                self._lu[key] = lu
+        else:
+            sl, dims = space._get_ndiag_slices_and_dims()
+            gi = np.zeros(dims[-1], dtype=b.dtype)
+            for key, Ai in self.mat._Ai.items():
+                if len(daxes) > 0:
+                    sl.T[daxes+1] = key if isinstance(key, int) else np.array(key)[:, None]
+                gi = b.copy_to_flattened(gi, key, dims, sl)
+                if key in self._lu:
+                    lu = self._lu[key]
+                    for con in constraints:
+                        _, gi = self.apply_constraint(None, gi, dims[con[0]], key, con)
+                else:
+                    for con in constraints:
+                        Ai, gi = self.apply_constraint(Ai, gi, dims[con[0]], key, con)
 
-            if b.dtype.char in 'fdg' or lu.U.dtype.char in 'FDG':
-                u = u.copy_from_flattened(lu.solve(gi), key, dims, sl)
-            else:
-                u.real = u.real.copy_from_flattened(lu.solve(gi.real), key, dims, sl)
-                u.imag = u.imag.copy_from_flattened(lu.solve(gi.imag), key, dims, sl)
+                    lu = sp.linalg.splu(Ai, permc_spec=config['matrix']['block']['permc_spec'])
+                    self._lu[key] = lu
+
+                if b.dtype.char in 'fdg' or lu.U.dtype.char in 'FDG':
+                    u = u.copy_from_flattened(lu.solve(gi), key, dims, sl)
+                else:
+                    u.real = u.real.copy_from_flattened(lu.solve(gi.real), key, dims, sl)
+                    u.imag = u.imag.copy_from_flattened(lu.solve(gi.imag), key, dims, sl)
 
         u = u.reshape(u.shape[1:]) if nvars == 1 else u
         b = b.reshape(b.shape[1:]) if nvars == 1 else b

@@ -11,21 +11,8 @@ The first letter refers to type of matrix.
     - Biharmonic - Two derivatives for test and trial - start with `S`
 
 A matrix may consist of different types of test and trialfunctions. The next
-letters in the matrix name uses the short form for all these different bases
-according to
-
-    - L  = Orthogonal
-    - SD = ShenDirichlet
-    - SB = ShenBiharmonic
-    - SN = ShenNeumann
-    - UD = UpperDirichlet
-    - DN = DirichletNeumann
-    - ND = NeumannDirichlet
-    - BF = BeamFixedFree
-    - P1 = Phi1
-    - P2 = Phi2
-    - P4 = Phi4
-    - BCG = BCGeneric
+letters in the matrix name uses the 'short_name' method for all these different
+bases, see legendre.bases.py.
 
 So a mass matrix using ShenDirichlet test and ShenNeumann trial is named
 BSDSNmat.
