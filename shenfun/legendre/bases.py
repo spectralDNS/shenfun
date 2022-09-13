@@ -301,9 +301,9 @@ class Orthogonal(JacobiBase):
         threads = opts['threads']
 
         U = fftw.aligned(shape, dtype=float)
-        xfftn_fwd = DLT(U, axes=(axis,), forward=True, threads=threads, flags=flags)
+        xfftn_fwd = DLT(U, axes=(axis,), kind='scalar product', threads=threads, flags=flags)
         V = xfftn_fwd.output_array
-        xfftn_bck = DLT(V, axes=(axis,), forward=False, threads=threads, flags=flags, output_array=U)
+        xfftn_bck = DLT(V, axes=(axis,), kind='backward', threads=threads, flags=flags, output_array=U)
         V.fill(0)
         U.fill(0)
 

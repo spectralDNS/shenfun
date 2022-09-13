@@ -117,7 +117,7 @@ def test_convolve(basis, N):
     assert np.allclose(uv3, uv2)
 
 
-@pytest.mark.parametrize('ST,quad', list(product(ctrialBasis, cquads)) + list(product(fBasis, [""])))
+@pytest.mark.parametrize('ST,quad', list(product(ctrialBasis, cquads))+ list(product(ltrialBasis, ["LG"])) + list(product(fBasis, [""])))
 def test_scalarproduct(ST, quad):
     """Test fast scalar product against Vandermonde computed version"""
     kwargs = {}
@@ -545,9 +545,9 @@ if __name__ == '__main__':
     #for i in range(len(ctrialBasis)):
     #    test_massmatrices(ctestBasis[-4], ctrialBasis[i], 'GL')
     #test_massmatrices(ctestBasis[-4], ctrialBasis[2], 'GL')
-    test_CXXmat(ctestBasis[3], ctrialBasis[1])
+    #test_CXXmat(ctestBasis[3], ctrialBasis[1])
     #test_transforms(cBasisGC[3], 'GC')
     #test_project_1D(cBasis[0])
-    #test_scalarproduct(cBasis[2], 'GC')
+    test_scalarproduct(ltrialBasis[2], 'LG')
     #test_eval(cuBasis[-1], 'GU')
     #test_axis(laBasis[1], 'LG', 1)

@@ -21,6 +21,15 @@ shenfun.legendre.la module
     :undoc-members:
     :show-inheritance:
 
+shenfun.legendre.dlt module
+--------------------------
+
+.. automodule:: shenfun.legendre.dlt
+    :members:
+    :special-members: __call__
+    :undoc-members:
+    :show-inheritance:
+
 shenfun.legendre.lobatto module
 -------------------------------
 

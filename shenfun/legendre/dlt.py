@@ -1,16 +1,15 @@
-import scipy
 import numpy as np
 from numpy.polynomial import chebyshev as n_cheb
 from mpi4py_fft import fftw
 from mpi4py_fft.fftw.utilities import FFTW_MEASURE, FFTW_PRESERVE_INPUT
 from . import fastgl
 
-gammaln = scipy.special.gammaln
+__all__ = ['DLT']
 
 class DLT:
     """Discrete Legendre transform
 
-    A class for performing fast FFT-based discrete Legendre transform, both
+    A class for performing fast FFT-based discrete Legendre transforms, both
     forwards and backwards. Based on::
 
         Nicholas Hale and Alex Townsend "A fast FFT-based discrete Legendre
@@ -23,9 +22,15 @@ class DLT:
     s : sequence of ints, optional
         Not used - included for compatibility with Numpy
     axes : integer or 1-tuple of int, optional
-        Axis over which to compute the FFT. Named axes for compatibility.
+        Axis over which to compute the DLT. Named axes for compatibility.
     threads : int, optional
-        Number of threads used in computing FFT.
+        Number of threads used in computing DLT.
+    kind : str, optional
+        Either one of
+
+            - 'forward'
+            - 'backward'
+            - 'scalar product'
     flags : sequence of ints, optional
         Flags from
 
@@ -41,8 +46,43 @@ class DLT:
         Array to be used as output array. Must be of correct shape, type,
         strides and alignment
 
+    Note
+    ----
+    The Legendre series expansion of :math:`f(x)` is
+
+    .. math::
+
+        f(x) = \sum_{k=0}^{N-1} \hat{f}_k L_k(x)
+
+    The series evaluated at quadrature points :math:`\{x_j\}_{j=0}^{N-1}` gives the
+    vector :math:`\{f(x_j)\}_{j=0}^{N-1}`. We define a forward transform as
+    computing :math:`\{\hat{f}_k\}_{k=0}^{N-1}` from :math:`\{f(x_j)\}_{j=0}^{N-1}`.
+    The other way around, a backward transform, computes :math:`\{f(x_j)\}_{j=0}^{N-1}`
+    given :math:`\{\hat{f}_k\}_{k=0}^{N-1}`. This is in agreement with shenfun's
+    definition of forward/backward directions, but it disagrees with the definitions
+    used by Hale and Townsend.
+
+    Also note that this `fast` transform is actually slower than the default recursive
+    version for approximately :math:`N<1000`.
+
+    Example
+    -------
+    >>> import numpy as np
+    >>> from shenfun import legendre, FunctionSpace, Function, Array
+    >>> N = 4
+    >>> L = FunctionSpace(N, 'L')
+    >>> u = Function(L)
+    >>> u[1] = 1
+    >>> c = Array(L)
+    >>> c = L.backward(u, c, kind='fast')
+    >>> print(c)
+    [-0.86113631 -0.33998104  0.33998104  0.86113631]
+    >>> u[:] = 1
+    >>> np.alltrue(np.abs(u - u.backward().forward()) < 1e-12)
+    True
+
     """
-    def __init__(self, input_array, s=None, axes=(-1,), threads=1, forward=True,
+    def __init__(self, input_array, s=None, axes=(-1,), threads=1, kind='backward',
                  flags=(FFTW_MEASURE, FFTW_PRESERVE_INPUT), output_array=None):
         if isinstance(axes, tuple):
             assert len(axes) == 1
@@ -50,7 +90,8 @@ class DLT:
         elif isinstance(axes, int):
             axis = axes
         self.axis = axis
-        self.forward = forward
+        assert kind in ('forward', 'scalar product', 'backward')
+        self.kind = kind
         N = self.N = input_array.shape[axis]
         xl, self.wl = fastgl.leggauss(N)
         xc = n_cheb.chebgauss(N)[0]
@@ -62,20 +103,21 @@ class DLT:
         self.n = np.arange(N)[tuple(s)]
         self.wl = self.wl[tuple(s)]
         s0 = [slice(None)]*input_array.ndim
-        s0[self.axis] = slice(-1, None, -1) # backwards
+        s0[self.axis] = slice(-1, None, -1) # reverse
         self.s0 = tuple(s0)
-        self.nsign = np.ones(N)
-        self.nsign[1::2] = -1
-        self.nsign = self.nsign[tuple(s)]*(self.n+0.5)
+        if kind in ('forward', 'scalar product'):
+            self.nsign = np.ones(N)
+            self.nsign[1::2] = -1
+            if kind == 'forward': # apply inverse mass matrix
+                self.nsign = self.nsign[tuple(s)]*(self.n+0.5)
         self.M2 = None
         self.M2T = None
-        # The dct and dst use same internal arrays
         U = input_array
         V = output_array if output_array is not None else U.copy()
-        self.plan(U, V, forward, threads, flags)
+        self.plan(U, V, kind, threads, flags)
 
-    def plan(self, U, V, forward, threads, flags):
-        if forward == True:
+    def plan(self, U, V, kind, threads, flags):
+        if kind in ('forward', 'scalar product'):
             self.dct = DCT(U, axis=self.axis, type=2, threads=threads, flags=flags, output_array=V)
             self.dst = DST(U, axis=self.axis, type=2, threads=threads, flags=flags, output_array=V)
         else:
@@ -118,7 +160,7 @@ class DLT:
             self._input_array[:] = input_array
         if self.M2 is None:
             self.assemble()
-        if self.forward == True:
+        if self.kind in ('forward', 'scalar product'):
             self._input_array *= self.wl
         else:
             self._input_array = self.leg2cheb(self._input_array)
@@ -129,7 +171,7 @@ class DLT:
         Dt = 1
         for l in range(1, 40):
             lf *= l
-            if self.forward == False:
+            if self.kind == 'backward':
                 c *= self.n
                 Dt *= self.dtheta
             else:
@@ -144,7 +186,7 @@ class DLT:
             error = np.linalg.norm(df, ord=np.inf)
             if error < 1e-14:
                 break
-        if self.forward == True:
+        if self.kind in ('forward', 'scalar product'):
             fk = self.M2T.matvec(fk.copy(), fk, axis=self.axis, format='python')
             fk *= self.nsign
         else:

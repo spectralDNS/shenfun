@@ -1470,7 +1470,7 @@ def getCompositeBase(Orthogonal):
 
         def _evaluate_expansion_all(self, input_array, output_array, x=None, kind=None):
             if kind == 'fast':
-                assert self.family() in ('fourier', 'chebyshev', 'chebyshevu'),\
+                assert self.family() in ('fourier', 'chebyshev', 'chebyshevu', 'legendre'),\
                     f'Fast method not implemented for {self.family()} family'
             if kind == 'vandermonde':
                 SpectralBase._evaluate_expansion_all(self, input_array, output_array, x, kind=kind)
@@ -1483,7 +1483,7 @@ def getCompositeBase(Orthogonal):
         def _evaluate_scalar_product(self, kind=None):
             output = self.scalar_product.tmp_array
             if kind == 'fast':
-                assert self.family() in ('fourier', 'chebyshev', 'chebyshevu'),\
+                assert self.family() in ('fourier', 'chebyshev', 'chebyshevu', 'legendre'),\
                     f'Fast method not implemented for {self.family()} family'
             if kind == 'vandermonde':
                 SpectralBase._evaluate_scalar_product(self, kind=kind)
