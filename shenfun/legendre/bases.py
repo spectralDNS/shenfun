@@ -40,7 +40,6 @@ to the orthogonal basis.
 from __future__ import division
 import sympy as sp
 import numpy as np
-import functools
 from numpy.polynomial import legendre as leg
 from scipy.special import eval_legendre
 from mpi4py_fft import fftw
@@ -237,7 +236,7 @@ class Orthogonal(JacobiBase):
         if kind != 'fast' or self.quad != 'LG':
             JacobiBase._evaluate_scalar_product(self, kind=kind)
             return
-        out = self.scalar_product.xfftn()
+        self.scalar_product.xfftn()
 
     def eval(self, x, u, output_array=None):
         if output_array is None:

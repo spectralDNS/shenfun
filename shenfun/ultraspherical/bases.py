@@ -113,7 +113,7 @@ class Orthogonal(JacobiBase):
             N = self.shape(False)
         assert self.quad == "QG"
         points, weights = roots_jacobi(N, float(self.alpha), float(self.alpha))
-        if weighted == False:
+        if weighted is False:
             weights = self.unweighted_quadrature_weights()
 
         if map_true_domain is True:

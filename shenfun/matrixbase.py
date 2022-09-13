@@ -1885,7 +1885,7 @@ def _get_matrix(test, trial, measure=1, assemble=None, fixed_resolution=None):
         try:
             R = _get_matrix(test, trial, measure=measure, assemble='quadrature')
         except:
-            R =  {k: None for k in np.arange(-test[0].dim(), test[0].dim()+1)}
+            R = {k: None for k in np.arange(-test[0].dim(), test[0].dim()+1)}
         V = np.zeros((K0, K1), dtype=test[0].forward.output_array.dtype)
         if test[0].family() == 'chebyshev':
             # Transform integral using x=cos(theta)
