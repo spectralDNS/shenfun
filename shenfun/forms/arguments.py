@@ -2,7 +2,7 @@ from numbers import Number, Integral
 from itertools import product
 from collections import defaultdict
 import copy
-from scipy.special import sph_harm, erf, airy, j0, jn
+from scipy.special import sph_harm, erf, airy, jn
 import numpy as np
 import sympy as sp
 from shenfun.config import config
@@ -17,7 +17,7 @@ __all__ = ('Expr', 'BasisFunction', 'TestFunction', 'TrialFunction', 'Function',
 cot = lambda x: 1/np.tan(x)
 Ynm = lambda n, m, x, y : sph_harm(m, n, y, x)
 airyai = lambda x: airy(x)[0]
-besselj = lambda n, y: jn(n, y)
+besselj = jn
 
 def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
                   domain=None, scaled=None, padding_factor=1, basis=None,

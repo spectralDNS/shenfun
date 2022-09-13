@@ -69,9 +69,9 @@ from shenfun.spectralbase import get_norm_sq
 from shenfun.la import TDMA as generic_TDMA
 from shenfun.la import PDMA as generic_PDMA
 from shenfun.la import TwoDMA
+from shenfun.legendre import bases as legendrebases
 from .la import ADDSolver, ANNSolver
 from . import bases
-from shenfun.legendre import bases as legendrebases
 
 
 # Short names for instances of bases
