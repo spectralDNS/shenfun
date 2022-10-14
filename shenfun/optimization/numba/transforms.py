@@ -166,7 +166,6 @@ def _evaluate_expansion_all(input_array, output_array, xj, a):
 
 @nb.jit(nopython=True, fastmath=True, cache=False)
 def _restricted_product(input_array, output_array, xj, Lnm0, Ln0, i0, i1, a0, a):
-    M = output_array.shape[0]
     N = xj.shape[0]
     Lnm = Lnm0.copy()
     Ln = Ln0.copy()
@@ -220,7 +219,7 @@ def leg2cheb(input_array, output_array, axis=0, transpose=False):
 
 @nb.jit(nopython=True, fastmath=True, cache=False)
 def _leg2cheb(c, v, a, N, transpose):
-    if transpose == False:
+    if transpose is False:
         for n in range(0, N, 2):
             v[:(N-n)] += a[n//2]*a[n//2:(N-n//2)]*c[n:]
         v[0] /= 2

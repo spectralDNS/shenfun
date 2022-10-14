@@ -6,7 +6,6 @@ from mpi4py import MPI
 from mpi4py_fft import fftw
 from mpi4py_fft.fftw.utilities import FFTW_MEASURE, FFTW_PRESERVE_INPUT
 from shenfun.optimization import runtimeoptimizer
-from shenfun.tensorproductspace import TensorProductSpace
 from . import fastgl
 
 __all__ = ['DLT', 'leg2cheb', 'cheb2leg', 'Leg2cheb']
@@ -14,7 +13,7 @@ __all__ = ['DLT', 'leg2cheb', 'cheb2leg', 'Leg2cheb']
 comm = MPI.COMM_WORLD
 
 class DLT:
-    """Discrete Legendre transform
+    """Discrete Legendre Transform
 
     A class for performing fast FFT-based discrete Legendre transforms, both
     forwards and backwards. Based on::
@@ -452,6 +451,7 @@ class Leg2cheb:
         self.L = None
         self.T = None
         self.U = None
+        self.a = None
         self.Nmin = Nmin
         self._input_array = input_array
         self._output_array = output_array if output_array is not None else input_array.copy()
@@ -582,7 +582,7 @@ class Leg2cheb:
         cn = self._Cn(np.arange(N))[sn]
         xi, wi = self.T.points_and_weights()
 
-        if transpose == False:
+        if transpose is False:
             cn = self.input_array*cn
             for m in range(10):
                 if m > 0:
