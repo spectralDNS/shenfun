@@ -11,6 +11,7 @@ from .la import *
 from .helmholtz import *
 from .biharmonic import *
 from .chebyshev import *
+from .transforms import *
 
 @nb.jit(nopython=True, fastmath=True, cache=True)
 def crossND(c, a, b):

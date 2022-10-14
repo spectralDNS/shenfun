@@ -67,6 +67,7 @@ bases = ['Orthogonal',
          'UpperDirichletNeumann',
          'LowerDirichletNeumann',
          'ShenBiPolar',
+         'PolarDirichlet',
          'DirichletNeumann',
          'NeumannDirichlet',
          'Compact3',
@@ -892,7 +893,7 @@ class ShenBiharmonic(CompositeBase):
 
     .. math::
 
-        \phi_k &= T_n - \frac{2(n+2)}{n+3}T_{n+2}+\frac{n+1}{n+3}T_{n+4}, \, k=0, 1, \ldots, N-5, \\
+        \phi_k &= T_n - \frac{2(k+2)}{k+3}T_{k+2}+\frac{k+1}{k+3}T_{k+4}, \, k=0, 1, \ldots, N-5, \\
         \phi_{N-4} &= \frac{1}{16}(8T_0-9T_1+T_3), \\
         \phi_{N-3} &= \frac{1}{16}(2T_0-T_1-2T_2+T_3), \\
         \phi_{N-2} &= \frac{1}{16}(8T_0+9T_1-T_3), \\
@@ -949,6 +950,80 @@ class ShenBiharmonic(CompositeBase):
     @staticmethod
     def short_name():
         return 'SB'
+
+class PolarDirichlet(CompositeBase):
+    r"""Function space for polar coordinates.
+
+    The basis :math:`\{\phi_k\}_{k=0}^{N-1}` is
+
+    .. math::
+
+        \phi_k &= T_k - T_{k+2}, \, k=0, 1
+        \phi_k &= T_{k-2} - T_{k+2}, \, k=2, 3, \ldots, N-3, \\
+        \phi_{N-2} &= \frac{1}{2}(T_0-T_1), \\
+        \phi_{N-1} &= \frac{1}{2}(T_0+T_1),
+
+    such that
+
+    .. math::
+        u(x) &= \sum_{k=0}^{N-1} \hat{u}_k \phi_k(x), \\
+        u(-1)&=a, u(1)=b
+
+    The last four bases are for boundary conditions and only used if a, b, c or d are
+    different from 0. In one dimension :math:`\hat{u}_{N-4}=a`, :math:`\hat{u}_{N-3}=b`,
+    :math:`\hat{u}_{N-2}=c` and :math:`\hat{u}_{N-1}=d`.
+
+    Parameters
+    ----------
+    N : int, optional
+        Number of quadrature points
+    quad : str, optional
+        Type of quadrature
+
+        - GL - Chebyshev-Gauss-Lobatto
+        - GC - Chebyshev-Gauss
+    bc : 4-tuple of numbers
+        The values of the 4 boundary conditions at x=(-1, 1).
+        The two conditions on x=-1 first, and then x=1.
+        With (a, b, c, d) corresponding to
+        bc = {'left': [('D', a), ('N', b)], 'right': [('D', c), ('N', d)]}
+    domain : 2-tuple of numbers, optional
+        The computational domain
+    dtype : data-type, optional
+        Type of input data in real physical space. Will be overloaded when
+        basis is part of a :class:`.TensorProductSpace`.
+    padding_factor : float, optional
+        Factor for padding backward transforms.
+    dealias_direct : bool, optional
+        Set upper 1/3 of coefficients to zero before backward transform
+    coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
+        Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
+
+    """
+    def __init__(self, N, quad="GC", bc=(0, 0), domain=(-1, 1), dtype=float,
+                 padding_factor=1, dealias_direct=False, coordinates=None, **kw):
+        CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
+                               padding_factor=padding_factor, dealias_direct=dealias_direct,
+                               coordinates=coordinates)
+
+    @staticmethod
+    def boundary_condition():
+        return 'Dirichlet'
+
+    def stencil_matrix(self, N=None):
+        N = self.N if N is None else N
+        d = np.ones(N)
+        d[2:] = 0
+        dm2 = np.ones(N)
+        dm2[-2:] = 0
+        return SparseMatrix({-2: dm2, 0: d, 2: -1}, (N, N))
+
+    @staticmethod
+    def short_name():
+        return 'PD'
+
+    def sympy_stencil(self, i=sp.Symbol('i', integer=True), j=sp.Symbol('j', integer=True)):
+        return RuntimeError, "Not possible for current basis"
 
 
 class Phi2(CompositeBase):

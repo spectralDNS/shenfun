@@ -224,6 +224,7 @@ class Orthogonal(JacobiBase):
         return V
 
     def _evaluate_expansion_all(self, input_array, output_array, x=None, kind='fast'):
+
         if kind != 'fast' or self.quad != 'LG':
             JacobiBase._evaluate_expansion_all(self, input_array, output_array, x, kind=kind)
             return
@@ -236,7 +237,8 @@ class Orthogonal(JacobiBase):
         if kind != 'fast' or self.quad != 'LG':
             JacobiBase._evaluate_scalar_product(self, kind=kind)
             return
-        self.scalar_product.xfftn()
+        out = self.scalar_product.xfftn()
+        out *= 1/self.domain_factor()
 
     def eval(self, x, u, output_array=None):
         if output_array is None:
@@ -294,12 +296,11 @@ class Orthogonal(JacobiBase):
                 return
 
         opts = config['fftw']['dlt']
-        opts['overwrite_input'] = 'FFTW_DESTROY_INPUT'
+        opts['overwrite_input'] = 'FFTW_PRESERVE_INPUT'
         opts.update(options)
         flags = (fftw.flag_dict[opts['planner_effort']],
                  fftw.flag_dict[opts['overwrite_input']])
         threads = opts['threads']
-
         U = fftw.aligned(shape, dtype=float)
         xfftn_fwd = DLT(U, axes=(axis,), kind='scalar product', threads=threads, flags=flags)
         V = xfftn_fwd.output_array
@@ -321,7 +322,7 @@ class Orthogonal(JacobiBase):
             trunc_array = self._get_truncarray(shape, V.dtype)
             self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, trunc_array)
             self.forward = Transform(self.forward, xfftn_fwd, U, V, trunc_array)
-            self.backward = Transform(self.backward, xfftn_fwd, trunc_array, V, U)
+            self.backward = Transform(self.backward, xfftn_bck, trunc_array, V, U)
         else:
             self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)
             self.forward = Transform(self.forward, xfftn_fwd, U, V, V)
@@ -1487,4 +1488,3 @@ class Generic(CompositeBase):
     @staticmethod
     def short_name():
         return 'GL'
-

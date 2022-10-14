@@ -5,9 +5,10 @@ from shenfun import FunctionSpace, Function, project, TensorProductSpace, \
     comm, Array
 from shenfun.tensorproductspace import CompositeSpace
 
-x, y = sp.symbols('x,y', real=True)
+x, y, z = sp.symbols('x,y,z', real=True)
 f = sp.sin(sp.cos(x))
 ff = sp.sin(x)*sp.cos(y)
+f3 = sp.sin(x)*sp.cos(y)*(1-z**2)
 h = sp.sin(sp.cos(x))*sp.atan2(y, x)
 N = 16
 
@@ -55,7 +56,7 @@ def test_backward2D():
     uL = Function(TL, buffer=ff)
     u2 = uL.backward(mesh=TT)
     uT2 = project(u2, TT)
-    assert np.linalg.norm(uT2-uT) < 1e-8
+    assert np.linalg.norm(uT2-uT) < 1e-8, np.linalg.norm(uT2-uT)
     TTC = CompositeSpace((TT, TT))
     TTL = CompositeSpace((TL, TL))
     uT = Function(TTC, buffer=(ff, ff))
@@ -109,44 +110,51 @@ def test_backward_uniform(family):
 @pytest.mark.parametrize('family', 'CL')
 def test_padding(family):
     N = 8
-    B = FunctionSpace(N, family, bc=(-1, 1), domain=(-1, 1))
+    B = FunctionSpace(N, family, bc=(0, 0), domain=(-1, 1))
     Bp = B.get_dealiased(1.5)
-    u = Function(B).set_boundary_dofs()
+    #Bp = B
+    u = Function(Bp)
     #u[:(N-2)] = np.random.random(N-2)
     u[:(N-2)] = 1
     up = Array(Bp)
     up = Bp.backward(u, kind="vandermonde")
     uf = Bp.forward(up, kind="vandermonde")
     assert np.linalg.norm(uf-u) < 1e-12
-    if family == 'C':
-        up = Bp.backward(u)
-        uf = Bp.forward(up)
-        assert np.linalg.norm(uf-u) < 1e-12
+    uf = Function(Bp)
+    up = Bp.backward(u, up)
+    uf = Bp.forward(up, uf)
+    assert np.linalg.norm(uf-u) < 1e-12, np.linalg.norm(uf-u)
 
     # Test padding 2D
-    F = FunctionSpace(N, 'F', dtype='d')
+    F = FunctionSpace(N, 'F', dtype='D')
     T = TensorProductSpace(comm, (B, F))
     Tp = T.get_dealiased(1.5)
     assert Tp.shape(False) == (12, 12)
-    u = Function(T).set_boundary_dofs()
+    u = Function(T)
     u[:-2, :-1] = np.random.random(u[:-2, :-1].shape)
-    up = Tp.backward(u)
-    uc = Tp.forward(up)
+    up = Array(Tp)
+    uc = Function(Tp)
+    up = Tp.backward(u, up)
+    uc = Tp.forward(up, uc)
     assert up.shape == (int(N*3/2), int(N*3/2))
-    assert np.linalg.norm(u-uc) < 1e-8
+    assert np.linalg.norm(u-uc) < 1e-8, np.linalg.norm(u-uc)
     T.destroy()
+    Tp.destroy()
 
     # Test padding 3D
     F1 = FunctionSpace(N, 'F', dtype='D')
-    T = TensorProductSpace(comm, (F1, F, B))
+    T = TensorProductSpace(comm, (F1, F, B), dtype='D')
     Tp = T.get_dealiased(1.5)
-    u = Function(T).set_boundary_dofs()
-    u[:, :, :-2] = np.random.random(u[:, :, :-2].shape)
-    u = u.backward().forward() # Clean
-    up = Tp.backward(u)
-    uc = Tp.forward(up)
-    assert np.linalg.norm(u-uc) < 1e-8
+    u = Function(T)
+    #u[:-2, :-2, :-2] = np.random.random(u[:-2, :-2, :-2].shape)
+    u[:-2, :-2, :-2] = 1
+    up = Array(Tp)
+    uc = Function(Tp)
+    up = Tp.backward(u, up, kind={'legendre': 'fast'})
+    uc = Tp.forward(up, uc, kind={'legendre': 'fast'})
+    assert np.linalg.norm(u-uc) < 1e-8, np.linalg.norm(u-uc)
     T.destroy()
+    Tp.destroy()
 
 @pytest.mark.parametrize('family', 'CL')
 def test_padding_neumann(family):
@@ -278,8 +286,8 @@ def test_padding_biharmonic(family):
 
 if __name__ == '__main__':
     #test_backward()
-    test_backward2D()
-    #test_padding('C')
+    #test_backward3D()
+    test_padding('L')
     #test_padding_biharmonic('J')
     #test_padding_neumann('C')
     #test_padding_orthogonal('F')

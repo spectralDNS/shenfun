@@ -1,7 +1,3 @@
-"""
-This module contains the inner function that computes the
-weighted inner product.
-"""
 from numbers import Number
 import sympy as sp
 import numpy as np

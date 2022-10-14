@@ -326,7 +326,6 @@ class SpectralBase:
         self._evaluate_expansion_all(self.backward.tmp_array,
                                      self.backward.output_array,
                                      x=mesh, kind=kind)
-
         if output_array is not None:
             output_array[...] = self.backward.output_array
             return output_array
@@ -506,8 +505,8 @@ class SpectralBase:
             lib = importlib.import_module('.'.join(('shenfun.optimization', mod, 'transforms')))
             if x is None:
                 x = self.mesh(False, False)
-            N = len(x)
-            a = self.get_recursion_matrix(N+3, N+3).diags('dia').data
+            N = self.N
+            a = self.get_recursion_matrix(int(N*self.padding_factor)+3, int(N*self.padding_factor)+3).diags('dia').data
             lib.evaluate_expansion_all(input_array, output_array, x, self.axis, a)
 
     def eval(self, x, u, output_array=None):

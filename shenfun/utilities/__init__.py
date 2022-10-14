@@ -666,6 +666,7 @@ def quiver3D(u, mesh=None, wrapaxes=(), slices=None, fig=None, kind='quadrature'
         mlab.figure(bgcolor=(1, 1, 1), size=(400, 400))
     mlab.quiver3d(x, y, z, u[0], u[1], u[2], **par)
 
+@runtimeoptimizer
 def scalar_product(v, f, output_array=None, assemble='exact'):
     r"""Return scalar product
 

@@ -2,12 +2,14 @@
 #cython: wraparound=False
 #cython: language_level=3
 
+from libcpp.vector cimport vector
 from cpython cimport array
 import array
 import numpy as np
 cimport cython
 cimport numpy as np
 import cython
+from scipy.special import gammaln
 
 ctypedef fused T:
     double
@@ -16,6 +18,7 @@ ctypedef fused T:
 ctypedef void (*funcX)(T*, T*, double*, int, int, double*, int)
 
 cdef array.array darray = array.array('d', [])
+
 
 def scalar_product(input_array, output_array, x, w, axis, a):
     cdef:
@@ -59,7 +62,6 @@ def evaluate_expansion_all(input_array, output_array, x, axis, a):
             fun_3D[double](_evaluate_expansion_all_ptr, input_array, output_array, x, axis, a)
         elif n == 4:
             fun_4D[double](_evaluate_expansion_all_ptr, input_array, output_array, x, axis, a)
-
     else:
         if n == 1:
             _evaluate_expansion_all[complex](input_array, output_array, x, a)
@@ -69,6 +71,76 @@ def evaluate_expansion_all(input_array, output_array, x, axis, a):
             fun_3D[complex](_evaluate_expansion_all_ptr, input_array, output_array, x, axis, a)
         elif n == 4:
             fun_4D[complex](_evaluate_expansion_all_ptr, input_array, output_array, x, axis, a)
+
+def Omega(z, a):
+    a[:] = np.exp(gammaln(z+0.5) - gammaln(z+1))
+    return a
+
+def leg2cheb(input_array, output_array, axis=0, transpose=False):
+    cdef:
+        int n = input_array.ndim
+        int N = input_array.shape[axis]
+        np.ndarray[long int, ndim=1] k = np.arange(N)
+        np.ndarray[double, ndim=2] a = np.zeros((1, N))
+        np.ndarray[double, ndim=2] x = np.zeros((1, 1))
+
+    a[0] = Omega(k, a[0])
+    x[0] = transpose
+    output_array.fill(0)
+    if input_array.dtype.char in 'fdg':
+        if n == 1:
+            _leg2cheb[double](input_array, output_array, x, a)
+        elif n == 2:
+            fun_2D[double](_leg2cheb_ptr, input_array, output_array, x, axis, a)
+        elif n == 3:
+            fun_3D[double](_leg2cheb_ptr, input_array, output_array, x, axis, a)
+        elif n == 4:
+            fun_4D[double](_leg2cheb_ptr, input_array, output_array, x, axis, a)
+
+    else:
+        if n == 1:
+            _leg2cheb[complex](input_array, output_array, x, a)
+        elif n == 2:
+            fun_2D[complex](_leg2cheb_ptr, input_array, output_array, x, axis, a)
+        elif n == 3:
+            fun_3D[complex](_leg2cheb_ptr, input_array, output_array, x, axis, a)
+        elif n == 4:
+            fun_4D[complex](_leg2cheb_ptr, input_array, output_array, x, axis, a)
+    return output_array
+
+def cheb2leg(input_array, output_array, axis=0):
+    cdef:
+        int n = input_array.ndim
+        int N = input_array.shape[axis]
+        np.ndarray[long int, ndim=1] k = np.arange(N)
+        np.ndarray[double, ndim=2] x = np.zeros((1, N//2))
+        np.ndarray[double, ndim=2] a = np.zeros((1, N))
+
+    k[0] = 1
+    x[0] = Omega((k[::2]-2)/2, x[0])/k[::2]
+    a[0] = 1/(2*Omega(k, a[0])*k*(k+0.5))
+    a[0, 0] = 2/np.sqrt(np.pi)
+    output_array.fill(0)
+    if input_array.dtype.char in 'fdg':
+        if n == 1:
+            _cheb2leg[double](input_array.copy(), output_array, x, a)
+        elif n == 2:
+            fun_2D[double](_cheb2leg_ptr, input_array.copy(), output_array, x, axis, a)
+        elif n == 3:
+            fun_3D[double](_cheb2leg_ptr, input_array.copy(), output_array, x, axis, a)
+        elif n == 4:
+            fun_4D[double](_cheb2leg_ptr, input_array.copy(), output_array, x, axis, a)
+
+    else:
+        if n == 1:
+            _cheb2leg[complex](input_array.copy(), output_array, x, a)
+        elif n == 2:
+            fun_2D[complex](_cheb2leg_ptr, input_array.copy(), output_array, x, axis, a)
+        elif n == 3:
+            fun_3D[complex](_cheb2leg_ptr, input_array.copy(), output_array, x, axis, a)
+        elif n == 4:
+            fun_4D[complex](_cheb2leg_ptr, input_array.copy(), output_array, x, axis, a)
+    return output_array
 
 cdef void fun_2D(funcX fun, T[:, ::1] ui, T[:, ::1] uo, double[:, ::1] data, int axis, double[:, ::1] a):
     cdef:
@@ -128,6 +200,12 @@ cpdef _scalar_product(T[:] ui, T[:] uo, double[:, ::1] data, double[:, ::1] a):
 
 cpdef _evaluate_expansion_all(T[:] ui, T[:] uo, double[:, ::1] data, double[:, ::1] a):
     _evaluate_expansion_all_ptr[T](&ui[0], &uo[0], &data[0, 0], ui.strides[0]/ui.itemsize, ui.shape[0], &a[0, 0], a.shape[0])
+
+cpdef _leg2cheb(T[:] ui, T[:] uo, double[:, ::1] data, double[:, ::1] a):
+    _leg2cheb_ptr[T](&ui[0], &uo[0], &data[0, 0], ui.strides[0]/ui.itemsize, ui.shape[0], &a[0, 0], a.shape[0])
+
+cpdef _cheb2leg(T[:] ui, T[:] uo, double[:, ::1] data, double[:, ::1] a):
+    _cheb2leg_ptr[T](&ui[0], &uo[0], &data[0, 0], ui.strides[0]/ui.itemsize, ui.shape[0], &a[0, 0], a.shape[0])
 
 @cython.cdivision(True)
 cdef void _evaluate_expansion_all_ptr(T* ui,
@@ -218,3 +296,54 @@ cdef void _scalar_product_ptr(T* ui,
             Ln[j] = Lnp[j]
             Lnp[j] = s1*(xj[j]-a00)*Ln[j] - s2*Lnm[j]
         uo[i*st] = s
+
+@cython.cdivision(True)
+cdef void _leg2cheb_ptr(T* c,
+                        T* v,
+                        double* transpose,
+                        int st,
+                        int N,
+                        double* a,
+                        int M):
+    cdef:
+        int n
+        vector[T] cx
+
+    if transpose[0] < 0.5:
+        for n in range(0, N, 2):
+            for i in range(0, N-n):
+                v[i*st] += a[n//2]*a[n//2+i]*c[(n+i)*st]
+        v[0] /= 2
+        for n in range(0, N):
+            v[n*st] *= (2/np.pi)
+    else:
+        cx.resize(N)
+        for i in range(0, N):
+            cx[i] = c[i*st]*2/np.pi
+        cx[0] /= 2
+        for n in range(0, N, 2):
+            for i in range(0, N-n):
+                v[(i+n)*st] += a[n//2]*a[n//2+i]*cx[i]
+
+
+@cython.cdivision(True)
+cdef void _cheb2leg_ptr(T* v,
+                        T* c,
+                        double* dn,
+                        int st,
+                        int N,
+                        double* a,
+                        int M):
+    cdef:
+        int n
+        double SPI = np.sqrt(np.pi)
+
+    for n in range(1, N):
+        v[n*st] = v[n*st]*n
+    for n in range(N):
+        c[n*st] = SPI*a[n]*v[n*st]
+    for n in range(2, N, 2):
+        for i in range(0, N-n):
+            c[i*st] -= dn[n//2]*a[n//2+i]*v[(n+i)*st]
+    for n in range(N):
+        c[n*st] *= (n+0.5)

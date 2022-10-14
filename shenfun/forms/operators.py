@@ -1,6 +1,3 @@
-"""
-This module contains the implementation of operators acting on arguments.
-"""
 import copy
 import numpy as np
 import sympy as sp

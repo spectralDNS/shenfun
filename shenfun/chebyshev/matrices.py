@@ -164,15 +164,29 @@ class BTLmat(SpectralMatrix):
         N = trial[0].N
         Q = min(M, N)
         k = np.arange(Q)
-        #h = np.sqrt(np.pi) * np.exp(gammaln((2*k[:N]+1)/2) - gammaln((2*k[:N]+2)/2))
+        self.a = np.exp(gammaln((2*k+1)/2) - gammaln((2*k+2)/2))
         d = {}
         for n in range(0, N, 2):
-            #d[n] = h[n:(N-n)]
             d[n] = np.exp(gammaln((n+1)/2)-gammaln((n+2)/2)) * np.exp(gammaln((2*k[:N-n]+n+1)/2) - gammaln((2*k[:N-n]+n+2)/2))
         if test[0].quad == 'GL':
             d[0][-1] *= 2
         return d
 
+    def matvec(self, v, c, format=None, axis=0):
+        # Roll relevant axis to first
+        c.fill(0)
+        if axis > 0:
+            v = np.moveaxis(v, axis, 0)
+            c = np.moveaxis(c, axis, 0)
+
+        N = self.testfunction[0].N
+        for n in range(0, N, 2):
+            c[:(N-n)] += self.a[n//2]*self.a[n//2:(N-n//2)]*v[n:]
+
+        if axis > 0:
+            c = np.moveaxis(c, 0, axis)
+            v = np.moveaxis(v, 0, axis)
+        return c
 
 class BSDSDmat(SpectralMatrix):
     r"""Mass matrix :math:`B=(b_{kj}) \in \mathbb{R}^{M \times N}`, where

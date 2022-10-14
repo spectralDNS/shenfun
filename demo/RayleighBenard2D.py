@@ -185,20 +185,20 @@ class RayleighBenard(KMM):
 
 if __name__ == '__main__':
     from time import time
-    N = (64, 128)
+    N = (256, 512)
     d = {
         'N': N,
         'Ra': 1000000.,
         'Pr': 0.7,
         'dt': 0.025,
         'filename': f'RB_{N[0]}_{N[1]}',
-        'conv': 1,
+        'conv': 0,
         'modplot': 10,
         'moderror': 10,
         'modsave': 100,
-        'bcT': (0.9+0.1*sympy.sin(2*(y-tt)), 0),
+        #'bcT': (0.9+0.1*sympy.sin(2*(y-tt)), 0),
         #'bcT': (0.9+0.1*sympy.sin(2*y), 0),
-        #'bcT': (1, 0),
+        'bcT': (1, 0),
         'family': 'C',
         'checkpoint': 100,
         #'padding_factor': 1,

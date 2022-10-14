@@ -42,7 +42,7 @@ def SolverGeneric1ND_solve_data(u, data, sol, naxes, is_zero_index):
                     sol(u[i, j, :], data[i, j])
     return u
 
-@nb.jit(nopython=True, fastmath=True, cache=True)
+@nb.jit(nopython=True, fastmath=True, cache=False)
 def Solve_axis_2D(data, x, innerfun, axis):
     if axis == 0:
         for j in range(x.shape[1]):
@@ -51,7 +51,7 @@ def Solve_axis_2D(data, x, innerfun, axis):
         for i in range(x.shape[0]):
             innerfun(x[i, :], data)
 
-@nb.jit(nopython=True, fastmath=True, cache=True)
+@nb.jit(nopython=True, fastmath=True, cache=False)
 def Solve_axis_3D(data, x, innerfun, axis):
     if axis == 0:
         for j in range(x.shape[1]):
@@ -66,7 +66,7 @@ def Solve_axis_3D(data, x, innerfun, axis):
             for j in range(x.shape[1]):
                 innerfun(x[i, j], data)
 
-@nb.jit(nopython=True, fastmath=True, cache=True)
+@nb.jit(nopython=True, fastmath=True, cache=False)
 def Solve_axis_4D(data, x, innerfun, axis):
     if axis == 0:
         for j in range(x.shape[1]):

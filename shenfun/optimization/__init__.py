@@ -14,18 +14,27 @@ try:
 except ModuleNotFoundError:
     numba = None
 
+
+"""
+
+runtimeoptimizer
+
+A decorator that chooses optimized function at runtime
+
+At runtime the decorator looks at::
+
+    config['optimization']['mode']
+    config['optimization']['verbose']
+
+and returns the optimized function of choice.
+
+"""
 class runtimeoptimizer:
-    """Decorator that chooses optimized function at runtime
 
-    At runtime the decorator looks at::
-
-        config['optimization']['mode']
-        config['optimization']['verbose']
-
-    and returns the optimized function of choice.
-    """
     def __init__(self, func):
         self.func = func
+        self.__doc__ = func.__doc__
+
     def __call__(self, *args, **kwargs):
         fun = optimizer(self.func)
         return fun(*args, **kwargs)
