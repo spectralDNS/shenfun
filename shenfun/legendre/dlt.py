@@ -445,7 +445,7 @@ class Leg2cheb:
     Nmin : int
         Parameter. Choose direct matvec approach for N < Nmin
     """
-    def __init__(self, input_array, axis=0, output_array=None, nM=50, Nmin=400):
+    def __init__(self, input_array, axis=0, output_array=None, nM=25, Nmin=200):
         self.axis = axis
         self.N = input_array.shape[axis]
         self.L = None
@@ -461,6 +461,7 @@ class Leg2cheb:
             self.lib = importlib.import_module('.'.join(('shenfun.optimization', mod, 'transforms')))
             N = self.N
             self.thetak = (np.arange(N)+0.5)*np.pi/N
+            self.sintk = np.sin(self.thetak)
             alpha = self.alpha = min(1/np.log(N/nM), 0.5)
             if N < 1000:
                 K = 1
@@ -484,10 +485,10 @@ class Leg2cheb:
         return self._output_array
 
     def _Um(self, m):
-        return np.sin((m+0.5)*(np.pi/2-self.thetak))*np.sin(self.thetak)/(2*np.sin(self.thetak))**(m+0.5)
+        return np.sin((m+0.5)*(np.pi/2-self.thetak))/(2**(m+0.5)*self.sintk**(m-0.5))
 
     def _Vm(self, m):
-        return np.cos((m+0.5)*(np.pi/2-self.thetak))/(2*np.sin(self.thetak))**(m+0.5)
+        return np.cos((m+0.5)*(np.pi/2-self.thetak))/(2*self.sintk)**(m+0.5)
 
     @staticmethod
     def _Cn(n):
@@ -584,19 +585,20 @@ class Leg2cheb:
 
         if transpose is False:
             cn = self.input_array*cn
+            na = np.arange(N)
             for m in range(10):
                 if m > 0:
-                    hmn *= (m-0.5)**2/(m*(np.arange(N)+m+0.5))
+                    hmn *= (m-0.5)**2/(m*(na+m+0.5))
                 cm = cn*hmn[sn]
                 um = self._Um(m)[sn]
                 vm = self._Vm(m)[sn]
                 for k in range(1, self.K+1):
                     Tc[:] = 0
                     Uc[:] = 0
-                    si[axis] = slice(int(self.alpha**k*N), int(self.alpha**(k-1)*N))
-                    Tc[tuple(si)] = cm[tuple(si)]
-                    Uc[sm] = Tc[sp]
                     si[axis] = slice(self.ix[k], N-self.ix[k])
+                    sk[axis] = slice(int(self.alpha**k*N), int(self.alpha**(k-1)*N))
+                    Tc[tuple(sk)] = cm[tuple(sk)]
+                    Uc[sm] = Tc[sp]
                     z[tuple(si)] += (vm*self.T.backward(Tc) + um*self.U.backward(Uc))[tuple(si)]
             si[axis] = slice(0, self.ix[1])
             self.lib.evaluate_expansion_all(self.input_array, z[tuple(si)], xi[si[axis]], self.axis, self.a) # recursive eval
@@ -608,12 +610,12 @@ class Leg2cheb:
                 zx = np.zeros_like(z[tuple(si)])
                 self.lib.evaluate_expansion_all(self.input_array[tuple(sk)], zx, xi[si[axis]], self.axis, self.a)
                 z[tuple(si)] += zx
-                self.lib.evaluate_expansion_all(self.input_array[tuple(sk)], zx, xi[si[axis]], self.axis, self.a)
                 si[axis] = slice(self.N-self.ix[k+1], self.N-self.ix[k])
+                self.lib.evaluate_expansion_all(self.input_array[tuple(sk)], zx, xi[si[axis]], self.axis, self.a)
                 z[tuple(si)] += zx
             si[axis] = slice(self.ix[self.K], self.N-self.ix[self.K])
-            zx = np.zeros_like(z[tuple(si)])
             sk[axis] = slice(0, int(self.alpha**(self.K)*self.N))
+            zx = np.zeros_like(z[tuple(si)])
             self.lib.evaluate_expansion_all(self.input_array[tuple(sk)], zx, xi[si[axis]], self.axis, self.a)
             z[tuple(si)] += zx
             self._output_array = self.T.forward(z, self._output_array)
@@ -626,8 +628,8 @@ class Leg2cheb:
             for m in range(10):
                 if m > 0:
                     hmn *= (m-0.5)**2/(m*(np.arange(N)+m+0.5))
-                um = self.Um(m)[sn]
-                vm = self.Vm(m)[sn]
+                um = self._Um(m)[sn]
+                vm = self._Vm(m)[sn]
                 for k in range(1, self.K+1):
                     Tc[:] = 0
                     Uc[:] = 0
