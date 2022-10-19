@@ -535,8 +535,66 @@ def test_ASBSBmat(SB, quad):
     z0 = SB.backward(z0_hat, z0)
     assert np.allclose(z0, u0, rtol=1e-5, atol=1e-6)
 
+def test_dlt():
+    for N in (10, 500, 1000):
+        L = shenfun.FunctionSpace(N, 'L')
+        T = shenfun.FunctionSpace(N, 'C')
+        cleg = shenfun.Function(L, val=1)
+        cc = shenfun.Function(T)
+        C = shenfun.legendre.dlt.Leg2cheb(cleg)
+        cc = C(cleg, cc, transpose=False)
+        x = np.array([0.5, 0.6])
+        assert np.linalg.norm(cc(x)-cleg(x)) < 1e-10, np.linalg.norm(cc(x)-cleg(x))
+        e0 = np.linalg.norm(cleg - cleg.backward(kind='recursive').forward(kind='recursive'))
+        assert e0 < 1e-8, e0
+        e1 = np.linalg.norm(cleg - cleg.backward(kind='fast').forward(kind='fast'))
+        assert e1 < 1e-8, e1
+        cc = C(cleg, cc, transpose=True)
+        e2 = np.linalg.norm(cc-1)
+        assert e2 < 1e-8, e2
+    N = 1000
+    L = shenfun.FunctionSpace(N, 'L')
+    T = shenfun.FunctionSpace(N, 'C')
+    F = shenfun.FunctionSpace(6, 'F', dtype='d')
+    F1 = shenfun.FunctionSpace(6, 'F', dtype='D')
+    TL = shenfun.TensorProductSpace(shenfun.comm, (F, L), dtype='d')
+    TT = shenfun.TensorProductSpace(shenfun.comm, (F, T), dtype='d')
+    cl = shenfun.Function(TL, val=1)
+    cb1 = cl.backward(kind={'legendre': 'recursive'})
+    cb2 = cl.backward(kind={'legendre': 'fast'})
+    cb3 = cl.backward(kind={'legendre': 'vandermonde'})
+    assert np.linalg.norm(cb1-cb2) < 1e-8
+    assert np.linalg.norm(cb1-cb3) < 1e-8
+    CC = shenfun.legendre.dlt.Leg2cheb(cl, axis=1)
+    c2 = shenfun.Function(TT)
+    c2 = CC(cl, c2)
+    xx = np.random.rand(2, 4)
+    assert np.linalg.norm(c2(xx)-cl(xx)) < 1e-8
+    c2 = CC(cl, c2, transpose=True)
+    assert np.linalg.norm(c2-1) < 1e-8
+    c3 = np.zeros_like(c2)
+    c3 = shenfun.legendre.dlt.leg2cheb(cl, c3, axis=1, transpose=True)
+    assert np.linalg.norm(c3-1) < 1e-8
+    c3 = shenfun.legendre.dlt.leg2cheb(cl, c3, axis=1, transpose=False)
+    assert np.linalg.norm(c3(xx)-cl(xx)) < 1e-8
+    TL = shenfun.TensorProductSpace(shenfun.comm, (F1, F, L), dtype='d')
+    TT = shenfun.TensorProductSpace(shenfun.comm, (F1, F, T), dtype='d')
+    cl = shenfun.Function(TL, val=1)
+    CC = shenfun.legendre.dlt.Leg2cheb(cl, axis=2)
+    c2 = shenfun.Function(TT)
+    c2 = CC(cl, c2)
+    xx = np.random.rand(3, 4)
+    assert np.linalg.norm(c2(xx)-cl(xx)) < 1e-8
+    assert np.linalg.norm(cl - cl.backward(kind={'legendre': 'recursive'}).forward(kind={'legendre': 'recursive'})) < 1e-8
+    assert np.linalg.norm(cl - cl.backward(kind={'legendre': 'fast'}).forward(kind={'legendre': 'fast'})) < 1e-8
+    cb1 = cl.backward(kind={'legendre': 'recursive'})
+    cb2 = cl.backward(kind={'legendre': 'fast'})
+    assert np.linalg.norm(cb1-cb2) < 1e-7, np.linalg.norm(cb1-cb2)
+
+
 if __name__ == '__main__':
-    config['optimization']['mode'] = 'cython'
+    from time import time
+    config['optimization']['mode'] = 'numba'
     #test_to_ortho(cBasisGC[1], 'GC')
     # test_convolve(fbases.R2C, 8)
     #test_ASDSDmat(cbases.ShenNeumann, "GC")
@@ -548,6 +606,7 @@ if __name__ == '__main__':
     #test_CXXmat(ctestBasis[3], ctrialBasis[1])
     #test_transforms(cBasisGC[3], 'GC')
     #test_project_1D(cBasis[0])
-    test_scalarproduct(ltrialBasis[2], 'LG')
+    #test_scalarproduct(ltrialBasis[2], 'LG')
+    test_dlt()
     #test_eval(cuBasis[-1], 'GU')
     #test_axis(laBasis[1], 'LG', 1)

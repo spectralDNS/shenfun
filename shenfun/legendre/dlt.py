@@ -2,15 +2,14 @@ import importlib
 from scipy.special import gammaln
 import numpy as np
 from numpy.polynomial import chebyshev as n_cheb
-from mpi4py import MPI
 from mpi4py_fft import fftw
 from mpi4py_fft.fftw.utilities import FFTW_MEASURE, FFTW_PRESERVE_INPUT
 from shenfun.optimization import runtimeoptimizer
+from shenfun.spectralbase import islicedict, slicedict
 from . import fastgl
 
 __all__ = ['DLT', 'leg2cheb', 'cheb2leg', 'Leg2cheb']
 
-comm = MPI.COMM_WORLD
 
 class DLT:
     """Discrete Legendre Transform
@@ -42,8 +41,8 @@ class DLT:
             - 'backward'
             - 'scalar product'
 
-        The scalar product is exactly like the forward transform, except that the
-        Legendre mass matrix is not applied to the output.
+        The scalar product is exactly like the forward transform, except that
+        the Legendre mass matrix is not applied to the output.
     flags : sequence of ints, optional
         Flags from
 
@@ -105,6 +104,8 @@ class DLT:
         self.axis = axis
         assert kind in ('forward', 'scalar product', 'backward')
         self.kind = kind
+        self.sl = slicedict(axis=axis, dimensions=input_array.ndim)
+        self.si = islicedict(axis=axis, dimensions=input_array.ndim)
         N = self.N = input_array.shape[axis]
         xl, wl = fastgl.leggauss(N)
         xc = n_cheb.chebgauss(N)[0]
@@ -112,21 +113,19 @@ class DLT:
         thetac = np.arccos(xc)
         s = [None]*input_array.ndim
         s[axis] = slice(None)
-        self.dtheta = (thetal - thetac)[tuple(s)]
-        self.n = np.arange(N, dtype=float)[tuple(s)]
-        s0 = [slice(None)]*input_array.ndim
-        s0[axis] = slice(-1, None, -1) # reverse
-        self.s0 = tuple(s0)
+        s = tuple(s) # broadcast to ndims
+        self.dtheta = (thetal - thetac)[s]
+        self.n = np.arange(N, dtype=float)[s]
         if kind in ('forward', 'scalar product'):
-            self.wl = wl[tuple(s)]
+            self.wl = wl[s]
             self.nsign = np.ones(N)
             self.nsign[1::2] = -1
             if kind == 'forward': # apply inverse mass matrix as well
-                self.nsign = self.nsign[tuple(s)]*(self.n+0.5)
+                self.nsign = self.nsign[s]*(self.n+0.5)
             else:
-                self.nsign = self.nsign[tuple(s)]
+                self.nsign = self.nsign[s]
         ck = np.full(N, np.pi/2); ck[0] = np.pi
-        self.ck = ck[tuple(s)]
+        self.ck = ck[s]
         U = input_array
         V = output_array if output_array is not None else U.copy()
         self.plan(U, V, kind, threads, flags)
@@ -159,7 +158,7 @@ class DLT:
 
         # Set up x, which is input array to dct/dst
         # Some dcts apparently destroys the input_array, so need copy
-        x = np.zeros_like(self.dct.input_array)
+        x = np.zeros_like(self.input_array)
         x[:] = self._input_array
         if self.kind in ('forward', 'scalar product'):
             x *= self.wl
@@ -194,7 +193,7 @@ class DLT:
             fk = self.leg2chebclass(fk.copy(), fk, transpose=True)
             fk *= self.nsign
         else:
-            fk[:] = fk[self.s0] # reverse
+            fk[:] = fk[self.sl[slice(-1, None, -1)]] # reverse
         if output_array is not None:
             output_array[:] = fk
             return output_array
@@ -202,7 +201,7 @@ class DLT:
         return self._output_array
 
 class DCT:
-    """Discrete cosine transform
+    """Discrete cosine transform with appropriate scaling
 
     input_array : array
     s : sequence of ints, optional
@@ -241,11 +240,8 @@ class DCT:
         self.dct = fftw.dctn(input_array, axes=(axis,), type=type, threads=threads,
                              flags=flags, output_array=output_array)
         s = [slice(None)]*input_array.ndim
-        s0 = [slice(None)]*input_array.ndim
-        s[self.axis] = 0
-        s0[self.axis] = None
+        s[self.axis] = slice(0, 1)
         self.s = tuple(s)
-        self.s0 = tuple(s0)
 
     @property
     def input_array(self):
@@ -255,12 +251,15 @@ class DCT:
     def output_array(self):
         return self.dct.output_array
 
+    def destroy(self):
+        self.dct.destroy()
+
     def __call__(self, input_array=None, output_array=None):
         if input_array is not None:
             self.input_array[:] = input_array
         out = self.dct()
         if self.type == 3:
-            out += self.dct.input_array[self.s][self.s0]
+            out += self.dct.input_array[self.s]
         out /= 2
         if output_array is not None:
             output_array[:] = out
@@ -268,22 +267,48 @@ class DCT:
         return out
 
 class DST:
+    """Discrete sine transform with appropriate scaling
+
+    Parameters
+    ----------
+    input_array : array
+    s : sequence of ints, optional
+        Not used - included for compatibility with Numpy
+    axes : sequence of ints, optional
+        Axes over which to compute the real-to-real dst.
+    type : int, optional
+        Type of `dst <http://www.fftw.org/fftw3_doc/Real_002dto_002dReal-Transform-Kinds.html>`_
+
+            - 1 - FFTW_RODFT00
+            - 2 - FFTW_RODFT10
+            - 3 - FFTW_RODFT01
+            - 4 - FFTW_RODFT11
+    threads : int, optional
+        Number of threads used in computing dst.
+    flags : sequence of ints, optional
+        Flags from
+
+            - FFTW_MEASURE
+            - FFTW_EXHAUSTIVE
+            - FFTW_PATIENT
+            - FFTW_DESTROY_INPUT
+            - FFTW_PRESERVE_INPUT
+            - FFTW_UNALIGNED
+            - FFTW_CONSERVE_MEMORY
+            - FFTW_ESTIMATE
+    output_array : array, optional
+        Array to be used as output array. Must be of correct shape, type,
+        strides and alignment
+
+    """
     def __init__(self, input_array, type=3, s=None, axis=-1, threads=1,
                  flags=None, output_array=None):
         self.axis = axis
         self.type = type
         self.dst = fftw.dstn(input_array, axes=(axis,), type=type, threads=threads,
                              flags=flags, output_array=output_array)
-        self.sm1 = [slice(None)]*input_array.ndim
-        self.sm1[axis] = slice(0, -1)
-        self.sm1 = tuple(self.sm1)
-        self.sp1 = [slice(None)]*input_array.ndim
-        self.sp1[axis] = slice(1, None)
-        self.sp1 = tuple(self.sp1)
-        self.y = np.zeros_like(input_array)
-        s = [slice(None)]*input_array.ndim
-        s[self.axis] = 0
-        self.s0 = tuple(s)
+        self.sl = slicedict(axis=axis, dimensions=input_array.ndim)
+        self.si = islicedict(axis=axis, dimensions=input_array.ndim)
 
     @property
     def input_array(self):
@@ -293,17 +318,21 @@ class DST:
     def output_array(self):
         return self.dst.output_array
 
+    def destroy(self):
+        self.dst.destroy()
+
     def __call__(self, input_array=None, output_array=None):
         if input_array is not None:
             self.input_array[:] = input_array
         x = self.input_array
         if self.type == 3:
-            self.y[self.sm1] = x[self.sp1]
-            out = self.dst(self.y)
+            x[self.sl[slice(0, -1)]] = x[self.sl[slice(1, None)]]
+            x[self.si[-1]] = 0
+            out = self.dst()
         elif self.type == 2:
             out = self.dst()
-            out[self.sp1] = out[self.sm1]
-            out[self.s0] = 0
+            out[self.sl[slice(1, None)]] = out[self.sl[slice(0, -1)]]
+            out[self.si[0]] = 0
         out /= 2
         if output_array is not None:
             output_array[:] = out
@@ -320,16 +349,16 @@ def leg2cheb(cl, cc, axis=0, transpose=False):
 
             \hat{c}^{cheb} = M \hat{c}^{leg}
 
-        where :math:`\hat{c}^{cheb} \in \mathbb{R}^N` are the Chebyshev
-        coefficients, :math:`\hat{c}^{leg} \in \mathbb{R}^N` the Legendre
-        coefficients and :math:`M\in\mathbb{R}^{N \times N}` the matrix for the
-        conversion. Note that if keyword transpose is true, then we compute
+    where :math:`\hat{c}^{cheb} \in \mathbb{R}^N` are the Chebyshev
+    coefficients, :math:`\hat{c}^{leg} \in \mathbb{R}^N` the Legendre
+    coefficients and :math:`M\in\mathbb{R}^{N \times N}` the matrix for the
+    conversion. Note that if keyword transpose is true, then we compute
 
-        .. math::
+    .. math::
 
-            \hat{a} = M^T \hat{b}
+        \hat{a} = M^T \hat{b}
 
-        for some vectors :math:`\hat{a}` and :math:`\hat{b}`.
+    for some vectors :math:`\hat{a}` and :math:`\hat{b}`.
 
     Paramters
     ---------
@@ -386,10 +415,10 @@ def cheb2leg(cc, cl, axis=0):
 
             \hat{c}^{leg} = L \hat{c}^{cheb}
 
-        where :math:`\hat{c}^{cheb} \in \mathbb{R}^N` are the Chebyshev
-        coefficients, :math:`\hat{c}^{leg} \in \mathbb{R}^N` the Legendre
-        coefficients and :math:`L\in\mathbb{R}^{N \times N}` the matrix for the
-        conversion.
+    where :math:`\hat{c}^{cheb} \in \mathbb{R}^N` are the Chebyshev
+    coefficients, :math:`\hat{c}^{leg} \in \mathbb{R}^N` the Legendre
+    coefficients and :math:`L\in\mathbb{R}^{N \times N}` the matrix for the
+    conversion.
 
     Paramters
     ---------
@@ -445,7 +474,7 @@ class Leg2cheb:
     Nmin : int
         Parameter. Choose direct matvec approach for N < Nmin
     """
-    def __init__(self, input_array, axis=0, output_array=None, nM=25, Nmin=200):
+    def __init__(self, input_array, axis=0, output_array=None, nM=50, Nmin=200):
         self.axis = axis
         self.N = input_array.shape[axis]
         self.L = None
@@ -455,6 +484,7 @@ class Leg2cheb:
         self.Nmin = Nmin
         self._input_array = input_array
         self._output_array = output_array if output_array is not None else input_array.copy()
+        self.sl = slicedict(axis=axis, dimensions=input_array.ndim)
         if self.N > Nmin:
             from shenfun import config
             mod = config['optimization']['mode']
@@ -520,7 +550,7 @@ class Leg2cheb:
         where :math:`\hat{c}^{cheb} \in \mathbb{R}^N` are the Chebyshev
         coefficients, :math:`\hat{c}^{leg} \in \mathbb{R}^N` the Legendre
         coefficients and :math:`M\in\mathbb{R}^{N \times N}` the matrix for the
-        conversion. Note that if keyword transpose is true, then we compute
+        conversion. Note that if keyword 'transpose' is true, then we compute
 
         .. math::
 
@@ -549,7 +579,7 @@ class Leg2cheb:
         Note
         ----
         For small N we use a direct method that costs approximately :math:`0.25 N^2`
-        operations. For larger N (>200) we use the fast routine of
+        operations. For larger N (see 'Nmin' parameter) we use the fast routine of
 
             Hale and Townsend 'A fast, simple and stable Chebyshev-Legendre
             transform using an asymptotic formula', SIAM J Sci Comput (2014)
@@ -568,14 +598,8 @@ class Leg2cheb:
             return out
 
         self.plan(self.input_array)
-        si = [slice(None)]*self.input_array.ndim
-        sk = [slice(None)]*self.input_array.ndim
-        sm = [slice(None)]*self.input_array.ndim
-        sp = [slice(None)]*self.input_array.ndim
         sn = [None]*self.input_array.ndim
         sn[axis] = slice(None); sn = tuple(sn)
-        sm[axis] = slice(0, -1); sm = tuple(sm)
-        sp[axis] = slice(1, None); sp = tuple(sp)
         hmn = np.ones(self.N)
         Tc = np.zeros_like(self.input_array)
         Uc = np.zeros_like(self.input_array)
@@ -595,29 +619,32 @@ class Leg2cheb:
                 for k in range(1, self.K+1):
                     Tc[:] = 0
                     Uc[:] = 0
-                    si[axis] = slice(self.ix[k], N-self.ix[k])
-                    sk[axis] = slice(int(self.alpha**k*N), int(self.alpha**(k-1)*N))
-                    Tc[tuple(sk)] = cm[tuple(sk)]
-                    Uc[sm] = Tc[sp]
-                    z[tuple(si)] += (vm*self.T.backward(Tc) + um*self.U.backward(Uc))[tuple(si)]
-            si[axis] = slice(0, self.ix[1])
-            self.lib.evaluate_expansion_all(self.input_array, z[tuple(si)], xi[si[axis]], self.axis, self.a) # recursive eval
-            si[axis] = slice(N-self.ix[1], None)
-            self.lib.evaluate_expansion_all(self.input_array, z[tuple(si)], xi[si[axis]], self.axis, self.a)
+                    si = self.sl[slice(self.ix[k], N-self.ix[k])]
+                    sk = self.sl[slice(int(self.alpha**k*N), int(self.alpha**(k-1)*N))]
+                    Tc[sk] = cm[sk]
+                    Uc[self.sl[slice(0, -1)]] = Tc[self.sl[slice(1, None)]]
+                    z[si] += (vm*self.T.backward(Tc) + um*self.U.backward(Uc))[si]
+            si = self.sl[slice(0, self.ix[1])]
+            zx = np.zeros_like(z[si])
+            self.lib.evaluate_expansion_all(self.input_array, zx, xi[si[axis]], self.axis, self.a) # recursive eval
+            z[si] += zx
+            si = self.sl[slice(N-self.ix[1], None)]
+            self.lib.evaluate_expansion_all(self.input_array, zx, xi[si[axis]], self.axis, self.a)
+            z[si] += zx
             for k in range(1, self.K):
-                si[axis] = slice(self.ix[k], self.ix[k+1])
-                sk[axis] = slice(0, int(self.alpha**k*self.N))
-                zx = np.zeros_like(z[tuple(si)])
-                self.lib.evaluate_expansion_all(self.input_array[tuple(sk)], zx, xi[si[axis]], self.axis, self.a)
-                z[tuple(si)] += zx
-                si[axis] = slice(self.N-self.ix[k+1], self.N-self.ix[k])
-                self.lib.evaluate_expansion_all(self.input_array[tuple(sk)], zx, xi[si[axis]], self.axis, self.a)
-                z[tuple(si)] += zx
-            si[axis] = slice(self.ix[self.K], self.N-self.ix[self.K])
-            sk[axis] = slice(0, int(self.alpha**(self.K)*self.N))
-            zx = np.zeros_like(z[tuple(si)])
-            self.lib.evaluate_expansion_all(self.input_array[tuple(sk)], zx, xi[si[axis]], self.axis, self.a)
-            z[tuple(si)] += zx
+                si = self.sl[slice(self.ix[k], self.ix[k+1])]
+                sk = self.sl[slice(0, int(self.alpha**k*self.N))]
+                zx = np.zeros_like(z[si])
+                self.lib.evaluate_expansion_all(self.input_array[sk], zx, xi[si[axis]], axis, self.a)
+                z[si] += zx
+                si = self.sl[slice(self.N-self.ix[k+1], self.N-self.ix[k])]
+                self.lib.evaluate_expansion_all(self.input_array[sk], zx, xi[si[axis]], axis, self.a)
+                z[si] += zx
+            si = self.sl[slice(self.ix[self.K], self.N-self.ix[self.K])]
+            sk = self.sl[slice(0, int(self.alpha**(self.K)*self.N))]
+            zx = np.zeros_like(z[si])
+            self.lib.evaluate_expansion_all(self.input_array[sk], zx, xi[si[axis]], axis, self.a)
+            z[si] += zx
             self._output_array = self.T.forward(z, self._output_array)
 
         else: # transpose
@@ -633,20 +660,21 @@ class Leg2cheb:
                 for k in range(1, self.K+1):
                     Tc[:] = 0
                     Uc[:] = 0
-                    si[axis] = slice(self.ix[k], self.N-self.ix[k])
-                    sk[axis] = slice(int(self.alpha**k*self.N), int(self.alpha**(k-1)*self.N))
-                    Tc[tuple(si)] = ctilde[tuple(si)]
+                    si = self.sl[slice(self.ix[k], self.N-self.ix[k])]
+                    sk = self.sl[slice(int(self.alpha**k*self.N), int(self.alpha**(k-1)*self.N))]
+                    Tc[si] = ctilde[si]
                     T0 = self.T.scalar_product(Tc*vm)
                     U0 = self.U.scalar_product(Tc/wu[sn]*wi[sn]*um)
-                    U1[sp] = U0[sm]
-                    z[tuple(sk)] += (cn*hmn[sn]*(T0+U1))[tuple(sk)]
-            sk[axis] = slice(0, int(self.alpha**self.K*self.N))
-            restricted_product(self.L, wi[sn]*ctilde, z[tuple(sk)], xi, 0, self.N, 0, axis, self.a)
+                    U1[self.sl[slice(1, None)]] = U0[self.sl[slice(0, -1)]]
+                    z[sk] += (cn*hmn[sn]*(T0+U1))[sk]
+            sk = self.sl[slice(0, int(self.alpha**self.K*self.N))]
+            zx = np.zeros_like(z[sk])
+            z[sk] += restricted_product(self.L, wi[sn]*ctilde, zx, xi, 0, self.N, 0, axis, self.a)
             for k in range(self.K):
-                sk[axis] = slice(int(self.alpha**(k+1)*self.N), int(self.alpha**k*self.N))
-                zx = np.zeros_like(z[tuple(sk)])
-                z[tuple(sk)] += restricted_product(self.L, wi[sn]*ctilde, zx, xi, 0, self.ix[k+1], sk[axis].start, axis, self.a)
-                z[tuple(sk)] += restricted_product(self.L, wi[sn]*ctilde, zx, xi, N-self.ix[k+1], N, sk[axis].start, axis, self.a)
+                sk = self.sl[slice(int(self.alpha**(k+1)*self.N), int(self.alpha**k*self.N))]
+                zx = np.zeros_like(z[sk])
+                z[sk] += restricted_product(self.L, wi[sn]*ctilde, zx, xi, 0, self.ix[k+1], sk[axis].start, axis, self.a)
+                z[sk] += restricted_product(self.L, wi[sn]*ctilde, zx, xi, N-self.ix[k+1], N, sk[axis].start, axis, self.a)
             self._output_array[:] = z
 
         if output_array is not None:

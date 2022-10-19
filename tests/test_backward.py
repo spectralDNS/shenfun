@@ -2,7 +2,7 @@ import pytest
 import sympy as sp
 import numpy as np
 from shenfun import FunctionSpace, Function, project, TensorProductSpace, \
-    comm, Array
+    comm, Array, legendre
 from shenfun.tensorproductspace import CompositeSpace
 
 x, y, z = sp.symbols('x,y,z', real=True)

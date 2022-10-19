@@ -15,10 +15,47 @@ ctypedef fused T:
     double
     complex
 
-ctypedef void (*funcX)(T*, T*, double*, int, int, double*, int)
+ctypedef void (*funcX)(T*, T*, double*, int, int, int, double*, int, int)
 
 cdef array.array darray = array.array('d', [])
 
+def restricted_product(L, input_array, output_array, x, i0, i1, a0, axis, a):
+    cdef:
+        int n
+        int aM = output_array.shape[axis]
+        np.ndarray[double, ndim=2] data = np.zeros((4, i1-i0))
+
+    data[0] = x[i0:i1]
+    data[1] = L.evaluate_basis(x[i0:i1], i=a0)
+    data[2] = L.evaluate_basis(x[i0:i1], i=a0+1)
+    data[3] = L.evaluate_basis(x[i0:i1], i=a0+2)
+    ax = a[:, slice(a0, None)].copy()
+    n = input_array.ndim
+    sl = [slice(None)]*n
+    sl[axis] = slice(i0, i1)
+    input = input_array[tuple(sl)]
+    if input.flags['C_CONTIGUOUS'] is False:
+        input = input.copy()
+    if input_array.dtype.char in 'fdg':
+        if n == 1:
+            _restricted_product[double](input, output_array, data, ax)
+        elif n == 2:
+            fun_2D[double](_restricted_product_ptr, input, output_array, data, axis, ax)
+        elif n == 3:
+            fun_3D[double](_restricted_product_ptr, input, output_array, data, axis, ax)
+        elif n == 4:
+            fun_4D[double](_restricted_product_ptr, input, output_array, data, axis, ax)
+
+    else:
+        if n == 1:
+            _restricted_product[complex](input, output_array, data, ax)
+        elif n == 2:
+            fun_2D[complex](_restricted_product_ptr, input, output_array, data, axis, ax)
+        elif n == 3:
+            fun_3D[complex](_restricted_product_ptr, input, output_array, data, axis, ax)
+        elif n == 4:
+            fun_4D[complex](_restricted_product_ptr, input, output_array, data, axis, ax)
+    return output_array
 
 def scalar_product(input_array, output_array, x, w, axis, a):
     cdef:
@@ -53,6 +90,9 @@ def evaluate_expansion_all(input_array, output_array, x, axis, a):
         int st, n
     n = input_array.ndim
     x = x.reshape((1, x.shape[0]))
+    if not input_array.flags['C_CONTIGUOUS']:
+        input_array = input_array.copy()
+
     if input_array.dtype.char in 'fdg':
         if n == 1:
             _evaluate_expansion_all[double](input_array, output_array, x, a)
@@ -148,10 +188,10 @@ cdef void fun_2D(funcX fun, T[:, ::1] ui, T[:, ::1] uo, double[:, ::1] data, int
     st = ui.strides[axis]/ui.itemsize
     if axis == 0:
         for i in range(ui.shape[1]):
-            fun(&ui[0, i], &uo[0, i], &data[0, 0], st, ui.shape[axis], &a[0, 0], a.shape[0])
+            fun(&ui[0, i], &uo[0, i], &data[0, 0], st, ui.shape[axis], uo.shape[axis], &a[0, 0], a.shape[0], a.shape[1])
     elif axis == 1:
         for i in range(ui.shape[0]):
-            fun(&ui[i, 0], &uo[i, 0], &data[0, 0], st, ui.shape[axis], &a[0, 0], a.shape[0])
+            fun(&ui[i, 0], &uo[i, 0], &data[0, 0], st, ui.shape[axis], uo.shape[axis], &a[0, 0], a.shape[0], a.shape[1])
 
 cdef void fun_3D(funcX fun, T[:, :, ::1] ui, T[:, :, ::1] uo, double[:, ::1] data, int axis, double[:, ::1] a):
     cdef:
@@ -160,15 +200,15 @@ cdef void fun_3D(funcX fun, T[:, :, ::1] ui, T[:, :, ::1] uo, double[:, ::1] dat
     if axis == 0:
         for j in range(ui.shape[1]):
             for k in range(ui.shape[2]):
-                fun(&ui[0, j, k], &uo[0, j, k], &data[0, 0], st, ui.shape[axis], &a[0, 0], a.shape[0])
+                fun(&ui[0, j, k], &uo[0, j, k], &data[0, 0], st, ui.shape[axis], uo.shape[axis], &a[0, 0], a.shape[0], a.shape[1])
     elif axis == 1:
         for i in range(ui.shape[0]):
             for k in range(ui.shape[2]):
-                fun(&ui[i, 0, k], &uo[i, 0, k], &data[0, 0], st, ui.shape[axis], &a[0, 0], a.shape[0])
+                fun(&ui[i, 0, k], &uo[i, 0, k], &data[0, 0], st, ui.shape[axis], uo.shape[axis], &a[0, 0], a.shape[0], a.shape[1])
     elif axis == 2:
         for i in range(ui.shape[0]):
             for j in range(ui.shape[1]):
-                fun(&ui[i, j, 0], &uo[i, j, 0], &data[0, 0], st, ui.shape[axis], &a[0, 0], a.shape[0])
+                fun(&ui[i, j, 0], &uo[i, j, 0], &data[0, 0], st, ui.shape[axis], uo.shape[axis], &a[0, 0], a.shape[0], a.shape[1])
 
 cdef void fun_4D(funcX fun, T[:, :, :, ::1] ui, T[:, :, :, ::1] uo, double[:, ::1] data, int axis, double[:, ::1] a):
     cdef:
@@ -178,34 +218,37 @@ cdef void fun_4D(funcX fun, T[:, :, :, ::1] ui, T[:, :, :, ::1] uo, double[:, ::
         for j in range(ui.shape[1]):
             for k in range(ui.shape[2]):
                 for l in range(ui.shape[3]):
-                    fun(&ui[0, j, k, l], &uo[0, j, k, l], &data[0, 0], st, ui.shape[axis], &a[0, 0], a.shape[0])
+                    fun(&ui[0, j, k, l], &uo[0, j, k, l], &data[0, 0], st, ui.shape[axis], uo.shape[axis], &a[0, 0], a.shape[0], a.shape[1])
     elif axis == 1:
         for i in range(ui.shape[0]):
             for k in range(ui.shape[2]):
                 for l in range(ui.shape[3]):
-                    fun(&ui[i, 0, k, l], &uo[i, 0, k, l], &data[0, 0], st, ui.shape[axis], &a[0, 0], a.shape[0])
+                    fun(&ui[i, 0, k, l], &uo[i, 0, k, l], &data[0, 0], st, ui.shape[axis], uo.shape[axis], &a[0, 0], a.shape[0], a.shape[1])
     elif axis == 2:
         for i in range(ui.shape[0]):
             for j in range(ui.shape[1]):
                 for l in range(ui.shape[3]):
-                    fun(&ui[i, j, 0, l], &uo[i, j, 0, l], &data[0, 0], st, ui.shape[axis], &a[0, 0], a.shape[0])
+                    fun(&ui[i, j, 0, l], &uo[i, j, 0, l], &data[0, 0], st, ui.shape[axis], uo.shape[axis], &a[0, 0], a.shape[0], a.shape[1])
     elif axis == 3:
         for i in range(ui.shape[0]):
             for j in range(ui.shape[1]):
                 for k in range(ui.shape[2]):
-                    fun(&ui[i, j, k, 0], &uo[i, j, k, 0], &data[0, 0], st, ui.shape[axis], &a[0, 0], a.shape[0])
+                    fun(&ui[i, j, k, 0], &uo[i, j, k, 0], &data[0, 0], st, ui.shape[axis], uo.shape[axis], &a[0, 0], a.shape[0], a.shape[1])
+
+cpdef _restricted_product(T[:] ui, T[:] uo, double[:, ::1] data, double[:, ::1] a):
+    _restricted_product_ptr[T](&ui[0], &uo[0], &data[0, 0], ui.strides[0]/ui.itemsize, ui.shape[0], uo.shape[0], &a[0, 0], a.shape[0], a.shape[1])
 
 cpdef _scalar_product(T[:] ui, T[:] uo, double[:, ::1] data, double[:, ::1] a):
-    _scalar_product_ptr[T](&ui[0], &uo[0], &data[0, 0], ui.strides[0]/ui.itemsize, ui.shape[0], &a[0, 0], a.shape[0])
+    _scalar_product_ptr[T](&ui[0], &uo[0], &data[0, 0], ui.strides[0]/ui.itemsize, ui.shape[0], uo.shape[0], &a[0, 0], a.shape[0], a.shape[1])
 
 cpdef _evaluate_expansion_all(T[:] ui, T[:] uo, double[:, ::1] data, double[:, ::1] a):
-    _evaluate_expansion_all_ptr[T](&ui[0], &uo[0], &data[0, 0], ui.strides[0]/ui.itemsize, ui.shape[0], &a[0, 0], a.shape[0])
+    _evaluate_expansion_all_ptr[T](&ui[0], &uo[0], &data[0, 0], ui.strides[0]/ui.itemsize, ui.shape[0], uo.shape[0], &a[0, 0], a.shape[0], a.shape[1])
 
 cpdef _leg2cheb(T[:] ui, T[:] uo, double[:, ::1] data, double[:, ::1] a):
-    _leg2cheb_ptr[T](&ui[0], &uo[0], &data[0, 0], ui.strides[0]/ui.itemsize, ui.shape[0], &a[0, 0], a.shape[0])
+    _leg2cheb_ptr[T](&ui[0], &uo[0], &data[0, 0], ui.strides[0]/ui.itemsize, ui.shape[0], uo.shape[0], &a[0, 0], a.shape[0], a.shape[1])
 
 cpdef _cheb2leg(T[:] ui, T[:] uo, double[:, ::1] data, double[:, ::1] a):
-    _cheb2leg_ptr[T](&ui[0], &uo[0], &data[0, 0], ui.strides[0]/ui.itemsize, ui.shape[0], &a[0, 0], a.shape[0])
+    _cheb2leg_ptr[T](&ui[0], &uo[0], &data[0, 0], ui.strides[0]/ui.itemsize, ui.shape[0], uo.shape[0], &a[0, 0], a.shape[0], a.shape[1])
 
 @cython.cdivision(True)
 cdef void _evaluate_expansion_all_ptr(T* ui,
@@ -213,8 +256,10 @@ cdef void _evaluate_expansion_all_ptr(T* ui,
                                       double* data,
                                       int st,
                                       int N,
+                                      int Nx,
                                       double* a,
-                                      int M):
+                                      int M,
+                                      int Mx):
     cdef:
         int i, j
         T s
@@ -223,28 +268,27 @@ cdef void _evaluate_expansion_all_ptr(T* ui,
         double* anm = &a[0]
         double* anp
         double* ann
-        array.array[double] an = array.clone(darray, N+3, zero=True)
-        array.array[double] Lnm = array.clone(darray, N, zero=False)
-        array.array[double] Ln = array.clone(darray, N, zero=False)
-        array.array[double] Lnp = array.clone(darray, N, zero=False)
+        array.array[double] an = array.clone(darray, Mx, zero=True)
+        array.array[double] Lnm = array.clone(darray, Nx, zero=False)
+        array.array[double] Ln = array.clone(darray, Nx, zero=False)
+        array.array[double] Lnp = array.clone(darray, Nx, zero=False)
 
     if M == 2:
         ann = an.data.as_doubles
-        anp = &a[N+3]
+        anp = &a[Mx]
     else:
-        ann = &a[N+3]
-        anp = &a[2*(N+3)]
-    for i in range(N):
+        ann = &a[Mx]
+        anp = &a[2*Mx]
+    for i in range(Nx):
         Lnm[i] = 1
         Ln[i] = (xj[i]-ann[0])/anm[0]
         uo[i*st] = 0
         Lnp[i] = (xj[i]-ann[1])/anm[1]*Ln[i] - anp[1]/anm[1]*Lnm[i]
-
     for i in range(N):
         s1 = 1/anm[i+2]
         s2 = anp[i+2]/anm[i+2]
         a00 = ann[i+2]
-        for j in range(N):
+        for j in range(Nx):
             uo[j*st] += Lnm[j]*ui[i*st]
             Lnm[j] = Ln[j]
             Ln[j] = Lnp[j]
@@ -256,8 +300,10 @@ cdef void _scalar_product_ptr(T* ui,
                               double* data,
                               int st,
                               int N,
+                              int Nx,
                               double* a,
-                              int M):
+                              int M,
+                              int Mx):
     cdef:
         int i, j
         T s
@@ -267,19 +313,19 @@ cdef void _scalar_product_ptr(T* ui,
         double* anm = &a[0]
         double* ann
         double* anp
-        array.array[double] an = array.clone(darray, N+3, zero=True)
-        array.array[double] Lnm = array.clone(darray, N, zero=False)
-        array.array[double] Ln = array.clone(darray, N, zero=False)
-        array.array[double] Lnp = array.clone(darray, N, zero=False)
+        array.array[double] an = array.clone(darray, Mx, zero=True)
+        array.array[double] Lnm = array.clone(darray, Nx, zero=False)
+        array.array[double] Ln = array.clone(darray, Nx, zero=False)
+        array.array[double] Lnp = array.clone(darray, Nx, zero=False)
 
     if M == 2:
         ann = an.data.as_doubles
-        anp = &a[N+3]
+        anp = &a[Mx]
     else:
-        ann = &a[N+3]
-        anp = &a[2*(N+3)]
+        ann = &a[Mx]
+        anp = &a[2*Mx]
 
-    for i in range(N):
+    for i in range(Nx):
         Lnm[i] = 1
         Ln[i] = (xj[i]-ann[0])/anm[0]
         uo[i*st] = 0
@@ -290,7 +336,7 @@ cdef void _scalar_product_ptr(T* ui,
         s2 = anp[i+2]/anm[i+2]
         a00 = ann[i+2]
         s = 0.0
-        for j in range(N):
+        for j in range(Nx):
             s += Lnm[j]*wj[j]*ui[j*st]
             Lnm[j] = Ln[j]
             Ln[j] = Lnp[j]
@@ -303,8 +349,10 @@ cdef void _leg2cheb_ptr(T* c,
                         double* transpose,
                         int st,
                         int N,
+                        int Nx,
                         double* a,
-                        int M):
+                        int M,
+                        int Mx):
     cdef:
         int n
         vector[T] cx
@@ -332,8 +380,10 @@ cdef void _cheb2leg_ptr(T* v,
                         double* dn,
                         int st,
                         int N,
+                        int Nx,
                         double* a,
-                        int M):
+                        int M,
+                        int Mx):
     cdef:
         int n
         double SPI = np.sqrt(np.pi)
@@ -347,3 +397,47 @@ cdef void _cheb2leg_ptr(T* v,
             c[i*st] -= dn[n//2]*a[n//2+i]*v[(n+i)*st]
     for n in range(N):
         c[n*st] *= (n+0.5)
+
+@cython.cdivision(True)
+cdef void _restricted_product_ptr(T* input_array,
+                                  T* output_array,
+                                  double* data,
+                                  int st,
+                                  int N,
+                                  int No,
+                                  double* a,
+                                  int M,
+                                  int Mx):
+
+    cdef:
+        int k, kp, i
+        double* xi = &data[0]
+        double* anm = &a[0]
+        double* ann
+        double* anp
+        array.array[double] an = array.clone(darray, Mx, zero=True)
+        array.array[double] Lnm = array.clone(darray, N, zero=False)
+        array.array[double] Ln = array.clone(darray, N, zero=False)
+        array.array[double] Lnp = array.clone(darray, N, zero=False)
+
+    if M == 2:
+        ann = an.data.as_doubles
+        anp = &a[Mx]
+    else:
+        ann = &a[Mx]
+        anp = &a[2*Mx]
+    for i in range(N):
+        Lnm[i] = data[N+i]
+        Ln[i] = data[2*N+i]
+        Lnp[i] = data[3*N+i]
+    for k in range(No):
+        s1 = 1/anm[k+2]
+        s2 = anp[k+2]/anm[k+2]
+        a00 = ann[k+2]
+        s = 0.0
+        for i in range(N):
+            s += Lnm[i]*input_array[i]
+            Lnm[i] = Ln[i]
+            Ln[i] = Lnp[i]
+            Lnp[i] = s1*(xi[i]-a00)*Ln[i] - s2*Lnm[i]
+        output_array[k] = s
