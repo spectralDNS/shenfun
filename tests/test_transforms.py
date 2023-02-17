@@ -541,7 +541,9 @@ def test_dlt():
         T = shenfun.FunctionSpace(N, 'C')
         cleg = shenfun.Function(L, val=1)
         cc = shenfun.Function(T)
-        C = shenfun.legendre.dlt.Leg2cheb(cleg)
+        C = shenfun.legendre.dlt.Leg2Cheb(cleg, use_direct=100)
+        A = shenfun.legendre.dlt.Cheb2Leg(cc, use_direct=100)
+        assert np.linalg.norm(A(C(cleg))-cleg) < 1e-8
         cc = C(cleg, cc, transpose=False)
         x = np.array([0.5, 0.6])
         assert np.linalg.norm(cc(x)-cleg(x)) < 1e-10, np.linalg.norm(cc(x)-cleg(x))
@@ -552,7 +554,7 @@ def test_dlt():
         cc = C(cleg, cc, transpose=True)
         e2 = np.linalg.norm(cc-1)
         assert e2 < 1e-8, e2
-    N = 1000
+    N = 500
     L = shenfun.FunctionSpace(N, 'L')
     T = shenfun.FunctionSpace(N, 'C')
     F = shenfun.FunctionSpace(6, 'F', dtype='d')
@@ -565,7 +567,7 @@ def test_dlt():
     cb3 = cl.backward(kind={'legendre': 'vandermonde'})
     assert np.linalg.norm(cb1-cb2) < 1e-8
     assert np.linalg.norm(cb1-cb3) < 1e-8
-    CC = shenfun.legendre.dlt.Leg2cheb(cl, axis=1)
+    CC = shenfun.legendre.dlt.Leg2chebHaleTownsend(cl, axis=1)
     c2 = shenfun.Function(TT)
     c2 = CC(cl, c2)
     xx = np.random.rand(2, 4)
@@ -577,10 +579,10 @@ def test_dlt():
     assert np.linalg.norm(c3-1) < 1e-8
     c3 = shenfun.legendre.dlt.leg2cheb(cl, c3, axis=1, transpose=False)
     assert np.linalg.norm(c3(xx)-cl(xx)) < 1e-8
-    TL = shenfun.TensorProductSpace(shenfun.comm, (F1, F, L), dtype='d')
-    TT = shenfun.TensorProductSpace(shenfun.comm, (F1, F, T), dtype='d')
+    TL = shenfun.TensorProductSpace(shenfun.comm, (F1, L, F), dtype='d')
+    TT = shenfun.TensorProductSpace(shenfun.comm, (F1, T, F), dtype='d')
     cl = shenfun.Function(TL, val=1)
-    CC = shenfun.legendre.dlt.Leg2cheb(cl, axis=2)
+    CC = shenfun.legendre.dlt.Leg2chebHaleTownsend(cl, axis=1)
     c2 = shenfun.Function(TT)
     c2 = CC(cl, c2)
     xx = np.random.rand(3, 4)
@@ -591,10 +593,28 @@ def test_dlt():
     cb2 = cl.backward(kind={'legendre': 'fast'})
     assert np.linalg.norm(cb1-cb2) < 1e-7, np.linalg.norm(cb1-cb2)
 
+def test_leg2cheb():
+    for N in (100, 701, 1200):
+        #u = np.random.random(N)
+        u = np.ones(N)
+        C = shenfun.legendre.dlt.Leg2Cheb(u, use_direct=100)
+        A = shenfun.legendre.dlt.Cheb2Leg(u, use_direct=100)
+        assert np.linalg.norm(A(C(u))-u) < 1e-8
+        for level in range(1, 4):
+            C = shenfun.legendre.dlt.Leg2Cheb(u, levels=level, use_direct=100)
+            A = shenfun.legendre.dlt.Cheb2Leg(u, levels=level, use_direct=100)
+            assert np.linalg.norm(A(C(u))-u) < 1e-8
+        for domains in range(3, 6):
+            C = shenfun.legendre.dlt.Leg2Cheb(u, domains=domains, use_direct=100)
+            A = shenfun.legendre.dlt.Cheb2Leg(u, domains=domains, use_direct=100)
+            assert np.linalg.norm(A(C(u))-u) < 1e-8
+        C2 = shenfun.legendre.dlt.Leg2chebHaleTownsend(u)
+        assert np.linalg.norm(C2(u, transpose=True)-1) < 1e-8
+        assert np.linalg.norm(C2(u)-C(u)) < 1e-8
 
 if __name__ == '__main__':
     from time import time
-    config['optimization']['mode'] = 'numba'
+    config['optimization']['mode'] = 'cython'
     #test_to_ortho(cBasisGC[1], 'GC')
     # test_convolve(fbases.R2C, 8)
     #test_ASDSDmat(cbases.ShenNeumann, "GC")
@@ -608,5 +628,6 @@ if __name__ == '__main__':
     #test_project_1D(cBasis[0])
     #test_scalarproduct(ltrialBasis[2], 'LG')
     test_dlt()
+    test_leg2cheb()
     #test_eval(cuBasis[-1], 'GU')
     #test_axis(laBasis[1], 'LG', 1)

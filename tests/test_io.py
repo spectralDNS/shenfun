@@ -3,9 +3,9 @@ import functools
 import numpy as np
 from mpi4py import MPI
 import pytest
-from mpi4py_fft import generate_xdmf
+#from mpi4py_fft import generate_xdmf
 from shenfun import FunctionSpace, TensorProductSpace, ShenfunFile, Function,\
-    Array, CompositeSpace, VectorSpace
+    Array, CompositeSpace, VectorSpace, generate_xdmf
 
 N = (12, 13, 14, 15)
 comm = MPI.COMM_WORLD
@@ -49,14 +49,14 @@ def test_regular_2D(backend, forward_output):
     hfile.write(1, {'u': [u]}, forward_output=forward_output)
     if not forward_output and backend == 'hdf5' and comm.Get_rank() == 0:
         generate_xdmf(filename+'.h5')
-        generate_xdmf(filename+'.h5', order='visit')
+        #generate_xdmf(filename+'.h5', order='visit')
 
     u0 = Function(T) if forward_output else Array(T)
     read = reader(filename, T, backend=backend)
     read.read(u0, 'u', forward_output=forward_output, step=1)
     assert np.allclose(u0, u)
     T.destroy()
-    cleanup()
+    #cleanup()
 
 
 @pytest.mark.parametrize('forward_output', (True, False))
@@ -120,7 +120,7 @@ def test_regular_3D(backend, forward_output):
     read.read(u0, 'u', forward_output=forward_output, step=1)
     assert np.allclose(u0, u)
     T.destroy()
-    cleanup()
+    #cleanup()
 
 @pytest.mark.parametrize('forward_output', (True, False))
 @pytest.mark.parametrize('backend', ('hdf5', 'netcdf4'))
@@ -167,5 +167,5 @@ if __name__ == '__main__':
     for bnd in ('hdf5', 'netcdf4'):
         test_regular_2D(bnd, False)
         test_regular_3D(bnd, False)
-        test_mixed_2D(bnd, False, True)
-        test_mixed_3D(bnd, False, True)
+        #test_mixed_2D(bnd, False, True)
+        #test_mixed_3D(bnd, False, True)

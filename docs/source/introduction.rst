@@ -60,12 +60,13 @@ where :math:`\overline{v}` is the complex conjugate of :math:`v`. If we
 now choose the test functions from the same space as the trial functions,
 i.e., :math:`V_N`,
 then the WRM becomes the Galerkin method, and we get :math:`N` equations for
-:math:`N` unknowns :math:`\{\hat{u}_k\}_{k\in \mathcal{I}^N}`
+:math:`N` unknowns :math:`\boldsymbol{\hat{u}}=\{\hat{u}_k\}_{k\in \mathcal{I}^N}`
+(note that :math:`\hat{u}\in \mathbb{R}^N` is a column vector)
 
 .. math::
    :label: eq:galerkin
 
-    \sum_{j\in \mathcal{I}^N} \underbrace{\left(-\nabla^2 \phi_j, \phi_k \right)_w}_{A_{kj}} \hat{u}_j = \left( f, \phi_k \right)_w, \text{ for } k \in \mathcal{I}^N.
+    \sum_{j\in \mathcal{I}^N} \underbrace{\left(-\nabla^2 \phi_j, \phi_k \right)_w}_{a_{kj}} \hat{u}_j = \left( f, \phi_k \right)_w, \text{ for } k \in \mathcal{I}^N.
 
 Note that this is a regular linear system of algebra equations
 
@@ -73,7 +74,7 @@ Note that this is a regular linear system of algebra equations
 
     a_{kj} \hat{u}_{j} = \tilde{f}_k,
 
-where the matrix :math:`A=(a_kj) \in \mathbb{R}^{N \times N}`.
+where the matrix :math:`A=(a_{kj}) \in \mathbb{R}^{N \times N}`.
 
 The choice of basis functions :math:`v(\boldsymbol{x})` (or function space :math:`V_N`)
 is highly central to the method.

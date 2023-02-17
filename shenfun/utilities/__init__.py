@@ -17,7 +17,7 @@ from .findbasis import get_bc_basis, get_stencil_matrix, n
 __all__ = ['dx', 'clenshaw_curtis1D', 'CachedArrayDict', 'surf3D',
            'wrap_periodic', 'outer', 'dot', 'apply_mask', 'integrate_sympy',
            'mayavi_show', 'quiver3D', 'get_bc_basis', 'get_stencil_matrix',
-           'scalar_product', 'n', 'cross']
+           'scalar_product', 'n', 'cross', 'reset_profile']
 
 def dx(u, weighted=False):
     r"""Compute integral of u over domain
@@ -129,6 +129,19 @@ class CachedArrayDict(MutableMapping):
 
     def values(self):
         raise TypeError('Cached work arrays not iterable')
+
+def reset_profile(prof):
+    """Reset profiler for kernprof
+
+    Parameters
+    ----------
+    prof : The profiler
+    """
+    prof.code_map = {}
+    prof.last_time = {}
+    prof.enable_count = 0
+    for func in prof.functions:
+        prof.add_function(func)
 
 def cross(c, a, b):
     """Cross product c = a x b

@@ -2,7 +2,7 @@ from numbers import Number, Integral
 from itertools import product
 from collections import defaultdict
 import copy
-from scipy.special import sph_harm, erf, airy, jn
+from scipy.special import sph_harm, erf, airy, jn, gammaln
 import numpy as np
 import sympy as sp
 from shenfun.config import config
@@ -18,6 +18,14 @@ cot = lambda x: 1/np.tan(x)
 Ynm = lambda n, m, x, y : sph_harm(m, n, y, x)
 airyai = lambda x: airy(x)[0]
 besselj = jn
+
+fun = {'airyai': airyai,
+       'cot': cot,
+       'Ynm': Ynm,
+       'erf': erf,
+       'besselj': besselj,
+       'loggamma': gammaln
+    }
 
 def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
                   domain=None, scaled=None, padding_factor=1, basis=None,
@@ -1307,7 +1315,7 @@ class ShenfunBaseArray(DistArray):
                 for sym in sym0:
                     j = 'xyzrs'.index(str(sym))
                     m.append(mesh[j])
-                buf = sp.lambdify(sym0, buffer, modules=['numpy', {'airyai': airyai, 'cot': cot, 'Ynm': Ynm, 'erf': erf, 'besselj': besselj}])(*m).astype(space.forward.input_array.dtype)
+                buf = sp.lambdify(sym0, buffer, modules=['numpy', fun])(*m).astype(space.forward.input_array.dtype)
             else:
                 buf = buffer
             buffer = Array(space)

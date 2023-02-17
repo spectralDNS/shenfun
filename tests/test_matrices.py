@@ -573,26 +573,22 @@ def test_helmholtz3D(family, axis):
     u = shenfun.TrialFunction(T)
     v = shenfun.TestFunction(T)
     mat = inner(v, div(grad(u)))
+    G = shenfun.la.Solver3D(mat)
 
     H = la.Helmholtz(*mat)
-    u = Function(T)
+    uh = Function(T)
     s = SD.sl[SD.slice()]
-    u[s] = np.random.random(u[s].shape) + 1j*np.random.random(u[s].shape)
+    uh[s] = np.random.random(uh[s].shape) + 1j*np.random.random(uh[s].shape)
     f = Function(T)
-    f = H.matvec(u, f)
+    f = H.matvec(uh, f)
 
-    g0 = Function(T)
-    g1 = Function(T)
-    mat = H.tpmats
-    M = {d.get_key(): d for d in mat}
-    g0 = M['ASDSDmat'].matvec(u, g0)
-    g1 = M['BSDSDmat'].matvec(u, g1)
-
-    assert np.linalg.norm(f-(g0+g1)) < 1e-12, np.linalg.norm(f-(g0+g1))
+    gg = Function(T)
+    gg = G.matvec(uh, gg)
+    assert np.linalg.norm(f-gg) < 1e-12, np.linalg.norm(f-gg)
 
     uc = Function(T)
     uc = H(f, uc)
-    assert np.linalg.norm(uc-u) < 1e-12
+    assert np.linalg.norm(uc-uh) < 1e-12
     T.destroy()
 
 @pytest.mark.parametrize('axis', (0, 1))
@@ -609,26 +605,19 @@ def test_helmholtz2D(family, axis):
     u = shenfun.TrialFunction(T)
     v = shenfun.TestFunction(T)
     mat = inner(v, div(grad(u)))
-
     H = la.Helmholtz(*mat)
-    u = Function(T)
+    G = shenfun.la.Solver2D(mat)
+    uh = Function(T)
     s = SD.sl[SD.slice()]
-    u[s] = np.random.random(u[s].shape) + 1j*np.random.random(u[s].shape)
+    uh[s] = np.random.random(uh[s].shape) + 1j*np.random.random(uh[s].shape)
     f = Function(T)
-    f = H.matvec(u, f)
-
-    g0 = Function(T)
-    g1 = Function(T)
-    mat = H.tpmats
-    M = {d.get_key(): d for d in mat}
-    g0 = M['ASDSDmat'].matvec(u, g0)
-    g1 = M['BSDSDmat'].matvec(u, g1)
-    assert np.linalg.norm(f-(g0+g1)) < 1e-12, np.linalg.norm(f-(g0+g1))
-
+    f = H.matvec(uh, f)
+    gg = Function(T)
+    gg = G.matvec(uh, gg)
+    assert np.linalg.norm(f-gg) < 1e-12, np.linalg.norm(f-gg)
     uc = Function(T)
-
     uc = H(f, uc)
-    assert np.linalg.norm(uc-u) < 1e-12
+    assert np.linalg.norm(uc-uh) < 1e-12
     T.destroy()
 
 @pytest.mark.parametrize('axis', (0, 1, 2))
@@ -790,7 +779,7 @@ if __name__ == '__main__':
 
     #test_exact(ctrialBasis[0], ctrialBasis[0])
     #test_mat(((ctestBasis[1], 0), (ctestBasis[1], 2), 1-x**2), cmatrices.ASDSDmatW, 'GC')
-    test_mat(((cbases.Orthogonal, 0), (lbases.Orthogonal, 0)), cmatrices.BTLmat, 'GL')
+    #test_mat(((cbases.Orthogonal, 0), (lbases.Orthogonal, 0)), cmatrices.BTLmat, 'GL')
     #test_cmatvec(ctrialBasis[1], ctrialBasis[1], 'GC', 0)
     #test_lmatvec(lBasis[0], lBasis[0], 'LG', 2, 0)
     #test_lagmatvec(lagBasis[0], lagBasis[1], 'LG', 'python', 3, 2, 0)
@@ -802,8 +791,8 @@ if __name__ == '__main__':
     #test_sub(*mats_and_quads[15])
     #test_mul2()
     #test_div2(cBasis[1], 'GC')
-    #test_helmholtz2D('legendre', 1)
+    #test_helmholtz2D('chebyshev', 1)
     #test_helmholtz3D('chebyshev', 0)
-    #test_biharmonic3D('chebyshev', 0)
+    test_biharmonic3D('chebyshev', 0)
     #test_biharmonic2D('jacobi', 0)
     #test_stencil(cbases.Phi6, cbases.Compact3)

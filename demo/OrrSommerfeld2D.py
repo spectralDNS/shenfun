@@ -109,16 +109,16 @@ if __name__ == '__main__':
     d = {
         'N': N,
         'Re': 8000.,
-        'dt': 0.1,
+        'dt': 0.01,
         'filename': f'KMM_OS_{N[0]}_{N[1]}',
         'conv': 0,
         'modplot': 100,
         'modsave': 1000,
-        'moderror': 1,
+        'moderror': 10,
         'family': 'C',
         'checkpoint': 10000000,
         'padding_factor': 1,
-        'timestepper': 'IMEXRK222'
+        'timestepper': 'IMEXRK111'
         }
     OS = True
     c = OrrSommerfeld(**d)

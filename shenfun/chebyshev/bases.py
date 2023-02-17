@@ -154,7 +154,10 @@ class Orthogonal(JacobiBase):
 
     # Comment due to curvilinear issues
     #def apply_inverse_mass(self, array):
-    #    array *= (2/np.pi)
+    #    coors = self.tensorproductspace.coors if self.dimensions > 1 else self.coors
+    #    if not coors.hi.prod() == 1:
+    #        return JacobiBase.apply_inverse_mass(self, array)
+    #    array *= (2/np.pi*self.domain_factor())
     #    array[self.si[0]] /= 2
     #    if self.quad == 'GL':
     #        array[self.si[-1]] /= 2
@@ -296,15 +299,16 @@ class Orthogonal(JacobiBase):
         elif self.quad == "GL":
             out = self.scalar_product.xfftn()
             out *= (np.pi/(2*self.domain_factor()*(self.N*self.padding_factor-1)))
-
+    #@profile
     def eval(self, x, u, output_array=None):
         x = np.atleast_1d(x)
-        if output_array is None:
-            output_array = np.zeros(x.shape, dtype=self.forward.output_array.dtype)
         x = self.map_reference_domain(x)
-        output_array[:] = chebval(x, u)
-        #output_array[:] = n_cheb.chebval(x, u)
-        return output_array
+        #oa = chebval(x, u)
+        oa = n_cheb.chebval(x, u, False)
+        if output_array is not None:
+            output_array[:] = oa
+            return output_array
+        return oa
 
     @property
     def is_orthogonal(self):

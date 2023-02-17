@@ -9,6 +9,8 @@ from within the regular Python modules.
 import importlib
 from functools import wraps
 from . import cython
+from shenfun.config import config
+
 try:
     from . import numba
 except ModuleNotFoundError:
@@ -55,7 +57,6 @@ def optimizer(func, wrap=True):
         If True, return function wrapped using functools wraps.
         If False, return unwrapped function.
     """
-    from shenfun.config import config
     mod = config['optimization']['mode']
     verbose = config['optimization']['verbose']
 
@@ -64,7 +65,7 @@ def optimizer(func, wrap=True):
         if verbose:
             print(func.__qualname__ + ' not optimized')
         return func
-    mod = importlib.import_module('shenfun.optimization.'+mod.lower())
+    mod = {'cython': cython, 'numba': numba}[mod.lower()]
     fun = getattr(mod, func.__name__, func)
     if fun is func:
         fun = getattr(mod, func.__qualname__.replace('.', '_'), func)

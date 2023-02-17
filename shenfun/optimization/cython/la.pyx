@@ -3,163 +3,206 @@
 #cython: language_level=3
 
 import numpy as np
-cimport cython
 cimport numpy as np
 import cython
+cimport cython
 from libcpp.vector cimport vector
 from libcpp.algorithm cimport copy
+from libc.stdlib cimport malloc, free
+from cpython cimport array
+import array
+np.import_array()
 
 ctypedef fused T:
-    np.float64_t
-    np.complex128_t
+    double
+    complex
 
-ctypedef np.complex128_t complex_t
-ctypedef np.float64_t real_t
-ctypedef np.int64_t int_t
-ctypedef double real
+#ctypedef complex complex_t
+#ctypedef double double
+#ctypedef np.int64_t int
 
-ctypedef void (*innerfunc)(np.complex128_t*, int, real_t*, int, int)
-ctypedef void (*funcT)(T*, int, real_t*, int, int)
+ctypedef void (*innerfunc)(complex*, int, double*, int, int)
+ctypedef void (*funcT)(T*, int, double*, int, int)
 
 # XXX_Solve - Solve multidimensional array u along axis
 
-def ThreeDMA_Solve(u, data, axis=0):
+def ThreeDMA_Solve(u, data, axis):
     if u.dtype.char in 'FDG':
         if u.ndim == 1:
-            ThreeDMA_inner_solve[np.complex128_t](u, data)
+            ThreeDMA_inner_solve[complex](u, data)
         elif u.ndim == 2:
-            Solve_axis_2D[np.complex128_t](u, data, ThreeDMA_inner_solve_ptr, axis)
+            Solve_axis_2D[complex](u, data, ThreeDMA_inner_solve_ptr, axis)
         elif u.ndim == 3:
-            Solve_axis_3D[np.complex128_t](u, data, ThreeDMA_inner_solve_ptr, axis)
+            Solve_axis_3D[complex](u, data, ThreeDMA_inner_solve_ptr, axis)
     else:
         if u.ndim == 1:
-            ThreeDMA_inner_solve[np.float64_t](u, data)
+            ThreeDMA_inner_solve[double](u, data)
         elif u.ndim == 2:
-            Solve_axis_2D[np.float64_t](u, data, ThreeDMA_inner_solve_ptr, axis)
+            Solve_axis_2D[double](u, data, ThreeDMA_inner_solve_ptr, axis)
         elif u.ndim == 3:
-            Solve_axis_3D[np.float64_t](u, data, ThreeDMA_inner_solve_ptr, axis)
+            Solve_axis_3D[double](u, data, ThreeDMA_inner_solve_ptr, axis)
 
-def TwoDMA_Solve(u, data, axis=0):
+def TwoDMA_Solve(u, data, axis):
     if u.dtype.char in 'FDG':
         if u.ndim == 1:
-            TwoDMA_inner_solve[np.complex128_t](u, data)
+            TwoDMA_inner_solve[complex](u, data)
         elif u.ndim == 2:
-            Solve_axis_2D[np.complex128_t](u, data, TwoDMA_inner_solve_ptr, axis)
+            Solve_axis_2D[complex](u, data, TwoDMA_inner_solve_ptr, axis)
         elif u.ndim == 3:
-            Solve_axis_3D[np.complex128_t](u, data, TwoDMA_inner_solve_ptr, axis)
+            Solve_axis_3D[complex](u, data, TwoDMA_inner_solve_ptr, axis)
     else:
         if u.ndim == 1:
-            TwoDMA_inner_solve[np.float64_t](u, data)
+            TwoDMA_inner_solve[double](u, data)
         elif u.ndim == 2:
-            Solve_axis_2D[np.float64_t](u, data, TwoDMA_inner_solve_ptr, axis)
+            Solve_axis_2D[double](u, data, TwoDMA_inner_solve_ptr, axis)
         elif u.ndim == 3:
-            Solve_axis_3D[np.float64_t](u, data, TwoDMA_inner_solve_ptr, axis)
+            Solve_axis_3D[double](u, data, TwoDMA_inner_solve_ptr, axis)
 
-def PDMA_Solve(u, data, axis=0):
+def PDMA_Solve(u, data, axis):
     if u.dtype.char in 'FDG':
         if u.ndim == 1:
-            PDMA_inner_solve[np.complex128_t](u, data)
+            PDMA_inner_solve[complex](u, data)
         elif u.ndim == 2:
-            Solve_axis_2D[np.complex128_t](u, data, PDMA_inner_solve_ptr, axis)
+            Solve_axis_2D[complex](u, data, PDMA_inner_solve_ptr, axis)
         elif u.ndim == 3:
-            Solve_axis_3D[np.complex128_t](u, data, PDMA_inner_solve_ptr, axis)
+            Solve_axis_3D[complex](u, data, PDMA_inner_solve_ptr, axis)
     else:
         if u.ndim == 1:
-            PDMA_inner_solve[np.float64_t](u, data)
+            PDMA_inner_solve[double](u, data)
         elif u.ndim == 2:
-            Solve_axis_2D[np.float64_t](u, data, PDMA_inner_solve_ptr, axis)
+            Solve_axis_2D[double](u, data, PDMA_inner_solve_ptr, axis)
         elif u.ndim == 3:
-            Solve_axis_3D[np.float64_t](u, data, PDMA_inner_solve_ptr, axis)
+            Solve_axis_3D[double](u, data, PDMA_inner_solve_ptr, axis)
 
-def TDMA_Solve(u, data, axis=0):
+def TDMA_Solve(u, data, axis):
     if u.dtype.char in 'FDG':
         if u.ndim == 1:
-            TDMA_inner_solve[np.complex128_t](u, data)
+            TDMA_inner_solve[complex](u, data)
         elif u.ndim == 2:
-            Solve_axis_2D[np.complex128_t](u, data, TDMA_inner_solve_ptr, axis)
+            Solve_axis_2D[complex](u, data, TDMA_inner_solve_ptr, axis)
         elif u.ndim == 3:
-            Solve_axis_3D[np.complex128_t](u, data, TDMA_inner_solve_ptr, axis)
+            Solve_axis_3D[complex](u, data, TDMA_inner_solve_ptr, axis)
     else:
         if u.ndim == 1:
-            TDMA_inner_solve[np.float64_t](u, data)
+            TDMA_inner_solve[double](u, data)
         elif u.ndim == 2:
-            Solve_axis_2D[np.float64_t](u, data, TDMA_inner_solve_ptr, axis)
+            Solve_axis_2D[double](u, data, TDMA_inner_solve_ptr, axis)
         elif u.ndim == 3:
-            Solve_axis_3D[np.float64_t](u, data, TDMA_inner_solve_ptr, axis)
+            Solve_axis_3D[double](u, data, TDMA_inner_solve_ptr, axis)
 
-def TDMA_O_Solve(u, data, axis=0):
+def TDMA_O_Solve(u, data, axis):
     if u.dtype.char in 'FDG':
         if u.ndim == 1:
-            TDMA_O_inner_solve[np.complex128_t](u, data)
+            TDMA_O_inner_solve[complex](u, data)
         elif u.ndim == 2:
-            Solve_axis_2D[np.complex128_t](u, data, TDMA_O_inner_solve_ptr, axis)
+            Solve_axis_2D[complex](u, data, TDMA_O_inner_solve_ptr, axis)
         elif u.ndim == 3:
-            Solve_axis_3D[np.complex128_t](u, data, TDMA_O_inner_solve_ptr, axis)
+            Solve_axis_3D[complex](u, data, TDMA_O_inner_solve_ptr, axis)
     else:
         if u.ndim == 1:
-            TDMA_O_inner_solve[np.float64_t](u, data)
+            TDMA_O_inner_solve[double](u, data)
         elif u.ndim == 2:
-            Solve_axis_2D[np.float64_t](u, data, TDMA_O_inner_solve_ptr, axis)
+            Solve_axis_2D[double](u, data, TDMA_O_inner_solve_ptr, axis)
         elif u.ndim == 3:
-            Solve_axis_3D[np.float64_t](u, data, TDMA_O_inner_solve_ptr, axis)
+            Solve_axis_3D[double](u, data, TDMA_O_inner_solve_ptr, axis)
 
-def DiagMA_Solve(u, data, axis=0):
-    if u.dtype.char in 'FDG':
-        if u.ndim == 1:
-            DiagMA_inner_solve[np.complex128_t](u, data)
-        elif u.ndim == 2:
-            Solve_axis_2D[np.complex128_t](u, data, DiagMA_inner_solve_ptr, axis)
-        elif u.ndim == 3:
-            Solve_axis_3D[np.complex128_t](u, data, DiagMA_inner_solve_ptr, axis)
-    else:
-        if u.ndim == 1:
-            DiagMA_inner_solve[np.float64_t](u, data)
-        elif u.ndim == 2:
-            Solve_axis_2D[np.float64_t](u, data, DiagMA_inner_solve_ptr, axis)
-        elif u.ndim == 3:
-            Solve_axis_3D[np.float64_t](u, data, DiagMA_inner_solve_ptr, axis)
+cpdef DiagMA_Solve(u, double[:, ::1] data, int axis):
+    cdef:
+        int n = u.ndim
 
-def FDMA_Solve(u, data, axis=0):
     if u.dtype.char in 'FDG':
-        if u.ndim == 1:
-            FDMA_inner_solve[np.complex128_t](u, data)
-        elif u.ndim == 2:
-            Solve_axis_2D[np.complex128_t](u, data, FDMA_inner_solve_ptr, axis)
-        elif u.ndim == 3:
-            Solve_axis_3D[np.complex128_t](u, data, FDMA_inner_solve_ptr, axis)
+        if n == 1:
+            DiagMA_inner_solve[complex](u, data)
+        elif n == 2:
+            DiagMA_Solve_2D[complex](u, data, axis)
+        elif n == 3:
+            DiagMA_Solve_3D[complex](u, data, axis)
     else:
-        if u.ndim == 1:
-            FDMA_inner_solve[np.float64_t](u, data)
-        elif u.ndim == 2:
-            Solve_axis_2D[np.float64_t](u, data, FDMA_inner_solve_ptr, axis)
-        elif u.ndim == 3:
-            Solve_axis_3D[np.float64_t](u, data, FDMA_inner_solve_ptr, axis)
+        if n == 1:
+            DiagMA_inner_solve[double](u, data)
+        elif n == 2:
+            DiagMA_Solve_2D[double](u, data, axis)
+        elif n == 3:
+            DiagMA_Solve_3D[double](u, data, axis)
 
-def HeptaDMA_Solve(u, data, axis=0):
+cpdef DiagMA_Solve_2D(np.ndarray[T, ndim=2] u, double[:, ::1] data, int axis):
+    cdef:
+        int st = u.strides[axis]/u.itemsize
+        np.flatiter ita = np.PyArray_IterAllButAxis(u, &axis)
+        int N = u.shape[axis]
+        double* dp = &data[0, 0]
+    while np.PyArray_ITER_NOTDONE(ita):
+        DiagMA_inner_solve_ptr[T](<T*>np.PyArray_ITER_DATA(ita), st, dp, 0, N)
+        np.PyArray_ITER_NEXT(ita)
+
+cpdef DiagMA_Solve_3D(np.ndarray[T, ndim=3] u, double[:, ::1] data, int axis):
+    cdef:
+        int st = u.strides[axis]/u.itemsize
+        np.flatiter ita = np.PyArray_IterAllButAxis(u, &axis)
+        int N = u.shape[axis]
+        double* dp = &data[0, 0]
+    while np.PyArray_ITER_NOTDONE(ita):
+        DiagMA_inner_solve_ptr[T](<T*>np.PyArray_ITER_DATA(ita), st, dp, 0, N)
+        np.PyArray_ITER_NEXT(ita)
+
+#def DiagMA_Solve(u, data, int axis):
+#    if u.dtype.char in 'FDG':
+#        if u.ndim == 1:
+#            DiagMA_inner_solve[complex](u, data)
+#        elif u.ndim == 2:
+#            Solve_axis_2D[complex](u, data, DiagMA_inner_solve_ptr, axis)
+#        elif u.ndim == 3:
+#            Solve_axis_3D[complex](u, data, DiagMA_inner_solve_ptr, axis)
+#    else:
+#        if u.ndim == 1:
+#            DiagMA_inner_solve[double](u, data)
+#        elif u.ndim == 2:
+#            Solve_axis_2D[double](u, data, DiagMA_inner_solve_ptr, axis)
+#        elif u.ndim == 3:
+#            Solve_axis_3D[double](u, data, DiagMA_inner_solve_ptr, axis)
+
+
+def FDMA_Solve(u, data, axis):
     if u.dtype.char in 'FDG':
         if u.ndim == 1:
-            HeptaDMA_inner_solve[np.complex128_t](u, data)
+            FDMA_inner_solve[complex](u, data)
         elif u.ndim == 2:
-            Solve_axis_2D[np.complex128_t](u, data, HeptaDMA_inner_solve_ptr, axis)
+            Solve_axis_2D[complex](u, data, FDMA_inner_solve_ptr, axis)
         elif u.ndim == 3:
-            Solve_axis_3D[np.complex128_t](u, data, HeptaDMA_inner_solve_ptr, axis)
+            Solve_axis_3D[complex](u, data, FDMA_inner_solve_ptr, axis)
     else:
         if u.ndim == 1:
-            HeptaDMA_inner_solve[np.float64_t](u, data)
+            FDMA_inner_solve[double](u, data)
         elif u.ndim == 2:
-            Solve_axis_2D[np.float64_t](u, data, HeptaDMA_inner_solve_ptr, axis)
+            Solve_axis_2D[double](u, data, FDMA_inner_solve_ptr, axis)
         elif u.ndim == 3:
-            Solve_axis_3D[np.float64_t](u, data, HeptaDMA_inner_solve_ptr, axis)
+            Solve_axis_3D[double](u, data, FDMA_inner_solve_ptr, axis)
+
+def HeptaDMA_Solve(u, data, axis):
+    if u.dtype.char in 'FDG':
+        if u.ndim == 1:
+            HeptaDMA_inner_solve[complex](u, data)
+        elif u.ndim == 2:
+            Solve_axis_2D[complex](u, data, HeptaDMA_inner_solve_ptr, axis)
+        elif u.ndim == 3:
+            Solve_axis_3D[complex](u, data, HeptaDMA_inner_solve_ptr, axis)
+    else:
+        if u.ndim == 1:
+            HeptaDMA_inner_solve[double](u, data)
+        elif u.ndim == 2:
+            Solve_axis_2D[double](u, data, HeptaDMA_inner_solve_ptr, axis)
+        elif u.ndim == 3:
+            Solve_axis_3D[double](u, data, HeptaDMA_inner_solve_ptr, axis)
 
 # LU - decomposition
 
-def FDMA_LU(real_t[:, ::1] data):
+def FDMA_LU(double[:, ::1] data):
     cdef:
         int n, i
-        real_t[::1] ld = data[0, :-2]
-        real_t[::1] d = data[1, :]
-        real_t[::1] u1 = data[2, 2:]
-        real_t[::1] u2 = data[3, 4:]
+        double[::1] ld = data[0, :-2]
+        double[::1] d = data[1, :]
+        double[::1] u1 = data[2, 2:]
+        double[::1] u2 = data[3, 4:]
     n = d.shape[0]
     for i in range(2, n):
         ld[i-2] = ld[i-2]/d[i-2]
@@ -167,15 +210,15 @@ def FDMA_LU(real_t[:, ::1] data):
         if i < n-2:
             u1[i] = u1[i] - ld[i-2]*u2[i-2]
 
-def PDMA_LU(real_t[:, ::1] data):
+def PDMA_LU(double[:, ::1] data):
     cdef:
         int i, n, m, k
-        real_t[::1] a = data[0, :-4]
-        real_t[::1] b = data[1, :-2]
-        real_t[::1] d = data[2, :]
-        real_t[::1] e = data[3, 2:]
-        real_t[::1] f = data[4, 4:]
-        real_t lam
+        double[::1] a = data[0, :-4]
+        double[::1] b = data[1, :-2]
+        double[::1] d = data[2, :]
+        double[::1] e = data[3, 2:]
+        double[::1] f = data[4, 4:]
+        double lam
     n = d.shape[0]
     m = e.shape[0]
     k = n - m
@@ -197,39 +240,39 @@ def PDMA_LU(real_t[:, ::1] data):
     d[i+k] -= lam*e[i]
     b[i] = lam
 
-def TDMA_LU(real_t[:, ::1] data):
+def TDMA_LU(double[:, ::1] data):
     cdef:
         int i
         int n = data.shape[1]
-        real_t[::1] ld = data[0, :-2]
-        real_t[::1] d = data[1, :]
-        real_t[::1] ud = data[2, 2:]
+        double[::1] ld = data[0, :-2]
+        double[::1] d = data[1, :]
+        double[::1] ud = data[2, 2:]
     for i in range(2, n):
         ld[i-2] = ld[i-2]/d[i-2]
         d[i] = d[i] - ld[i-2]*ud[i-2]
 
-def TDMA_O_LU(real_t[:, ::1] data):
+def TDMA_O_LU(double[:, ::1] data):
     cdef:
         int i
         int n = data.shape[1]
-        real_t[::1] ld = data[0, :-1]
-        real_t[::1] d = data[1, :]
-        real_t[::1] ud = data[2, 1:]
+        double[::1] ld = data[0, :-1]
+        double[::1] d = data[1, :]
+        double[::1] ud = data[2, 1:]
     for i in range(1, n):
         ld[i-1] = ld[i-1]/d[i-1]
         d[i] = d[i] - ld[i-1]*ud[i-1]
 
-def HeptaDMA_LU(real_t[:, ::1] data):
+def HeptaDMA_LU(double[:, ::1] data):
     cdef:
         int i, n, m, k
-        real_t[::1] a = data[0, :-4]
-        real_t[::1] b = data[1, :-2]
-        real_t[::1] d = data[2, :]
-        real_t[::1] e = data[3, 2:]
-        real_t[::1] f = data[4, 4:]
-        real_t[::1] g = data[5, 6:]
-        real_t[::1] h = data[6, 8:]
-        real_t lam
+        double[::1] a = data[0, :-4]
+        double[::1] b = data[1, :-2]
+        double[::1] d = data[2, :]
+        double[::1] e = data[3, 2:]
+        double[::1] f = data[4, 4:]
+        double[::1] g = data[5, 6:]
+        double[::1] h = data[6, 8:]
+        double lam
     n = d.shape[0]
     m = e.shape[0]
     k = n - m
@@ -281,7 +324,7 @@ cdef innerfunc func_from_name(fun_name) except NULL:
     else:
         return NULL
 
-#def SolverGeneric1ND_solve_data2D(np.complex128_t[:, ::1] u, real_t[:, :, ::1] data, sol, int naxes, bint is_zero_index):
+#def SolverGeneric1ND_solve_data2D(complex[:, ::1] u, double[:, :, ::1] data, sol, int naxes, bint is_zero_index):
 #    cdef:
 #        int i
 #    if naxes == 0:
@@ -296,7 +339,7 @@ cdef innerfunc func_from_name(fun_name) except NULL:
 #                continue
 #            sol(u[i], data[i])
 #
-#def SolverGeneric1ND_solve_data3D(np.complex128_t[:, :, ::1] u, real_t[:, :, :, ::1] data, sol, int naxes, bint is_zero_index):
+#def SolverGeneric1ND_solve_data3D(complex[:, :, ::1] u, double[:, :, :, ::1] data, sol, int naxes, bint is_zero_index):
 #    cdef:
 #        int i, j
 #    if naxes == 0:
@@ -339,7 +382,7 @@ def SolverGeneric1ND_solve_data(u, data, sol, naxes, is_zero_index):
     #    SolverGeneric1ND_solve_data3D(u, data, sol, naxes, is_zero_index)
     return u
 
-cdef void SolverGeneric1ND_solve_3D(np.complex128_t[:, :, ::1] u, real_t[:, :, :, ::1] data, innerfunc sol, int naxes, bint is_zero_index):
+cdef void SolverGeneric1ND_solve_3D(complex[:, :, ::1] u, double[:, :, :, ::1] data, innerfunc sol, int naxes, bint is_zero_index):
     cdef:
         int i, j, st
 
@@ -365,7 +408,7 @@ cdef void SolverGeneric1ND_solve_3D(np.complex128_t[:, :, ::1] u, real_t[:, :, :
                     continue
                 sol(&u[i, j, 0], st, &data[i, j, 0, 0], data.shape[2], data.shape[3])
 
-cdef void SolverGeneric1ND_solve_2D(np.complex128_t[:, ::1] u, real_t[:, :, ::1] data, innerfunc sol, int naxes, bint is_zero_index):
+cdef void SolverGeneric1ND_solve_2D(complex[:, ::1] u, double[:, :, ::1] data, innerfunc sol, int naxes, bint is_zero_index):
     cdef:
         int i, j, st
 
@@ -382,7 +425,8 @@ cdef void SolverGeneric1ND_solve_2D(np.complex128_t[:, ::1] u, real_t[:, :, ::1]
                 continue
             sol(&u[i, 0], st, &data[i, 0, 0], data.shape[1], data.shape[2])
 
-cdef void Solve_axis_3D(T[:, :, ::1] u, real_t[:, ::1] data, funcT sol, int naxes):
+@cython.cdivision(True)
+cdef void Solve_axis_3D(T[:, :, ::1] u, double[:, ::1] data, funcT sol, int naxes):
     cdef:
         int i, j, st
 
@@ -402,7 +446,8 @@ cdef void Solve_axis_3D(T[:, :, ::1] u, real_t[:, ::1] data, funcT sol, int naxe
             for j in range(u.shape[1]):
                 sol(&u[i, j, 0], st, &data[0, 0], data.shape[0], data.shape[1])
 
-cdef void Solve_axis_2D(T[:, ::1] u, real_t[:, ::1] data, funcT sol, int naxes):
+@cython.cdivision(True)
+cdef void Solve_axis_2D(T[:, ::1] u, double[:, ::1] data, funcT sol, int naxes):
     cdef:
         int i, j, st
 
@@ -414,21 +459,21 @@ cdef void Solve_axis_2D(T[:, ::1] u, real_t[:, ::1] data, funcT sol, int naxes):
         for i in range(u.shape[0]):
             sol(&u[i, 0], st, &data[0, 0], data.shape[0], data.shape[1])
 
-cpdef HeptaDMA_inner_solve(T[:] u, real_t[:, ::1] data):
+cpdef HeptaDMA_inner_solve(T[:] u, double[:, ::1] data):
     HeptaDMA_inner_solve_ptr[T](&u[0], u.strides[0]/u.itemsize, &data[0, 0], data.shape[0], data.shape[1])
 
 @cython.cdivision(True)
-cdef void HeptaDMA_inner_solve_ptr(T* u, int st, real_t* data, int m0, int m1):
+cdef void HeptaDMA_inner_solve_ptr(T* u, int st, double* data, int m0, int m1):
     cdef:
         int n = m1
         int k
-        real_t* a = &data[0]
-        real_t* b = &data[m1]
-        real_t* d = &data[2*m1]
-        real_t* e = &data[3*m1+2]
-        real_t* f = &data[4*m1+4]
-        real_t* g = &data[5*m1+6]
-        real_t* h = &data[6*m1+8]
+        double* a = &data[0]
+        double* b = &data[m1]
+        double* d = &data[2*m1]
+        double* e = &data[3*m1+2]
+        double* f = &data[4*m1+4]
+        double* g = &data[5*m1+6]
+        double* h = &data[6*m1+8]
     u[2*st] -= b[0]*u[0]
     u[3*st] -= b[1]*u[st]
     for k in range(4, n):
@@ -444,19 +489,19 @@ cdef void HeptaDMA_inner_solve_ptr(T* u, int st, real_t* data, int m0, int m1):
     for k in range(n-9, -1, -1):
         u[k*st] = (u[k*st]-e[k]*u[(k+2)*st]-f[k]*u[(k+4)*st]-g[k]*u[(k+6)*st]-h[k]*u[(k+8)*st])/d[k]
 
-cpdef PDMA_inner_solve(T[:] u, real_t[:, ::1] data):
+cpdef PDMA_inner_solve(T[:] u, double[:, ::1] data):
     PDMA_inner_solve_ptr[T](&u[0], u.strides[0]/u.itemsize, &data[0, 0], data.shape[0], data.shape[1])
 
 @cython.cdivision(True)
-cdef void PDMA_inner_solve_ptr(T* u, int st, real_t* data, int m0, int m1):
+cdef void PDMA_inner_solve_ptr(T* u, int st, double* data, int m0, int m1):
     cdef:
         int n = m1
         int k
-        real_t* a = &data[0]
-        real_t* b = &data[m1]
-        real_t* d = &data[2*m1]
-        real_t* e = &data[3*m1+2]
-        real_t* f = &data[4*m1+4]
+        double* a = &data[0]
+        double* b = &data[m1]
+        double* d = &data[2*m1]
+        double* e = &data[3*m1+2]
+        double* f = &data[4*m1+4]
     u[2*st] -= b[0]*u[0]
     u[3*st] -= b[1]*u[st]
     for k in range(4, n):
@@ -468,17 +513,17 @@ cdef void PDMA_inner_solve_ptr(T* u, int st, real_t* data, int m0, int m1):
     for k in range(n-5, -1, -1):
         u[k*st] = (u[k*st]-e[k]*u[(k+2)*st]-f[k]*u[(k+4)*st])/d[k]
 
-cpdef TDMA_inner_solve(T[:] u, real_t[:, ::1] data):
+cpdef TDMA_inner_solve(T[:] u, double[:, ::1] data):
     TDMA_inner_solve_ptr[T](&u[0], u.strides[0]/u.itemsize, &data[0, 0], data.shape[0], data.shape[1])
 
 @cython.cdivision(True)
-cdef void TDMA_inner_solve_ptr(T* u, int st, real_t* data, int m0, int m1):
+cdef void TDMA_inner_solve_ptr(T* u, int st, double* data, int m0, int m1):
     cdef:
         int n = m1
         int i
-        real_t* ld = &data[0]
-        real_t* d = &data[m1]
-        real_t* ud = &data[m1*2+2]
+        double* ld = &data[0]
+        double* d = &data[m1]
+        double* ud = &data[m1*2+2]
     for i in range(2, n):
         u[i*st] -= ld[i-2]*u[(i-2)*st]
     u[(n-1)*st] = u[(n-1)*st]/d[n-1]
@@ -486,47 +531,47 @@ cdef void TDMA_inner_solve_ptr(T* u, int st, real_t* data, int m0, int m1):
     for i in range(n - 3, -1, -1):
         u[i*st] = (u[i*st] - ud[i]*u[(i+2)*st])/d[i]
 
-cpdef TDMA_O_inner_solve(T[:] u, real_t[:, ::1] data):
+cpdef TDMA_O_inner_solve(T[:] u, double[:, ::1] data):
     TDMA_O_inner_solve_ptr[T](&u[0], u.strides[0]/u.itemsize, &data[0, 0], data.shape[0], data.shape[1])
 
 @cython.cdivision(True)
-cdef void TDMA_O_inner_solve_ptr(T* u, int st, real_t* data, int m0, int m1):
+cdef void TDMA_O_inner_solve_ptr(T* u, int st, double* data, int m0, int m1):
     cdef:
         int n = m1
         int i
-        real_t* ld = &data[0]
-        real_t* d = &data[m1]
-        real_t* ud = &data[2*m1+1]
+        double* ld = &data[0]
+        double* d = &data[m1]
+        double* ud = &data[2*m1+1]
     for i in range(1, n):
         u[i*st] -= ld[i-1]*u[(i-1)*st]
     u[(n-1)*st] = u[(n-1)*st]/d[n-1]
     for i in range(n-2, -1, -1):
         u[i*st] = (u[i*st] - ud[i]*u[(i+1)*st])/d[i]
 
-cpdef TwoDMA_inner_solve(T[:] u, real_t[:, ::1] data):
+cpdef TwoDMA_inner_solve(T[:] u, double[:, ::1] data):
     TwoDMA_inner_solve_ptr[T](&u[0], u.strides[0]/u.itemsize, &data[0, 0], data.shape[0], data.shape[1])
 
 @cython.cdivision(True)
-cdef void TwoDMA_inner_solve_ptr(T* u, int st, real_t* data, int m0, int m1):
+cdef void TwoDMA_inner_solve_ptr(T* u, int st, double* data, int m0, int m1):
     cdef:
         int i, n = m1
-        real_t* d = &data[0]
-        real_t* u1 = &data[m1+2]
+        double* d = &data[0]
+        double* u1 = &data[m1+2]
     u[(n-1)*st] = u[(n-1)*st]/d[n-1]
     u[(n-2)*st] = u[(n-2)*st]/d[n-2]
     for i in range(n - 3, -1, -1):
         u[i*st] = (u[i*st] - u1[i]*u[(i+2)*st])/d[i]
 
-cpdef ThreeDMA_inner_solve(T[:] u, real_t[:, ::1] data):
+cpdef ThreeDMA_inner_solve(T[:] u, double[:, ::1] data):
     ThreeDMA_inner_solve_ptr[T](&u[0], u.strides[0]/u.itemsize, &data[0, 0], data.shape[0], data.shape[1])
 
 @cython.cdivision(True)
-cdef void ThreeDMA_inner_solve_ptr(T* u, int st, real_t* data, int m0, int m1):
+cdef void ThreeDMA_inner_solve_ptr(T* u, int st, double* data, int m0, int m1):
     cdef:
         int i, n = m1
-        real_t* d = &data[0]
-        real_t* u1 = &data[m1+2]
-        real_t* u2 = &data[m1+4]
+        double* d = &data[0]
+        double* u1 = &data[m1+2]
+        double* u2 = &data[m1+4]
     u[(n-1)*st] = u[(n-1)*st]/d[n-1]
     u[(n-2)*st] = u[(n-2)*st]/d[n-2]
     u[(n-3)*st] = (u[(n-3)*st]-u1[n-3]*u[(n-1)*st])/d[n-3]
@@ -534,30 +579,28 @@ cdef void ThreeDMA_inner_solve_ptr(T* u, int st, real_t* data, int m0, int m1):
     for i in range(n - 5, -1, -1):
         u[i*st] = (u[i*st] - u1[i]*u[(i+2)*st] - u2[i]*u[(i+4)*st])/d[i]
 
-cpdef DiagMA_inner_solve(T[:] u, real_t[:, ::1] data):
+cpdef DiagMA_inner_solve(T[:] u, double[:, ::1] data):
     DiagMA_inner_solve_ptr[T](&u[0], u.strides[0]/u.itemsize, &data[0, 0], data.shape[0], data.shape[1])
 
 @cython.cdivision(True)
-cdef void DiagMA_inner_solve_ptr(T* u, int st, real_t* data, int m0, int m1):
+cdef void DiagMA_inner_solve_ptr(T* u, int st, double* data, int m0, int m1):
     cdef:
-        int n = m1
         int i
-        real_t* d = &data[0]
-    for i in range(n):
-        u[i*st] /= d[i]
+    for i in range(m1):
+        u[i*st] /= data[i]
 
-cpdef FDMA_inner_solve(T[:] u, real_t[:, ::1] data):
+cpdef FDMA_inner_solve(T[:] u, double[:, ::1] data):
     FDMA_inner_solve_ptr[T](&u[0], u.strides[0]/u.itemsize, &data[0, 0], data.shape[0], data.shape[1])
 
 @cython.cdivision(True)
-cdef void FDMA_inner_solve_ptr(T* u, int st, real_t* data, int m0, int m1):
+cdef void FDMA_inner_solve_ptr(T* u, int st, double* data, int m0, int m1):
     cdef:
         int i
         int n = m1
-        real_t* ld = &data[0]
-        real_t* d = &data[m1]
-        real_t* u1 = &data[2*m1+2]
-        real_t* u2 = &data[3*m1+4]
+        double* ld = &data[0]
+        double* d = &data[m1]
+        double* u1 = &data[2*m1+2]
+        double* u2 = &data[3*m1+4]
     for i in range(2, n):
         u[i*st] -= ld[i-2]*u[(i-2)*st]
     u[(n-1)*st] = u[(n-1)*st]/d[n-1]
@@ -570,9 +613,9 @@ cdef void FDMA_inner_solve_ptr(T* u, int st, real_t* data, int m0, int m1):
 
 def Poisson_Solve_ADD(A, b, u, axis=0):
     cdef:
-        real_t[::1] a0 = A[0]
-        real_t[::1] a2 = A[2]
-        real_t sc = A.scale
+        double[::1] a0 = A[0]
+        double[::1] a2 = A[2]
+        double sc = A.scale
         int n
     n = u.ndim
     if n == 1:
@@ -584,9 +627,9 @@ def Poisson_Solve_ADD(A, b, u, axis=0):
 
     return u
 
-def Poisson_Solve_ADD_2D_ptr(real_t[::1] d,
-                             real_t[::1] d1,
-                             real_t scale,
+def Poisson_Solve_ADD_2D_ptr(double[::1] d,
+                             double[::1] d1,
+                             double scale,
                              T[:, ::1] b,
                              T[:, ::1] u,
                              int axis):
@@ -602,9 +645,9 @@ def Poisson_Solve_ADD_2D_ptr(real_t[::1] d,
         for i in range(u.shape[0]):
             Poisson_Solve_ADD_1D_ptr(&d[0], &d1[0], scale, &b[i, 0], &u[i, 0], N, strides)
 
-def Poisson_Solve_ADD_3D_ptr(real_t[::1] d,
-                             real_t[::1] d1,
-                             real_t scale,
+def Poisson_Solve_ADD_3D_ptr(double[::1] d,
+                             double[::1] d1,
+                             double scale,
                              T[:, :, ::1] b,
                              T[:, :, ::1] u,
                              int axis):
@@ -627,16 +670,16 @@ def Poisson_Solve_ADD_3D_ptr(real_t[::1] d,
                 Poisson_Solve_ADD_1D_ptr(&d[0], &d1[0], scale, &b[i, j, 0], &u[i, j, 0], N, strides)
 
 
-cdef void Poisson_Solve_ADD_1D(real_t[::1] d,
-                               real_t[::1] d1,
-                               real_t scale,
-                               real_t[::1] b,
-                               real_t[::1] u):
+cdef void Poisson_Solve_ADD_1D(double[::1] d,
+                               double[::1] d1,
+                               double scale,
+                               double[::1] b,
+                               double[::1] u):
     Poisson_Solve_ADD_1D_ptr(&d[0], &d1[0], scale, &b[0], &u[0], d.shape[0], 1)
 
-cdef void Poisson_Solve_ADD_1D_ptr(real_t* d,
-                                   real_t* d1,
-                                   real_t scale,
+cdef void Poisson_Solve_ADD_1D_ptr(double* d,
+                                   double* d1,
+                                   double scale,
                                    T* b,
                                    T* u,
                                    int N,
@@ -675,18 +718,18 @@ def LU_Helmholtz_1D(A, B,
                     np.float_t A_scale,
                     np.float_t B_scale,
                     bint neumann,
-                    np.ndarray[real_t, ndim=1] d0,
-                    np.ndarray[real_t, ndim=1] d1,
-                    np.ndarray[real_t, ndim=1] d2,
-                    np.ndarray[real_t, ndim=1] L):
+                    np.ndarray[double, ndim=1] d0,
+                    np.ndarray[double, ndim=1] d1,
+                    np.ndarray[double, ndim=1] d2,
+                    np.ndarray[double, ndim=1] L):
     cdef:
-        int_t i, N
-        np.ndarray[real_t, ndim=1] A_0 = A[0].copy()
-        np.ndarray[real_t, ndim=1] A_2 = A[2].copy()
-        np.ndarray[real_t, ndim=1] A_4 = A[4].copy()
-        np.ndarray[real_t, ndim=1] B_m2 = B.get(-2).copy()
-        np.ndarray[real_t, ndim=1] B_0 = B[0].copy()
-        np.ndarray[real_t, ndim=1] B_2 = B[2].copy()
+        int i, N
+        np.ndarray[double, ndim=1] A_0 = A[0].copy()
+        np.ndarray[double, ndim=1] A_2 = A[2].copy()
+        np.ndarray[double, ndim=1] A_4 = A[4].copy()
+        np.ndarray[double, ndim=1] B_m2 = B.get(-2).copy()
+        np.ndarray[double, ndim=1] B_0 = B[0].copy()
+        np.ndarray[double, ndim=1] B_2 = B[2].copy()
 
     N = A_0.shape[0]
     if neumann:
@@ -720,15 +763,15 @@ def LU_Helmholtz_1D(A, B,
             d2[i] = A_scale*A_4[i] - L[i-2]*d2[i-2]
 
 def LU_Helmholtz_3D(A, B, np.int64_t axis,
-                    np.ndarray[real_t, ndim=3] A_scale,
-                    np.ndarray[real_t, ndim=3] B_scale,
+                    np.ndarray[double, ndim=3] A_scale,
+                    np.ndarray[double, ndim=3] B_scale,
                     bint neumann,
-                    np.ndarray[real_t, ndim=3] d0,
-                    np.ndarray[real_t, ndim=3] d1,
-                    np.ndarray[real_t, ndim=3] d2,
-                    np.ndarray[real_t, ndim=3] L):
+                    np.ndarray[double, ndim=3] d0,
+                    np.ndarray[double, ndim=3] d1,
+                    np.ndarray[double, ndim=3] d2,
+                    np.ndarray[double, ndim=3] L):
     cdef:
-        int_t i, j, k
+        int i, j, k
 
     if axis == 0:
         for j in range(d0.shape[1]):
@@ -767,15 +810,15 @@ def LU_Helmholtz_3D(A, B, np.int64_t axis,
                                 L [i, j, :])
 
 def LU_Helmholtz_2D(A, B, np.int64_t axis,
-                    np.ndarray[real_t, ndim=2] A_scale,
-                    np.ndarray[real_t, ndim=2] B_scale,
+                    np.ndarray[double, ndim=2] A_scale,
+                    np.ndarray[double, ndim=2] B_scale,
                     bint neumann,
-                    np.ndarray[real_t, ndim=2] d0,
-                    np.ndarray[real_t, ndim=2] d1,
-                    np.ndarray[real_t, ndim=2] d2,
-                    np.ndarray[real_t, ndim=2] L):
+                    np.ndarray[double, ndim=2] d0,
+                    np.ndarray[double, ndim=2] d1,
+                    np.ndarray[double, ndim=2] d2,
+                    np.ndarray[double, ndim=2] L):
     cdef:
-        int_t i
+        int i
 
     if axis == 0:
         for i in range(d0.shape[1]):
@@ -815,10 +858,10 @@ def Solve_Helmholtz(b, u, neumann, d0, d1, d2, L, axis):
 def Solve_Helmholtz_1D(T[::1] fk,
                        T[::1] u_hat,
                        bint neumann,
-                       real_t[::1] d0,
-                       real_t[::1] d1,
-                       real_t[::1] d2,
-                       real_t[::1] L):
+                       double[::1] d0,
+                       double[::1] d1,
+                       double[::1] d2,
+                       double[::1] L):
     cdef:
         vector[T] y
         int N = d0.shape[0]-2
@@ -828,15 +871,15 @@ def Solve_Helmholtz_1D(T[::1] fk,
 cdef void Solve_Helmholtz_1D_ptr(T* fk,
                                  T* u_hat,
                                  bint neumann,
-                                 real_t* d0,
-                                 real_t* d1,
-                                 real_t* d2,
-                                 real_t* L,
+                                 double* d0,
+                                 double* d1,
+                                 double* d2,
+                                 double* L,
                                  T* y,
                                  int N,
                                  int strides) nogil:
     cdef:
-        int_t i, j, st, ii, jj
+        int i, j, st, ii, jj
         T sum_even = 0.0
         T sum_odd = 0.0
 
@@ -872,13 +915,13 @@ def Solve_Helmholtz_3D_ptr(np.int64_t axis,
                            T[:,:,::1] fk,
                            T[:,:,::1] u_hat,
                            bint neumann,
-                           real_t[:,:,::1] d0,
-                           real_t[:,:,::1] d1,
-                           real_t[:,:,::1] d2,
-                           real_t[:,:,::1] L):
+                           double[:,:,::1] d0,
+                           double[:,:,::1] d1,
+                           double[:,:,::1] d2,
+                           double[:,:,::1] L):
     cdef:
         vector[T] y
-        int_t i, j, k, strides, N
+        int i, j, k, strides, N
 
     strides = fk.strides[axis]/fk.itemsize
     N = d0.shape[axis] - 2
@@ -907,13 +950,13 @@ def Solve_Helmholtz_2D_ptr(np.int64_t axis,
                            T[:,::1] fk,
                            T[:,::1] u_hat,
                            bint neumann,
-                           real_t[:,::1] d0,
-                           real_t[:,::1] d1,
-                           real_t[:,::1] d2,
-                           real_t[:,::1] L):
+                           double[:,::1] d0,
+                           double[:,::1] d1,
+                           double[:,::1] d2,
+                           double[:,::1] L):
     cdef:
         vector[T] y
-        int_t i, j, strides, N
+        int i, j, strides, N
 
     strides = fk.strides[axis]/fk.itemsize
     N = d0.shape[axis] - 2
@@ -949,25 +992,25 @@ def LU_Biharmonic_1D(np.float_t a,
                      np.float_t b,
                      np.float_t c,
                      # 3 upper diagonals of SBB
-                     np.ndarray[real_t, ndim=1] sii,
-                     np.ndarray[real_t, ndim=1] siu,
-                     np.ndarray[real_t, ndim=1] siuu,
+                     np.ndarray[double, ndim=1] sii,
+                     np.ndarray[double, ndim=1] siu,
+                     np.ndarray[double, ndim=1] siuu,
                      # All 3 diagonals of ABB
-                     np.ndarray[real_t, ndim=1] ail,
-                     np.ndarray[real_t, ndim=1] aii,
-                     np.ndarray[real_t, ndim=1] aiu,
+                     np.ndarray[double, ndim=1] ail,
+                     np.ndarray[double, ndim=1] aii,
+                     np.ndarray[double, ndim=1] aiu,
                      # All 5 diagonals of BBB
-                     np.ndarray[real_t, ndim=1] bill,
-                     np.ndarray[real_t, ndim=1] bil,
-                     np.ndarray[real_t, ndim=1] bii,
-                     np.ndarray[real_t, ndim=1] biu,
-                     np.ndarray[real_t, ndim=1] biuu,
+                     np.ndarray[double, ndim=1] bill,
+                     np.ndarray[double, ndim=1] bil,
+                     np.ndarray[double, ndim=1] bii,
+                     np.ndarray[double, ndim=1] biu,
+                     np.ndarray[double, ndim=1] biuu,
                      # Three upper and two lower diagonals of LU decomposition
-                     np.ndarray[real_t, ndim=2] u0,
-                     np.ndarray[real_t, ndim=2] u1,
-                     np.ndarray[real_t, ndim=2] u2,
-                     np.ndarray[real_t, ndim=2] l0,
-                     np.ndarray[real_t, ndim=2] l1):
+                     np.ndarray[double, ndim=2] u0,
+                     np.ndarray[double, ndim=2] u1,
+                     np.ndarray[double, ndim=2] u2,
+                     np.ndarray[double, ndim=2] l0,
+                     np.ndarray[double, ndim=2] l1):
 
     LU_oe_Biharmonic_1D(0, a, b, c, sii[::2], siu[::2], siuu[::2], ail[::2], aii[::2], aiu[::2], bill[::2], bil[::2], bii[::2], biu[::2], biuu[::2], u0[0], u1[0], u2[0], l0[0], l1[0])
     LU_oe_Biharmonic_1D(1, a, b, c, sii[1::2], siu[1::2], siuu[1::2], ail[1::2], aii[1::2], aiu[1::2], bill[1::2], bil[1::2], bii[1::2], biu[1::2], biuu[1::2], u0[1], u1[1], u2[1], l0[1], l1[1])
@@ -977,31 +1020,31 @@ def LU_oe_Biharmonic_1D(bint odd,
                         np.float_t b,
                         np.float_t c,
                         # 3 upper diagonals of SBB
-                        np.ndarray[real_t, ndim=1] sii,
-                        np.ndarray[real_t, ndim=1] siu,
-                        np.ndarray[real_t, ndim=1] siuu,
+                        np.ndarray[double, ndim=1] sii,
+                        np.ndarray[double, ndim=1] siu,
+                        np.ndarray[double, ndim=1] siuu,
                         # All 3 diagonals of ABB
-                        np.ndarray[real_t, ndim=1] ail,
-                        np.ndarray[real_t, ndim=1] aii,
-                        np.ndarray[real_t, ndim=1] aiu,
+                        np.ndarray[double, ndim=1] ail,
+                        np.ndarray[double, ndim=1] aii,
+                        np.ndarray[double, ndim=1] aiu,
                         # All 5 diagonals of BBB
-                        np.ndarray[real_t, ndim=1] bill,
-                        np.ndarray[real_t, ndim=1] bil,
-                        np.ndarray[real_t, ndim=1] bii,
-                        np.ndarray[real_t, ndim=1] biu,
-                        np.ndarray[real_t, ndim=1] biuu,
+                        np.ndarray[double, ndim=1] bill,
+                        np.ndarray[double, ndim=1] bil,
+                        np.ndarray[double, ndim=1] bii,
+                        np.ndarray[double, ndim=1] biu,
+                        np.ndarray[double, ndim=1] biuu,
                         # Two upper and two lower diagonals of LU decomposition
-                        np.ndarray[real_t, ndim=1] u0,
-                        np.ndarray[real_t, ndim=1] u1,
-                        np.ndarray[real_t, ndim=1] u2,
-                        np.ndarray[real_t, ndim=1] l0,
-                        np.ndarray[real_t, ndim=1] l1):
+                        np.ndarray[double, ndim=1] u0,
+                        np.ndarray[double, ndim=1] u1,
+                        np.ndarray[double, ndim=1] u2,
+                        np.ndarray[double, ndim=1] l0,
+                        np.ndarray[double, ndim=1] l1):
 
     cdef:
-        int_t i, j, kk
+        int i, j, kk
         long long int m, k
-        real pi = np.pi
-        vector[real] c0, c1, c2
+        double pi = np.pi
+        vector[double] c0, c1, c2
 
     M = sii.shape[0]
 
@@ -1084,8 +1127,8 @@ def LU_oe_Biharmonic_1D(bint odd,
             u2[kk] = c0[kk+2]
 
 cdef ForwardBsolve_L(np.ndarray[T, ndim=1] y,
-                     np.ndarray[real_t, ndim=1] l0,
-                     np.ndarray[real_t, ndim=1] l1,
+                     np.ndarray[double, ndim=1] l0,
+                     np.ndarray[double, ndim=1] l1,
                      np.ndarray[T, ndim=1] fk):
     # Solve Forward Ly = f
     cdef np.intp_t i, N
@@ -1096,10 +1139,10 @@ cdef ForwardBsolve_L(np.ndarray[T, ndim=1] y,
         y[i] = fk[i] - l0[i-1]*y[i-1] - l1[i-2]*y[i-2]
 
 def Biharmonic_factor_pr_3D(np.int64_t axis,
-                            np.ndarray[real_t, ndim=4] a,
-                            np.ndarray[real_t, ndim=4] b,
-                            np.ndarray[real_t, ndim=4] l0,
-                            np.ndarray[real_t, ndim=4] l1):
+                            np.ndarray[double, ndim=4] a,
+                            np.ndarray[double, ndim=4] b,
+                            np.ndarray[double, ndim=4] l0,
+                            np.ndarray[double, ndim=4] l1):
 
     cdef:
         unsigned int ii, jj
@@ -1128,10 +1171,10 @@ def Biharmonic_factor_pr_3D(np.int64_t axis,
                                         l1[:, ii, jj, :])
 
 def Biharmonic_factor_pr_2D(np.int64_t axis,
-                            np.ndarray[real_t, ndim=3] a,
-                            np.ndarray[real_t, ndim=3] b,
-                            np.ndarray[real_t, ndim=3] l0,
-                            np.ndarray[real_t, ndim=3] l1):
+                            np.ndarray[double, ndim=3] a,
+                            np.ndarray[double, ndim=3] b,
+                            np.ndarray[double, ndim=3] l0,
+                            np.ndarray[double, ndim=3] l1):
 
     cdef:
         unsigned int ii
@@ -1157,22 +1200,22 @@ def Biharmonic_factor_pr(a, b, l0, l1, axis):
     elif a.ndim == 4:
         Biharmonic_factor_pr_3D(axis, a, b, l0, l1)
 
-def Biharmonic_factor_pr_1D(np.ndarray[real_t, ndim=2] a,
-                            np.ndarray[real_t, ndim=2] b,
-                            np.ndarray[real_t, ndim=2] l0,
-                            np.ndarray[real_t, ndim=2] l1):
+def Biharmonic_factor_pr_1D(np.ndarray[double, ndim=2] a,
+                            np.ndarray[double, ndim=2] b,
+                            np.ndarray[double, ndim=2] l0,
+                            np.ndarray[double, ndim=2] l1):
 
     Biharmonic_factor_oe_pr(0, a[0], b[0], l0[0], l1[0])
     Biharmonic_factor_oe_pr(1, a[1], b[1], l0[1], l1[1])
 
 def Biharmonic_factor_oe_pr(bint odd,
-                            np.ndarray[real_t, ndim=1] a,
-                            np.ndarray[real_t, ndim=1] b,
-                            np.ndarray[real_t, ndim=1] l0,
-                            np.ndarray[real_t, ndim=1] l1):
+                            np.ndarray[double, ndim=1] a,
+                            np.ndarray[double, ndim=1] b,
+                            np.ndarray[double, ndim=1] l0,
+                            np.ndarray[double, ndim=1] l1):
     cdef:
-        int_t i, j, M
-        real pi = np.pi
+        int i, j, M
+        double pi = np.pi
         long long int pp, rr, k, kk
 
     M = l0.shape[0]+1
@@ -1199,13 +1242,13 @@ def Biharmonic_Solve(b, u, u0, u1, u2, l0, l1, ak, bk, a0, axis=0):
 
 def Solve_Biharmonic_1D(np.ndarray[T, ndim=1] fk,
                         np.ndarray[T, ndim=1] uk,
-                        np.ndarray[real_t, ndim=2] u0,
-                        np.ndarray[real_t, ndim=2] u1,
-                        np.ndarray[real_t, ndim=2] u2,
-                        np.ndarray[real_t, ndim=2] l0,
-                        np.ndarray[real_t, ndim=2] l1,
-                        np.ndarray[real_t, ndim=2] a,
-                        np.ndarray[real_t, ndim=2] b,
+                        np.ndarray[double, ndim=2] u0,
+                        np.ndarray[double, ndim=2] u1,
+                        np.ndarray[double, ndim=2] u2,
+                        np.ndarray[double, ndim=2] l0,
+                        np.ndarray[double, ndim=2] l1,
+                        np.ndarray[double, ndim=2] a,
+                        np.ndarray[double, ndim=2] b,
                         np.float_t ac):
     Solve_oe_Biharmonic_1D(0, fk[::2], uk[::2], u0[0], u1[0], u2[0], l0[0], l1[0], a[0], b[0], ac)
     Solve_oe_Biharmonic_1D(1, fk[1::2], uk[1::2], u0[1], u1[1], u2[1], l0[1], l1[1], a[1], b[1], ac)
@@ -1214,16 +1257,16 @@ cdef BackBsolve_U(int M,
                   bint odd,
                   np.ndarray[T, ndim=1] f,  # Uc = f
                   np.ndarray[T, ndim=1] uk,
-                  np.ndarray[real_t, ndim=1] u0,
-                  np.ndarray[real_t, ndim=1] u1,
-                  np.ndarray[real_t, ndim=1] u2,
-                  np.ndarray[real_t, ndim=1] l0,
-                  np.ndarray[real_t, ndim=1] l1,
-                  np.ndarray[real_t, ndim=1] a,
-                  np.ndarray[real_t, ndim=1] b,
+                  np.ndarray[double, ndim=1] u0,
+                  np.ndarray[double, ndim=1] u1,
+                  np.ndarray[double, ndim=1] u2,
+                  np.ndarray[double, ndim=1] l0,
+                  np.ndarray[double, ndim=1] l1,
+                  np.ndarray[double, ndim=1] a,
+                  np.ndarray[double, ndim=1] b,
                   np.float_t ac):
     cdef:
-        int_t i, j, k, kk
+        int i, j, k, kk
         T s1 = 0.0
         T s2 = 0.0
 
@@ -1243,13 +1286,13 @@ cdef BackBsolve_U(int M,
 def Solve_oe_Biharmonic_1D(bint odd,
                            np.ndarray[T, ndim=1] fk,
                            np.ndarray[T, ndim=1] uk,
-                           np.ndarray[real_t, ndim=1] u0,
-                           np.ndarray[real_t, ndim=1] u1,
-                           np.ndarray[real_t, ndim=1] u2,
-                           np.ndarray[real_t, ndim=1] l0,
-                           np.ndarray[real_t, ndim=1] l1,
-                           np.ndarray[real_t, ndim=1] a,
-                           np.ndarray[real_t, ndim=1] b,
+                           np.ndarray[double, ndim=1] u0,
+                           np.ndarray[double, ndim=1] u1,
+                           np.ndarray[double, ndim=1] u2,
+                           np.ndarray[double, ndim=1] l0,
+                           np.ndarray[double, ndim=1] l1,
+                           np.ndarray[double, ndim=1] a,
+                           np.ndarray[double, ndim=1] b,
                            np.float_t ac):
     """
     Solve (aS+b*A+cB)x = f, where S, A and B are 4th order Laplace, stiffness and mass matrices of Shen with Dirichlet BC
@@ -1269,17 +1312,17 @@ def Solve_oe_Biharmonic_1D(bint odd,
 def Solve_Biharmonic_3D_n(np.int64_t axis,
                           np.ndarray[T, ndim=3, mode='c'] fk,
                           np.ndarray[T, ndim=3, mode='c'] uk,
-                          np.ndarray[real_t, ndim=4, mode='c'] u0,
-                          np.ndarray[real_t, ndim=4, mode='c'] u1,
-                          np.ndarray[real_t, ndim=4, mode='c'] u2,
-                          np.ndarray[real_t, ndim=4, mode='c'] l0,
-                          np.ndarray[real_t, ndim=4, mode='c'] l1,
-                          np.ndarray[real_t, ndim=4, mode='c'] a,
-                          np.ndarray[real_t, ndim=4, mode='c'] b,
-                          real_t a0):
+                          np.ndarray[double, ndim=4, mode='c'] u0,
+                          np.ndarray[double, ndim=4, mode='c'] u1,
+                          np.ndarray[double, ndim=4, mode='c'] u2,
+                          np.ndarray[double, ndim=4, mode='c'] l0,
+                          np.ndarray[double, ndim=4, mode='c'] l1,
+                          np.ndarray[double, ndim=4, mode='c'] a,
+                          np.ndarray[double, ndim=4, mode='c'] b,
+                          double a0):
 
     cdef:
-        int_t i, j, k, kk, m, M, ke, ko, jj, je, jo
+        int i, j, k, kk, m, M, ke, ko, jj, je, jo
         np.float_t ac
         np.ndarray[T, ndim=2, mode='c'] s1
         np.ndarray[T, ndim=2, mode='c'] s2
@@ -1451,17 +1494,17 @@ def Solve_Biharmonic_3D_n(np.int64_t axis,
 def Solve_Biharmonic_2D_n(np.int64_t axis,
                           np.ndarray[T, ndim=2, mode='c'] fk,
                           np.ndarray[T, ndim=2, mode='c'] uk,
-                          np.ndarray[real_t, ndim=3, mode='c'] u0,
-                          np.ndarray[real_t, ndim=3, mode='c'] u1,
-                          np.ndarray[real_t, ndim=3, mode='c'] u2,
-                          np.ndarray[real_t, ndim=3, mode='c'] l0,
-                          np.ndarray[real_t, ndim=3, mode='c'] l1,
-                          np.ndarray[real_t, ndim=3, mode='c'] a,
-                          np.ndarray[real_t, ndim=3, mode='c'] b,
-                          real_t a0):
+                          np.ndarray[double, ndim=3, mode='c'] u0,
+                          np.ndarray[double, ndim=3, mode='c'] u1,
+                          np.ndarray[double, ndim=3, mode='c'] u2,
+                          np.ndarray[double, ndim=3, mode='c'] l0,
+                          np.ndarray[double, ndim=3, mode='c'] l1,
+                          np.ndarray[double, ndim=3, mode='c'] a,
+                          np.ndarray[double, ndim=3, mode='c'] b,
+                          double a0):
 
     cdef:
-        int_t i, j, k, kk, m, M, ke, ko, jj, je, jo
+        int i, j, k, kk, m, M, ke, ko, jj, je, jo
         np.float_t ac
         np.ndarray[T, ndim=1, mode='c'] s1
         np.ndarray[T, ndim=1, mode='c'] s2
@@ -1572,28 +1615,28 @@ def Solve_Biharmonic_2D_n(np.int64_t axis,
 #@cython.linetrace(True)
 #@cython.binding(True)
 def LU_Biharmonic_3D_n(np.int64_t axis,
-                       real_t alfa,
-                       np.ndarray[real_t, ndim=3] beta,
-                       np.ndarray[real_t, ndim=3] ceta,
+                       double alfa,
+                       np.ndarray[double, ndim=3] beta,
+                       np.ndarray[double, ndim=3] ceta,
                        # 3 upper diagonals of SBB
-                       np.ndarray[real_t, ndim=1, mode='c'] sii,
-                       np.ndarray[real_t, ndim=1, mode='c'] siu,
-                       np.ndarray[real_t, ndim=1, mode='c'] siuu,
+                       np.ndarray[double, ndim=1, mode='c'] sii,
+                       np.ndarray[double, ndim=1, mode='c'] siu,
+                       np.ndarray[double, ndim=1, mode='c'] siuu,
                        # All 3 diagonals of ABB
-                       np.ndarray[real_t, ndim=1, mode='c'] ail,
-                       np.ndarray[real_t, ndim=1, mode='c'] aii,
-                       np.ndarray[real_t, ndim=1, mode='c'] aiu,
+                       np.ndarray[double, ndim=1, mode='c'] ail,
+                       np.ndarray[double, ndim=1, mode='c'] aii,
+                       np.ndarray[double, ndim=1, mode='c'] aiu,
                        # All 5 diagonals of BBB
-                       np.ndarray[real_t, ndim=1, mode='c'] bill,
-                       np.ndarray[real_t, ndim=1, mode='c'] bil,
-                       np.ndarray[real_t, ndim=1, mode='c'] bii,
-                       np.ndarray[real_t, ndim=1, mode='c'] biu,
-                       np.ndarray[real_t, ndim=1, mode='c'] biuu,
-                       np.ndarray[real_t, ndim=4, mode='c'] u0,
-                       np.ndarray[real_t, ndim=4, mode='c'] u1,
-                       np.ndarray[real_t, ndim=4, mode='c'] u2,
-                       np.ndarray[real_t, ndim=4, mode='c'] l0,
-                       np.ndarray[real_t, ndim=4, mode='c'] l1):
+                       np.ndarray[double, ndim=1, mode='c'] bill,
+                       np.ndarray[double, ndim=1, mode='c'] bil,
+                       np.ndarray[double, ndim=1, mode='c'] bii,
+                       np.ndarray[double, ndim=1, mode='c'] biu,
+                       np.ndarray[double, ndim=1, mode='c'] biuu,
+                       np.ndarray[double, ndim=4, mode='c'] u0,
+                       np.ndarray[double, ndim=4, mode='c'] u1,
+                       np.ndarray[double, ndim=4, mode='c'] u2,
+                       np.ndarray[double, ndim=4, mode='c'] l0,
+                       np.ndarray[double, ndim=4, mode='c'] l1):
     cdef:
         unsigned int ii, jj, N1, N2, odd, i, j, k, kk, M, ll
         long long int m, n, p, dd, w0
@@ -1601,9 +1644,9 @@ def LU_Biharmonic_3D_n(np.int64_t axis,
         double pi = np.pi
         vector[double] c0, c1, c2
         #double* pc0, pc1, pc2
-        #np.ndarray[real_t, ndim=1] c0 = np.zeros(sii.shape[0]//2)
-        #np.ndarray[real_t, ndim=1] c1 = np.zeros(sii.shape[0]//2)
-        #np.ndarray[real_t, ndim=1] c2 = np.zeros(sii.shape[0]//2)
+        #np.ndarray[double, ndim=1] c0 = np.zeros(sii.shape[0]//2)
+        #np.ndarray[double, ndim=1] c1 = np.zeros(sii.shape[0]//2)
+        #np.ndarray[double, ndim=1] c2 = np.zeros(sii.shape[0]//2)
 
     M = sii.shape[0]//2
 
@@ -1871,28 +1914,28 @@ def LU_Biharmonic_3D_n(np.int64_t axis,
 #@cython.linetrace(True)
 #@cython.binding(True)
 def LU_Biharmonic_2D_n(np.int64_t axis,
-                       real_t alfa,
-                       np.ndarray[real_t, ndim=2] beta,
-                       np.ndarray[real_t, ndim=2] ceta,
+                       double alfa,
+                       np.ndarray[double, ndim=2] beta,
+                       np.ndarray[double, ndim=2] ceta,
                        # 3 upper diagonals of SBB
-                       np.ndarray[real_t, ndim=1, mode='c'] sii,
-                       np.ndarray[real_t, ndim=1, mode='c'] siu,
-                       np.ndarray[real_t, ndim=1, mode='c'] siuu,
+                       np.ndarray[double, ndim=1, mode='c'] sii,
+                       np.ndarray[double, ndim=1, mode='c'] siu,
+                       np.ndarray[double, ndim=1, mode='c'] siuu,
                        # All 3 diagonals of ABB
-                       np.ndarray[real_t, ndim=1, mode='c'] ail,
-                       np.ndarray[real_t, ndim=1, mode='c'] aii,
-                       np.ndarray[real_t, ndim=1, mode='c'] aiu,
+                       np.ndarray[double, ndim=1, mode='c'] ail,
+                       np.ndarray[double, ndim=1, mode='c'] aii,
+                       np.ndarray[double, ndim=1, mode='c'] aiu,
                        # All 5 diagonals of BBB
-                       np.ndarray[real_t, ndim=1, mode='c'] bill,
-                       np.ndarray[real_t, ndim=1, mode='c'] bil,
-                       np.ndarray[real_t, ndim=1, mode='c'] bii,
-                       np.ndarray[real_t, ndim=1, mode='c'] biu,
-                       np.ndarray[real_t, ndim=1, mode='c'] biuu,
-                       np.ndarray[real_t, ndim=3, mode='c'] u0,
-                       np.ndarray[real_t, ndim=3, mode='c'] u1,
-                       np.ndarray[real_t, ndim=3, mode='c'] u2,
-                       np.ndarray[real_t, ndim=3, mode='c'] l0,
-                       np.ndarray[real_t, ndim=3, mode='c'] l1):
+                       np.ndarray[double, ndim=1, mode='c'] bill,
+                       np.ndarray[double, ndim=1, mode='c'] bil,
+                       np.ndarray[double, ndim=1, mode='c'] bii,
+                       np.ndarray[double, ndim=1, mode='c'] biu,
+                       np.ndarray[double, ndim=1, mode='c'] biuu,
+                       np.ndarray[double, ndim=3, mode='c'] u0,
+                       np.ndarray[double, ndim=3, mode='c'] u1,
+                       np.ndarray[double, ndim=3, mode='c'] u2,
+                       np.ndarray[double, ndim=3, mode='c'] l0,
+                       np.ndarray[double, ndim=3, mode='c'] l1):
     cdef:
         unsigned int ii, jj, N1, N2, odd, i, j, k, kk, M, ll
         long long int m, n, p, dd, w0
@@ -1900,9 +1943,9 @@ def LU_Biharmonic_2D_n(np.int64_t axis,
         double pi = np.pi
         vector[double] c0, c1, c2
         #double* pc0, pc1, pc2
-        #np.ndarray[real_t, ndim=1] c0 = np.zeros(sii.shape[0]//2)
-        #np.ndarray[real_t, ndim=1] c1 = np.zeros(sii.shape[0]//2)
-        #np.ndarray[real_t, ndim=1] c2 = np.zeros(sii.shape[0]//2)
+        #np.ndarray[double, ndim=1] c0 = np.zeros(sii.shape[0]//2)
+        #np.ndarray[double, ndim=1] c1 = np.zeros(sii.shape[0]//2)
+        #np.ndarray[double, ndim=1] c2 = np.zeros(sii.shape[0]//2)
 
     M = sii.shape[0]//2
 

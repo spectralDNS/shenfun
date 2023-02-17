@@ -3,8 +3,9 @@ import os
 import numpy as np
 from mpi4py import MPI
 from mpi4py_fft.io import NCFile, HDF5File
+from .generate_xdmf import generate_xdmf
 
-__all__ = ['HDF5File', 'NCFile', 'ShenfunFile', 'Checkpoint']
+__all__ = ['HDF5File', 'NCFile', 'ShenfunFile', 'Checkpoint', 'generate_xdmf']
 
 comm = MPI.COMM_WORLD
 

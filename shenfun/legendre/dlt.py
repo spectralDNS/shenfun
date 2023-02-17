@@ -1,18 +1,24 @@
 import importlib
+from copy import copy
 from scipy.special import gammaln
 import numpy as np
 from numpy.polynomial import chebyshev as n_cheb
 from mpi4py_fft import fftw
+from mpi4py import MPI
 from mpi4py_fft.fftw.utilities import FFTW_MEASURE, FFTW_PRESERVE_INPUT
 from shenfun.optimization import runtimeoptimizer
+from shenfun.optimization.cython import Leg2Cheb, Cheb2Leg, omega
 from shenfun.spectralbase import islicedict, slicedict
+from shenfun.forms.arguments import FunctionSpace
+from shenfun.forms import project
 from . import fastgl
 
-__all__ = ['DLT', 'leg2cheb', 'cheb2leg', 'Leg2cheb']
+__all__ = ['DLT', 'leg2cheb', 'cheb2leg', 'Leg2chebHaleTownsend',
+           'Cheb2Leg', 'FMMLeg2Cheb', 'FMMCheb2Leg']
 
 
 class DLT:
-    """Discrete Legendre Transform
+    r"""Discrete Legendre Transform
 
     A class for performing fast FFT-based discrete Legendre transforms, both
     forwards and backwards. Based on::
@@ -129,7 +135,9 @@ class DLT:
         U = input_array
         V = output_array if output_array is not None else U.copy()
         self.plan(U, V, kind, threads, flags)
-        self.leg2chebclass = Leg2cheb(U, axis=axis)
+        self.leg2chebclass = Leg2Cheb(U, axis=axis, maxs=100, use_direct=500)
+        #self.leg2chebclass = FMMLeg2Cheb(U, axis=axis, use_direct=500)
+        #self.leg2chebclass = Leg2cheb(U, axis=axis, Nmin=50)
 
     def plan(self, U, V, kind, threads, flags):
         Uc = U.copy()
@@ -152,6 +160,7 @@ class DLT:
     def output_array(self):
         return self._output_array
 
+    ##@profile
     def __call__(self, input_array=None, output_array=None, **kw):
         if input_array is not None:
             self._input_array[:] = input_array
@@ -182,11 +191,12 @@ class DLT:
                 y *= self.n
             sign = 1 if deven else -1
             fft = self.dct if even else self.dst
-            df = sign/nfac*y*fft(x)
+            h = fft(x)
+            df = sign/nfac*y*h
             fk += df
             error = np.linalg.norm(df)
             #print(f"{n:4d} {error:2.4e}")
-            converged = error < 1e-14
+            converged = error < 1e-16
             n += 1
 
         if self.kind in ('forward', 'scalar product'):
@@ -250,9 +260,6 @@ class DCT:
     @property
     def output_array(self):
         return self.dct.output_array
-
-    def destroy(self):
-        self.dct.destroy()
 
     def __call__(self, input_array=None, output_array=None):
         if input_array is not None:
@@ -339,10 +346,17 @@ class DST:
             return output_array
         return out
 
-Omega = lambda z: np.exp(gammaln(z+0.5) - gammaln(z+1))
+#Omega = lambda z: np.exp(gammaln(z+0.5) - gammaln(z+1))
+Omega = omega
+
+LxyE = lambda x, y: -0.5/(2*x+2*y+1)/(y-x)*Omega(y-x-1)*Omega(y+x-0.5)
+MxyE = lambda x, y: Omega(y-x)*Omega(y+x)
+Mxy = lambda x, y: Omega((y-x)/2)*Omega((y+x)/2)
+Lxy = lambda x, y: -1/(x+y+1)/(y-x)*Omega((y-x-2)/2)*Omega((y+x-1)/2)
+Hxy = lambda x, y: Omega((y-x)/2)*Omega((y+x)/2)/np.sqrt((x+y)*(y-x))
 
 @runtimeoptimizer
-def leg2cheb(cl, cc, axis=0, transpose=False):
+def leg2cheb(cl, cc=None, axis=0, transpose=False):
     r"""Compute Chebyshev coefficients from Legendre coefficients
 
     .. math::
@@ -364,7 +378,7 @@ def leg2cheb(cl, cc, axis=0, transpose=False):
     ---------
     cl : array
         The Legendre coefficients (if transpose is False)
-    cc : array (return array)
+    cc : array (return array), optional
         The Chebyshev coefficients (if transpose is False)
     axis : int, optional
         The axis over which to take the transform
@@ -379,10 +393,14 @@ def leg2cheb(cl, cc, axis=0, transpose=False):
     and Statistical Computing, 12, 1, 158-179, (1991), 10.1137/0912009.
     The matrix is not explicitely created.
     """
+    if cc is None:
+        cc = np.zeros_like(cl)
+    else:
+        cc.fill(0)
+
     if axis > 0:
         cl = np.moveaxis(cl, axis, 0)
         cc = np.moveaxis(cc, axis, 0)
-    cc.fill(0)
     N = cl.shape[0]
     k = np.arange(N)
     a = Omega(k)
@@ -408,7 +426,7 @@ def leg2cheb(cl, cc, axis=0, transpose=False):
     return cc
 
 @runtimeoptimizer
-def cheb2leg(cc, cl, axis=0):
+def cheb2leg(cc, cl=None, axis=0):
     r"""Compute Legendre coefficients from Chebyshev coefficients
 
     .. math::
@@ -437,10 +455,14 @@ def cheb2leg(cc, cl, axis=0):
     and Statistical Computing, 12, 1, 158-179, (1991), 10.1137/0912009.
     The matrix is not explicitely created.
     """
+    if cl is None:
+        cl = np.zeros_like(cc)
+    else:
+        cl.fill(0)
     if axis > 0:
         cl = np.moveaxis(cl, axis, 0)
         cc = np.moveaxis(cc, axis, 0)
-    N = len(cc)
+    N = cc.shape[0]
     k = np.arange(N)
     k[0] = 1
     vn = cc*k
@@ -457,24 +479,24 @@ def cheb2leg(cc, cl, axis=0):
         cc = np.moveaxis(cc, 0, axis)
     return cl
 
-class Leg2cheb:
+class Leg2chebHaleTownsend:
     """Class for computing Chebyshev coefficients from Legendre coefficients
 
     Parameters
     ----------
     input_array : array
         Legendre coefficients
+    output_array : array
+        The returned array
     axis : int
         The axis over which to perform the computation in case the input_array
         is multidimensional.
-    output_array : array
-        The returned array
     nM : int
         Parameter, see Hale and Townsend (2014). Note that one must have N >> nM.
     Nmin : int
         Parameter. Choose direct matvec approach for N < Nmin
     """
-    def __init__(self, input_array, axis=0, output_array=None, nM=50, Nmin=200):
+    def __init__(self, input_array, output_array=None, axis=0, nM=50, Nmin=40000):
         self.axis = axis
         self.N = input_array.shape[axis]
         self.L = None
@@ -532,8 +554,8 @@ class Leg2cheb:
             return
 
         self.L = FunctionSpace(self.N, 'L')
-        self.T = FunctionSpace(self.N, 'C', quad='GC')
         self.U = FunctionSpace(self.N, 'U', quad='GC')
+        self.T = FunctionSpace(self.N, 'C', quad='GC')
         self.a = self.L.get_recursion_matrix(self.N+3, self.N+3).diags('dia').data
 
         if input_array.ndim > 1:
@@ -737,3 +759,453 @@ def restricted_product(L, input_array, output_array, xi, i0, i1, a0, axis, a):
             Lnp[i] = s1*(xi[i0+i]-a00)*Ln[i] - s2*Lnm[i]
         output_array[k] = s
     return output_array
+
+def getChebyshev(level, D, s, diags, fk, Nk, l2c=True):
+    from shenfun import FunctionSpace, TensorProductSpace, reset_profile
+    h = s*get_h(level, D)    # from odd/even to combined
+    i0, j0 = get_ij(level, 0, s, D, diags)
+    Nb = get_number_of_blocks(level, D)
+    T0 = FunctionSpace(100, 'C', domain=[j0+2*h, j0+4*h])
+    fun = Mxy if l2c == True else Lxy
+    w0 = fun(2*h-1, T0.mesh())
+    m0 = T0.forward(w0)
+    z = np.where(np.diff(abs(m0)) > 0)[0]
+    Nx = 100 if len(z) < 2 else z[1]
+    T0.domain = [j0+4*h, j0+6*h]
+    w0 = fun(2*h-1, T0.mesh())
+    m0 = T0.forward(w0)
+    z = np.where(np.diff(abs(m0)) > 0)[0]
+    Nx2 = 100 if len(z) < 2 else z[1]
+    Nx2 = min(Nx2, Nx)
+    #Nx, Nx2 = 50, 50
+    T1 = FunctionSpace(Nx, 'C')
+    S = TensorProductSpace(MPI.COMM_SELF, (T1, T1))
+    f = np.zeros((Nx, Nx))
+    dctn = fftw.dctn(np.zeros((Nx, Nx)), axes=(0, 1))
+    xj = np.cos((np.arange(Nx)+0.5)*np.pi/Nx)
+    xj2 = np.cos((np.arange(Nx2)+0.5)*np.pi/(Nx2))
+    dctn2 = fftw.dctn(np.zeros((Nx2, Nx2)), axes=(0, 1))
+    X = np.zeros((Nx, 1))
+    Y = np.zeros((1, Nx))
+    X2 = np.zeros((Nx2, 1))
+    Y2 = np.zeros((1, Nx2))
+    Mmax = 0
+    for k in range(Nb):
+        i0, j0 = get_ij(level, k, s, D, diags)
+        for j in range(D[level]):
+            S.bases[1].domain = 2*(j0+(j+1)*h), 2*(j0+(j+2)*h)
+            for i in range(j+1):
+                S.bases[0].domain = 2*(i0+i*h), 2*(i0+(i+1)*h)
+                f[:] = 0
+                if j > i:
+                    Y2[0, :] = S.bases[1].map_true_domain(xj2)
+                    X2[:, 0] = S.bases[0].map_true_domain(xj2)
+                    f[:Nx2, :Nx2] = dctn2(fun(X2, Y2))/Nx2**2
+                else:
+                    Y[0, :] = S.bases[1].map_true_domain(xj)
+                    X[:, 0] = S.bases[0].map_true_domain(xj)
+                    f[:] = dctn(fun(X, Y))/Nx**2
+                f[0] /= 2
+                f[:, 0] /= 2
+                z = np.where(np.diff(abs(f[0])) >= 0)[0]
+                Mmin = z[1] if len(z) > 1 else Nx
+                #Mmin = Nx
+                fk.append(f[:Mmin, :Mmin].ravel().copy())
+                Nk.append(Mmin)
+                Mmax = max(Mmax, Mmin)
+    S.destroy()
+    return Mmax
+
+class FMMLevel:
+    def __init__(self, N, diagonals=8, domains=None, levels=None, l2c=True, maxs=100, use_direct=-1):
+        self.N = N
+        self.use_direct = use_direct
+        self._output_array = np.array([0])
+        if N <= use_direct:
+            self.Nn = N
+            return
+        if domains is not None:
+            if isinstance(domains, int):
+                if levels is None:
+                    doms = np.cumsum(domains**np.arange(16))
+                    levels = np.where((N//2-diagonals)/doms < maxs)[0][0]
+                levels = max(1, levels)
+                self.D = np.full(levels, domains, dtype=int)
+            else:
+                domains = np.atleast_1d(domains)
+                levels = len(domains)
+                if domains[-1] == 1:
+                    D0 = domains.copy()
+                    for i in range(1000):
+                        Nb = get_number_of_blocks(levels, domains)
+                        s = (N//2-diagonals)//Nb
+                        if s < maxs:
+                            break
+                        else:
+                            domains = D0*(i+2)
+                self.D = domains
+        else:
+            if levels is None:
+                domains = max(2, int(np.log10(N)))
+                doms = np.cumsum(domains**np.arange(16))
+                levels = np.where((N//2-diagonals)/doms < maxs)[0][0]
+                levels = max(1, levels)
+            else:
+                for domains in range(2, 100):
+                    Nb = np.cumsum(domains**np.arange(levels+1))[levels]
+                    s = (N//2-diagonals)//Nb
+                    if s < maxs:
+                        break
+            self.D = np.full(levels, domains, dtype=int)
+
+        self.L = max(1, levels)
+        Nb = get_number_of_blocks(self.L, self.D)
+        self.diags = diagonals
+        self.axis = 0
+        # Create new (even) N with minimal size according to diags and N
+        # Pad input array with zeros
+        s, rest = divmod(N//2-diagonals, Nb)
+        Nn = N
+        if rest > 0 or Nn%2 == 1:
+            s += 1
+            Nn = 2*(diagonals+s*Nb)
+
+        self.Nn = Nn
+        self.s = s
+        fk = []
+        Nk = []
+        self.Mmin = np.zeros(self.L, dtype=int)
+        for level in range(self.L-1, -1, -1):
+            Nx = getChebyshev(level, self.D, s, diagonals, fk, Nk, l2c)
+            self.Mmin[level] = Nx
+        self.fk = np.hstack(fk)
+        self.Nk = np.array(Nk, dtype=int)
+        Mmax = self.Mmin.max()
+        TT = {}
+        for level in range(self.L-1, -1, -1):
+            if self.D[level] not in TT:
+                TT[self.D[level]] = conversionmatrix(self.D[level], Mmax)
+        self.Th = np.concatenate([TT[d] for d in np.unique(self.D)])
+        self.ThT = np.array([copy(self.Th[i].transpose()) for i in range(self.Th.shape[0])])
+        self.T = np.zeros((2, s, self.Mmin[-1]))
+        Ti = n_cheb.chebvander(np.linspace(-1, 1, 2*s+1)[:-1], self.Mmin[-1]-1)
+        self.T[0] = Ti[::2]
+        self.T[1] = Ti[1::2]
+
+    def get_M_shapes(self):
+        M = []
+        for level in range(self.L):
+            Nb = get_number_of_blocks(level, self.D)
+            M.append([np.sum((self.Nk[level][1:])**2), Nb*self.D[level]*(self.D[level]+1)//2])
+        return M
+
+    def plan(self, shape, dtype, axis, output_array=None, use_direct=-1):
+        if self._output_array.shape == shape and axis == self.axis and self._output_array.dtype == dtype:
+            return
+        self.axis = axis
+        self.sl = slicedict(axis=axis, dimensions=len(shape))
+        self.si = islicedict(axis=axis, dimensions=len(shape))
+        if shape[axis] > use_direct:
+            oddevenshape = list(shape)
+            oddevenshape[axis] = self.Nn//2
+            self.cont_input_array = np.zeros(oddevenshape, dtype=dtype)
+            self.cont_output_array = np.zeros(oddevenshape, dtype=dtype)
+        self._output_array = np.zeros(shape, dtype=dtype) if output_array is None else output_array
+
+    def plotrank(self):
+        import matplotlib.pyplot as plt
+        z = np.zeros((self.Nn, self.Nn))
+        ik = 0
+        for level in range(self.L):
+            for block in range(get_number_of_blocks(level, self.D)):
+                h = 2 * self.s * get_h(level, self.D)
+                i0 = block * self.D[level] * h
+                j0 = 2 * self._n0[level] + i0
+                i0, j0 = get_ij(level, block, self.s, self.D, self.diags)
+                for j in range(self.D[level]):
+                    for i in range(j + 1):
+                        z[i0 + i * h : i0 + (i + 1) * h, j0 + (j + 1) * h : j0 + (j + 2) * h] = self.Nk[ik]
+                        ik += 1
+        plt.imshow(z, cmap='gray')
+        plt.title('Submatrix rank')
+        plt.colorbar()
+        plt.show()
+
+def get_ij(level, block, s, D, diagonals):
+    i0 = block*D[level]*s*get_h(level, D)
+    j0 = diagonals+i0
+    for i in range(level+1, len(D)):
+        j0 += s*get_h(i, D)
+    return (i0, j0)
+
+def get_h(level, D):
+    #return (self.domains-1)**(self.L-1-level) # const D
+    return np.prod(D[level+1:])
+
+def get_number_of_blocks(level, D):
+    #return np.cumsum(D[0]**np.arange(level+1))[-1] # const D
+    return 1+np.sum(np.cumprod(np.flip(D[:level])))
+
+def get_number_of_submatrices(D):
+    Ns = 0
+    for level in range(len(D)):
+        Ns += get_number_of_blocks(level, D)*D[level]*(D[level]+1)//2
+    return Ns
+
+class FMMLeg2Cheb(FMMLevel):
+    def __init__(self, input, output_array=None, diagonals=8, domains=None, levels=None, maxs=100, axis=0, use_direct=-1):
+        if isinstance(input, int):
+            N = input
+            shape = (N,)
+            dtype = float
+        elif isinstance(input, np.ndarray):
+            N = input.shape[axis]
+            shape = input.shape
+            dtype = input.dtype
+        FMMLevel.__init__(self, N, domains=domains, diagonals=diagonals, levels=levels, maxs=maxs, use_direct=use_direct)
+        self.a = Omega(np.arange(self.Nn, dtype=float))
+        self.plan(shape, dtype, axis, output_array, use_direct)
+
+    def __call__(self, input_array, output_array=None, transpose=False):
+        self.plan(input_array.shape, input_array.dtype, self.axis, output_array, self.use_direct)
+        if input_array.shape[self.axis] <= self.use_direct and input_array.ndim == 1:
+            self._output_array[...] = 0
+            _leg2cheb(input_array, self._output_array, self.a, transpose)
+            if output_array is not None:
+                output_array[...] = self._output_array
+                return output_array
+            return self._output_array
+        if transpose is True:
+            input_array = input_array*2/np.pi # makes copy (preserve input)
+            input_array[self.si[0]] *= 0.5
+        if input_array.shape[self.axis] <= self.use_direct:
+            self._output_array.fill(0)
+            FMMdirect1(input_array, self._output_array, self.axis, self.a, self.N//2, transpose)
+        else:
+            self.apply(input_array, self._output_array, transpose)
+        if transpose is False:
+            self._output_array *= (2/np.pi)
+            self._output_array[self.si[0]] *= 0.5
+        return self._output_array
+
+    def apply(self, input_array, output_array, transpose):
+        FMMcheb(input_array, output_array, self.axis, self.Nn, self.fk, self.Nk, self.T, self.Th, self.ThT, self.D, self.Mmin, self.s, self.diags, transpose)
+        FMMdirect2(input_array, output_array, self.axis, self.a, 2*self.s, get_number_of_blocks(self.L, self.D), 2*self.diags, transpose)
+        FMMdirect1(input_array, output_array, self.axis, self.a, self.diags, transpose)
+
+class FMMCheb2Leg(FMMLevel):
+    def __init__(self, input, output_array=None, diagonals=8, domains=None, levels=None, maxs=100, axis=0, use_direct=-1):
+        if isinstance(input, int):
+            N = input
+            shape = (N,)
+            dtype = float
+        elif isinstance(input, np.ndarray):
+            N = input.shape[axis]
+            shape = input.shape
+            dtype = input.dtype
+        FMMLevel.__init__(self, N, domains=domains,
+                          diagonals=diagonals, levels=levels, maxs=maxs, l2c=False, use_direct=use_direct)
+        k = np.arange(self.Nn, dtype='d')
+        k[0] = 1
+        self.dn = Omega((k[::2]-2)/2)/k[::2]
+        self.a = 1/(2*Omega(k)*k*(k+0.5))
+        self.a[0] = 2/np.sqrt(np.pi)
+        self.plan(shape, dtype, axis, output_array, use_direct)
+
+    def __call__(self, input_array, output_array=None, transpose=False):
+        assert isinstance(input_array, np.ndarray)
+        self.plan(input_array.shape, input_array.dtype, self.axis, output_array, self.use_direct)
+        if input_array.shape[self.axis] <= self.use_direct and input_array.ndim == 1:
+            self._output_array[...] = 0
+            _cheb2leg(input_array, self._output_array, self.dn, self.a)
+            if output_array is not None:
+                output_array[...] = self._output_array
+                return output_array
+            return self._output_array
+
+        self.sl = sl = slicedict(axis=self.axis, dimensions=input_array.ndim)
+        si = [None]*input_array.ndim
+        si[self.axis] = slice(None)
+        w0 = input_array.copy()
+        w0[sl[slice(1, self.N)]] *= np.arange(1, self.N)[tuple(si)]
+        if input_array.shape[self.axis] <= self.use_direct:
+            self._output_array.fill(0)
+            FMMdirect4(w0, self._output_array, self.axis, self.dn[:self.N//2], self.a[:self.N], self.N//2)
+        else:
+            self.apply(w0, self._output_array)
+        self._output_array *= (np.arange(self.N)+0.5)[tuple(si)]
+        if output_array is not None:
+            output_array[...] = self._output_array
+            return output_array
+        return self._output_array
+
+    def apply(self, input_array, output_array):
+        FMMcheb(input_array, output_array, self.axis, self.Nn, self.fk, self.Nk, self.T, self.Th, self.ThT, self.D, self.Mmin, self.s, self.diags, False)
+        FMMdirect3(input_array, output_array, self.axis, self.dn, self.a, 2*self.s, get_number_of_blocks(self.L, self.D), 2*self.diags)
+        FMMdirect4(input_array, output_array, self.axis, self.dn[:self.N//2], self.a[:self.N], self.diags)
+
+@runtimeoptimizer
+def _cheb2leg(u, v, dn, a):
+    pass
+
+@runtimeoptimizer
+def _leg2cheb(u, v, a, trans):
+    pass
+
+@runtimeoptimizer
+def FMMdirect1(u, v, axis, a, n0, trans):
+    N = u.shape[0]
+    if trans is False:
+        for n in range(0, n0):
+            v[:(N-2*n)] += a[n]*a[n:(N-n)]*u[2*n:]
+    else:
+        for n in range(0, n0):
+            v[2*n:] += a[n]*a[n:(N-n)]*u[:(N-2*n)]
+
+@runtimeoptimizer
+def FMMdirect2(u, v, axis, a, h, Nb, n0, trans):
+    N = v.shape[0]
+    for k in range(Nb):
+        i0 = k*h
+        j0 = n0+i0
+        for n in range(0, h, 2):
+            a0 = i0+(n0+n)//2
+            Nm = min(N-(j0+n), h-n)
+            if trans is True:
+                v[j0+n:(j0+Nm)] += a[(n+n0)//2]*a[a0:a0+Nm]*u[i0:i0+Nm]
+            else:
+                v[i0:(i0+Nm)] += a[(n+n0)//2]*a[a0:a0+Nm]*u[j0+n:j0+n+Nm]
+
+#from shenfun import optimization
+#FMMdirect2 = optimization.numba.transforms.FMMdirect2
+#FMMdirect3 = optimization.numba.transforms.FMMdirect3
+
+@runtimeoptimizer
+def FMMdirect3(u, v, axis, dn, a, h, Nb, n0):
+    N = v.shape[0]
+    for k in range(Nb):
+        i0 = k*h
+        j0 = n0+i0
+        for n in range(0, h, 2):
+            a0 = i0+(n0+n)//2
+            Nm = min(N-(j0+n), h-n)
+            v[i0:(i0+Nm)] -= dn[(n+n0)//2]*a[a0:a0+Nm]*u[j0+n:j0+n+Nm]
+
+@runtimeoptimizer
+def FMMdirect4(u, v, axis, dn, a, n0):
+    N = u.shape[0]
+    v[:] += np.sqrt(np.pi)*a*u
+    for n in range(1, n0):
+        v[:(N-2*n)] -= dn[n]*a[n:(N-n)]*u[2*n:]
+
+@runtimeoptimizer
+def FMMcheb(input_array, output_array, axis, Nn, fk, Nk, T, Th, ThT, D, Mmin, s, diags, transpose):
+    L = len(D)
+    Mmax = max(Mmin)
+    N = input_array.shape[0]
+    cia = np.zeros(Nn//2, dtype=input_array.dtype)
+    coa = np.zeros(Nn//2, dtype=input_array.dtype)
+    uD = np.hstack((0, np.unique(D)))
+    output_array[:] = 0
+    for sigma in (0, 1):
+        cia[:] = 0
+        coa[:] = 0
+        cia[:N//2] = input_array[sigma::2]
+        wk = [None]*L
+        ck = [None]*L
+        ik = 0
+        Nc = 0
+        if transpose is False:
+            for level in range(L-1, -1, -1):
+                h = s*get_h(level, D)
+                wk[level] = np.zeros((get_number_of_blocks(level, D), D[level], Mmax))
+                ck[level] = np.zeros((get_number_of_blocks(level, D), D[level], Mmax))
+                M0 = Mmin[level]
+                for block in range(get_number_of_blocks(level, D)):
+                    i0, j0 = get_ij(level, block, s, D, diags)
+                    for q in range(D[level]):
+                        if level == L-1:
+                            wk[level][block, q, :M0] = np.dot(cia[j0+(q+1)*h:j0+(q+2)*h], np.squeeze(T[sigma, :, :M0]))
+                        else:
+                            s0 = np.searchsorted(uD, D[level+1])-1
+                            s1 = np.cumsum(uD)[s0]
+                            TT = Th[s1:s1+D[level+1]]
+                            for r in range(D[level+1]):
+                                wk[level][block, q, :M0] += np.dot(TT[r, :M0, :M0], wk[level+1][block*D[level]+q+1, r, :M0])
+                        for p in range(q+1):
+                            M = Nk[ik]
+                            ck[level][block, p, :M] += np.dot(fk[Nc:(Nc+M*M)].reshape(M, M), wk[level][block, q, :M])
+                            Nc += M*M
+                            ik += 1
+
+            for level in range(L):
+                M = Mmin[level]
+                if level < L-1:
+                    s0 = np.searchsorted(uD, D[level+1])-1
+                    s1 = np.cumsum(uD)[s0]
+                    TT = ThT[s1:s1+D[level+1]]
+                    for block in range(get_number_of_blocks(level+1, D)-1):
+                        for p in range(D[level+1]):
+                            b0, p0 = divmod(block, D[level])
+                            ck[level+1][block, p, :M] += np.dot(TT[p, :M, :M], ck[level][b0, p0, :M])
+                else:
+                    for block in range(get_number_of_blocks(level, D)):
+                        i0, j0 = get_ij(level, block, s, D, diags)
+                        for p in range(D[level]):
+                            coa[i0+p*s:i0+(p+1)*s] += np.dot(T[sigma], ck[level][block, p])
+
+        else:
+            for level in range(L-1, -1, -1):
+                h = s*get_h(level, D)
+                wk[level] = np.zeros((get_number_of_blocks(level, D), D[level], Mmax))
+                ck[level] = np.zeros((get_number_of_blocks(level, D), D[level], Mmax))
+                M0 = Mmin[level]
+                for block in range(get_number_of_blocks(level, D)):
+                    j0, i0 = get_ij(level, block, s, D, diags, 0)
+                    for p in range(D[level]):
+                        for q in range(p+1):
+                            if q == p:
+                                if level == L-1:
+                                    wk[level][block, q, :M0] = np.dot(cia[j0+q*h:j0+(q+1)*h], T[sigma, :, :M0])
+                                else:
+                                    s0 = np.searchsorted(uD, D[level+1])-1
+                                    s1 = np.cumsum(uD)[s0]
+                                    TT = Th[s1:s1+D[level+1]]
+                                    for r in range(D[level+1]):
+                                        wk[level][block, q, :M0] += np.dot(TT[r], wk[level+1][block*D[level]+q, r, :M0])
+
+                            M = Nk[ik]
+                            ck[level][block, p, :M] += np.dot(wk[level][block, q, :M], fk[Nc:(Nc+M*M)].reshape(M, M))
+                            Nc += M*M
+                            ik += 1
+
+            for level in range(L):
+                M = Mmin[level]
+                if level < L-1:
+                    s0 = np.searchsorted(uD, D[level+1])-1
+                    s1 = np.cumsum(uD)[s0]
+                    TT = Th[s1:s1+D[level+1]]
+                    for block in range(1, get_number_of_blocks(level+1, D)):
+                        for p in range(D[level+1]):
+                            b0, p0 = divmod(block-1, D[level])
+                            ck[level+1][block, p, :M] += np.dot(ck[level][b0, p0, :M], TT[p])
+
+                else:
+                    for block in range(get_number_of_blocks(level, D)):
+                        j0, i0 = get_ij(level, block, s, D, diags, 0)
+                        for p in range(D[level]):
+                            coa[i0+(p+1)*s:i0+(p+2)*s] += np.dot(T[sigma], ck[level][block, p])
+
+        output_array[sigma::2] = coa[:N//2]
+
+def conversionmatrix(D : int, M : int) -> np.ndarray:
+    from mpi4py_fft.fftw import dctn
+    T = np.zeros((D, M, M))
+    k = np.arange(M)
+    X = np.cos((k+0.5)*np.pi/M)[None, :]
+    dct = dctn(np.zeros((M, M)), axes=(1,))
+    for q in range(D):
+        Xk = np.cos(k[:, None]*np.arccos((X+1+2*q-D)/D))
+        T[q] = dct(Xk)/M
+        T[q, :, 0] /= 2
+    return T

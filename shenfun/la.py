@@ -12,7 +12,8 @@ from shenfun.matrixbase import SparseMatrix, extract_bc_matrices, \
     BlockMatrix, get_simplified_tpmatrices
 from shenfun.forms.arguments import Function
 from mpi4py import MPI
-
+from shenfun.optimization.cython.la import DiagMA_Solve
+from shenfun.optimization.numba import DiagMA_Solve as Dsolve
 comm = MPI.COMM_WORLD
 
 def Solver(mats):
@@ -239,7 +240,7 @@ class SparseMatrixSolver:
         b = self.apply_bcs(b, u, axis=axis)
         b = self.apply_constraints(b, constraints, axis=axis)
         lu = self.perform_lu() # LU must be performed after constraints, because constraints modify the matrix
-        u = self.solve(b, u, axis=axis, lu=lu)
+        u = self.solve(b, u, axis, lu)
         if hasattr(u, 'set_boundary_dofs'):
             u.set_boundary_dofs()
         return u
@@ -253,7 +254,7 @@ class BandedMatrixSolver(SparseMatrixSolver):
         if u is not b:
             sl = u.function_space().slice() if hasattr(u, 'function_space') else slice(None)
             u[sl] = b[sl]
-        self.Solve(u, lu.data, axis=axis)
+        self.Solve(u, lu.data, axis)
         return u
 
     @staticmethod
@@ -269,7 +270,7 @@ class BandedMatrixSolver(SparseMatrixSolver):
         raise NotImplementedError
 
     @staticmethod
-    def Solve(u, data, axis=0):
+    def Solve(u, data, axis):
         """Fast solve using either Cython or Numba
 
         Parameters
@@ -278,7 +279,7 @@ class BandedMatrixSolver(SparseMatrixSolver):
             rhs on entry, solution on exit
         data : 2D-array
             Storage for dia-matrix containing L and U matrices
-        axis : int, optional
+        axis : int
             The axis we are solving over
         """
         raise NotImplementedError
@@ -317,13 +318,12 @@ class DiagMA(BandedMatrixSolver):
 
     @staticmethod
     @runtimeoptimizer
-    def Solve(u, data, axis=0):
+    def Solve(u, data, axis):
         if axis > 0:
             u = np.moveaxis(u, axis, 0)
         DiagMA.inner_solve(u, data)
         if axis > 0:
             u = np.moveaxis(u, 0, axis)
-
 
 class TDMA(BandedMatrixSolver):
     """Tridiagonal matrix solver
@@ -382,7 +382,7 @@ class TDMA(BandedMatrixSolver):
 
     @staticmethod
     @runtimeoptimizer
-    def Solve(u, data, axis=0):
+    def Solve(u, data, axis):
         if axis > 0:
             u = np.moveaxis(u, axis, 0)
         TDMA.inner_solve(u, data)
@@ -436,7 +436,7 @@ class TDMA_O(BandedMatrixSolver):
 
     @staticmethod
     @runtimeoptimizer
-    def Solve(u, data, axis=0):
+    def Solve(u, data, axis):
         if axis > 0:
             u = np.moveaxis(u, axis, 0)
         TDMA_O.inner_solve(u, data)
@@ -532,7 +532,7 @@ class PDMA(BandedMatrixSolver):
 
     @staticmethod
     @runtimeoptimizer
-    def Solve(u, data, axis=0):
+    def Solve(u, data, axis):
         if axis > 0:
             u = np.moveaxis(u, axis, 0)
         PDMA.inner_solve(u, data)
@@ -602,7 +602,7 @@ class FDMA(BandedMatrixSolver):
 
     @staticmethod
     @runtimeoptimizer
-    def Solve(u, data, axis=0):
+    def Solve(u, data, axis):
         if axis > 0:
             u = np.moveaxis(u, axis, 0)
         FDMA.inner_solve(u, data)
@@ -648,7 +648,7 @@ class TwoDMA(BandedMatrixSolver):
 
     @staticmethod
     @runtimeoptimizer
-    def Solve(u, data, axis=0):
+    def Solve(u, data, axis):
         if axis > 0:
             u = np.moveaxis(u, axis, 0)
         TwoDMA.inner_solve(u, data)
@@ -698,7 +698,7 @@ class ThreeDMA(BandedMatrixSolver):
 
     @staticmethod
     @runtimeoptimizer
-    def Solve(u, data, axis=0):
+    def Solve(u, data, axis):
         if axis > 0:
             u = np.moveaxis(u, axis, 0)
         ThreeDMA.inner_solve(u, data)
@@ -809,7 +809,7 @@ class HeptaDMA(BandedMatrixSolver):
 
     @staticmethod
     @runtimeoptimizer
-    def Solve(u, data, axis=0):
+    def Solve(u, data, axis):
         if axis > 0:
             u = np.moveaxis(u, axis, 0)
         HeptaDMA.inner_solve(u, data)

@@ -200,15 +200,15 @@ class KMM:
         self.up = self.u_.backward(padding_factor=self.padding_factor)
         up = self.up.v
         if self.conv == 0:
-            dudxp = self.dudx().backward(padding_factor=self.padding_factor).v
-            dudyp = self.dudy().backward(padding_factor=self.padding_factor).v
-            dudzp = self.dudz().backward(padding_factor=self.padding_factor).v
-            dvdxp = self.dvdx().backward(padding_factor=self.padding_factor).v
-            dvdyp = self.dvdy().backward(padding_factor=self.padding_factor).v
-            dvdzp = self.dvdz().backward(padding_factor=self.padding_factor).v
-            dwdxp = self.dwdx().backward(padding_factor=self.padding_factor).v
-            dwdyp = self.dwdy().backward(padding_factor=self.padding_factor).v
-            dwdzp = self.dwdz().backward(padding_factor=self.padding_factor).v
+            dudxp = self.dudxp = self.dudx().backward(padding_factor=self.padding_factor).v
+            dudyp = self.dudyp = self.dudy().backward(padding_factor=self.padding_factor).v
+            dudzp = self.dudzp = self.dudz().backward(padding_factor=self.padding_factor).v
+            dvdxp = self.dvdxp = self.dvdx().backward(padding_factor=self.padding_factor).v
+            dvdyp = self.dvdyp = self.dvdy().backward(padding_factor=self.padding_factor).v
+            dvdzp = self.dvdzp = self.dvdz().backward(padding_factor=self.padding_factor).v
+            dwdxp = self.dwdxp = self.dwdx().backward(padding_factor=self.padding_factor).v
+            dwdyp = self.dwdyp = self.dwdy().backward(padding_factor=self.padding_factor).v
+            dwdzp = self.dwdzp = self.dwdz().backward(padding_factor=self.padding_factor).v
             H[0] = self.TDp.forward(up[0]*dudxp+up[1]*dudyp+up[2]*dudzp, H[0])
             H[1] = self.TDp.forward(up[0]*dvdxp+up[1]*dvdyp+up[2]*dvdzp, H[1])
             H[2] = self.TDp.forward(up[0]*dwdxp+up[1]*dwdyp+up[2]*dwdzp, H[2])

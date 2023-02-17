@@ -705,7 +705,6 @@ class SpectralBase:
                 x = float(a) + (x-float(c))/float(self.domain_factor())
             else:
                 x = a + (x-c)/self.domain_factor()
-
         return x
 
     def map_expression_true_domain(self, f, x=None):

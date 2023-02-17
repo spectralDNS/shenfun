@@ -1,17 +1,12 @@
+#cython: boundscheck=False
+#cython: language_level=3
+from libc.stdlib cimport malloc, free
 import numpy as np
 cimport numpy as np
-#cython: boundscheck=False
-#cython: wraparound=False
-#cython: language_level=3
-
-ctypedef np.complex128_t complex_t
-ctypedef np.float64_t real_t
-ctypedef np.int64_t int_t
-ctypedef double real
 
 ctypedef fused T:
-    real_t
-    complex_t
+    double
+    complex
 
 def chebval(x, c):
     c = np.array(c, ndmin=1, copy=True)
@@ -21,35 +16,52 @@ def chebval(x, c):
         x = np.asarray(x)
     x = x.astype(float)
     y = np.zeros_like(x, dtype=c.dtype)
-    c0 = np.zeros_like(x, dtype=c.dtype)
-    c1 = np.zeros_like(x, dtype=c.dtype)
-    tmp = np.zeros_like(x, dtype=c.dtype)
-    x2 = np.zeros_like(x)
-    _chebval(x, c, y, c0, c1, tmp, x2)
+    if c.dtype.char in 'fdg':
+        _chebval[double](<double *>np.PyArray_ITER_DATA(x),
+                 <double *>np.PyArray_ITER_DATA(c),
+                 <double *>np.PyArray_ITER_DATA(y),
+                 c.shape[0],
+                 x.shape[0])
+    else:
+        _chebval[complex](<double *>np.PyArray_ITER_DATA(x),
+                 <complex *>np.PyArray_ITER_DATA(c),
+                 <complex *>np.PyArray_ITER_DATA(y),
+                 c.shape[0],
+                 x.shape[0])
+
     return y
 
-def _chebval(real_t[:] x, T[:] c, T[:] y, T[:] c0, T[:] c1,
-             T[:] tmp, real_t[:] x2):
+cdef void _chebval(double* x, T* c, T* y, int N, int M):
     cdef:
         int i, j
-        int N = c.shape[0]
-        int M = x.shape[0]
+        T *c0 = <T *> malloc(M*sizeof(T))
+        T *c1 = <T *> malloc(M*sizeof(T))
+        T *tmp = <T *> malloc(M*sizeof(T))
+        double *x2 = <double *> malloc(M*sizeof(double))
 
     if N == 1:
-        c0[:] = c[0]
-        c1[:] = 0
+        for j in range(M):
+            c0[j] = c[0]
+            c1[j] = 0
     elif N == 2:
-        c0[:] = c[0]
-        c1[:] = c[1]
+        for j in range(M):
+            c0[j] = c[0]
+            c1[j] = c[1]
     else:
         for j in range(M):
             x2[j] = 2*x[j]
-            c0[j] = c[-2]
-            c1[j] = c[-1]
+            c0[j] = c[N-2]
+            c1[j] = c[N-1]
         for i in range(3, N + 1):
             for j in range(M):
                 tmp[j] = c0[j]
-                c0[j] = c[-i] - c1[j]
+                c0[j] = c[N-i] - c1[j]
                 c1[j] = tmp[j] + c1[j]*x2[j]
     for j in range(M):
         y[j] = c0[j] + x[j]*c1[j]
+
+    free(y)
+    free(c0)
+    free(c1)
+    free(tmp)
+    free(x2)

@@ -11,20 +11,20 @@ Initial condition is
 Use Fourier basis V and tensor product space VxV
 
 """
-from sympy import symbols, exp
+from sympy import symbols, exp, pi
 import numpy as np
 import matplotlib.pyplot as plt
 from shenfun import *
 
 # Use sympy to set up initial condition
 x, y = symbols("x,y", real=True)
-ue = exp(-0.01*(x**2+y**2))        # + exp(-0.02*((x-15*np.pi)**2+(y)**2))
+ue = exp(-0.01*((x-30*pi)**2+(y-30*pi)**2))        # + exp(-0.02*((x-15*np.pi)**2+(y)**2))
 
 # Size of discretization
 N = (128, 128)
 
-K0 = FunctionSpace(N[0], 'F', dtype='D', domain=(-30*np.pi, 30*np.pi))
-K1 = FunctionSpace(N[1], 'F', dtype='d', domain=(-30*np.pi, 30*np.pi))
+K0 = FunctionSpace(N[0], 'F', dtype='D', domain=(0, 60*np.pi))
+K1 = FunctionSpace(N[1], 'F', dtype='d', domain=(0, 60*np.pi))
 T = TensorProductSpace(comm, (K0, K1), **{'planner_effort': 'FFTW_MEASURE'})
 TV = VectorSpace(T)
 padding_factor = 1.5
@@ -51,6 +51,8 @@ def NonlinearRHS(self, U, U_hat, dU, gradu, **params):
     gradu = TVp.backward(1j*K*U_hat, gradu)
     dU = Tp.forward(0.5*(gradu[0]*gradu[0]+gradu[1]*gradu[1]), dU)
     dU.mask_nyquist(mask)
+    if comm.Get_rank() == 0:
+        dU[0, 0] = 0
     return -dU
 
 #initialize
@@ -64,16 +66,20 @@ def update(self, u, u_hat, t, tstep, plot_step, **params):
         self.fig = plt.figure()
         self.cm = plt.get_cmap('hot')
         self.image = plt.contourf(X[0], X[1], U, 256, cmap=self.cm)
+    if comm.Get_rank() == 0:
+        u_hat[0, 0] = 0
 
     if tstep % plot_step == 0 and plot_step > 0:
         u = u_hat.backward(u)
-        self.image.ax.clear()
-        self.image.ax.contourf(X[0], X[1], u, 256, cmap=self.cm)
+        u_hat = u.forward(u_hat)
+        self.image.axes.clear()
+        self.image.axes.contourf(X[0], X[1], u, 256, cmap=self.cm)
         plt.autoscale()
         plt.pause(1e-6)
         self.params['count'] += 1
         #plt.savefig('Kuramato_Sivashinsky_N_{}_{}.png'.format(N[0], self.params['count']))
-        print('Energy =', dx(u**2))
+        print(tstep, 'Energy =', dx(u**2), np.linalg.norm(u_hat - u_hat.backward().forward()))
+
 
 if __name__ == '__main__':
     par = {'plot_step': 100,

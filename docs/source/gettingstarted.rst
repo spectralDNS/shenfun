@@ -52,7 +52,7 @@ with it, and we may experiment a little. A :class:`.Function` ``u`` using the ba
 
     u(x) = \sum_{k=0}^{7} \hat{u}_k T_k(x)
 
-and an instance of this function (initialized with :math:`\{\hat{u}_k\}_{k=0}^7=0`)
+and an instance of this function (initialized with :math:`\hat{u}_k=0\, \forall \, k \in 0, 1, \ldots, 7`)
 is created in shenfun as::
 
     from shenfun import Function
@@ -86,19 +86,19 @@ are both subclasses of Numpy's `ndarray <https://docs.scipy.org/doc/numpy-1.14.0
 and represent the two arrays associated
 with the spectral Galerkin function, like :eq:`eq:sum8`.
 The :class:`.Function` represents the entire spectral Galerkin function, with
-array values corresponding to the expansion coefficients :math:`\hat{u}`.
+array values corresponding to the expansion coefficients :math:`\boldsymbol{\hat{u}} = \{\hat{u}_k\}_{k=0}^{7}`.
 The :class:`.Array` represents the spectral Galerkin function evaluated
 on the quadrature mesh of the function space ``T``, i.e., here
 :math:`u(x_i), \forall \, i \in 0, 1, \ldots, 7`.
 
 We now want to find the :class:`.Function` ``uh`` corresponding to
 :class:`.Array` ``ue``. Considering :eq:`eq:sum8`, this corresponds to finding
-:math:`\hat{u}_k` if the left hand side :math:`u(x_j)` is known for
+:math:`\boldsymbol{\hat{u}}` if the left hand side :math:`u(x_j)` is known for
 all quadrature points :math:`x_j`.
 
 Since we already know that ``ue`` is
 equal to the second Chebyshev polynomial, we should get an array of
-expansion coefficients equal to :math:`\hat{u} = (0, 0, 1, 0, 0, 0, 0, 0)`.
+expansion coefficients equal to :math:`\boldsymbol{\hat{u}} = (0, 0, 1, 0, 0, 0, 0, 0)^T`.
 We can compute ``uh`` either by using :func:`project` or a forward transform::
 
     from shenfun import project
@@ -138,8 +138,8 @@ for all :math:`k \in 0, 1, \ldots, 7`. This can be rewritten on matrix form as
 where :math:`b_{kj} = (T_j, T_k)_w`, :math:`\tilde{u}_k = (u, T_k)_w` and
 summation is implied by the repeating :math:`j` indices. Since the
 Chebyshev polynomials are orthogonal the mass matrix :math:`B=(b_{kj})_{k,j=0}^{7}`
-is diagonal. We can assemble both the matrix :math:`B` and the vector
-:math:`\boldsymbol{\tilde{u}}=(\tilde{u}_j)_{j=0}^7` with shenfun, and at the
+is diagonal. We can assemble both the matrix :math:`B` and the column vector
+:math:`\boldsymbol{\tilde{u}}=\{\tilde{u}_j\}_{j=0}^7` with shenfun, and at the
 same time introduce the :class:`.TestFunction`, :class:`.TrialFunction` classes
 and the :func:`.inner` function::
 
@@ -274,7 +274,7 @@ can be chosen using either one of::
 
 This sets a Dirichlet boundary condition on both left and right hand side
 of the domain, with ``a`` and ``b`` being the values. The third option uses the
-location of the baundary, so here the domain is the standard reference domain
+location of the boundary, so here the domain is the standard reference domain
 (-1, 1). Similarly, a pure Neumann space may be chosen using either::
 
     bc = {'left': {'N': a}, 'right': {'N': b}}
