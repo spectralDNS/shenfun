@@ -28,6 +28,12 @@ from shenfun import div, grad, inner, TensorProductSpace, FunctionSpace, SparseM
 from shenfun.spectralbase import inner_product
 from shenfun.config import config
 
+try:
+    import quadpy
+    has_quadpy = True
+except:
+    has_quadpy = False
+
 x = sp.symbols('x', real=True)
 xp = sp.symbols('x', real=True, positive=True)
 
@@ -742,6 +748,8 @@ def test_stencil(b0, b1):
 
 @pytest.mark.parametrize('b0,b1', some_lbases2+some_cbases2)
 def test_quadpy(b0, b1):
+    if not has_quadpy:
+        return
     N = 12
     b0 = b0(N)
     b1 = b1(N)
@@ -777,7 +785,7 @@ if __name__ == '__main__':
     x = sp.symbols('x', real=True)
     xp = sp.Symbol('x', real=True, positive=True)
 
-    #test_exact(ctrialBasis[0], ctrialBasis[0])
+    test_exact(ltestBasis[-3], ltrialBasis[8])
     #test_mat(((ctestBasis[1], 0), (ctestBasis[1], 2), 1-x**2), cmatrices.ASDSDmatW, 'GC')
     #test_mat(((cbases.Orthogonal, 0), (lbases.Orthogonal, 0)), cmatrices.BTLmat, 'GL')
     #test_cmatvec(ctrialBasis[1], ctrialBasis[1], 'GC', 0)
@@ -793,6 +801,6 @@ if __name__ == '__main__':
     #test_div2(cBasis[1], 'GC')
     #test_helmholtz2D('chebyshev', 1)
     #test_helmholtz3D('chebyshev', 0)
-    test_biharmonic3D('chebyshev', 0)
+    #test_biharmonic3D('chebyshev', 0)
     #test_biharmonic2D('jacobi', 0)
     #test_stencil(cbases.Phi6, cbases.Compact3)

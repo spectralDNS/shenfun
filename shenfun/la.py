@@ -12,8 +12,6 @@ from shenfun.matrixbase import SparseMatrix, extract_bc_matrices, \
     BlockMatrix, get_simplified_tpmatrices
 from shenfun.forms.arguments import Function
 from mpi4py import MPI
-from shenfun.optimization.cython.la import DiagMA_Solve
-from shenfun.optimization.numba import DiagMA_Solve as Dsolve
 comm = MPI.COMM_WORLD
 
 def Solver(mats):

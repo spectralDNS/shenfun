@@ -1,14 +1,15 @@
 #cython: boundscheck=False
 #cython: language_level=3
-from libc.stdlib cimport malloc, free
+from libc.stdlib cimport malloc, calloc, free
 import numpy as np
 cimport numpy as np
+np.import_array()
 
 ctypedef fused T:
     double
     complex
 
-def chebval(x, c):
+cpdef np.ndarray chebval(np.ndarray x, np.ndarray c):
     c = np.array(c, ndmin=1, copy=True)
     if c.dtype.char in '?bBhHiIlLqQpP':
         c = c.astype(np.double)
@@ -17,15 +18,15 @@ def chebval(x, c):
     x = x.astype(float)
     y = np.zeros_like(x, dtype=c.dtype)
     if c.dtype.char in 'fdg':
-        _chebval[double](<double *>np.PyArray_ITER_DATA(x),
-                 <double *>np.PyArray_ITER_DATA(c),
-                 <double *>np.PyArray_ITER_DATA(y),
+        _chebval[double](<double *>np.PyArray_DATA(x),
+                 <double *>np.PyArray_DATA(c),
+                 <double *>np.PyArray_DATA(y),
                  c.shape[0],
                  x.shape[0])
     else:
-        _chebval[complex](<double *>np.PyArray_ITER_DATA(x),
-                 <complex *>np.PyArray_ITER_DATA(c),
-                 <complex *>np.PyArray_ITER_DATA(y),
+        _chebval[complex](<double *>np.PyArray_DATA(x),
+                 <complex *>np.PyArray_DATA(c),
+                 <complex *>np.PyArray_DATA(y),
                  c.shape[0],
                  x.shape[0])
 
@@ -34,10 +35,10 @@ def chebval(x, c):
 cdef void _chebval(double* x, T* c, T* y, int N, int M):
     cdef:
         int i, j
-        T *c0 = <T *> malloc(M*sizeof(T))
-        T *c1 = <T *> malloc(M*sizeof(T))
-        T *tmp = <T *> malloc(M*sizeof(T))
-        double *x2 = <double *> malloc(M*sizeof(double))
+        T* c0 = <T*>calloc(M, sizeof(T))
+        T* c1 = <T*>calloc(M, sizeof(T))
+        T* tmp = <T*>calloc(M, sizeof(T))
+        double* x2 = <double*>calloc(M, sizeof(double))
 
     if N == 1:
         for j in range(M):
@@ -60,7 +61,6 @@ cdef void _chebval(double* x, T* c, T* y, int N, int M):
     for j in range(M):
         y[j] = c0[j] + x[j]*c1[j]
 
-    free(y)
     free(c0)
     free(c1)
     free(tmp)

@@ -32,6 +32,11 @@ __all__ = bases + bcbases + testbases
 
 xp = sp.Symbol('x', real=True)
 
+try:
+    import quadpy
+    has_quadpy = True
+except:
+    has_quadpy = False
 
 class DCTWrap(FuncWrap):
     """DCT for complex input"""
@@ -130,13 +135,13 @@ class Orthogonal(JacobiBase):
 
         else:
             if self.quad == "GU":
-                import quadpy
+                assert(has_quadpy)
                 p = quadpy.c1.fejer_2(N)
                 points = -p.points
                 weights = p.weights
 
             elif self.quad == "GC":
-                import quadpy
+                assert(has_quadpy)
                 p = quadpy.c1.fejer_1(N)
                 points = -p.points
                 weights = p.weights

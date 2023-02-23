@@ -13,5 +13,5 @@ from .applymask import apply_mask
 from .Cheb import chebval
 from .transforms import evaluate_expansion_all, scalar_product, leg2cheb, cheb2leg, \
     restricted_product, FMMcheb, FMMdirect1, FMMdirect2, FMMdirect3, FMMdirect4, \
-    _leg2cheb, _cheb2leg, MxyE, FMMcheb, omega
+    _leg2cheb, _cheb2leg, FMMcheb, omega
 from .leg2chebm import Leg2Cheb, Cheb2Leg

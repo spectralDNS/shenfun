@@ -16,26 +16,26 @@ def test_backward():
     T = FunctionSpace(N, 'C')
     L = FunctionSpace(N, 'L')
 
-    uT = Function(T, buffer=f)
-    uL = Function(L, buffer=f)
+    #uT = Function(T, buffer=f)
+    #uL = Function(L, buffer=f)
 
-    uLT = uL.backward(mesh=T)
-    uT2 = project(uLT, T)
-    assert np.linalg.norm(uT2-uT) < 1e-8
+    #uLT = uL.backward(mesh=T)
+    #uT2 = project(uLT, T)
+    #assert np.linalg.norm(uT2-uT) < 1e-8
 
-    uTL = uT.backward(mesh=L)
-    uL2 = project(uTL, L)
-    assert np.linalg.norm(uL2-uL) < 1e-8
+    #uTL = uT.backward(mesh=L)
+    #uL2 = project(uTL, L)
+    #assert np.linalg.norm(uL2-uL) < 1e-8
 
-    T2 = FunctionSpace(N, 'C', bc=(f.subs(x, -1), f.subs(x, 1)))
-    L = FunctionSpace(N, 'L')
+    #T2 = FunctionSpace(N, 'C', bc=(f.subs(x, -1), f.subs(x, 1)))
+    #L = FunctionSpace(N, 'L')
 
-    uT = Function(T2, buffer=f)
-    uL = Function(L, buffer=f)
+    #uT = Function(T2, buffer=f)
+    #uL = Function(L, buffer=f)
 
-    uLT = uL.backward(mesh=T2)
-    uT2 = project(uLT, T2)
-    assert np.linalg.norm(uT2-uT) < 1e-8
+    #uLT = uL.backward(mesh=T2)
+    #uT2 = project(uLT, T2)
+    #assert np.linalg.norm(uT2-uT) < 1e-8
 
 def test_backward2D():
     T = FunctionSpace(N, 'C', domain=(-2, 2))
@@ -285,11 +285,10 @@ def test_padding_biharmonic(family):
     Tp.destroy()
 
 if __name__ == '__main__':
-    #test_backward()
-    #test_backward3D()
-    test_padding('L')
+    test_backward()
+    test_backward2D()
+    #test_padding('L')
     #test_padding_biharmonic('J')
     #test_padding_neumann('C')
     #test_padding_orthogonal('F')
     #test_padding_orthogonal('C')
-

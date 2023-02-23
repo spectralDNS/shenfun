@@ -135,9 +135,8 @@ class DLT:
         U = input_array
         V = output_array if output_array is not None else U.copy()
         self.plan(U, V, kind, threads, flags)
-        self.leg2chebclass = Leg2Cheb(U, axis=axis, maxs=100, use_direct=500)
-        #self.leg2chebclass = FMMLeg2Cheb(U, axis=axis, use_direct=500)
-        #self.leg2chebclass = Leg2cheb(U, axis=axis, Nmin=50)
+        ##self.leg2chebclass = Leg2Cheb(U, axis=axis, maxs=100, use_direct=500)
+        self.leg2chebclass = Leg2Cheb(U, domains=2, diagonals=16, axis=axis, maxs=100, use_direct=1000)
 
     def plan(self, U, V, kind, threads, flags):
         Uc = U.copy()
@@ -160,7 +159,6 @@ class DLT:
     def output_array(self):
         return self._output_array
 
-    ##@profile
     def __call__(self, input_array=None, output_array=None, **kw):
         if input_array is not None:
             self._input_array[:] = input_array
@@ -824,11 +822,12 @@ class FMMLevel:
         if N <= use_direct:
             self.Nn = N
             return
+
         if domains is not None:
             if isinstance(domains, int):
                 if levels is None:
                     doms = np.cumsum(domains**np.arange(16))
-                    levels = np.where((N//2-diagonals)/doms < maxs)[0][0]
+                    levels = np.where((N//2-diagonals)/doms <= maxs)[0][0]
                 levels = max(1, levels)
                 self.D = np.full(levels, domains, dtype=int)
             else:
@@ -839,7 +838,7 @@ class FMMLevel:
                     for i in range(1000):
                         Nb = get_number_of_blocks(levels, domains)
                         s = (N//2-diagonals)//Nb
-                        if s < maxs:
+                        if s <= maxs:
                             break
                         else:
                             domains = D0*(i+2)
@@ -848,13 +847,13 @@ class FMMLevel:
             if levels is None:
                 domains = max(2, int(np.log10(N)))
                 doms = np.cumsum(domains**np.arange(16))
-                levels = np.where((N//2-diagonals)/doms < maxs)[0][0]
+                levels = np.where((N//2-diagonals)/doms <= maxs)[0][0]
                 levels = max(1, levels)
             else:
                 for domains in range(2, 100):
                     Nb = np.cumsum(domains**np.arange(levels+1))[levels]
                     s = (N//2-diagonals)//Nb
-                    if s < maxs:
+                    if s <= maxs:
                         break
             self.D = np.full(levels, domains, dtype=int)
 
@@ -1100,6 +1099,7 @@ def FMMdirect4(u, v, axis, dn, a, n0):
 
 @runtimeoptimizer
 def FMMcheb(input_array, output_array, axis, Nn, fk, Nk, T, Th, ThT, D, Mmin, s, diags, transpose):
+    assert input_array.ndim == 1, 'Use Cython for multidimensional'
     L = len(D)
     Mmax = max(Mmin)
     N = input_array.shape[0]
@@ -1107,31 +1107,41 @@ def FMMcheb(input_array, output_array, axis, Nn, fk, Nk, T, Th, ThT, D, Mmin, s,
     coa = np.zeros(Nn//2, dtype=input_array.dtype)
     uD = np.hstack((0, np.unique(D)))
     output_array[:] = 0
+    wk = [None]*L
+    ck = [None]*L
+    for level in range(L):
+        wk[level] = np.zeros((get_number_of_blocks(level, D), D[level], Mmax))
+        ck[level] = np.zeros((get_number_of_blocks(level, D), D[level], Mmax))
+
     for sigma in (0, 1):
         cia[:] = 0
         coa[:] = 0
-        cia[:N//2] = input_array[sigma::2]
-        wk = [None]*L
-        ck = [None]*L
+        cia[:N//2+(N%2)*(1-sigma)] = input_array[sigma::2]
+        if sigma == 1:
+            for level in range(L):
+                wk[level][:] = 0
+                ck[level][:] = 0
+
         ik = 0
         Nc = 0
         if transpose is False:
             for level in range(L-1, -1, -1):
                 h = s*get_h(level, D)
-                wk[level] = np.zeros((get_number_of_blocks(level, D), D[level], Mmax))
-                ck[level] = np.zeros((get_number_of_blocks(level, D), D[level], Mmax))
                 M0 = Mmin[level]
+                s0 = np.searchsorted(uD, D[level])-1
+                s1 = np.cumsum(uD)[s0]
+                TT = Th[s1:s1+D[level]]
+                #if level == L-1:
+                #    wk[level][...] = np.dot(cia[diags+s:].reshape((D[L-1]*get_number_of_blocks(L-1, D), s)), T[sigma]).reshape((get_number_of_blocks(L-1, D), D[L-1], Mmax))
+
                 for block in range(get_number_of_blocks(level, D)):
                     i0, j0 = get_ij(level, block, s, D, diags)
+                    b0, q0 = divmod(block-1, D[level-1])
                     for q in range(D[level]):
                         if level == L-1:
-                            wk[level][block, q, :M0] = np.dot(cia[j0+(q+1)*h:j0+(q+2)*h], np.squeeze(T[sigma, :, :M0]))
-                        else:
-                            s0 = np.searchsorted(uD, D[level+1])-1
-                            s1 = np.cumsum(uD)[s0]
-                            TT = Th[s1:s1+D[level+1]]
-                            for r in range(D[level+1]):
-                                wk[level][block, q, :M0] += np.dot(TT[r, :M0, :M0], wk[level+1][block*D[level]+q+1, r, :M0])
+                            wk[level][block, q, :M0] = np.dot(cia[j0+(q+1)*h:j0+(q+2)*h], T[sigma, :, :M0])
+                        if level > 0 and block > 0:
+                            wk[level-1][b0, q0, :M0] += np.dot(TT[q, :M0, :M0], wk[level][block, q, :M0])
                         for p in range(q+1):
                             M = Nk[ik]
                             ck[level][block, p, :M] += np.dot(fk[Nc:(Nc+M*M)].reshape(M, M), wk[level][block, q, :M])
@@ -1139,48 +1149,46 @@ def FMMcheb(input_array, output_array, axis, Nn, fk, Nk, T, Th, ThT, D, Mmin, s,
                             ik += 1
 
             for level in range(L):
-                M = Mmin[level]
+                M0 = Mmin[level]
                 if level < L-1:
                     s0 = np.searchsorted(uD, D[level+1])-1
                     s1 = np.cumsum(uD)[s0]
                     TT = ThT[s1:s1+D[level+1]]
                     for block in range(get_number_of_blocks(level+1, D)-1):
+                        b0, p0 = divmod(block, D[level])
                         for p in range(D[level+1]):
-                            b0, p0 = divmod(block, D[level])
-                            ck[level+1][block, p, :M] += np.dot(TT[p, :M, :M], ck[level][b0, p0, :M])
+                            ck[level+1][block, p, :M0] += np.dot(TT[p, :M0, :M0], ck[level][b0, p0, :M0])
                 else:
                     for block in range(get_number_of_blocks(level, D)):
                         i0, j0 = get_ij(level, block, s, D, diags)
                         for p in range(D[level]):
-                            coa[i0+p*s:i0+(p+1)*s] += np.dot(T[sigma], ck[level][block, p])
+                            coa[i0+p*s:i0+(p+1)*s] = np.dot(T[sigma], ck[level][block, p])
 
         else:
             for level in range(L-1, -1, -1):
                 h = s*get_h(level, D)
-                wk[level] = np.zeros((get_number_of_blocks(level, D), D[level], Mmax))
-                ck[level] = np.zeros((get_number_of_blocks(level, D), D[level], Mmax))
                 M0 = Mmin[level]
+                s0 = np.searchsorted(uD, D[level])-1
+                s1 = np.cumsum(uD)[s0]
+
                 for block in range(get_number_of_blocks(level, D)):
-                    j0, i0 = get_ij(level, block, s, D, diags, 0)
+                    j0, i0 = get_ij(level, block, s, D, diags)
+                    b0, q0 = divmod(block, D[level-1])
+                    TT = Th[s1:s1+D[level]]
                     for p in range(D[level]):
                         for q in range(p+1):
                             if q == p:
                                 if level == L-1:
                                     wk[level][block, q, :M0] = np.dot(cia[j0+q*h:j0+(q+1)*h], T[sigma, :, :M0])
-                                else:
-                                    s0 = np.searchsorted(uD, D[level+1])-1
-                                    s1 = np.cumsum(uD)[s0]
-                                    TT = Th[s1:s1+D[level+1]]
-                                    for r in range(D[level+1]):
-                                        wk[level][block, q, :M0] += np.dot(TT[r], wk[level+1][block*D[level]+q, r, :M0])
-
+                                if level > 0 and block < get_number_of_blocks(level, D)-1:
+                                    wk[level-1][b0, q0, :M0] += np.dot(TT[q, :M0, :M0], wk[level][block, q, :M0])
                             M = Nk[ik]
                             ck[level][block, p, :M] += np.dot(wk[level][block, q, :M], fk[Nc:(Nc+M*M)].reshape(M, M))
                             Nc += M*M
                             ik += 1
 
             for level in range(L):
-                M = Mmin[level]
+                M0 = Mmin[level]
                 if level < L-1:
                     s0 = np.searchsorted(uD, D[level+1])-1
                     s1 = np.cumsum(uD)[s0]
@@ -1188,15 +1196,15 @@ def FMMcheb(input_array, output_array, axis, Nn, fk, Nk, T, Th, ThT, D, Mmin, s,
                     for block in range(1, get_number_of_blocks(level+1, D)):
                         for p in range(D[level+1]):
                             b0, p0 = divmod(block-1, D[level])
-                            ck[level+1][block, p, :M] += np.dot(ck[level][b0, p0, :M], TT[p])
+                            ck[level+1][block, p, :M0] += np.dot(ck[level][b0, p0, :M0], TT[p, :M0, :M0])
 
                 else:
                     for block in range(get_number_of_blocks(level, D)):
-                        j0, i0 = get_ij(level, block, s, D, diags, 0)
+                        j0, i0 = get_ij(level, block, s, D, diags)
                         for p in range(D[level]):
-                            coa[i0+(p+1)*s:i0+(p+2)*s] += np.dot(T[sigma], ck[level][block, p])
+                            coa[i0+(p+1)*s:i0+(p+2)*s] = np.dot(T[sigma], ck[level][block, p])
 
-        output_array[sigma::2] = coa[:N//2]
+        output_array[sigma::2] = coa[:N//2+(N%2)*(1-sigma)]
 
 def conversionmatrix(D : int, M : int) -> np.ndarray:
     from mpi4py_fft.fftw import dctn

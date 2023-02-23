@@ -22,6 +22,11 @@ __all__ = ['SparseMatrix', 'SpectralMatrix', 'extract_diagonal_matrix',
            'get_simplified_tpmatrices', 'ScipyMatrix', 'SpectralMatDict']
 
 comm = MPI.COMM_WORLD
+try:
+    import quadpy
+    has_quadpy = True
+except:
+    has_quadpy = False
 
 class SparseMatrix(MutableMapping):
     r"""Base class for sparse matrices.
@@ -1864,7 +1869,7 @@ def _get_matrix(test, trial, measure=1, assemble=None, fixed_resolution=None):
         V = np.dot(np.conj(v.T)*ws[np.newaxis, :], u)
 
     else: # exact or adaptive
-        import quadpy
+
         x = sp.Symbol('x', real=True)
 
         if not measure == 1:
@@ -1917,6 +1922,7 @@ def _get_matrix(test, trial, measure=1, assemble=None, fixed_resolution=None):
                         if isinstance(integrand, Number):
                             V[i, j] = integrand*np.pi
                         else:
+                            assert(has_quadpy)
                             V[i, j] = quadpy.c1.integrate_adaptive(sp.lambdify(x, integrand), (0, np.pi))[0]
 
         else:
@@ -1936,6 +1942,7 @@ def _get_matrix(test, trial, measure=1, assemble=None, fixed_resolution=None):
                         if isinstance(integrand, Number):
                             V[i, j] = integrand*float(domain[1]-domain[0])
                         else:
+                            assert(has_quadpy)
                             V[i, j] = quadpy.c1.integrate_adaptive(sp.lambdify(x, integrand), (float(domain[0]), float(domain[1])))[0]
 
     if V.dtype.char in 'FDG':

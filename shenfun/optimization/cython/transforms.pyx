@@ -17,7 +17,9 @@ ctypedef fused T:
     double
     complex
 
-ctypedef void (*funv)(T* const, T*, int, int, void* const)
+ctypedef void (*funv)(T* const, T*, int, int , void* const)
+
+ctypedef bint bool
 
 cpdef double normf(double[::1] u):
     cdef:
@@ -95,27 +97,6 @@ cdef void _matvecadd(double* A, T* x, T* b, int m, int n, int transpose):
             a = &A[n*i]
             for j in range(n):
                 b[j] += s*a[j]
-
-cpdef testmatvec(np.ndarray[double, ndim=2] A, np.ndarray[double, ndim=1] b):
-    cdef:
-        int m = A.shape[0]
-        int n = A.shape[1]
-        z0 = np.zeros(m, dtype=A.dtype)
-        z1 = np.zeros(m, dtype=A.dtype)
-        d0 = np.zeros(m, dtype=A.dtype)
-        d1 = np.zeros(m, dtype=A.dtype)
-
-    #AA = np.tril(A)
-    #_matvectri[double](<double*>np.PyArray_DATA(AA), &b[0], <double*>np.PyArray_DATA(z0), m, n, m, 0)
-    #_matvec[double](<double*>np.PyArray_DATA(AA), &b[0], <double*>np.PyArray_DATA(z1), m, n, 0)
-    #print(np.linalg.norm(z0-z1))
-    #print(z0)
-    AA = np.triu(A)
-    _matvectri[double](<double*>np.PyArray_DATA(AA), &b[0], <double*>np.PyArray_DATA(d0), m, n, m, 1)
-    _matvec[double](<double*>np.PyArray_DATA(AA), &b[0], <double*>np.PyArray_DATA(d1), m, n, 0)
-    print(d0)
-    print(d1)
-    print(np.linalg.norm(d0-d1))
 
 
 cdef void _matvectri(double* A, T* x, T* b, int m, int n, int lda, int lower):
@@ -433,6 +414,19 @@ cdef void get_ij(int* ij, int level, int block, int diags, int h, int s, long* D
     for i in range(level+1, L):
         ij[1] += s*get_h(i, D, L)
 
+cdef double chebvalS(double *x, double* c, int M):
+    cdef:
+        double x2, c0, c1, tmp
+        int i
+    x2 = 2*x[0]
+    c0 = c[M-2]
+    c1 = c[M-1]
+    for i in range(3, M + 1):
+        tmp = c0
+        c0 = c[M-i] - c1
+        c1 = tmp + c1*x2
+    return c0+c1*x[0]
+
 cdef void chebvalC(double* x, int N, double* c, int M, double* c0):
     cdef:
         double* x2 = <double*>malloc(N*sizeof(double))
@@ -485,20 +479,18 @@ cpdef np.ndarray[double, ndim=1] chebval(np.ndarray[double, ndim=1] x, np.ndarra
         c0[j] += c1[j]*x[j]
     return c0
 
-cpdef np.ndarray omega(np.ndarray z):
+def omega(np.ndarray z):
     cdef:
-        int ndim = z.ndim
-        tuple shape = np.shape(z)
-        int N = np.prod(np.array(shape))
+        int ndim = np.PyArray_NDIM(z)
         np.ndarray[double, ndim=1] a = _omega(np.PyArray_Ravel(z, np.NPY_CORDER))
-    return a.reshape(shape)
+    return np.PyArray_Reshape(a, np.shape(z))
 
+@cython.cdivision(True)
 cpdef np.ndarray[double, ndim=1] _omega(double[::1] z):
     cdef:
         int N = z.shape[0]
         int i = 0
-        int j
-        double* x = <double*>malloc(N*sizeof(double))
+        double x
         np.ndarray[double, ndim=1] a = np.empty(N)
         double[8] a0 = [9.9688251374224490e-01,
                         -3.1149502185860763e-03,
@@ -509,37 +501,14 @@ cpdef np.ndarray[double, ndim=1] _omega(double[::1] z):
                         3.1032782098712292e-15,
                         1.0511830721865363e-16]
 
-    while z[i] < 20:
-        a[i] = exp(lgamma(z[i]+0.5) - lgamma(z[i]+1))
-        i += 1
-    for j in range(N-i):
-        x[j] = -1+40./z[i+j]
-    chebvalC(&x[0], N-i, &a0[0], 8, &a[i])
-    for j in range(N-i):
-        a[i+j] /= sqrt(z[i+j])
-    free(x)
+    for i in range(N):
+        if z[i] > 20:
+            x = -1+40/z[i]
+            a[i] = chebvalS(&x, a0, 8)
+            a[i] /= sqrt(z[i])
+        else:
+            a[i] = exp(lgamma(z[i]+0.5) - lgamma(z[i]+1))
     return a
-
-@cython.boundscheck(False)
-@cython.wraparound(False)
-cdef double omega1(double* z):
-    return exp(lgamma(z[0]+0.5) - lgamma(z[0]+1))
-
-@cython.boundscheck(False)
-@cython.wraparound(False)
-cpdef MxyE(np.ndarray[double, ndim=1] x, np.ndarray[double, ndim=1] y, np.ndarray[double, ndim=2] f, int M, int N):
-    cdef:
-        int i, j
-        double x0
-        double x1
-
-    for i in range(M):
-        for j in range(N):
-            x0 = y[j]-x[i]
-            x1 = y[j]+x[i]
-            #f[i, j] = omega1(x0)*omega1(x1)
-            f[i, j] = exp(lgamma(x0+0.5) - lgamma(x0+1) + lgamma(x1+0.5) - lgamma(x1+1))
-    return f
 
 ctypedef struct DL:
     double* a
@@ -691,14 +660,14 @@ ctypedef struct DCN:
     long* Mmin
     long* uD
     long* cuD
-    int Lh
-    int L
-    int s
-    int diags
-    int trans
+    size_t Lh
+    size_t L
+    size_t s
+    size_t diags
+    bool trans
 
-cdef int find_index(long* v, int u, int N):
-    cdef int i = 1
+cdef size_t find_index(long* v, size_t u, size_t N):
+    cdef size_t i = 1
     if v[0] == u:
         return 0
     while v[i] != u:
@@ -711,7 +680,7 @@ cpdef void FMMcheb(np.ndarray input_array, np.ndarray output_array, int axis, in
         np.ndarray[long, ndim=1] uD = np.hstack((0, np.unique(D)))
         np.ndarray[long, ndim=1] cuD = np.cumsum(uD)
         DCN dc = DCN(Nn, &A[0], &T[0, 0, 0], &Th[0, 0, 0], &ThT[0, 0, 0], &Nk[0], &D[0], &Mmin[0], &uD[0], &cuD[0], len(uD), len(D), s, diags, trans)
-        int st = input_array.strides[axis]//<int>input_array.itemsize
+        int st = input_array.strides[axis]//input_array.itemsize
         int N = input_array.shape[axis]
         dtype = input_array.dtype.char
         tuple shape = np.shape(input_array)
@@ -723,14 +692,19 @@ cpdef void FMMcheb(np.ndarray input_array, np.ndarray output_array, int axis, in
         raise NotImplementedError
 
 @cython.cdivision(True)
+cdef void _divmod(size_t a, size_t b, size_t* i0, size_t* j0):
+    i0[0] = a // b;
+    j0[0] = a % b;
+
+@cython.cdivision(True)
 cdef void _FMMcheb_ptr(T* u,
                        T* v,
                        int st,
                        int N,
                        void* data):
     cdef:
-        int ik, i0, j0, j1, i, j, k, l, M, ci, cj, odd, Nc
-        int s0, s1, r, M0, Mmax, block, level, p, q, h, b0, p0
+        size_t ik, i0, j0, j1, i, M, odd, Nc
+        size_t s0, s1, M0, Mmax, block, level, p, q, h, b0, p0, q0
         int ij[2]
         DCN* dc = <DCN*>data
         double* A = dc.A
@@ -742,12 +716,12 @@ cdef void _FMMcheb_ptr(T* u,
         double* ThT = dc.ThT
         long* uD = dc.uD
         long* cuD = dc.cuD
-        int Lh = dc.Lh
-        int Nn = dc.Nn
-        int L = dc.L
-        int s = dc.s
-        int diags = dc.diags
-        int trans = dc.trans
+        size_t Lh = dc.Lh
+        size_t Nn = dc.Nn
+        size_t L = dc.L
+        size_t s = dc.s
+        size_t diags = dc.diags
+        bool trans = dc.trans
         T* cia = <T*>malloc(Nn//2*sizeof(T))
         T* coa = <T*>malloc(Nn//2*sizeof(T))
         T** wk = <T**>malloc(L*sizeof(T*))
@@ -766,43 +740,41 @@ cdef void _FMMcheb_ptr(T* u,
         wk[level] = <T*>malloc(get_number_of_blocks(level, D, L)*D[level]*Mmax*sizeof(T))
     jj = 0 if level == L-1 else D[level+1]
     if trans == 0:
-        for odd in (0, 1):
+        for odd in range(2):
             for i in range(Nn//2):
                 cia[i] = 0
                 coa[i] = 0
-            for i in range(N//2):
+            for i in range(N//2+(N%2)*(1-odd)):
                 cia[i] = u[(2*i+odd)*st]
+            for level in range(L):
+                for i in range(get_number_of_blocks(level, D, L)*D[level]*Mmax):
+                    wk[level][i] = 0.0
+                    ck[level][i] = 0.0
             ik = 0
             Nc = 0
             for level in range(L-1, -1, -1):
                 M0 = Mmin[level]
                 h = s*get_h(level, D, L)
-                cj = 0
-                ci = 0 if level == L-1 else D[level+1]
-                w0 = wk[level]
-                for i in range(get_number_of_blocks(level, D, L)*D[level]*Mmax):
-                    wk[level][i] = 0.0
-                    ck[level][i] = 0.0
+                s0 = find_index(uD, D[level], Lh)-1
+                s1 = cuD[s0]
 
                 for block in range(get_number_of_blocks(level, D, L)):
                     get_ij(&ij[0], level, block, diags, h, s, D, L)
                     c0 = &ck[level][block*D[level]*Mmax]
+                    w0 = &wk[level][block*D[level]*Mmax]
+
                     for q in range(D[level]):
                         if level == L-1:
-                            _matvec(&TT[odd*s*M0], &cia[ij[1]+(q+1)*s], &w0[cj*Mmax], s, M0, 1)
-                        else:
-                            s0 = find_index(uD, D[level+1], Lh)-1
-                            s1 = cuD[s0]
-                            w1 = wk[level+1]
-                            for r in range(D[level+1]):
-                                _matvectri(&Th[(s1+r)*Mmax*Mmax], &w1[ci*Mmax], &w0[cj*Mmax], M0, M0, Mmax, 0)
-                                ci += 1
+                            _matvec(&TT[odd*s*M0], &cia[ij[1]+(q+1)*s], &w0[q*Mmax], s, M0, 1)
+                        if level > 0 and block > 0:
+                            _divmod(block-1, D[level-1], &b0, &q0)
+                            _matvectri(&Th[(s1+q)*Mmax*Mmax], &w0[q*Mmax], &wk[level-1][(b0*D[level-1]+q0)*Mmax], M0, M0, Mmax, 0)
+
                         for p in range(q+1):
                             M = Nk[ik]
-                            _matvecadd(&A[Nc], &w0[cj*Mmax], &c0[p*Mmax], M, M, 0)
+                            _matvecadd(&A[Nc], &w0[q*Mmax], &c0[p*Mmax], M, M, 0)
                             Nc += M*M
                             ik += 1
-                        cj += 1
 
             for level in range(L-1):
                 c0 = ck[level]
@@ -824,47 +796,42 @@ cdef void _FMMcheb_ptr(T* u,
                 for p in range(D[level]):
                     _matvecadd(&TT[odd*s*M0], &c0[p*Mmax], &coa[ij[0]+p*s], s, M0, 0)
 
-            for i in range(N//2):
+            for i in range(N//2+(N%2)*(1-odd)):
                 v[(2*i+odd)*st] = coa[i]
 
     else:
-        for odd in (0, 1):
+        for odd in range(2):
             for i in range(Nn//2):
                 cia[i] = 0
                 coa[i] = 0
-            for i in range(N//2):
+            for i in range(N//2+(N%2)*(1-odd)):
                 cia[i] = u[(2*i+odd)*st]
+            for level in range(L):
+                for i in range(get_number_of_blocks(level, D, L)*D[level]*Mmax):
+                    wk[level][i] = 0.0
+                    ck[level][i] = 0.0
             ik = 0
             Nc = 0
             for level in range(L-1, -1, -1):
                 M0 = Mmin[level]
                 h = s*get_h(level, D, L)
-                cj = 0;
-                ci = 0;
                 w0 = wk[level]
-                for i in range(get_number_of_blocks(level, D, L)*D[level]*Mmax):
-                    wk[level][i] = 0.0
-                    ck[level][i] = 0.0
-
                 for block in range(get_number_of_blocks(level, D, L)):
                     get_ij(&ij[0], level, block, diags, h, s, D, L)
                     i0 = ij[1]
                     j0 = ij[0]
                     c0 = &ck[level][block*D[level]*Mmax]
                     w0 = &wk[level][block*D[level]*Mmax]
+                    s0 = find_index(uD, D[level], Lh)-1
+                    s1 = cuD[s0]
+                    _divmod(block, D[level], &b0, &q0)
                     for p in range(D[level]):
                         for q in range(p+1):
                             if q == p:
                                 if level == L-1:
                                     _matvecadd(&TT[odd*s*M0], &cia[j0+q*s], &w0[q*Mmax], s, M0, 1)
-                                else:
-                                    s0 = find_index(uD, D[level+1], Lh)-1
-                                    s1 = cuD[s0]
-                                    w1 = wk[level+1]
-                                    for r in range(D[level+1]):
-                                        _matvectri(&Th[(s1+r)*Mmax*Mmax], &w1[ci*Mmax], &w0[q*Mmax], M0, M0, Mmax, 0)
-                                        ci += 1
-
+                                if level > 0 and block < get_number_of_blocks(level, D, L)-1:
+                                    _matvectri(&Th[(s1+q)*Mmax*Mmax], &w0[q*Mmax], &wk[level-1][(b0*D[level]+q0)*Mmax], M0, M0, Mmax, 0)
                             M = Nk[ik]
                             _matvecadd(&A[Nc], &w0[q*Mmax], &c0[p*Mmax], M, M, 1)
                             Nc += M*M
@@ -878,7 +845,7 @@ cdef void _FMMcheb_ptr(T* u,
                 s1 = cuD[s0]
                 for block in range(1, get_number_of_blocks(level+1, D, L)):
                     for p in range(D[level+1]):
-                        b0, p0 = divmod(block-1, D[level])
+                        _divmod(block-1, D[level], &b0, &p0)
                         _matvectri(&ThT[(s1+p)*Mmax*Mmax], &c0[(b0*D[level]+p0)*Mmax], &c1[(block*D[level+1]+p)*Mmax], M0, M0, Mmax, 1)
 
             M0 = Mmin[L-1]
@@ -891,7 +858,7 @@ cdef void _FMMcheb_ptr(T* u,
                 for p in range(D[level]):
                     _matvecadd(&TT[odd*s*M0], &c0[p*Mmax], &coa[i0+(p+1)*s], s, M0, 0)
 
-            for i in range(N//2):
+            for i in range(N//2+(N%2)*(1-odd)):
                 v[(2*i+odd)*st] = coa[i]
 
     free(cia)
@@ -915,7 +882,7 @@ cpdef void FMMdirect1(np.ndarray input_array, np.ndarray output_array, int axis,
         int st = input_array.strides[axis]//input_array.itemsize
         int N = input_array.shape[axis]
         dtype = input_array.dtype.char
-        tuple shape= np.shape(input_array)
+        tuple shape = np.shape(input_array)
 
     if dtype == 'd':
         IterAllButAxis[double](_FMMdirect1_ptr, np.PyArray_Ravel(input_array, np.NPY_CORDER), np.PyArray_Ravel(output_array, np.NPY_CORDER), st, N, axis, shape, shape, &d1)
@@ -1032,7 +999,7 @@ cpdef void FMMdirect3(np.ndarray input_array, np.ndarray output_array, int axis,
         int N = input_array.shape[axis]
         dtype = input_array.dtype.char
         D3 d3 = D3(&dn[0], &a[0], h, Nd, n0)
-        tuple shape= np.shape(input_array)
+        tuple shape = np.shape(input_array)
 
     if dtype == 'd':
         IterAllButAxis[double](_FMMdirect3_ptr, np.PyArray_Ravel(input_array, np.NPY_CORDER), np.PyArray_Ravel(output_array, np.NPY_CORDER), st, N, axis, shape, shape, &d3)

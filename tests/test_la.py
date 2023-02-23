@@ -1,9 +1,9 @@
 import numpy as np
-from scipy.linalg import solve
 import pytest
-from shenfun import inner, TestFunction, TrialFunction, div, grad, \
-    SparseMatrix, FunctionSpace, Function, Array, la
-np.warnings.filterwarnings('ignore')
+from shenfun import SparseMatrix, la
+import warnings
+
+warnings.filterwarnings('ignore')
 
 N = 10
 d = [

@@ -628,6 +628,6 @@ if __name__ == '__main__':
     #test_project_1D(cBasis[0])
     #test_scalarproduct(ltrialBasis[2], 'LG')
     test_dlt()
-    test_leg2cheb()
+    #test_leg2cheb()
     #test_eval(cuBasis[-1], 'GU')
     #test_axis(laBasis[1], 'LG', 1)

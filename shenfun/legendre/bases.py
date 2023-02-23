@@ -241,6 +241,7 @@ class Orthogonal(JacobiBase):
         out *= 1/self.domain_factor()
 
     def eval(self, x, u, output_array=None):
+        x = np.atleast_1d(x)
         if output_array is None:
             output_array = np.zeros(x.shape, dtype=self.dtype)
         x = self.map_reference_domain(x)
@@ -274,14 +275,20 @@ class Orthogonal(JacobiBase):
         return self._bc_space
 
     def to_ortho(self, input_array, output_array=None):
-        assert input_array.__class__.__name__ == 'Orthogonal'
+        assert input_array.function_space().__class__.__name__ == 'Orthogonal'
         if output_array:
             output_array[:] = input_array
             return output_array
         return input_array
 
+    def to_chebyshev(self, input_array, output_array=None):
+        from shenfun.forms.arguments import Function, FunctionSpace
+        assert input_array.function_space().__class__.__name__ == 'Orthogonal'
+        C = FunctionSpace(input_array.function_space().N, 'C')
+        return Function(C, buffer=self._leg2cheb(input_array, output_array))
+
     def plan(self, shape, axis, dtype, options):
-        from .dlt import DLT
+        from .dlt import DLT, Leg2Cheb, Cheb2Leg
         from shenfun.chebyshev.bases import DCTWrap
         if shape in (0, (0,)):
             return
@@ -307,6 +314,7 @@ class Orthogonal(JacobiBase):
         xfftn_bck = DLT(V, axes=(axis,), kind='backward', threads=threads, flags=flags, output_array=U)
         V.fill(0)
         U.fill(0)
+        self._leg2cheb = xfftn_fwd.leg2chebclass
 
         if np.dtype(dtype) is np.dtype('complex'):
             # dct only works on real data, so need to wrap it
