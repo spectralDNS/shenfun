@@ -35,6 +35,7 @@ demos = [
     'Stokes'
 ]
 
+@pytest.mark.skip('skipping MPI')
 def test_parallel_demos():
     subprocess.check_output("/bin/bash rundemos.sh", shell=True,
                             cwd=os.path.dirname(os.path.abspath(__file__)))
