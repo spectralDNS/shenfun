@@ -393,7 +393,7 @@ class ALLmat(SpectralMatrix):
     """
     def __init__(self, test, trial, scale=1, measure=1, assemble=None, kind=None, fixed_resolution=None):
         SpectralMatrix.__init__(self, test, trial, scale=scale, measure=measure, assemble=assemble, kind=kind, fixed_resolution=fixed_resolution)
-        self._matvec_methods += ['cython']
+        #self._matvec_methods += ['cython']
 
     def assemble(self, method):
         test, trial = self.testfunction, self.trialfunction
@@ -412,15 +412,15 @@ class ALLmat(SpectralMatrix):
             d = dict.fromkeys(-np.arange(2, N, 2), _getkey)
         return d
 
-    def matvec(self, v, c, format='cython', axis=0):
-        c.fill(0)
-        if format == 'cython':
-            cython.Matvec.GLL_matvec(v, c, axis)
-            self.scale_array(c, self.scale*self._keyscale)
-        else:
-            format = None if format in self._matvec_methods else format
-            c = super(ALLmat, self).matvec(v, c, format=format, axis=axis)
-        return c
+    #def matvec(self, v, c, format='cython', axis=0):
+    #    c.fill(0)
+    #    if format == 'cython':
+    #        cython.Matvec.GLL_matvec(v, c, axis)
+    #        self.scale_array(c, self.scale*self._keyscale)
+    #    else:
+    #        format = None if format in self._matvec_methods else format
+    #        c = super(ALLmat, self).matvec(v, c, format=format, axis=axis)
+    #    return c
 
 class SSBSBmat(SpectralMatrix):
     r"""Biharmonic matrix :math:`S=(s_{kj}) \in \mathbb{R}^{M \times N}`, where

@@ -785,11 +785,11 @@ if __name__ == '__main__':
     x = sp.symbols('x', real=True)
     xp = sp.Symbol('x', real=True, positive=True)
 
-    test_exact(ltestBasis[-3], ltrialBasis[8])
+    #test_exact(ltestBasis[-3], ltrialBasis[8])
     #test_mat(((ctestBasis[1], 0), (ctestBasis[1], 2), 1-x**2), cmatrices.ASDSDmatW, 'GC')
     #test_mat(((cbases.Orthogonal, 0), (lbases.Orthogonal, 0)), cmatrices.BTLmat, 'GL')
     #test_cmatvec(ctrialBasis[1], ctrialBasis[1], 'GC', 0)
-    #test_lmatvec(lBasis[0], lBasis[0], 'LG', 2, 0)
+    test_lmatvec(ltrialBasis[0], ltrialBasis[0], 'LG', 2, 0)
     #test_lagmatvec(lagBasis[0], lagBasis[1], 'LG', 'python', 3, 2, 0)
     #test_hmatvec(hBasis[0], hBasis[0], 'HG', 'self', 3, 1, 1)
     #test_jmatvec(jBasis[5], jBasis[5], 'JG', 'self', 1, 1)

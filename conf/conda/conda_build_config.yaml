@@ -2,4 +2,4 @@ mpi:
   #- 'openmpi'
   - 'mpich'
 numpy:
-  - '1.19' # [osx]
+  - '1.21'
