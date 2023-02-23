@@ -9,7 +9,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macOS-latest]
-        python-version: [3.7, 3.8, 3.9]
+        python-version: [3.8, 3.9, 3.10]
     name: Python ${{ matrix.python-version }} example
 
     steps:
@@ -24,7 +24,6 @@ jobs:
     - run: conda --version
     - run: which python
     - run: |
-        conda config --add channels conda-forge
         conda config --set always_yes yes
         conda install -n root conda-build numpy
         conda build ./conf/conda
