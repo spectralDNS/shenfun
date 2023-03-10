@@ -71,18 +71,6 @@ __all__ = bases + bcbases + testbases
 
 #pylint: disable=method-hidden,no-else-return,not-callable,abstract-method,no-member,cyclic-import
 
-try:
-    import quadpy
-    from mpmath import mp
-    mp.dps = config['bases']['legendre']['precision']
-    has_quadpy = True
-except:
-    has_quadpy = False
-    mp = None
-
-mode = config['bases']['legendre']['mode']
-mode = mode if has_quadpy else 'numpy'
-
 xp = sp.Symbol('x', real=True)
 
 
@@ -136,7 +124,6 @@ class Orthogonal(JacobiBase):
             N = self.shape(False)
         if self.quad == "LG":
             points, weights = fastgl.leggauss(N)
-            #points, weights = leg.leggauss(N)
 
         elif self.quad == "GL":
             points, weights = legendre_lobatto_nodes_and_weights(N)
@@ -147,20 +134,6 @@ class Orthogonal(JacobiBase):
             points = self.map_true_domain(points)
 
         return points, weights
-
-    def mpmath_points_and_weights(self, N=None, map_true_domain=False, weighted=True, **kw):
-        if mode == 'numpy' or not has_quadpy:
-            return self.points_and_weights(N=N, map_true_domain=map_true_domain, weighted=weighted, **kw)
-        if N is None:
-            N = self.shape(False)
-        if self.quad == 'LG':
-            pw = quadpy.c1.gauss_legendre(N, 'mpmath')
-        elif self.quad == 'GL':
-            pw = quadpy.c1.gauss_lobatto(N) # No mpmath in quadpy for lobatto:-(
-        points = pw.points_symbolic
-        if map_true_domain is True:
-            points = self.map_true_domain(points)
-        return points, pw.weights_symbolic
 
     def vandermonde(self, x):
         return leg.legvander(x, self.shape(False)-1)

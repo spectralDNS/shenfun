@@ -140,7 +140,7 @@ def test_eval(ST, quad):
     if not ST.family() == 'fourier':
         kwargs['quad'] = quad
     ST = ST(N, **kwargs)
-    points, weights = ST.mpmath_points_and_weights(N)
+    points, weights = ST.points_and_weights(N)
     fk = shenfun.Function(ST)
     fk[:4] = 1
     ST.eval(np.array([0.]), fk)

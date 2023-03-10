@@ -14,7 +14,7 @@ from shenfun.forms import project
 from . import fastgl
 
 __all__ = ['DLT', 'leg2cheb', 'cheb2leg', 'Leg2chebHaleTownsend',
-           'Cheb2Leg', 'FMMLeg2Cheb', 'FMMCheb2Leg']
+           'Leg2Cheb', 'Cheb2Leg', 'FMMLeg2Cheb', 'FMMCheb2Leg']
 
 
 class DLT:
@@ -26,10 +26,6 @@ class DLT:
         Nicholas Hale and Alex Townsend "A fast FFT-based discrete Legendre
         transform", IMA Journal of Numerical Analysis (2015)
         (https://arxiv.org/abs/1505.00354)
-
-        Nicholas Hale and Alex Townsend "A fast, simple and stable Chebyshev-
-        Legendre transform using an asymptotic formula", SIAM J Sci Comput (2014)
-        (https://epubs.siam.org/doi/pdf/10.1137/130932223)
 
     Parameters
     ----------
@@ -461,7 +457,7 @@ def cheb2leg(cc, cl=None, axis=0):
         cl = np.moveaxis(cl, axis, 0)
         cc = np.moveaxis(cc, axis, 0)
     N = cc.shape[0]
-    k = np.arange(N)
+    k = np.arange(N, dtype=float)
     k[0] = 1
     vn = cc*k
     a = 1/(2*Omega(k)*k*(k+0.5))
@@ -469,7 +465,7 @@ def cheb2leg(cc, cl=None, axis=0):
     a[0] = 2/np.sqrt(np.pi)
     cl[:] = np.sqrt(np.pi)*a*vn
     for n in range(2, N, 2):
-        dn = Omega((n-2)/2)/n
+        dn = Omega(np.array([(n-2)/2]))/n
         cl[:(N-n)] -= dn*a[n//2:(N-n//2)]*vn[n:]
     cl *= (k+0.5)
     if axis > 0:
@@ -479,6 +475,12 @@ def cheb2leg(cc, cl=None, axis=0):
 
 class Leg2chebHaleTownsend:
     """Class for computing Chebyshev coefficients from Legendre coefficients
+
+    Algorithm from::
+
+        Nicholas Hale and Alex Townsend "A fast, simple and stable Chebyshev-
+        Legendre transform using an asymptotic formula", SIAM J Sci Comput (2014)
+        (https://epubs.siam.org/doi/pdf/10.1137/130932223)
 
     Parameters
     ----------
@@ -704,7 +706,7 @@ class Leg2chebHaleTownsend:
 
 @runtimeoptimizer
 def restricted_product(L, input_array, output_array, xi, i0, i1, a0, axis, a):
-    r"""Returns the restricted product matrix vector product
+    r"""Returns the restricted matrix vector product
 
     .. math::
 
@@ -758,9 +760,33 @@ def restricted_product(L, input_array, output_array, xi, i0, i1, a0, axis, a):
         output_array[k] = s
     return output_array
 
-def getChebyshev(level, D, s, diags, fk, Nk, l2c=True):
-    from shenfun import FunctionSpace, TensorProductSpace, reset_profile
-    h = s*get_h(level, D)    # from odd/even to combined
+def getChebyshev(level, D, s, diags, A, N, l2c=True):
+    """Low-rank computation of Chebyshev coefficients
+
+    Computes Chebyshev coefficients for all submatrices on a given
+    level of a hierarchical decomposition.
+
+    Parameters
+    ----------
+    level : int
+        The level in the hierarchical decomposition
+    D : int
+        Domains size on level
+    s : int
+        Size of the smallest submatrices
+    diags : int
+        The number of neglected diagonals, that are treated using a
+        direct approach
+    A : list
+        Each item is a flattened low-rank matrix of coefficients
+    N : list
+        Each item is the shape of the corresponding matrix item in A
+    l2c : bool
+        If True, the transform goes from Legendre to Chebyshev, and
+        vice versa if False
+    """
+    from shenfun import FunctionSpace, TensorProductSpace
+    h = s*get_h(level, D)
     i0, j0 = get_ij(level, 0, s, D, diags)
     Nb = get_number_of_blocks(level, D)
     T0 = FunctionSpace(100, 'C', domain=[j0+2*h, j0+4*h])
@@ -805,16 +831,19 @@ def getChebyshev(level, D, s, diags, fk, Nk, l2c=True):
                     f[:] = dctn(fun(X, Y))/Nx**2
                 f[0] /= 2
                 f[:, 0] /= 2
-                z = np.where(np.diff(abs(f[0])) >= 0)[0]
-                Mmin = z[1] if len(z) > 1 else Nx
+                z = np.where(np.diff(abs(f[0, 2:])) >= 0)[0]
+                #z = np.where(abs(f[0]) < 1e-15)[0]
+                Mmin = z[0]+2 if len(z) > 1 else Nx
                 #Mmin = Nx
-                fk.append(f[:Mmin, :Mmin].ravel().copy())
-                Nk.append(Mmin)
+                A.append(f[:Mmin, :Mmin].ravel().copy())
+                N.append(Mmin)
                 Mmax = max(Mmax, Mmin)
     S.destroy()
     return Mmax
 
 class FMMLevel:
+    """Abstract base class for hierarchical matrix
+    """
     def __init__(self, N, diagonals=8, domains=None, levels=None, l2c=True, maxs=100, use_direct=-1):
         self.N = N
         self.use_direct = use_direct
@@ -833,20 +862,11 @@ class FMMLevel:
             else:
                 domains = np.atleast_1d(domains)
                 levels = len(domains)
-                if domains[-1] == 1:
-                    D0 = domains.copy()
-                    for i in range(1000):
-                        Nb = get_number_of_blocks(levels, domains)
-                        s = (N//2-diagonals)//Nb
-                        if s <= maxs:
-                            break
-                        else:
-                            domains = D0*(i+2)
                 self.D = domains
         else:
             if levels is None:
-                domains = max(2, int(np.log10(N)))
-                doms = np.cumsum(domains**np.arange(16))
+                domains = 2
+                doms = np.cumsum(domains**np.arange(20))
                 levels = np.where((N//2-diagonals)/doms <= maxs)[0][0]
                 levels = max(1, levels)
             else:
@@ -915,16 +935,15 @@ class FMMLevel:
         import matplotlib.pyplot as plt
         z = np.zeros((self.Nn, self.Nn))
         ik = 0
-        for level in range(self.L):
+        for level in range(self.L-1, -1, -1):
             for block in range(get_number_of_blocks(level, self.D)):
                 h = 2 * self.s * get_h(level, self.D)
-                i0 = block * self.D[level] * h
-                j0 = 2 * self._n0[level] + i0
                 i0, j0 = get_ij(level, block, self.s, self.D, self.diags)
                 for j in range(self.D[level]):
                     for i in range(j + 1):
-                        z[i0 + i * h : i0 + (i + 1) * h, j0 + (j + 1) * h : j0 + (j + 2) * h] = self.Nk[ik]
+                        z[2*i0+i*h:2*i0+(i+1)*h, 2*j0+(j+1)*h:2*j0+(j+2)*h] = self.Nk[ik]
                         ik += 1
+        plt.figure()
         plt.imshow(z, cmap='gray')
         plt.title('Submatrix rank')
         plt.colorbar()
@@ -952,7 +971,55 @@ def get_number_of_submatrices(D):
     return Ns
 
 class FMMLeg2Cheb(FMMLevel):
-    def __init__(self, input, output_array=None, diagonals=8, domains=None, levels=None, maxs=100, axis=0, use_direct=-1):
+    """Transform Legendre coefficients to Chebyshev coefficients
+
+    Parameters
+    ----------
+    input : int or input array
+        The length of the array to transform or the array itself
+    diagonals : int
+        The number of neglected diagonals, that are treated using a
+        direct approach
+    domains : None, int or sequence of ints
+        The domain sizes for all levels
+
+        If domains=None then an appropriate domain size is computed
+        according to the given number of levels and maxs. If the
+        number of levels is also None, then domains is set to 2
+        and the number of levels is computed from maxs.
+
+        If domains is an integer, then this integer is used for each
+        level, and the number of levels is either given or computed
+        according to maxs
+
+        If domains is a sequence of integers, then these are the
+        domain sizes for all the levels and the length of this
+        sequence is the number of levels.
+
+    levels : None or int
+        The number of levels in the hierarchical matrix
+
+        If levels is None, then it is computed according to domains
+        and maxs
+
+    l2c : bool
+        If True, the transform goes from Legendre to Chebyshev, and
+        vice versa if False
+
+    maxs : int
+        The maximum size of the smallest submatrices (on the highest
+        level). This number is used if the number of levels or domain
+        sizes need to be computed.
+
+    axis : int
+        The axis over which to apply the transform if the input array
+        is a multidimensional array.
+
+    use_direct : int
+        Use direct method if N is smaller than this number
+
+    """
+    def __init__(self, input, output_array=None, diagonals=16, domains=None, levels=None, maxs=100, axis=0, use_direct=-1):
         if isinstance(input, int):
             N = input
             shape = (N,)
@@ -966,6 +1033,20 @@ class FMMLeg2Cheb(FMMLevel):
         self.plan(shape, dtype, axis, output_array, use_direct)
 
     def __call__(self, input_array, output_array=None, transpose=False):
+        """Execute transform
+
+        Parameters
+        ----------
+        input_array : array
+            The array to be transformed
+        output_array : None or array
+            The return array. Will be created if None.
+        transpose : bool
+            If True, then apply the transpose operation :math:`A^Tu`
+            instead of the default :math:`Au`, where :math:`A` is the
+            matrix and :math:`u` is the array of Legendre coefficients.
+
+        """
         self.plan(input_array.shape, input_array.dtype, self.axis, output_array, self.use_direct)
         if input_array.shape[self.axis] <= self.use_direct and input_array.ndim == 1:
             self._output_array[...] = 0
@@ -989,11 +1070,59 @@ class FMMLeg2Cheb(FMMLevel):
 
     def apply(self, input_array, output_array, transpose):
         FMMcheb(input_array, output_array, self.axis, self.Nn, self.fk, self.Nk, self.T, self.Th, self.ThT, self.D, self.Mmin, self.s, self.diags, transpose)
-        FMMdirect2(input_array, output_array, self.axis, self.a, 2*self.s, get_number_of_blocks(self.L, self.D), 2*self.diags, transpose)
         FMMdirect1(input_array, output_array, self.axis, self.a, self.diags, transpose)
+        FMMdirect2(input_array, output_array, self.axis, self.a, 2*self.s, get_number_of_blocks(self.L, self.D), 2*self.diags, transpose)
+
 
 class FMMCheb2Leg(FMMLevel):
-    def __init__(self, input, output_array=None, diagonals=8, domains=None, levels=None, maxs=100, axis=0, use_direct=-1):
+    """Transform Chebyshev coefficients to Legendre coefficients
+
+    Parameters
+    ----------
+    input : int or input array
+        The length of the array to transform or the array itself
+    diagonals : int
+        The number of neglected diagonals, that are treated using a
+        direct approach
+    domains : None, int or sequence of ints
+        The domain sizes for all levels
+
+        If domains=None then an appropriate domain size is computed
+        according to the given number of levels and maxs. If the
+        number of levels is also None, then domains is set to 2
+        and the number of levels is computed from maxs.
+
+        If domains is an integer, then this integer is used for each
+        level, and the number of levels is either given or computed
+        according to maxs
+
+        If domains is a sequence of integers, then these are the
+        domain sizes for all the levels and the length of this
+        sequence is the number of levels.
+
+    levels : None or int
+        The number of levels in the hierarchical matrix
+
+        If levels is None, then it is computed according to domains
+        and maxs
+
+    l2c : bool
+        If True, the transform goes from Legendre to Chebyshev, and
+        vice versa if False
+
+    maxs : int
+        The maximum size of the smallest submatrices (on the highest
+        level). This number is used if the number of levels or domain
+        sizes need to be computed.
+
+    axis : int
+        The axis over which to apply the transform if the input array
+        is a multidimensional array.
+
+    use_direct : int
+        Use direct method if N is smaller than this number
+    """
+    def __init__(self, input, output_array=None, diagonals=16, domains=None, levels=None, maxs=100, axis=0, use_direct=-1):
         if isinstance(input, int):
             N = input
             shape = (N,)
@@ -1011,7 +1140,17 @@ class FMMCheb2Leg(FMMLevel):
         self.a[0] = 2/np.sqrt(np.pi)
         self.plan(shape, dtype, axis, output_array, use_direct)
 
-    def __call__(self, input_array, output_array=None, transpose=False):
+    def __call__(self, input_array, output_array=None):
+        """Execute transform
+
+        Parameters
+        ----------
+        input_array : array
+            The array to be transformed
+        output_array : None or array
+            The return array. Will be created if None.
+
+        """
         assert isinstance(input_array, np.ndarray)
         self.plan(input_array.shape, input_array.dtype, self.axis, output_array, self.use_direct)
         if input_array.shape[self.axis] <= self.use_direct and input_array.ndim == 1:
@@ -1027,11 +1166,13 @@ class FMMCheb2Leg(FMMLevel):
         si[self.axis] = slice(None)
         w0 = input_array.copy()
         w0[sl[slice(1, self.N)]] *= np.arange(1, self.N)[tuple(si)]
+
         if input_array.shape[self.axis] <= self.use_direct:
             self._output_array.fill(0)
             FMMdirect4(w0, self._output_array, self.axis, self.dn[:self.N//2], self.a[:self.N], self.N//2)
         else:
             self.apply(w0, self._output_array)
+
         self._output_array *= (np.arange(self.N)+0.5)[tuple(si)]
         if output_array is not None:
             output_array[...] = self._output_array
@@ -1040,8 +1181,8 @@ class FMMCheb2Leg(FMMLevel):
 
     def apply(self, input_array, output_array):
         FMMcheb(input_array, output_array, self.axis, self.Nn, self.fk, self.Nk, self.T, self.Th, self.ThT, self.D, self.Mmin, self.s, self.diags, False)
-        FMMdirect3(input_array, output_array, self.axis, self.dn, self.a, 2*self.s, get_number_of_blocks(self.L, self.D), 2*self.diags)
         FMMdirect4(input_array, output_array, self.axis, self.dn[:self.N//2], self.a[:self.N], self.diags)
+        FMMdirect3(input_array, output_array, self.axis, self.dn, self.a, 2*self.s, get_number_of_blocks(self.L, self.D), 2*self.diags)
 
 @runtimeoptimizer
 def _cheb2leg(u, v, dn, a):
@@ -1112,7 +1253,6 @@ def FMMcheb(input_array, output_array, axis, Nn, fk, Nk, T, Th, ThT, D, Mmin, s,
     for level in range(L):
         wk[level] = np.zeros((get_number_of_blocks(level, D), D[level], Mmax))
         ck[level] = np.zeros((get_number_of_blocks(level, D), D[level], Mmax))
-
     for sigma in (0, 1):
         cia[:] = 0
         coa[:] = 0
@@ -1158,6 +1298,7 @@ def FMMcheb(input_array, output_array, axis, Nn, fk, Nk, T, Th, ThT, D, Mmin, s,
                         b0, p0 = divmod(block, D[level])
                         for p in range(D[level+1]):
                             ck[level+1][block, p, :M0] += np.dot(TT[p, :M0, :M0], ck[level][b0, p0, :M0])
+
                 else:
                     for block in range(get_number_of_blocks(level, D)):
                         i0, j0 = get_ij(level, block, s, D, diags)

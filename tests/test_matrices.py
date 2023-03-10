@@ -28,12 +28,6 @@ from shenfun import div, grad, inner, TensorProductSpace, FunctionSpace, SparseM
 from shenfun.spectralbase import inner_product
 from shenfun.config import config
 
-try:
-    import quadpy
-    has_quadpy = True
-except:
-    has_quadpy = False
-
 x = sp.symbols('x', real=True)
 xp = sp.symbols('x', real=True, positive=True)
 
@@ -747,9 +741,7 @@ def test_stencil(b0, b1):
     assert np.linalg.norm(C.diags('csr').data) < 1e-8
 
 @pytest.mark.parametrize('b0,b1', some_lbases2+some_cbases2)
-def test_quadpy(b0, b1):
-    if not has_quadpy:
-        return
+def test_adaptive_quadrature(b0, b1):
     N = 12
     b0 = b0(N)
     b1 = b1(N)
@@ -789,7 +781,7 @@ if __name__ == '__main__':
     #test_mat(((ctestBasis[1], 0), (ctestBasis[1], 2), 1-x**2), cmatrices.ASDSDmatW, 'GC')
     #test_mat(((cbases.Orthogonal, 0), (lbases.Orthogonal, 0)), cmatrices.BTLmat, 'GL')
     #test_cmatvec(ctrialBasis[1], ctrialBasis[1], 'GC', 0)
-    test_lmatvec(ltrialBasis[0], ltrialBasis[0], 'LG', 2, 0)
+    #test_lmatvec(ltrialBasis[0], ltrialBasis[0], 'LG', 2, 0)
     #test_lagmatvec(lagBasis[0], lagBasis[1], 'LG', 'python', 3, 2, 0)
     #test_hmatvec(hBasis[0], hBasis[0], 'HG', 'self', 3, 1, 1)
     #test_jmatvec(jBasis[5], jBasis[5], 'JG', 'self', 1, 1)
@@ -804,3 +796,4 @@ if __name__ == '__main__':
     #test_biharmonic3D('chebyshev', 0)
     #test_biharmonic2D('jacobi', 0)
     #test_stencil(cbases.Phi6, cbases.Compact3)
+    test_adaptive_quadrature(lbases.Phi2, lbases.ShenNeumann)

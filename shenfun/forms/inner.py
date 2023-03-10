@@ -74,7 +74,7 @@ def inner(expr0, expr1, output_array=None, assemble=None, kind=None, fixed_resol
 
         Exact and adaptive should result in the same matrix. Exact computes the
         integral using `Sympy integrate <https://docs.sympy.org/latest/modules/integrals/integrals.html>`_,
-        whereas adaptive makes use of adaptive quadrature through `quadpy <https://github.com/sigma-py/quadpy>`_.
+        whereas adaptive makes use of adaptive quadrature through `scipy <https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.quadrature.html>`_.
         For most bilinear forms quadrature will also return the same matrix as exact.
         With non-constant measures (like for curvilinear coordinates) there is more
         likely to be differences.

@@ -12,6 +12,7 @@ import numpy as np
 import sympy as sp
 from scipy.sparse import bmat, spmatrix, dia_matrix, csr_matrix, kron, \
     diags as sp_diags
+from scipy.integrate import quadrature
 from mpi4py import MPI
 from shenfun.config import config
 from .utilities import integrate_sympy
@@ -22,11 +23,6 @@ __all__ = ['SparseMatrix', 'SpectralMatrix', 'extract_diagonal_matrix',
            'get_simplified_tpmatrices', 'ScipyMatrix', 'SpectralMatDict']
 
 comm = MPI.COMM_WORLD
-try:
-    import quadpy
-    has_quadpy = True
-except:
-    has_quadpy = False
 
 class SparseMatrix(MutableMapping):
     r"""Base class for sparse matrices.
@@ -562,7 +558,7 @@ class SpectralMatrix(SparseMatrix):
 
         Exact and adaptive should result in the same matrix. Exact computes the
         integral using `Sympy integrate <https://docs.sympy.org/latest/modules/integrals/integrals.html>`_,
-        whereas adaptive makes use of adaptive quadrature through `quadpy <adaptive quadrature through>`_.
+        whereas adaptive makes use of adaptive quadrature through `scipy <https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.quadrature.html>`_.
     kind : None or str, optional
         Alternatie kinds of methods.
 
@@ -1855,11 +1851,11 @@ def _get_matrix(test, trial, measure=1, assemble=None, fixed_resolution=None):
         if fixed_resolution is not None:
             test2 = test[0].get_refined(fixed_resolution)
             N = test2.N
-            x = test2.mpmath_points_and_weights(N, map_true_domain=False)[0]
+            x = test2.points_and_weights(N, map_true_domain=False)[0]
             ws = test2.get_measured_weights(N, measure, map_true_domain=False)
         else:
             N = test[0].N
-            x = test[0].mpmath_points_and_weights(N, map_true_domain=False)[0]
+            x = test[0].points_and_weights(N, map_true_domain=False)[0]
             ws = test[0].get_measured_weights(N, measure, map_true_domain=False)
         u = trial[0].evaluate_basis_derivative_all(x=x, k=trial[1])[:, :K1]
         if trial[0].boundary_condition() == 'Apply':
@@ -1922,8 +1918,7 @@ def _get_matrix(test, trial, measure=1, assemble=None, fixed_resolution=None):
                         if isinstance(integrand, Number):
                             V[i, j] = integrand*np.pi
                         else:
-                            assert(has_quadpy)
-                            V[i, j] = quadpy.c1.integrate_adaptive(sp.lambdify(x, integrand), (0, np.pi))[0]
+                            V[i, j] = quadrature(sp.lambdify(x, integrand), 0, np.pi, miniter=8, tol=1e-12, rtol=1e-12)[0]
 
         else:
             measure *= test[0].weight() # Weight of weighted space (in reference domain)
@@ -1942,8 +1937,7 @@ def _get_matrix(test, trial, measure=1, assemble=None, fixed_resolution=None):
                         if isinstance(integrand, Number):
                             V[i, j] = integrand*float(domain[1]-domain[0])
                         else:
-                            assert(has_quadpy)
-                            V[i, j] = quadpy.c1.integrate_adaptive(sp.lambdify(x, integrand), (float(domain[0]), float(domain[1])))[0]
+                            V[i, j] = quadrature(sp.lambdify(x, integrand), float(domain[0]), float(domain[1]), tol=1e-12, rtol=1e-12, miniter=8)[0]
 
     if V.dtype.char in 'FDG':
         ni = np.linalg.norm(V.imag)

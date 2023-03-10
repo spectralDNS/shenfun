@@ -188,11 +188,16 @@ class Orthogonal(JacobiBase):
                 weights = np.full(N, np.pi/(N+1))
 
         else:
-            if self.quad in ("GL", "GU"):
-                import quadpy
-                p = quadpy.c1.clenshaw_curtis(N)
-                points = -p.points
-                weights = p.weights
+            if self.quad == "GL":
+                points = np.cos(np.arange(N)*np.pi/(N-1))
+                d = fftw.aligned(N, fill=0)
+                k = 2*(1 + np.arange((N-1)//2))
+                d[::2] = (2./(N-1))/np.hstack((1., 1.-k*k))
+                w = fftw.aligned_like(d)
+                dct = fftw.dctn(w, axes=(0,), type=1)
+                weights = dct(d, w)
+                weights[0] *= 0.5
+                weights[-1] *= 0.5
 
             elif self.quad == "GC":
                 points = n_cheb.chebgauss(N)[0]
@@ -202,6 +207,17 @@ class Orthogonal(JacobiBase):
                 w = fftw.aligned_like(d)
                 dct = fftw.dctn(w, axes=(0,), type=3)
                 weights = dct(d, w)
+
+            elif self.quad == "GU":
+                theta = (np.arange(N)+1)*np.pi/(N+1)
+                points = np.cos(theta)
+                d = fftw.aligned(N, fill=0)
+                k = np.arange(N)
+                d[::2] = 2/(k[::2]+1)
+                w = fftw.aligned_like(d)
+                dst = fftw.dstn(w, axes=(0,), type=1)
+                weights = dst(d, w)
+                weights *= (np.sin(theta))/(N+1)
 
         if map_true_domain is True:
             points = self.map_true_domain(points)

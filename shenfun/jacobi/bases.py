@@ -1,28 +1,6 @@
 """
 Module for function spaces of generalized Jacobi type
 
-Note the configuration setting::
-
-    from shenfun.config import config
-    config['bases']['jacobi']['mode']
-
-Setting this to 'mpmath' can make use of extended precision.
-The precision can also be set in the configuration.::
-
-    from mpmath import mp
-    mp.dps = config['jacobi'][precision]
-
-where mp.dps is the number of significant digits.
-
-Note that extended precision is costly, but for some of the
-matrices that can be created with the Jacobi bases it is necessary.
-Also note the the higher precision is only used for assembling
-matrices comuted with :func:`evaluate_basis_derivative_all`.
-It has no effect for the matrices that are predifined in the
-matrices.py module. Also note that the final matrix will be
-in regular double precision. So the higher precision is only used
-for the intermediate assembly.
-
 """
 
 import numpy as np
@@ -33,15 +11,6 @@ from shenfun.spectralbase import SpectralBase, getCompositeBase, getBCGeneric, \
     BoundaryConditions
 from shenfun.matrixbase import SparseMatrix
 from .recursions import h, n
-
-try:
-    import quadpy
-    from mpmath import mp
-    mp.dps = config['bases']['jacobi']['precision']
-    has_quadpy = True
-except:
-    has_quadpy = False
-    mp = None
 
 xp = sp.Symbol('x', real=True)
 m, n, k = sp.symbols('m,n,k', real=True, integer=True)
@@ -220,22 +189,6 @@ class Orthogonal(JacobiBase):
             points = self.map_true_domain(points)
         return points, weights
 
-    def mpmath_points_and_weights(self, N=None, map_true_domain=False, weighted=True, **kw):
-        mode = config['bases']['jacobi']['mode']
-        if mode == 'numpy' or not has_quadpy:
-            return self.points_and_weights(N=N, map_true_domain=map_true_domain, weighted=weighted, **kw)
-        if N is None:
-            N = self.shape(False)
-        pw = quadpy.c1.gauss_jacobi(N, self.alpha, self.beta, 'mpmath')
-        points = pw.points_symbolic
-        weights = pw.weights_symbolic
-        if weighted == False:
-            weights = self.unweighted_quadrature_weights()
-
-        if map_true_domain is True:
-            points = self.map_true_domain(points)
-        return points, weights
-
     def jacobi(self, x, alpha, beta, N):
         mode = config['bases']['jacobi']['mode']
         V = np.zeros((x.shape[0], N))
@@ -303,7 +256,7 @@ class Orthogonal(JacobiBase):
     def evaluate_basis_derivative_all(self, x=None, k=0, argument=0):
         mode = config['bases']['jacobi']['mode']
         if x is None:
-            x = self.mpmath_points_and_weights(mode=mode)[0]
+            x = self.points_and_weights()[0]
         if mode == 'numpy':
             return self.derivative_jacobi(x, self.alpha, self.beta, k)
         else:
@@ -316,7 +269,7 @@ class Orthogonal(JacobiBase):
 
     def evaluate_basis_all(self, x=None, argument=0):
         if x is None:
-            x = self.mpmath_points_and_weights()[0]
+            x = self.points_and_weights()[0]
         return self.vandermonde(x)
 
     def eval(self, x, u, output_array=None):

@@ -199,7 +199,7 @@ class Orthogonal(JacobiBase):
 
     def evaluate_basis_derivative_all(self, x=None, k=0, argument=0):
         if x is None:
-            x = self.mpmath_points_and_weights()[0]
+            x = self.points_and_weights()[0]
         V = self.derivative_jacobiQ(x, self.alpha, k)
         if self.alpha != 0:
             #V *= sp.lambdify(n, cn(self.alpha, self.alpha, n))(np.arange(self.N))[None, :]
@@ -208,7 +208,7 @@ class Orthogonal(JacobiBase):
 
     def evaluate_basis_all(self, x=None, argument=0):
         if x is None:
-            x = self.mpmath_points_and_weights()[0]
+            x = self.points_and_weights()[0]
         return self.vandermonde(x)
 
     def eval(self, x, u, output_array=None):

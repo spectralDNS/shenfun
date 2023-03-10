@@ -49,6 +49,7 @@ config = {
         'legendre':
         {
             'mode': 'numpy',
+            #'mode': 'mpmath'
             'precision': 30,
         },
         'jacobi':

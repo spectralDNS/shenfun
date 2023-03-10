@@ -84,31 +84,6 @@ class SpectralBase:
         """
         raise NotImplementedError
 
-    def mpmath_points_and_weights(self, N=None, map_true_domain=False, weighted=True, **kw):
-        r"""Return points and weights of quadrature using extended precision
-        mpmath if available
-
-        .. math::
-
-            \int_{\Omega} f(x) w(x) dx \approx \sum_{i} f(x_i) w_i
-
-        Parameters
-        ----------
-        N : int, optional
-            Number of quadrature points
-        map_true_domain : bool, optional
-            Whether or not to map points to true domain
-        weighted : bool, optional
-            Whether to use quadrature weights for a weighted inner product
-            (default), or a regular, non-weighted inner product.
-
-        Note
-        ----
-        If not implemented, or if mpmath/quadpy are not available, then simply
-        returns the regular numpy :func:`points_and_weights`.
-        """
-        return self.points_and_weights(N=N, map_true_domain=map_true_domain, weighted=weighted, **kw)
-
     def mesh(self, bcast=True, map_true_domain=True, kind='quadrature'):
         """Return the computational mesh
 
@@ -1074,7 +1049,7 @@ class SpectralBase:
         """
         if N is None:
             N = self.shape(False)
-        xm, wj = self.mpmath_points_and_weights(N, map_true_domain=map_true_domain)
+        xm, wj = self.points_and_weights(N, map_true_domain=map_true_domain)
         if measure == 1:
             return wj
 
@@ -1114,7 +1089,7 @@ class SpectralBase:
             return array
 
         N = self.shape(False)
-        xm = self.mpmath_points_and_weights(N, map_true_domain=True)[0]
+        xm = self.points_and_weights(N, map_true_domain=True)[0]
         s = measure.free_symbols
         if len(s) == 0:
             # constant

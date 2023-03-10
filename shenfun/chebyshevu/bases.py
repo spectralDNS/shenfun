@@ -32,12 +32,6 @@ __all__ = bases + bcbases + testbases
 
 xp = sp.Symbol('x', real=True)
 
-try:
-    import quadpy
-    has_quadpy = True
-except:
-    has_quadpy = False
-
 class DCTWrap(FuncWrap):
     """DCT for complex input"""
 
@@ -135,16 +129,24 @@ class Orthogonal(JacobiBase):
 
         else:
             if self.quad == "GU":
-                assert(has_quadpy)
-                p = quadpy.c1.fejer_2(N)
-                points = -p.points
-                weights = p.weights
+                theta = (np.arange(N)+1)*np.pi/(N+1)
+                points = np.cos(theta)
+                d = fftw.aligned(N, fill=0)
+                k = np.arange(N)
+                d[::2] = 2/(k[::2]+1)
+                w = fftw.aligned_like(d)
+                dst = fftw.dstn(w, axes=(0,), type=1)
+                weights = dst(d, w)
+                weights *= (np.sin(theta))/(N+1)
 
             elif self.quad == "GC":
-                assert(has_quadpy)
-                p = quadpy.c1.fejer_1(N)
-                points = -p.points
-                weights = p.weights
+                points = n_cheb.chebgauss(N)[0]
+                d = fftw.aligned(N, fill=0)
+                k = 2*(1 + np.arange((N-1)//2))
+                d[::2] = (2./N)/np.hstack((1., 1.-k*k))
+                w = fftw.aligned_like(d)
+                dct = fftw.dctn(w, axes=(0,), type=3)
+                weights = dct(d, w)
 
         if map_true_domain is True:
             points = self.map_true_domain(points)
