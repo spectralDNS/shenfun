@@ -1976,13 +1976,19 @@ class BoundaryConditions(dict):
         return ['L'+bci for bci in sorted(self['left'].keys())] + ['R'+bci for bci in sorted(self['right'].keys())]
 
     def orderedvals(self):
-        return [self['left'][bci] for bci in sorted(self['left'].keys())] + [self['right'][bci] for bci in sorted(self['right'].keys())]
+        ls = []
+        for lr in ('left', 'right'):
+            for key in sorted(self[lr].keys()):
+                val = self[lr][key]
+                ls.append(val[1] if isinstance(val, (tuple, list)) else val)
+        return ls
+        #return [self['left'][bci] for bci in sorted(self['left'].keys())] + [self['right'][bci] for bci in sorted(self['right'].keys())]
 
     def num_bcs(self):
         return len(self.orderedvals())
 
     def num_derivatives(self):
-        n = {'D': 0, 'N': 1, 'N2': 2, 'N3': 3, 'N4': 4}
+        n = {'D': 0, 'R': 0, 'N': 1, 'N2': 2, 'N3': 3, 'N4': 4}
         num_diff = 0
         for val in self.values():
             for k in val:

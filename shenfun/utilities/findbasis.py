@@ -41,13 +41,20 @@ def get_stencil_matrix(bcs, family, alpha=None, beta=None, gn=1):
     bcs = BoundaryConditions(bcs)
     bc = {'D': 0, 'N': 1, 'N2': 2, 'N3': 3, 'N4': 4}
     lr = {'L': 0, 'R': 1}
+    lra = {'L': 'left', 'R': 'right'}
     s = []
     r = []
     for key in bcs.orderednames():
         k, v = key[0], key[1:]
-        f = bnd_values(k=bc[v])[lr[k]]
-        s.append([sp.simplify(f(n+j)) for j in range(1, 1+bcs.num_bcs())])
-        r.append(-sp.simplify(f(n)))
+        if v == 'R':
+            alfa = bcs[lra[k]]['R'][0]
+            f = [bnd_values(k=0)[lr[k]], bnd_values(k=1)[lr[k]]]
+            s.append([sp.simplify(f[0](n+j)+alfa*f[1](n+j)) for j in range(1, 1+bcs.num_bcs())])
+            r.append(-sp.simplify(f[0](n)+alfa*f[1](n)))
+        else:
+            f = bnd_values(k=bc[v])[lr[k]]
+            s.append([sp.simplify(f(n+j)) for j in range(1, 1+bcs.num_bcs())])
+            r.append(-sp.simplify(f(n)))
     A = sp.Matrix(s)
     b = sp.Matrix(r)
     M = sp.simplify(A.solve(b))
@@ -89,11 +96,17 @@ def get_bc_basis(bcs, family, alpha=None, beta=None, gn=1):
     def _computematrix(first):
         bc = {'D': 0, 'N': 1, 'N2': 2, 'N3': 3, 'N4': 4}
         lr = {'L': 0, 'R': 1}
+        lra = {'L': 'left', 'R': 'right'}
         s = []
         for key in bcs.orderednames():
             k, v = key[0], key[1:]
-            f = bnd_values(k=bc[v])[lr[k]]
-            s.append([sp.simplify(f(j)) for j in range(first, first+bcs.num_bcs())])
+            if v == 'R':
+                alfa = bcs[lra[k]]['R'][0]
+                f = [bnd_values(k=0)[lr[k]], bnd_values(k=1)[lr[k]]]
+                s.append([sp.simplify(f[0](j)+alfa*f[1](j)) for j in range(first, first+bcs.num_bcs())])
+            else:
+                f = bnd_values(k=bc[v])[lr[k]]
+                s.append([sp.simplify(f(j)) for j in range(first, first+bcs.num_bcs())])
 
         A = sp.Matrix(s)
         s = sp.simplify(A.solve(sp.eye(bcs.num_bcs())).T)
