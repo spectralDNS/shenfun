@@ -738,6 +738,3 @@ an ``HDF5`` format that later can be visualized in, e.g., Paraview. The movie in
 beginning of this demo has been created in Paraview.
 
 .. ======= Bibliography =======
-
-.. bibliography:: papers.bib
-   :notcited:

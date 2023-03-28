@@ -118,7 +118,7 @@ if __name__ == '__main__':
         'family': 'C',
         'checkpoint': 10000000,
         'padding_factor': 1,
-        'timestepper': 'IMEXRK111'
+        'timestepper': 'IMEXRK443'
         }
     OS = True
     c = OrrSommerfeld(**d)

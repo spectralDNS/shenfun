@@ -2,8 +2,9 @@ from shenfun import *
 from ChannelFlow2D import KMM
 import matplotlib.pyplot as plt
 import sympy
+import warnings
 
-np.warnings.filterwarnings('ignore')
+warnings.filterwarnings('ignore')
 
 # pylint: disable=attribute-defined-outside-init
 
