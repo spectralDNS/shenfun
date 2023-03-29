@@ -57,13 +57,14 @@ help:
 
 %.ipynb2:
 	doconce format ipynb demos/$(basename $@).do.txt
+	python add_metadata.py demos/$(basename $@).ipynb
 	jupyter nbconvert --inplace --clear-output demos/${basename $@}.ipynb
 	#jupyter nbconvert --inplace --execute demos/${basename $@}.ipynb
 	doconce subst 'XXX' '   ' demos/$(basename $@).ipynb
 	doconce subst "<div" "<a" demos/$(basename $@).ipynb
 	doconce subst "div>" "a>" demos/$(basename $@).ipynb
 	#doconce subst '<!--.*-->' '' demos/$(basename $@).ipynb
-	python add_metadata.py demos/$(basename $@).ipynb
+	#python add_metadata.py demos/$(basename $@).ipynb
 	cp demos/$(basename $@).ipynb ../../shenfun-demos/content/
 	cp demos/$(basename $@).ipynb notebooks/
 

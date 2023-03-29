@@ -926,8 +926,8 @@ class TensorProductSpace(PFFT):
         """
         mesh = self.mesh(map_true_domain=map_true_domain, kind=kind)
         lm = []
-        ss = [slice(None)]*len(mesh)
         for axis, (n, s) in enumerate(zip(mesh, self.local_slice(False))):
+            ss = [slice(None)]*len(mesh)
             ss[axis] = s
             lm.append(n[tuple(ss)])
         if bcast is True:

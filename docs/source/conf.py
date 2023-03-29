@@ -100,8 +100,8 @@ html_theme = 'sphinx_rtd_theme'
 #html_theme = 'bootstrap'
 #html_theme_path = sphinx_bootstrap_theme.get_html_theme_path()
 
-# For some reason mathjax 2.7.5 renders bold type ugly. Use 2.7.1
-mathjax_path = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js'
+#mathjax_path = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js'
+mathjax_path = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js'
 #mathjax_path = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML'
 
 intersphinx_mapping = {'mpi4py_fft': ('https://mpi4py-fft.readthedocs.io/en/latest/', None)}
