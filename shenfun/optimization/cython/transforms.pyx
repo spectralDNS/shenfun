@@ -479,14 +479,24 @@ cpdef np.ndarray[double, ndim=1] chebval(np.ndarray[double, ndim=1] x, np.ndarra
         c0[j] += c1[j]*x[j]
     return c0
 
-def omega(np.ndarray z):
+def Lambda(np.ndarray x):
+    """Return
+
+    .. math::
+
+            \Lambda(x) = \frac{\Gamma(x+\frac{1}{2})}{\Gamma(x+1)}
+
+    Parameters
+    ----------
+    z : array of floats
+    """
     cdef:
-        int ndim = np.PyArray_NDIM(z)
-        np.ndarray[double, ndim=1] a = _omega(np.PyArray_Ravel(z, np.NPY_CORDER))
-    return np.PyArray_Reshape(a, np.shape(z))
+        int ndim = np.PyArray_NDIM(x)
+        np.ndarray[double, ndim=1] a = _Lambda(np.PyArray_Ravel(x, np.NPY_CORDER))
+    return np.PyArray_Reshape(a, np.shape(x))
 
 @cython.cdivision(True)
-cpdef np.ndarray[double, ndim=1] _omega(double[::1] z):
+cpdef np.ndarray[double, ndim=1] _Lambda(double[::1] z):
     cdef:
         int N = z.shape[0]
         int i = 0
@@ -544,8 +554,8 @@ cpdef np.ndarray cheb2leg(np.ndarray input_array, np.ndarray output_array, int a
         tuple shape = np.shape(input_array)
 
     k[0] = 1
-    dn[:] = _omega((k[::2]-2)/2)/k[::2]
-    a[:] = 1/(2*_omega(k)*k*(k+0.5))
+    dn[:] = _Lambda((k[::2]-2)/2)/k[::2]
+    a[:] = 1/(2*_Lambda(k)*k*(k+0.5))
     a[0] = 2/np.sqrt(np.pi)
     output_array.fill(0)
     if dtype == 'd':
@@ -561,7 +571,7 @@ cpdef np.ndarray leg2cheb(np.ndarray input_array, np.ndarray output_array, int a
         int N = input_array.shape[axis]
         int st = input_array.strides[axis]//input_array.itemsize
         str dtype = input_array.dtype.char
-        np.ndarray[double, ndim=1] a = omega(np.arange(N, dtype=np.float64))
+        np.ndarray[double, ndim=1] a = Lambda(np.arange(N, dtype=np.float64))
         DL d = DL(&a[0], transpose)
         tuple shape = np.shape(input_array)
 

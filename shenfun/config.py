@@ -46,17 +46,10 @@ config = {
     },
     'bases':
     {
-        'legendre':
-        {
-            'mode': 'numpy',
-            #'mode': 'mpmath'
-            'precision': 30,
-        },
         'jacobi':
         {
             'mode': 'numpy',
             #'mode': 'mpmath',
-            'precision': 30
         }
     },
     'fftw':

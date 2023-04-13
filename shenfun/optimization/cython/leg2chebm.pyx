@@ -8,7 +8,7 @@ from libc.stdlib cimport malloc, free
 from copy import copy
 from numpy.polynomial import chebyshev as n_cheb
 from .transforms import FMMdirect1, FMMcheb, FMMdirect2, FMMdirect3, \
-    FMMdirect4, _leg2cheb, _cheb2leg, _omega
+    FMMdirect4, _leg2cheb, _cheb2leg, _Lambda
 from .transforms cimport get_number_of_blocks
 
 np.import_array()
@@ -129,7 +129,7 @@ cdef class Leg2Cheb(FMMLevel):
 
         FMMLevel.__init__(self, input_array.shape[axis], diagonals=diagonals,
                           domains=domains, levels=levels, maxs=maxs, use_direct=use_direct)
-        self._a = _omega(np.arange(self.Nn, dtype='d'))
+        self._a = _Lambda(np.arange(self.Nn, dtype='d'))
         self.axis = axis
         si[axis] = 0
         self.si = tuple(si)
@@ -194,8 +194,8 @@ cdef class Cheb2Leg(FMMLevel):
 
         k = np.arange(self.Nn, dtype='d')
         k[0] = 1
-        self._dn = _omega((k[::2]-2)/2)/k[::2]
-        self._a = 1/(2*_omega(k)*k*(k+0.5))
+        self._dn = _Lambda((k[::2]-2)/2)/k[::2]
+        self._a = 1/(2*_Lambda(k)*k*(k+0.5))
         self._a[0] = 2/np.sqrt(np.pi)
         self.axis = axis
 

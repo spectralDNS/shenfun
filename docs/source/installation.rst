@@ -99,29 +99,61 @@ At the time of writing the configuration looks like
     bases:
       jacobi:
         mode: numpy
-        precision: 30
-      legendre:
-        mode: numpy
-        precision: 30
     basisvectors: normal
+    fftw:
+      dct:
+        planner_effort: FFTW_MEASURE
+        threads: 1
+      dlt:
+        planner_effort: FFTW_MEASURE
+        threads: 1
+      dst:
+        planner_effort: FFTW_MEASURE
+        threads: 1
+      fft:
+        planner_effort: FFTW_MEASURE
+        threads: 1
+      ifft:
+        planner_effort: FFTW_MEASURE
+        threads: 1
+      irfft:
+        planner_effort: FFTW_MEASURE
+        threads: 1
+      rfft:
+        planner_effort: FFTW_MEASURE
+        threads: 1
     matrix:
+      block:
+        assemble: csc
+        permc_spec: COLAMD
+        use_scipy: true
       sparse:
-        construct: dense
         diags: csc
         matvec: csr
+        permc_spec: COLAMD
         solve: csc
     optimization:
       mode: cython
       verbose: false
+    transforms:
+      kind:
+        chebyshev: fast
+        chebyshevu: fast
+        fourier: fast
+        hermite: vandermonde
+        jacobi: recursive
+        laguerre: vandermonde
+        legendre: recursive
+        ultraspherical: recursive
 
 The `basisvectors` can be used to choose `covariant` instead of
 `normal` basis vectors. The matrix options decide which scipy
 sparse format to use for the sparse computations that make use of them.
 The `optimization` can be either `cython`_ or `numba`_, which is used
-to speed up some routines. The `bases` configurations are mainly
-experimental, for using `quadpy` and `mpmath` in computing
-inner product matrices. Set `mode` to `mpmath` to enable this
-behaviour.
+to speed up some routines. The `fftw` setting allows to tweak the
+planning or the use of threads for FFTs. The `bases` configuration for
+jacobi can set `mode` to `mpmath` to enable the use of mpmath for
+some routines instead of numpy.
 
 Additional dependencies
 -----------------------

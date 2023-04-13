@@ -7,14 +7,13 @@ from mpi4py_fft import fftw
 from mpi4py import MPI
 from mpi4py_fft.fftw.utilities import FFTW_MEASURE, FFTW_PRESERVE_INPUT
 from shenfun.optimization import runtimeoptimizer
-from shenfun.optimization.cython import Leg2Cheb, Cheb2Leg, omega
+from shenfun.optimization.cython import Leg2Cheb, Cheb2Leg, Lambda
 from shenfun.spectralbase import islicedict, slicedict
 from shenfun.forms.arguments import FunctionSpace
-from shenfun.forms import project
 from . import fastgl
 
 __all__ = ['DLT', 'leg2cheb', 'cheb2leg', 'Leg2chebHaleTownsend',
-           'Leg2Cheb', 'Cheb2Leg', 'FMMLeg2Cheb', 'FMMCheb2Leg']
+           'Leg2Cheb', 'Cheb2Leg', 'FMMLeg2Cheb', 'FMMCheb2Leg', 'Lambda']
 
 
 class DLT:
@@ -340,14 +339,13 @@ class DST:
             return output_array
         return out
 
-#Omega = lambda z: np.exp(gammaln(z+0.5) - gammaln(z+1))
-Omega = omega
+#Lambda = lambda z: np.exp(gammaln(z+0.5) - gammaln(z+1))
 
-LxyE = lambda x, y: -0.5/(2*x+2*y+1)/(y-x)*Omega(y-x-1)*Omega(y+x-0.5)
-MxyE = lambda x, y: Omega(y-x)*Omega(y+x)
-Mxy = lambda x, y: Omega((y-x)/2)*Omega((y+x)/2)
-Lxy = lambda x, y: -1/(x+y+1)/(y-x)*Omega((y-x-2)/2)*Omega((y+x-1)/2)
-Hxy = lambda x, y: Omega((y-x)/2)*Omega((y+x)/2)/np.sqrt((x+y)*(y-x))
+LxyE = lambda x, y: -0.5/(2*x+2*y+1)/(y-x)*Lambda(y-x-1)*Lambda(y+x-0.5)
+MxyE = lambda x, y: Lambda(y-x)*Lambda(y+x)
+Mxy = lambda x, y: Lambda((y-x)/2)*Lambda((y+x)/2)
+Lxy = lambda x, y: -1/(x+y+1)/(y-x)*Lambda((y-x-2)/2)*Lambda((y+x-1)/2)
+Hxy = lambda x, y: Lambda((y-x)/2)*Lambda((y+x)/2)/np.sqrt((x+y)*(y-x))
 
 @runtimeoptimizer
 def leg2cheb(cl, cc=None, axis=0, transpose=False):
@@ -397,7 +395,7 @@ def leg2cheb(cl, cc=None, axis=0, transpose=False):
         cc = np.moveaxis(cc, axis, 0)
     N = cl.shape[0]
     k = np.arange(N)
-    a = Omega(k)
+    a = Lambda(k)
     sl = [None]*cc.ndim
     ck = np.full(N, np.pi/2); ck[0] = np.pi
     sl[0] = slice(None)
@@ -460,12 +458,12 @@ def cheb2leg(cc, cl=None, axis=0):
     k = np.arange(N, dtype=float)
     k[0] = 1
     vn = cc*k
-    a = 1/(2*Omega(k)*k*(k+0.5))
+    a = 1/(2*Lambda(k)*k*(k+0.5))
     k[0] = 0
     a[0] = 2/np.sqrt(np.pi)
     cl[:] = np.sqrt(np.pi)*a*vn
     for n in range(2, N, 2):
-        dn = Omega(np.array([(n-2)/2]))/n
+        dn = Lambda(np.array([(n-2)/2]))/n
         cl[:(N-n)] -= dn*a[n//2:(N-n//2)]*vn[n:]
     cl *= (k+0.5)
     if axis > 0:
@@ -844,7 +842,7 @@ def getChebyshev(level, D, s, diags, A, N, l2c=True):
 class FMMLevel:
     """Abstract base class for hierarchical matrix
     """
-    def __init__(self, N, diagonals=8, domains=None, levels=None, l2c=True, maxs=100, use_direct=-1):
+    def __init__(self, N, domains=None, levels=None, l2c=True, maxs=100, use_direct=-1):
         self.N = N
         self.use_direct = use_direct
         self._output_array = np.array([0])
@@ -856,7 +854,7 @@ class FMMLevel:
             if isinstance(domains, int):
                 if levels is None:
                     doms = np.cumsum(domains**np.arange(16))
-                    levels = np.where((N//2-diagonals)/doms <= maxs)[0][0]
+                    levels = np.where(N/(2*(1+doms)) <= maxs)[0][0]
                 levels = max(1, levels)
                 self.D = np.full(levels, domains, dtype=int)
             else:
@@ -867,35 +865,38 @@ class FMMLevel:
             if levels is None:
                 domains = 2
                 doms = np.cumsum(domains**np.arange(20))
-                levels = np.where((N//2-diagonals)/doms <= maxs)[0][0]
+                levels = np.where(N/(2*(1+doms)) <= maxs)[0][0]
                 levels = max(1, levels)
             else:
                 for domains in range(2, 100):
                     Nb = np.cumsum(domains**np.arange(levels+1))[levels]
-                    s = (N//2-diagonals)//Nb
+                    s = N//(2*(1+Nb))
                     if s <= maxs:
                         break
             self.D = np.full(levels, domains, dtype=int)
 
         self.L = max(1, levels)
         Nb = get_number_of_blocks(self.L, self.D)
-        self.diags = diagonals
+        #self.diags = diagonals
         self.axis = 0
         # Create new (even) N with minimal size according to diags and N
         # Pad input array with zeros
-        s, rest = divmod(N//2-diagonals, Nb)
-        Nn = N
-        if rest > 0 or Nn%2 == 1:
-            s += 1
-            Nn = 2*(diagonals+s*Nb)
+        #s, rest = divmod(N//2-diagonals, Nb)
+        s = np.ceil(N/(2*(1+Nb))).astype(int)
+        Nn = 2*s*(1+Nb)
+        #Nn = N
+        #if rest > 0 or Nn%2 == 1:
+        #    s += 1
+        #    Nn = 2*(diagonals+s*Nb)
 
         self.Nn = Nn
         self.s = s
+        self.diags = s
         fk = []
         Nk = []
         self.Mmin = np.zeros(self.L, dtype=int)
         for level in range(self.L-1, -1, -1):
-            Nx = getChebyshev(level, self.D, s, diagonals, fk, Nk, l2c)
+            Nx = getChebyshev(level, self.D, s, s, fk, Nk, l2c)
             self.Mmin[level] = Nx
         self.fk = np.hstack(fk)
         self.Nk = np.array(Nk, dtype=int)
@@ -961,7 +962,7 @@ def get_h(level, D):
     return np.prod(D[level+1:])
 
 def get_number_of_blocks(level, D):
-    #return np.cumsum(D[0]**np.arange(level+1))[-1] # const D
+    #return np.sum(D[0]**np.arange(level+1))   # const D
     return 1+np.sum(np.cumprod(np.flip(D[:level])))
 
 def get_number_of_submatrices(D):
@@ -1019,7 +1020,7 @@ class FMMLeg2Cheb(FMMLevel):
         Use direct method if N is smaller than this number
 
     """
-    def __init__(self, input, output_array=None, diagonals=16, domains=None, levels=None, maxs=100, axis=0, use_direct=-1):
+    def __init__(self, input, output_array=None, domains=None, levels=None, maxs=100, axis=0, use_direct=-1):
         if isinstance(input, int):
             N = input
             shape = (N,)
@@ -1028,8 +1029,8 @@ class FMMLeg2Cheb(FMMLevel):
             N = input.shape[axis]
             shape = input.shape
             dtype = input.dtype
-        FMMLevel.__init__(self, N, domains=domains, diagonals=diagonals, levels=levels, maxs=maxs, use_direct=use_direct)
-        self.a = Omega(np.arange(self.Nn, dtype=float))
+        FMMLevel.__init__(self, N, domains=domains, levels=levels, maxs=maxs, use_direct=use_direct)
+        self.a = Lambda(np.arange(self.Nn, dtype=float))
         self.plan(shape, dtype, axis, output_array, use_direct)
 
     def __call__(self, input_array, output_array=None, transpose=False):
@@ -1135,8 +1136,8 @@ class FMMCheb2Leg(FMMLevel):
                           diagonals=diagonals, levels=levels, maxs=maxs, l2c=False, use_direct=use_direct)
         k = np.arange(self.Nn, dtype='d')
         k[0] = 1
-        self.dn = Omega((k[::2]-2)/2)/k[::2]
-        self.a = 1/(2*Omega(k)*k*(k+0.5))
+        self.dn = Lambda((k[::2]-2)/2)/k[::2]
+        self.a = 1/(2*Lambda(k)*k*(k+0.5))
         self.a[0] = 2/np.sqrt(np.pi)
         self.plan(shape, dtype, axis, output_array, use_direct)
 
