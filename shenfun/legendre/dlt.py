@@ -13,7 +13,7 @@ from shenfun.forms.arguments import FunctionSpace
 from . import fastgl
 
 __all__ = ['DLT', 'leg2cheb', 'cheb2leg', 'Leg2chebHaleTownsend',
-           'Leg2Cheb', 'Cheb2Leg', 'FMMLeg2Cheb', 'FMMCheb2Leg', 'Lambda']
+           'Leg2Cheb', 'Cheb2Leg', 'FMMLeg2Cheb', 'FMMCheb2Leg']
 
 
 class DLT:
@@ -1355,7 +1355,6 @@ def conversionmatrix(D : int, M : int) -> np.ndarray:
     X = np.cos((k+0.5)*np.pi/M)[None, :]
     dct = dctn(np.zeros((M, M)), axes=(1,))
     for q in range(D):
-        Xk = np.cos(k[:, None]*np.arccos((X+1+2*q-D)/D))
-        T[q] = dct(Xk)/M
+        T[q] = dct(np.cos(k[:, None]*np.arccos((X+1+2*q-D)/D)))/M
         T[q, :, 0] /= 2
     return T

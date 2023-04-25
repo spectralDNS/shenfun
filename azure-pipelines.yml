@@ -56,7 +56,7 @@ jobs:
       conda build --no-test --python $PYTHON_VERSION ./conf/conda
       conda create --name shenfun pip shenfun python=$PYTHON_VERSION --use-local
       source activate shenfun
-      pip install pytest-cov pytest quadpy
+      pip install pytest-cov pytest
       pytest tests/ --junitxml=junit/test-results.xml --cov=$(python -c "import site; print(site.getsitepackages()[0]+'/shenfun')") --cov-report=xml --cov-report=html
     displayName: Build and test
 
@@ -76,8 +76,10 @@ jobs:
       if [ $PYTHON_VERSION == 3.9 ]; then
         source activate shenfun
         pip install codecov
-        bash <(curl -s https://codecov.io/bash)
-        bash <(curl -Ls https://coverage.codacy.com/get.sh) report -r coverage.xml -t $(CODACY_PROJECT_TOKEN)
+        curl -Os https://uploader.codecov.io/latest/linux/codecov
+        chmod +x codecov
+        ./codecov -f coverage.xml
+
       fi
     condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
     displayName: Upload to Codecov
