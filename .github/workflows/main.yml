@@ -27,3 +27,12 @@ jobs:
         conda config --set always_yes yes
         conda install -n root conda-build numpy
         conda build ./conf/conda
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        env_vars: OS,PYTHON
+        fail_ci_if_error: true
+        files: ./coverage.xml
+        name: codecov-shenfun
+        verbose: true

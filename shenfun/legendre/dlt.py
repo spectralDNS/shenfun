@@ -3,8 +3,8 @@ from copy import copy
 from scipy.special import gammaln
 import numpy as np
 from numpy.polynomial import chebyshev as n_cheb
-from mpi4py_fft import fftw
 from mpi4py import MPI
+from mpi4py_fft import fftw
 from mpi4py_fft.fftw.utilities import FFTW_MEASURE, FFTW_PRESERVE_INPUT
 from shenfun.optimization import runtimeoptimizer
 from shenfun.optimization.cython import Leg2Cheb, Cheb2Leg, Lambda

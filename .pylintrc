@@ -24,7 +24,9 @@ disable = locally-disabled,
     wildcard-import,
     unused-wildcard-import,
     global-statement,
-    protected-access
+    protected-access,
+    undefined-variable,
+    import-outside-toplevel
 
 extension-pkg-whitelist = mpi4py,pyfftw,numpy,scipy.sparse,shenfun,shenfun.optimization
 generated-members = np.floating

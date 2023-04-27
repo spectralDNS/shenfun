@@ -1209,7 +1209,8 @@ class ShenfunBaseArray(DistArray):
             if cls.__name__ == 'Function':
                 dtype = space.forward.output_array.dtype
                 shape = space.forward.output_array.shape
-            elif cls.__name__ == 'Array':
+            else:
+                assert cls.__name__ == 'Array'
                 dtype = space.forward.input_array.dtype
                 shape = space.forward.input_array.shape
 
@@ -1274,7 +1275,8 @@ class ShenfunBaseArray(DistArray):
             forward_output = True
             p0 = space.forward.output_pencil
             dtype = space.forward.output_array.dtype
-        elif cls.__name__ == 'Array':
+        else:
+            assert cls.__name__ == 'Array'
             forward_output = False
             p0 = space.backward.output_pencil
             dtype = space.forward.input_array.dtype

@@ -2,5 +2,6 @@
 exclude_paths:
   - docs/**/*
   - docs/*.*
+  - demo/*.*
   - sandbox/*.*
   - tests/*.*

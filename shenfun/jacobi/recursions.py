@@ -2,10 +2,10 @@
 Recursions for Jacobi polynomials, or standardized Jacobi polynomials
 
 """
-from shenfun.matrixbase import SparseMatrix
 from copy import deepcopy
 import numpy as np
 import sympy as sp
+from shenfun.matrixbase import SparseMatrix
 
 x = sp.Symbol('x', real=True)
 delta = sp.KroneckerDelta

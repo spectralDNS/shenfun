@@ -19,7 +19,7 @@ tt = sp.Symbol('t', real=True, positive=True)
 class GinzburgLandau:
     def __init__(self, N=(32, 64), dt=0.25, refineplot=False,
                  modplot=100, modsave=1e8, filename='GL',
-                 family='C', quad='GC', timestepper='IMEXRK3'):
+                 family='C', timestepper='IMEXRK3'):
         self.dt = dt
         self.N = np.array(N)
         self.modplot = modplot
@@ -167,6 +167,6 @@ if __name__ == '__main__':
     c = GinzburgLandau(**d)
     c.initialize()
     c.solve(t=0, tstep=0, end_time=10)
-    print('Computing time %2.4f'%(time()-t0))
+    print(f'Computing time {time()-t0: 2.4f}')
     if comm.Get_rank() == 0:
         generate_xdmf('_'.join((d['filename'], 'U'))+'.h5')
