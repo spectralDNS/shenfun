@@ -7,7 +7,7 @@ import numpy as np
 import sympy as sp
 from shenfun.config import config
 from shenfun.optimization.cython import evaluate
-from shenfun.spectralbase import BoundaryConditions, SpectralBase
+from shenfun.spectralbase import BoundaryConditions
 from mpi4py_fft import DistArray
 
 __all__ = ('Expr', 'BasisFunction', 'TestFunction', 'TrialFunction', 'Function',

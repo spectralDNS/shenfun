@@ -29,6 +29,7 @@ disable = locally-disabled,
     undefined-variable,
     unused-argument,
     consider-using-f-string,
+    unspecified-encoding,
     import-outside-toplevel
 
 extension-pkg-whitelist = mpi4py,pyfftw,numpy,scipy.sparse,shenfun,shenfun.optimization
