@@ -79,6 +79,7 @@ jobs:
         curl -Os https://uploader.codecov.io/latest/linux/codecov
         chmod +x codecov
         ./codecov -f coverage.xml
+        bash <(curl -Ls https://coverage.codacy.com/get.sh) report -r coverage.xml -t $(CODACY_PROJECT_TOKEN)
       fi
     condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
     displayName: Upload to Codecov
