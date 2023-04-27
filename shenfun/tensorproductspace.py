@@ -6,6 +6,9 @@ import copy
 from numbers import Number
 import sympy as sp
 import numpy as np
+from mpi4py_fft.mpifft import Transform, PFFT
+from mpi4py_fft.pencil import Subcomm, Pencil
+from mpi4py import MPI
 from shenfun import config
 from shenfun.fourier.bases import R2C, C2C
 from shenfun.utilities import apply_mask
@@ -13,9 +16,6 @@ from shenfun.forms.arguments import Function, Array
 from shenfun.optimization.cython import evaluate
 from shenfun.spectralbase import slicedict, islicedict, SpectralBase
 from shenfun.coordinates import Coordinates
-from mpi4py_fft.mpifft import Transform, PFFT
-from mpi4py_fft.pencil import Subcomm, Pencil
-from mpi4py import MPI
 
 comm = MPI.COMM_WORLD
 

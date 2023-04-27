@@ -1,6 +1,7 @@
 [MASTER]
 disable = locally-disabled,
     too-few-public-methods,
+    too-many-public-methods,
     too-many-instance-attributes,
     invalid-name,
     missing-docstring,
@@ -26,6 +27,8 @@ disable = locally-disabled,
     global-statement,
     protected-access,
     undefined-variable,
+    unused-argument,
+    consider-using-f-string,
     import-outside-toplevel
 
 extension-pkg-whitelist = mpi4py,pyfftw,numpy,scipy.sparse,shenfun,shenfun.optimization
