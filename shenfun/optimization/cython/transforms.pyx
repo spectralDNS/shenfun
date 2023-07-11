@@ -488,7 +488,7 @@ def Lambda(np.ndarray x):
 
     Parameters
     ----------
-    z : array of floats
+    x : array of floats
     """
     cdef:
         int ndim = np.PyArray_NDIM(x)

@@ -44,7 +44,7 @@ import types
 import numpy as np
 from shenfun import Function, TPMatrix, TrialFunction, TestFunction,\
     inner, la, Expr, CompositeSpace, BlockMatrix, SparseMatrix, \
-    get_simplified_tpmatrices, ScipyMatrix, Inner
+    get_simplified_tpmatrices, ScipyMatrix, Inner, SpectralMatrix
 
 __all__ = ('IRK3', 'BackwardEuler', 'RK4', 'ETDRK4', 'ETD',
            'IMEXRK3', 'IMEXRK111', 'IMEXRK222', 'IMEXRK443')
@@ -439,7 +439,10 @@ class ETDRK4(IntegratorBase):
         if isinstance(L, Expr):
             L = inner(v, L)
             if isinstance(L, list):
-                L = get_simplified_tpmatrices(L)[0]
+                if isinstance(L[0], TPMatrix):
+                    L = get_simplified_tpmatrices(L)[0]
+                elif isinstance(L[0], SpectralMatrix):
+                    L = sum(L[1:], L[0])
         if isinstance(L, list):
             assert self.T.tensor_rank == 1
             assert L[0].isidentity()

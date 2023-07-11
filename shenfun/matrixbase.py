@@ -500,6 +500,11 @@ class SparseMatrix(MutableMapping):
                 return False
         return True
 
+    def simplify_diagonal_matrices(self):
+        if self.isdiagonal():
+            self.scale = self.scale*self[0]
+            self[0] = 1
+
     def clean_diagonals(self, reltol=1e-8):
         """Eliminate essentially zerovalued diagonals
 
@@ -772,11 +777,6 @@ class SpectralMatrix(SparseMatrix):
         if self.__class__.__name__.endswith('mat'):
             return  self.__class__.__name__
         return self.__hash__()
-
-    def simplify_diagonal_matrices(self):
-        if self.isdiagonal():
-            self.scale = self.scale*self[0]
-            self[0] = 1
 
     def __eq__(self, a):
         if isinstance(a, Number):
