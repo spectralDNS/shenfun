@@ -34,9 +34,8 @@ requirements:
     - mpi4py-fft >=2.0.5
     - sympy
     - pip
-    - {{ mpi }}
-    - h5py * mpi_{{ mpi }}_*
-    - netcdf4 * mpi_{{ mpi }}_*
+    - h5py * mpi_*
+    - netcdf4 * mpi_*
 
 test:
   source_files:
