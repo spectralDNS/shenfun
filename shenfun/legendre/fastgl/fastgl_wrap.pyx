@@ -2,7 +2,7 @@
 #cython: boundscheck=False
 #cython: wraparound=False
 #cython: language_level=3
-cimport fastgl_wrap
+from . cimport fastgl_wrap
 
 import numpy as np
 
