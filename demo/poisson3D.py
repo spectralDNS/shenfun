@@ -6,7 +6,7 @@ for bases using orthogonal polynomials, like::
     - Legendre
     - Jacobi
 
-We solve the Poisson equation in 2D with periodic boundaris in the x- and
+We solve the Poisson equation in 3D with periodic boundaris in the x- and
 z-directions and some mixture of Neumann/Dirichlet in the y-direction.
 
 .. math::

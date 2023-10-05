@@ -10,6 +10,7 @@ from collections import defaultdict
 import numpy as np
 import sympy as sp
 from scipy.fftpack import dct
+from scipy.integrate import quad
 from shenfun.optimization import runtimeoptimizer
 from shenfun.optimization.cython import Lambda
 from shenfun.config import config
@@ -712,8 +713,6 @@ def scalar_product(v, f, output_array=None, assemble='exact'):
 
     """
     assert assemble in ('exact', 'adaptive')
-    if assemble == 'adaptive':
-        from scipy.integrate import quadrature
     T = v.function_space()
     if output_array is None:
         from shenfun import Function
@@ -749,7 +748,7 @@ def scalar_product(v, f, output_array=None, assemble='exact'):
                 if isinstance(integrand, Number):
                     output_array[i] = integrand*np.pi
                 else:
-                    output_array[i] = quadrature(sp.lambdify(x, integrand), 0, np.pi)[0]
+                    output_array[i] = quad(sp.lambdify(x, integrand), 0, np.pi)[0]
     else:
         domain = T.reference_domain()
         f *= T.weight()
@@ -761,7 +760,7 @@ def scalar_product(v, f, output_array=None, assemble='exact'):
                 if len(integrand.free_symbols) == 0:
                     output_array[i] = integrand*float(domain[1]-domain[0])
                 else:
-                    output_array[i] = quadrature(sp.lambdify(x, integrand), float(domain[0], float(domain[1])))
+                    output_array[i] = quad(sp.lambdify(x, integrand), float(domain[0], float(domain[1])))[0]
     if T.domain_factor() != 1:
         output_array /= float(T.domain_factor())
     return output_array

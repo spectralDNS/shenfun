@@ -161,7 +161,6 @@ if __name__ == '__main__':
         'modplot': 10,
         'modsave': 10,
         'family': 'C',
-        'quad': 'GC',
         'timestepper': 'IMEXRK222'
         }
     c = GinzburgLandau(**d)

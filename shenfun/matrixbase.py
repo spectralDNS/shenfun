@@ -6,13 +6,12 @@ from __future__ import division
 import functools
 from copy import copy, deepcopy
 from collections.abc import Mapping, MutableMapping
-from collections import defaultdict
 from numbers import Number
 import numpy as np
 import sympy as sp
 from scipy.sparse import bmat, spmatrix, dia_matrix, csr_matrix, kron, \
     diags as sp_diags
-from scipy.integrate import quadrature
+from scipy.integrate import quad
 from mpi4py import MPI
 from shenfun.config import config
 from .utilities import integrate_sympy
@@ -1918,7 +1917,7 @@ def _get_matrix(test, trial, measure=1, assemble=None, fixed_resolution=None):
                         if isinstance(integrand, Number):
                             V[i, j] = integrand*np.pi
                         else:
-                            V[i, j] = quadrature(sp.lambdify(x, integrand), 0, np.pi, miniter=8, tol=1e-12, rtol=1e-12)[0]
+                            V[i, j] = quad(sp.lambdify(x, integrand), 0, np.pi)[0]
 
         else:
             measure *= test[0].weight() # Weight of weighted space (in reference domain)
@@ -1937,7 +1936,7 @@ def _get_matrix(test, trial, measure=1, assemble=None, fixed_resolution=None):
                         if isinstance(integrand, Number):
                             V[i, j] = integrand*float(domain[1]-domain[0])
                         else:
-                            V[i, j] = quadrature(sp.lambdify(x, integrand), float(domain[0]), float(domain[1]), tol=1e-12, rtol=1e-12, miniter=8)[0]
+                            V[i, j] = quad(sp.lambdify(x, integrand), float(domain[0]), float(domain[1]))[0]
 
     if V.dtype.char in 'FDG':
         ni = np.linalg.norm(V.imag)
