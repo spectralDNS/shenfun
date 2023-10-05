@@ -20,7 +20,7 @@ requirements:
     - python
     - numpy
     - setuptools
-    - cython
+    - cython <3.0
     - pip
     - fftw
 
