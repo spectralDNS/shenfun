@@ -1661,7 +1661,6 @@ def getCompositeBase(Orthogonal):
             x = np.atleast_1d(x)
             if output_array is None:
                 output_array = np.zeros(x.shape, dtype=self.dtype)
-            #x = self.map_reference_domain(x)
             w = self.to_ortho(u)
             output_array = Orthogonal.eval(self, x, w, output_array)
             return output_array
