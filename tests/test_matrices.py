@@ -426,7 +426,7 @@ def test_div(key, mat, quad):
 @pytest.mark.parametrize('basis, quad', list(product(ctrialBasis, cquads))+
                          list(product(ltrialBasis, lquads))+list(product(latrialBasis, lagquads)))
 def test_div2(basis, quad):
-    B = basis(8, quad=quad)
+    B = basis(10, quad=quad)
     u = shenfun.TrialFunction(B)
     v = shenfun.TestFunction(B)
     m = inner(u, v)
