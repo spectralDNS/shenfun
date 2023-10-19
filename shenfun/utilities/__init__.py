@@ -760,7 +760,7 @@ def scalar_product(v, f, output_array=None, assemble='exact'):
                 if len(integrand.free_symbols) == 0:
                     output_array[i] = integrand*float(domain[1]-domain[0])
                 else:
-                    output_array[i] = quad(sp.lambdify(x, integrand), float(domain[0], float(domain[1])))[0]
+                    output_array[i] = quad(sp.lambdify(x, integrand), float(domain[0]), float(domain[1]))[0]
     if T.domain_factor() != 1:
         output_array /= float(T.domain_factor())
     return output_array

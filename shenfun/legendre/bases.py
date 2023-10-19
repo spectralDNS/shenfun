@@ -333,7 +333,7 @@ class ShenDirichlet(CompositeBase):
         u(x) &= \sum_{k=0}^{N-1} \hat{u}_k \phi_k(x), \\
         u(-1) &= a \text{ and } u(1) = b.
 
-    The last two bases are for boundary conditions and only used if a or b are
+    The last two basis functions are for boundary conditions and only used if a or b are
     different from 0. In one dimension :math:`\hat{u}_{N-2}=a` and
     :math:`\hat{u}_{N-1}=b`.
 
@@ -401,7 +401,7 @@ class Phi1(CompositeBase):
         u(x) &= \sum_{k=0}^{N-1} \hat{u}_k \phi_k(x), \\
         u(-1) &= a \text{ and } u(1) = b.
 
-    The last two bases are for boundary conditions and only used if a or b are
+    The last two basis functions are for boundary conditions and only used if a or b are
     different from 0. In one dimension :math:`\hat{u}_{N-2}=a` and
     :math:`\hat{u}_{N-1}=b`.
 
@@ -599,7 +599,7 @@ class Phi2(CompositeBase):
         u(x) &= \sum_{k=0}^{N-1} \hat{u}_k \phi_k(x), \\
         u(-1)&=a, u'(-1) = b, u(1)=c, u'(1) = d.
 
-    The last four bases are for boundary conditions and only used if a, b, c or d are
+    The last four basis functions are for boundary conditions and only used if a, b, c or d are
     different from 0. In one dimension :math:`\hat{u}_{N-4}=a`, :math:`\hat{u}_{N-3}=b`,
     :math:`\hat{u}_{N-2}=c` and :math:`\hat{u}_{N-1}=d`.
 
@@ -881,7 +881,7 @@ class BeamFixedFree(CompositeBase):
         u(x) &= \sum_{k=0}^{N-1} \hat{u}_k \phi_k(x), \\
         u(-1)&=a, u'(-1) = b, u''(1)=c, u'''(1) = d.
 
-    The last four bases are for boundary conditions and only used if a, b, c or d are
+    The last four basis functions are for boundary conditions and only used if a, b, c or d are
     different from 0. In one dimension :math:`\hat{u}_{N-4}=a`, :math:`\hat{u}_{N-3}=b`,
     :math:`\hat{u}_{N-2}=c` and :math:`\hat{u}_{N-1}=d`.
 

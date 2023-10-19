@@ -60,7 +60,8 @@ class OrrSommerfeld:
     def assemble(self):
         N = self.N
         SB = FunctionSpace(N, 'C', bc=(0, 0, 0, 0), quad=self.quad)
-        test = SB.get_testspace('G')
+        test = SB.get_testspace('PG')
+        #test = FunctionSpace(N+4, 'C', basis='Compact4', quad=self.quad)
         v = TestFunction(test)
         u = TrialFunction(SB)
 
@@ -82,7 +83,7 @@ class OrrSommerfeld:
         Re = self.Re
         a = self.alfa
         B = -Re*a*1j*(K-a**2*M)
-        A = Q-2*a**2*K+a**4*M - 2*a*Re*1j*M - 1j*a*Re*(K2-a**2*K1)
+        A = Q-2*a**2*K+(a**4 - 2*a*Re*1j)*M - 1j*a*Re*(K2-a**2*K1)
         return A.diags().toarray(), B.diags().toarray()
 
     def solve(self, verbose=False):
@@ -92,6 +93,10 @@ class OrrSommerfeld:
             print('Solving the Orr-Sommerfeld eigenvalue problem...')
             print('Re = '+str(self.Re)+' and alfa = '+str(self.alfa))
         A, B = self.assemble()
+        d = (1/A.diagonal())[:, None]
+        A *= d
+        B *= d
+        #from IPython import embed; embed()
         return eig(A, B)
         # return eig(np.dot(inv(B), A))
 
@@ -129,7 +134,7 @@ if __name__ == '__main__':
                         help='Reynolds number')
     parser.add_argument('--alfa', default=1.0, type=float,
                         help='Parameter')
-    parser.add_argument('--quad', default='GC', type=str, choices=('GC', 'GL'),
+    parser.add_argument('--quad', default='GC', type=str, choices=('GC', 'GL', 'LG'),
                         help='Discretization points: GC: Gauss-Chebyshev, GL: Gauss-Lobatto')
     parser.add_argument('--plot', dest='plot', action='store_true', help='Plot eigenvalues')
     parser.add_argument('--verbose', dest='verbose', action='store_true', help='Print results')

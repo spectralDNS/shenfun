@@ -581,7 +581,7 @@ def ShiftedMatrix(mat, q, r, s, M=0, N=0, k=None, alf=0, bet=0, gn=1):
 
 def Lmat(k, q, l, M, N, alf=0, bet=0, gn=1):
     r"""
-    Return matrix corrsponding to
+    Return matrix corresponding to
 
     .. math::
 

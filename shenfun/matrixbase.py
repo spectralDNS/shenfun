@@ -564,7 +564,7 @@ class SpectralMatrix(SparseMatrix):
         integral using `Sympy integrate <https://docs.sympy.org/latest/modules/integrals/integrals.html>`_,
         whereas adaptive makes use of adaptive quadrature through `scipy <https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.quadrature.html>`_.
     kind : None or str, optional
-        Alternatie kinds of methods.
+        Alternative kinds of methods.
 
         - 'implemented' - Hardcoded implementations
         - 'stencil' - Use orthogonal bases and stencil-matrices

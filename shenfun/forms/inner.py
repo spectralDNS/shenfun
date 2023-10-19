@@ -254,10 +254,12 @@ def inner(expr0, expr1, output_array=None, assemble=None, kind=None, fixed_resol
 
         else: # quadrature
             if fixed_resolution is not None:
+                from shenfun import comm
+                assert comm.Get_size() == 1
                 M = fixed_resolution
                 testM = test.function_space().get_refined(M)
                 outM = testM.scalar_product(Array(testM, buffer=trial), kind=kind)
-                output_array[:test.function_space().dim()] = outM[:test.function_space().dim()]
+                output_array[test.function_space().slice()] = outM[test.function_space().slice()]
             else:
                 output_array = test.function_space().scalar_product(Array(test.function_space(), buffer=trial), output_array, kind=kind)
         return output_array

@@ -71,6 +71,7 @@ bases = ['Orthogonal',
          'DirichletNeumann',
          'NeumannDirichlet',
          'Compact3',
+         'Compact4',
          'Generic']
 bcbases = ['BCGeneric']
 testbases = ['Phi1', 'Phi2', 'Phi3', 'Phi4', 'Phi6']
@@ -1863,6 +1864,84 @@ class Compact3(CompositeBase):
     @staticmethod
     def short_name():
         return 'C3'
+
+class Compact4(CompositeBase):
+    r"""Function space for 8'th order equation
+
+    The basis functions :math:`\phi_k` for :math:`k=0, 1, \ldots, N-9` are
+
+    .. math::
+
+        \phi_k &= \frac{h_k}{b^{(4)}_{k+4,k}}\frac{(1-x^2)^4}{h^{(4)}_{k+4}} T^{(4)}_{k+4} \\
+        h^{(4)}_{k+4} &= \int_{-1}^1 T^{(4)}_k T^{(4)}_k (1-x^2)^{3.5} dx.
+
+    where :math:`T^{(4)}_k` is the 4rd derivative of :math:`T_k`.
+    This is :class:`.Phi4` scaled such that the main diagonal of the stencil
+    matrix is unity.
+
+    The boundary basis for inhomogeneous boundary conditions is too messy to
+    print, but can be obtained using :func:`~shenfun.utilities.findbasis.get_bc_basis`.
+    We have
+
+    .. math::
+        u(x) &= \sum_{k=0}^{N-1} \hat{u}_k \phi_k(x), \\
+        u(-1) &= a, u'(-1)=b, u''(-1)=c, u'''(-1)=d, u(1)=e u'(1)=f, u''(1)=g, u'''(1)=h.
+
+    The last 8 basis functions are for boundary conditions and only used if there
+    are nonzero boundary conditions.
+
+    Parameters
+    ----------
+    N : int, optional
+        Number of quadrature points
+    quad : str, optional
+        Type of quadrature
+
+        - GL - Chebyshev-Gauss-Lobatto
+        - GC - Chebyshev-Gauss
+    bc : 8-tuple of numbers
+    domain : 2-tuple of numbers, optional
+        The computational domain
+    dtype : data-type, optional
+        Type of input data in real physical space. Will be overloaded when
+        basis is part of a :class:`.TensorProductSpace`.
+    padding_factor : float, optional
+        Factor for padding backward transforms.
+    dealias_direct : bool, optional
+        Set upper 1/3 of coefficients to zero before backward transform
+    coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
+        Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
+
+    """
+    def __init__(self, N, quad="GC", bc=(0,)*8, domain=(-1, 1), dtype=float,
+                 padding_factor=1, dealias_direct=False, coordinates=None, **kw):
+        CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
+                               padding_factor=padding_factor, dealias_direct=dealias_direct,
+                               coordinates=coordinates)
+        #self._stencil = {
+        #    0: 1,
+        #    2: sp.simplify(matpow(b, 4, -half, -half, n+4, n+2, cn) / matpow(b, 4, -half, -half, n+4, n, cn) * h(-half, -half, n, 0, cn) / h(-half, -half, n+2, 0, cn)),
+        #    4: sp.simplify(matpow(b, 4, -half, -half, n+4, n+4, cn) / matpow(b, 4, -half, -half, n+4, n, cn) * h(-half, -half, n, 0, cn) / h(-half, -half, n+4, 0, cn)),
+        #    6: sp.simplify(matpow(b, 4, -half, -half, n+4, n+6, cn) / matpow(b, 4, -half, -half, n+4, n, cn) * h(-half, -half, n, 0, cn) / h(-half, -half, n+6, 0, cn)),
+        #    8: sp.simplify(matpow(b, 4, -half, -half, n+4, n+8, cn) / matpow(b, 4, -half, -half, n+4, n, cn) * h(-half, -half, n, 0, cn) / h(-half, -half, n+8, 0, cn))}
+
+        # Below is the same but faster since already simplified
+        # Can also use findbasis.get_stencil_matrix
+        self._stencil = {
+            0: 1,
+            2: -(4*n + 8)/(n + 5),
+            4: 6*(n + 1)*(n + 4)/((n + 5)*(n + 6)),
+            6: -4*(n + 1)*(n + 2)/((n + 5)*(n + 7)),
+            8: (n + 1)*(n + 2)*(n + 3)/((n + 5)*(n + 6)*(n + 7))
+        }
+
+    @staticmethod
+    def boundary_condition():
+        return '8th order'
+
+    @staticmethod
+    def short_name():
+        return 'C4'
 
 class Generic(CompositeBase):
     r"""Function space for space with any boundary conditions
