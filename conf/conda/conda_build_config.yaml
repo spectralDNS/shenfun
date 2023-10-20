@@ -1,4 +1,4 @@
-mpi:
-  #- 'openmpi'
-  - 'mpich'
+#mpi:
+#  #- 'openmpi'
+#  - 'mpich'
 
