@@ -26,7 +26,8 @@ jobs:
   - bash: |
       conda config --add channels conda-forge
       conda config --set always_yes yes
-      conda install -n root conda-build numpy
+      conda create -n shenfunenv python==$PYTHON_VERSION conda-build numpy
+      source activate shenfunenv
     displayName: Set up Anaconda
 
   - bash: |

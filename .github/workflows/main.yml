@@ -26,7 +26,8 @@ jobs:
     - run: |
         conda config --set always_yes yes
         conda create -n shenfunenv python==${{ matrix.python-version }} conda-build numpy
-        source activate shenfunenv
     - run: |
+        conda activate shenfunenv
+        conda env list
         conda build ./conf/conda
 
