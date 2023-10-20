@@ -13,8 +13,6 @@ jobs:
         python.version: '3.10'
       Python311:
         python.version: '3.11'
-      Python312:
-        python.version: '3.12'
 
   steps:
   - bash: echo "##vso[task.prependpath]$CONDA/bin"
@@ -49,8 +47,6 @@ jobs:
         python.version: '3.10'
       Python311:
         python.version: '3.11'
-      Python312:
-        python.version: '3.12'
 
   steps:
   - bash: echo "##vso[task.prependpath]$CONDA/bin"
