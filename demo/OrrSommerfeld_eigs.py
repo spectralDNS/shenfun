@@ -93,10 +93,10 @@ class OrrSommerfeld:
             print('Solving the Orr-Sommerfeld eigenvalue problem...')
             print('Re = '+str(self.Re)+' and alfa = '+str(self.alfa))
         A, B = self.assemble()
-        d = (1/A.diagonal())[:, None]
-        A *= d
-        B *= d
-        #from IPython import embed; embed()
+        #d = (1/A.diagonal())[:, None]
+        #A *= d
+        #B *= d
+        from IPython import embed; embed()
         return eig(A, B)
         # return eig(np.dot(inv(B), A))
 
