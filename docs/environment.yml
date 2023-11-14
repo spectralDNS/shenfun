@@ -19,3 +19,4 @@ dependencies:
   - nbsphinx
   - pip:
     - sphinxcontrib-bibtex
+    - sphinx-rtd-theme
