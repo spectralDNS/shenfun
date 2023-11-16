@@ -1882,6 +1882,7 @@ def _get_matrix(test, trial, measure=1, assemble=None, fixed_resolution=None):
                     s = measure.free_symbols
                     assert len(s) == 1
                     x = s.pop()
+                    xm = test[0].map_true_domain(x)
                     measure = measure.subs(x, sp.cos(xm))
                 else:
                     assert isinstance(measure, Number)
