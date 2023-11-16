@@ -1867,28 +1867,24 @@ def _get_matrix(test, trial, measure=1, assemble=None, fixed_resolution=None):
 
         x = sp.Symbol('x', real=True)
 
-        if not measure == 1:
-            if isinstance(measure, sp.Expr):
-                s = measure.free_symbols
-                assert len(s) == 1
-                x = s.pop()
-                xm = test[0].map_true_domain(x)
-                if test[0].family() == 'chebyshev':
-                    measure = measure.subs(x, sp.cos(xm))
-                else:
-                    measure = measure.subs(x, xm)
-            else:
-                assert isinstance(measure, Number)
-
         # Exact integration is much more expensive than quadrature and
         # as such we use quadrature first simply to get the sparsity pattern.
         try:
             R = _get_matrix(test, trial, measure=measure, assemble='quadrature')
         except:
             R = {k: None for k in np.arange(-test[0].dim(), test[0].dim()+1)}
+
         V = np.zeros((K0, K1), dtype=test[0].forward.output_array.dtype)
-        if test[0].family() == 'chebyshev':
+        if test[0].family() == 'chebyshev' and assemble == 'exact':
             # Transform integral using x=cos(theta)
+            if not measure == 1:
+                if isinstance(measure, sp.Expr):
+                    s = measure.free_symbols
+                    assert len(s) == 1
+                    x = s.pop()
+                    measure = measure.subs(x, sp.cos(xm))
+                else:
+                    assert isinstance(measure, Number)
             assert test[1] == 0
             S0 = test[0].stencil_matrix().diags('csr')
             S1 = trial[0].stencil_matrix().diags('csr')
@@ -1910,17 +1906,26 @@ def _get_matrix(test, trial, measure=1, assemble=None, fixed_resolution=None):
                     for _ in range(trial[1]):
                         pj = -pj.diff(x, 1)/sp.sin(x)
 
-                    integrand = measure*pi*pj
-                    if assemble == 'exact':
-                        V[i, j] = sp.integrate(integrand, (x, 0, sp.pi))
-                    elif assemble == 'adaptive':
-                        if isinstance(integrand, Number):
-                            V[i, j] = integrand*np.pi
-                        else:
-                            V[i, j] = quad(sp.lambdify(x, integrand), 0, np.pi)[0]
+                    V[i, j] = sp.integrate(measure*pi*pj, (x, 0, sp.pi))
 
         else:
-            measure *= test[0].weight() # Weight of weighted space (in reference domain)
+            if not measure == 1:
+                if isinstance(measure, sp.Expr):
+                    s = measure.free_symbols
+                    assert len(s) == 1
+                    x = s.pop()
+                    xm = test[0].map_true_domain(x)
+                    measure = measure.subs(x, xm)
+                else:
+                    assert isinstance(measure, Number)
+
+            cheb = test[0].family() == 'chebyshev'
+            if cheb: # use adaptive quadrature with weight incorporated
+                w = {'weight': 'alg',
+                     'wvar': (-0.5, -0.5)}
+            else:
+                w = {}
+                measure *= test[0].weight() # Weight of weighted space (in reference domain)
             domain = test[0].reference_domain()
             for i in range(test[0].slice().start, test[0].slice().stop):
                 pi = np.conj(test[0].basis_function(i, x=x))
@@ -1936,7 +1941,7 @@ def _get_matrix(test, trial, measure=1, assemble=None, fixed_resolution=None):
                         if isinstance(integrand, Number):
                             V[i, j] = integrand*float(domain[1]-domain[0])
                         else:
-                            V[i, j] = quad(sp.lambdify(x, integrand), float(domain[0]), float(domain[1]))[0]
+                            V[i, j] = quad(sp.lambdify(x, integrand), float(domain[0]), float(domain[1]), **w)[0]
 
     if V.dtype.char in 'FDG':
         ni = np.linalg.norm(V.imag)
@@ -2105,7 +2110,6 @@ def _assemble_phi_bc(test, trial, measure=1):
             Ax = Lmat(k, qi, l, M, N, alpha, beta, gn)
             D = D + sc*Ax
     if D is sp.S.Zero:
-        scale = 0
         d = {0: 1}
     else:
         K = trial[0].stencil_matrix()
