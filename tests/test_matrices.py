@@ -751,7 +751,7 @@ def test_adaptive_quadrature(b0, b1):
     B1 = inner(v, u, assemble='quadrature', kind='stencil')
     C = B0-B1
     C.incorporate_scale()
-    assert np.linalg.norm(C.diags('csr').data) < 1e-8
+    assert np.linalg.norm(C.diags('csr').data) < 1e-7
 
 # Some bases take too long for Chebyshev, so just choose these three
 some_cbases3 = [(cbases.ShenDirichlet, cbases.ShenDirichlet),

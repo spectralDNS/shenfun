@@ -1940,7 +1940,10 @@ def _get_matrix(test, trial, measure=1, assemble=None, fixed_resolution=None):
                         V[i, j] = integrate_sympy(integrand, (x, domain[0], domain[1]))
                     elif assemble == 'adaptive':
                         if isinstance(integrand, Number):
-                            V[i, j] = integrand*float(domain[1]-domain[0])
+                            if cheb:
+                                V[i, j] = integrand*np.pi
+                            else:
+                                V[i, j] = integrand*float(domain[1]-domain[0])
                         else:
                             V[i, j] = quad(sp.lambdify(x, integrand), float(domain[0]), float(domain[1]), **w)[0]
 
