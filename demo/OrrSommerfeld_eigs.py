@@ -84,6 +84,7 @@ class OrrSommerfeld:
         a = self.alfa
         B = -Re*a*1j*(K-a**2*M)
         A = Q-2*a**2*K+(a**4 - 2*a*Re*1j)*M - 1j*a*Re*(K2-a**2*K1)
+
         return A.diags().toarray(), B.diags().toarray()
 
     def solve(self, verbose=False):
@@ -96,7 +97,6 @@ class OrrSommerfeld:
         #d = (1/A.diagonal())[:, None]
         #A *= d
         #B *= d
-        from IPython import embed; embed()
         return eig(A, B)
         # return eig(np.dot(inv(B), A))
 

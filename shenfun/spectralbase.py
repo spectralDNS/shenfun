@@ -2101,6 +2101,32 @@ class MixedFunctionSpace:
         dims = self._get_ndiag_cum_dofs()
         return sl, dims
 
+    def __len__(self):
+        return len(self.bases)
+
+    def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
+        """Return space (otherwise as self) to be used for dealiasing
+
+        Parameters
+        ----------
+        padding_factor : number or tuple, optional
+            Scale the number of quadrature points in self with this number, or
+            tuple of numbers, one for each dimension.
+        dealias_direct : bool, optional
+            Used only if ``padding_factor=1``. Sets the 1/3 highest frequencies
+            to zeros.
+        """
+        if padding_factor == 1 and dealias_direct is False:
+            return self
+        if isinstance(padding_factor, Number):
+            padding_factor = (padding_factor,)*len(self)
+        elif isinstance(padding_factor, (tuple, list, np.ndarray)):
+            assert len(padding_factor) == len(self)
+        padded_bases = [base.get_dealiased(padding_factor=padding_factor[i],
+                                           dealias_direct=dealias_direct)
+                        for i, base in enumerate(self.bases)]
+        return MixedFunctionSpace(padded_bases)
+
 class VectorBasisTransform:
 
     __slots__ = ('_transforms',)
