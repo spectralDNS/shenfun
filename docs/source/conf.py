@@ -90,8 +90,8 @@ pygments_style = 'sphinx'
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'sphinx_rtd_theme'
-#html_theme = 'alabaster'
+#html_theme = 'sphinx_rtd_theme'
+html_theme = 'alabaster'
 #html_theme = 'sphinxdoc'
 #html_theme = 'traditional'
 #html_theme = 'scrolls'
@@ -171,8 +171,8 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    ('index_pdf', 'shenfun.tex', u'Shenfun Documentation',
-     u'Mikael Mortensen', 'manual'),
+    ('index_pdf', 'shenfun.tex', 'Shenfun Documentation',
+     'Mikael Mortensen', 'manual'),
 ]
 latex_domain_indices = False
 latex_use_modindex = False
@@ -182,7 +182,7 @@ latex_use_modindex = False
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'shenfun', u'Shenfun Documentation',
+    (master_doc, 'shenfun', 'Shenfun Documentation',
      [author], 1)
 ]
 
@@ -193,7 +193,7 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'shenfun', u'Shenfun Documentation',
+    (master_doc, 'shenfun', 'Shenfun Documentation',
      author, 'shenfun', 'Automating the spectral Galerkin method',
      'Miscellaneous'),
 ]
