@@ -20,9 +20,9 @@ sys.path.insert(0, os.path.abspath('.'))
 
 # -- Project information -----------------------------------------------------
 
-project = u'shenfun'
-copyright = u'2024, Mikael Mortensen'
-author = u'Mikael Mortensen'
+project = 'shenfun'
+copyright = '2024, Mikael Mortensen'
+author = 'Mikael Mortensen'
 
 p = subprocess.Popen(["git describe --tags | cut -d'-' -f 1"], stdout=subprocess.PIPE, shell=True)
 
@@ -129,7 +129,7 @@ html_static_path = ['_static']
 
 #html_split_index = True
 #html_use_index=False
-html_js_files = ['https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js']
+#html_js_files = ['https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js']
 
 #nbsphinx_prolog = r"""
 #.. raw:: html

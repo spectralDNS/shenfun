@@ -125,7 +125,7 @@ C = FunctionSpace(100, 'C', domain=(0, 2*np.pi), coordinates=((t,), rv))
 !ec
 
 Then compute the arclength using ${func('inner')}, again by using a constant
-testfunction 1, and a constant ${cls('Array')} `u=1`
+testfunction 1, and a constant ${cls('Array')} u=1
 
 !bc pycod
 length = inner(1, Array(C, val=1))
