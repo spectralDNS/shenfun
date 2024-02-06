@@ -1500,10 +1500,10 @@ class BlockMatrixSolver:
             gi = b.flatten()
             if isinstance(self._lu, dict):
                 for con in constraints:
-                    Ai, gi = self.apply_constraint(Ai, gi, np.sum(np.array(space.dims()[:con[0]])), 0, con)
+                    Ai, gi = self.apply_constraint(Ai, gi, int(np.sum(np.array(space.dims()[:con[0]]))), 0, con)
             else:
                 for con in constraints:
-                    _, gi = self.apply_constraint(None, gi, np.sum(np.array(space.dims()[:con[0]])), 0, con)
+                    _, gi = self.apply_constraint(None, gi, int(np.sum(np.array(space.dims()[:con[0]]))), 0, con)
             lu = sp.linalg.splu(Ai, permc_spec=config['matrix']['block']['permc_spec'])
             self._lu = lu
             u[:] = lu.solve(gi).reshape(u.shape)

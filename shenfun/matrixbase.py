@@ -677,7 +677,7 @@ class SpectralMatrix(SparseMatrix):
                     _assembly_method += '_implemented'
                 elif kind == 'stencil':
                     assert sp.sympify(measure).is_polynomial(), 'Cannot use `stencil` with non-polynomial coefficients'
-                    if test[0].short_name() in ('P1', 'P2', 'P3', 'P4'):
+                    if test[0].short_name() in ('P1', 'P2', 'P3', 'P4') and test[0].N != trial[0].N:
                         d = assemble_phi(test, trial, measure)
                         _assembly_method += '_phi'
                     else:
@@ -2077,6 +2077,7 @@ def _assemble_phi(test, trial, measure=1):
     for dv in split(measure, expand=True):
         sc = dv['coeff']
         msi = dv['x']
+        assert sp.sympify(msi).is_polynomial()
         qi = sp.degree(msi)
         Ax = Lmat(k, qi, l, test[0].dim(), trial[0].N, alpha, beta, gn)
         D = D + sc*Ax
@@ -2110,6 +2111,7 @@ def _assemble_phi_bc(test, trial, measure=1):
         for dv in split(measure, expand=True):
             sc = dv['coeff']
             msi = dv['x']
+            assert sp.sympify(msi).is_polynomial()
             qi = sp.degree(msi)
             Ax = Lmat(k, qi, l, M, N, alpha, beta, gn)
             D = D + sc*Ax

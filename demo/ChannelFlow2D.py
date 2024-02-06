@@ -63,7 +63,7 @@ class KMM:
                  modsave=1e8,
                  moderror=100,
                  checkpoint=1000,
-                 timestepper='IMEXRK3'):
+                 timestepper='IMEXRK222'):
         self.N = N
         self.nu = nu
         self.dt = dt
@@ -78,7 +78,7 @@ class KMM:
         self.im1 = None
 
         # Regular spaces
-        self.B0 = FunctionSpace(N[0], family, bc=(0, 0, 0, 0), domain=domain[0])
+        self.B0 = FunctionSpace(N[0], family, bc={'left': {'D': 0, 'N': 0}, 'right': {'D': 0, 'N': 0}}, domain=domain[0])
         self.D0 = FunctionSpace(N[0], family, bc=(0, 0), domain=domain[0])
         self.C0 = FunctionSpace(N[0], family, domain=domain[0])
         self.F1 = FunctionSpace(N[1], 'F', dtype='d', domain=domain[1])
@@ -115,7 +115,7 @@ class KMM:
             self.dvdy = Project(Dx(self.u_[1], 1, 1), self.TD)
 
         self.curl = Project(curl(self.u_), self.TC)
-        self.divu = Project(div(self.u_), self.TC)
+        self.divu = Project(div(self.u_), self.TD)
         self.solP = None # For computing pressure
 
         # File for storing the results
@@ -130,7 +130,8 @@ class KMM:
         v = TestFunction(self.TB)
 
         # Chebyshev matrices are not sparse, so need a tailored solver. Legendre has simply 5 nonzero diagonals and can use generic solvers.
-        sol1 = chebyshev.la.Biharmonic if self.B0.family() == 'chebyshev' else la.SolverGeneric1ND
+        #sol1 = chebyshev.la.Biharmonic if self.B0.family() == 'chebyshev' else la.SolverGeneric1ND
+        sol1 = la.SolverGeneric1ND
 
         self.pdes = {
 
@@ -175,6 +176,7 @@ class KMM:
             dvdyp = self.dvdy().backward(padding_factor=self.padding_factor).v
             H[0] = self.TDp.forward(up[0]*dudxp+up[1]*dudyp, H[0])
             H[1] = self.TDp.forward(up[0]*dvdxp+up[1]*dvdyp, H[1])
+            #H[1] = self.TDp.forward(up[0]*dvdxp-up[1]*dudxp, H[1])
 
         elif self.conv == 1:
             curl = self.curl().backward(padding_factor=self.padding_factor)
@@ -204,13 +206,14 @@ class KMM:
             self.d2udx2 = Project(self.nu*Dx(self.u_[0], 0, 2), self.TC)
             N0 = self.N0 = FunctionSpace(self.N[0], self.B0.family(), bc={'left': {'N': self.d2udx2()}, 'right': {'N': self.d2udx2()}})
             TN = self.TN = TensorProductSpace(comm, (N0, self.F1), modify_spaces_inplace=True)
-            sol = chebyshev.la.Helmholtz if self.B0.family() == 'chebyshev' else la.SolverGeneric1ND
+            #sol = chebyshev.la.Helmholtz if self.B0.family() == 'chebyshev' else la.SolverGeneric1ND
+            sol = la.SolverGeneric1ND
             self.divH = Inner(TestFunction(TN), -div(self.H_))
             self.solP = sol(inner(TestFunction(TN), div(grad(TrialFunction(TN)))))
             self.p_ = Function(TN)
 
         self.d2udx2()
-        self.N0.bc.set_tensor_bcs(self.N0, self.TN)
+        self.N0.bc.update(update_tensor=True)
         p_ = self.solP(self.divH(), self.p_, constraints=((0, 0),))
         return p_
 

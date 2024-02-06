@@ -197,9 +197,9 @@ if __name__ == '__main__':
         'modplot': 10,
         'moderror': 10,
         'modsave': 1,
-        #'bcT': (0.9+0.1*sympy.sin(2*(y-tt)), 0),
+        'bcT': (0.9+0.1*sympy.sin(2*(y-tt)), 0),
         #'bcT': (0.9+0.1*sympy.sin(2*y), 0),
-        'bcT': (1, 0),
+        #'bcT': (1, 0),
         'family': 'C',
         'checkpoint': 100,
         #'padding_factor': 1,
@@ -208,7 +208,7 @@ if __name__ == '__main__':
     c = RayleighBenard(**d)
     t, tstep = c.initialize(rand=0.001, from_checkpoint=False)
     t0 = time()
-    c.solve(t=t, tstep=tstep, end_time=0.05)
+    c.solve(t=t, tstep=tstep, end_time=5)
     if comm.Get_rank() == 0:
         generate_xdmf('_'.join((d['filename'], 'U'))+'.h5', order='visit')
         generate_xdmf('_'.join((d['filename'], 'T'))+'.h5', order='visit')

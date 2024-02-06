@@ -47,7 +47,7 @@ from shenfun import Function, TPMatrix, TrialFunction, TestFunction,\
     get_simplified_tpmatrices, ScipyMatrix, Inner, SpectralMatrix
 
 __all__ = ('IRK3', 'BackwardEuler', 'RK4', 'ETDRK4', 'ETD',
-           'IMEXRK3', 'IMEXRK111', 'IMEXRK222', 'IMEXRK443')
+           'IMEXRK3', 'IMEXRK011', 'IMEXRK111', 'IMEXRK222', 'IMEXRK443')
 
 #pylint: disable=unused-variable
 
@@ -815,6 +815,23 @@ class PDEIMEXRK:
     def solve_step(self, rk=0):
         # only one solver since the diagonal of a is constant
         return self.solvers[0](self.rhs, self.u_)
+
+class IMEXRK011(PDEIMEXRK):
+
+    @classmethod
+    def steps(cls):
+        return 1
+
+    def stages(self):
+        a = np.array([
+            [0, 0],
+            [0, 0]])
+        b = np.array([
+            [0, 0],
+            [1, 0]])
+        c = (1, 0)
+        return a, b, c
+
 
 class IMEXRK111(PDEIMEXRK):
 

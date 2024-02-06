@@ -724,17 +724,17 @@ def scalar_product(v, f, output_array=None, assemble='exact'):
         return output_array
 
     x = sp.Symbol('x', real=True)
+    cheb = T.family() == 'chebyshev'
+
     if not isinstance(f, Number):
         s = f.free_symbols
         assert len(s) == 1
         x = s.pop()
-        xm = T.map_true_domain(x)
-        if T.family() == 'chebyshev':
-            f = f.subs(x, sp.cos(xm))
-        else:
-            f = f.subs(x, xm)
+        f = T.map_expression_true_domain(f, x=x)
+        if cheb:
+            f = f.subs(x, sp.cos(x))
 
-    if T.family() == 'chebyshev':
+    if cheb:
         S = T.stencil_matrix().diags('csr')
         for i in range(T.slice().start, T.slice().stop):
             M = S.getrow(i)
@@ -758,7 +758,10 @@ def scalar_product(v, f, output_array=None, assemble='exact'):
                 output_array[i] = sp.integrate(integrand, (x, (domain[0], domain[1])))
             elif assemble == 'adaptive':
                 if len(integrand.free_symbols) == 0:
-                    output_array[i] = integrand*float(domain[1]-domain[0])
+                    if cheb:
+                        output_array[i] = integrand*np.pi
+                    else:
+                        output_array[i] = integrand*float(domain[1]-domain[0])
                 else:
                     output_array[i] = quad(sp.lambdify(x, integrand), float(domain[0]), float(domain[1]))[0]
     if T.domain_factor() != 1:

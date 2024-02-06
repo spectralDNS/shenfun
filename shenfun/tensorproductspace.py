@@ -464,7 +464,7 @@ class TensorProductSpace(PFFT):
 
         for i, base in enumerate(self.bases):
             base.axis = i
-            if base.has_nonhomogeneous_bcs:
+            if isinstance(base.bc, BoundaryValues):
                 base.bc.set_tensor_bcs(base, self)
 
     def configure_backwards(self, pencil, dtype, kw):
@@ -1830,7 +1830,7 @@ class BoundaryValues:
 
     Parameters
     ----------
-    T : :class:`.TensorProductSpace`
+    T : :class:`.SpectralBase`
     bc : :class:`.BoundaryConditions`
     """
     # pylint: disable=protected-access, redefined-outer-name, dangerous-default-value, unsubscriptable-object
@@ -1844,12 +1844,21 @@ class BoundaryValues:
         self.axis = 0
         self.bc_time = 0
 
-    def update(self, time=None):
+    def update(self, time=None, update_tensor=False):
+        """Update boundary values
+
+        Parameters
+        ----------
+        time : number
+            For boundary condition depending on time. Update with new time.
+        update_tensor : bool
+            Whether or not to update tensor if inhomogeneous 1D space is part
+            of a tensorproductspace
+        """
         from shenfun.forms.project import Project
-        tt = sp.symbols('t', real=True)
         bcs = self.bc.orderedvals()
-        update_tensor = False
         if self.has_nonhomogeneous_bcs:
+            tt = sp.symbols('t', real=True)
             for i, bci in enumerate(bcs):
                 if isinstance(bci, Project):
                     bci()
@@ -2087,10 +2096,13 @@ class BoundaryValues:
                 u[self.base.si[-(M)+i]] = self.bcs[i]
 
     def has_nonhomogeneous_bcs(self):
+        from shenfun.forms.project import Project
         for bc in self.bc.orderedvals():
             if isinstance(bc, Number):
                 if not bc == 0:
                     return True
+            elif isinstance(bc, Project):
+                return True
             elif isinstance(bc, np.ndarray):
                 if not np.all(bc == 0):
                     return True

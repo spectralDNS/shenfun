@@ -26,10 +26,12 @@ except ImportError:
 x = sp.Symbol('x', real=True)
 
 class OrrSommerfeld:
-    def __init__(self, alfa=1., Re=8000., N=80, quad='GC', **kwargs):
-        kwargs.update(dict(alfa=alfa, Re=Re, N=N, quad=quad))
+    def __init__(self, alfa=1., Re=8000., N=80, quad='GC', test='G', trial='G', **kwargs):
+        kwargs.update(dict(alfa=alfa, Re=Re, N=N, quad=quad, test=test, trial=trial))
         vars(self).update(kwargs)
         self.x, self.w = None, None
+        assert self.trial in ('PG', 'G')
+        assert self.test in ('PG', 'G')
 
     def interp(self, y, eigvals, eigvectors, eigval=1, verbose=False):
         """Interpolate solution eigenvector and it's derivative onto y
@@ -50,20 +52,29 @@ class OrrSommerfeld:
                 Print information or not
         """
         nx, eigval = self.get_eigval(eigval, eigvals, verbose)
-        SB = FunctionSpace(self.N, 'C', bc=(0, 0, 0, 0), quad=self.quad, dtype='D')
+        if self.trial == 'G':
+            SB = FunctionSpace(self.N, 'C', bc=(0, 0, 0, 0), quad=self.quad, dtype='D')
+        else:
+            SB = FunctionSpace(self.N, 'C', basis='Phi2', quad=self.quad, dtype='D')
         phi_hat = Function(SB)
         phi_hat[:-4] = np.squeeze(eigvectors[:, nx])
         phi = phi_hat.eval(y)
         dphidy = Dx(phi_hat, 0, 1).eval(y)
         return eigval, phi, dphidy
 
-    def assemble(self):
-        N = self.N
-        SB = FunctionSpace(N, 'C', bc=(0, 0, 0, 0), quad=self.quad)
-        test = SB.get_testspace('PG')
-        #test = FunctionSpace(N+4, 'C', basis='Compact4', quad=self.quad)
+    def get_trialspace(self, trial, dtype='d'):
+        if trial == 'G':
+            return FunctionSpace(self.N, 'C', basis='ShenBiharmonic', quad=self.quad, dtype=dtype)
+        return FunctionSpace(self.N, 'C', basis='Phi2', quad=self.quad, dtype=dtype)
+
+    def get_testspace(self, trial):
+        return trial.get_testspace(self.test)
+
+    def assemble(self, scale=None):
+        trial = self.get_trialspace(self.trial)
+        test = trial.get_testspace(self.test)
         v = TestFunction(test)
-        u = TrialFunction(SB)
+        u = TrialFunction(trial)
 
         # (u'', v)_w
         K = inner(v, Dx(u, 0, 2))
@@ -84,19 +95,27 @@ class OrrSommerfeld:
         a = self.alfa
         B = -Re*a*1j*(K-a**2*M)
         A = Q-2*a**2*K+(a**4 - 2*a*Re*1j)*M - 1j*a*Re*(K2-a**2*K1)
+        A, B = A.diags().toarray(), B.diags().toarray()
+        if scale is not None and not (scale[0] == 0 and scale[1] == 0):
+            assert isinstance(scale, tuple)
+            assert len(scale) == 2
+            s0, s1 = scale
+            k = np.arange(self.N-4)
+            testp = 1/(k+1)**(-s0) if s0 < 0 else (k+1)**s0
+            trialp = 1/(k+1)**(-s1) if s1 < 0 else (k+1)**s1
+            d =  testp[:, None] * trialp[None, :]
+            ##d = (1/A.diagonal())[:, None]
+            A *= d # * A
+            B *= d # * B
+        return A, B
 
-        return A.diags().toarray(), B.diags().toarray()
-
-    def solve(self, verbose=False):
+    def solve(self, verbose=False, scale=None):
         """Solve the Orr-Sommerfeld eigenvalue problem
         """
         if verbose:
             print('Solving the Orr-Sommerfeld eigenvalue problem...')
             print('Re = '+str(self.Re)+' and alfa = '+str(self.alfa))
-        A, B = self.assemble()
-        #d = (1/A.diagonal())[:, None]
-        #A *= d
-        #B *= d
+        A, B = self.assemble(scale=scale)
         return eig(A, B)
         # return eig(np.dot(inv(B), A))
 
@@ -136,6 +155,10 @@ if __name__ == '__main__':
                         help='Parameter')
     parser.add_argument('--quad', default='GC', type=str, choices=('GC', 'GL', 'LG'),
                         help='Discretization points: GC: Gauss-Chebyshev, GL: Gauss-Lobatto')
+    parser.add_argument('--test', default='G', type=str,
+                        help='G or PG, Galerkin or Petrov-Galerkin')
+    parser.add_argument('--trial', default='G', type=str,
+                        help='G or PG, Galerkin or Petrov-Galerkin')
     parser.add_argument('--plot', dest='plot', action='store_true', help='Plot eigenvalues')
     parser.add_argument('--verbose', dest='verbose', action='store_true', help='Print results')
     parser.set_defaults(plot=False)

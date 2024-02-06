@@ -1858,6 +1858,7 @@ class BoundaryConditions(dict):
     """
     def __init__(self, bc, domain=None):
         bcs = {'left': {}, 'right': {}}
+
         if isinstance(bc, str):
             # Boundary conditions given in single string with boundary conditions separated by &&
             for bci in bc.split('&&'):
@@ -1952,7 +1953,8 @@ class BoundaryConditions(dict):
                 for key, val in bc.items():
                     bcs[key] = {v[0]: copy.deepcopy(v[1]) for v in val}
             else:
-                bcs.update(copy.deepcopy(bc))
+                #bcs.update(copy.deepcopy(bc))
+                bcs.update(bc)
 
         # Take care of non-standard domain size
         df = 1
@@ -1964,11 +1966,11 @@ class BoundaryConditions(dict):
         for key, val in bcs.items():
             for bc, v in val.items():
                 if bc == 'N':
-                    bcs[key][bc] = bcs[key][bc]/df
+                    val[bc] /= df
                 elif bc == 'N2':
-                    bcs[key][bc] = bcs[key][bc]/df**2
+                    val[bc] /= df**2
                 elif bc == 'N3':
-                    bcs[key][bc] = bcs[key][bc]/df**3
+                    val[bc] /= df**3
         dict.__init__(self, bcs)
 
     def orderednames(self):

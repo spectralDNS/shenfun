@@ -15,6 +15,7 @@ dependencies:
   - scipy
   - mpi4py
   - mpi4py-fft
+  - plotly
   - Sphinx==4.2
   - nbsphinx
   - pip:
