@@ -11,8 +11,7 @@ import numpy as np
 import sympy as sp
 from scipy.fftpack import dct
 from scipy.integrate import quad
-from shenfun.optimization import runtimeoptimizer
-from shenfun.optimization.cython import Lambda
+from shenfun.optimization import runtimeoptimizer, cython
 from shenfun.config import config
 from .findbasis import get_bc_basis, get_stencil_matrix, n
 
@@ -20,6 +19,8 @@ __all__ = ['dx', 'clenshaw_curtis1D', 'CachedArrayDict', 'surf3D',
            'wrap_periodic', 'outer', 'dot', 'apply_mask', 'integrate_sympy',
            'mayavi_show', 'quiver3D', 'get_bc_basis', 'get_stencil_matrix',
            'scalar_product', 'n', 'cross', 'reset_profile', 'Lambda']
+
+Lambda = getattr(cython, 'Lambda', None)
 
 def dx(u, weighted=False):
     r"""Compute integral of u over domain

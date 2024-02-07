@@ -40,7 +40,7 @@ import sympy as sp
 import numpy as np
 from mpi4py_fft import fftw
 from shenfun.spectralbase import SpectralBase, Transform, islicedict, slicedict
-from shenfun.optimization.cython import convolve
+from shenfun.optimization import cython
 from shenfun.config import config
 
 bases = ['R2C', 'C2C']
@@ -470,7 +470,7 @@ class R2C(FourierBase):
                 uv = np.zeros(N+1, dtype=u.dtype)
             Np = N if not N % 2 == 0 else N+1
             k1 = np.fft.fftfreq(Np, 1./Np).astype(int)
-            convolve.convolve_real_1D(u, v, uv, k1)
+            cython.convolve.convolve_real_1D(u, v, uv, k1)
 
         return uv
 
@@ -636,6 +636,6 @@ class C2C(FourierBase):
 
             Np = N if not N % 2 == 0 else N+1
             k = np.fft.fftfreq(Np, 1./Np).astype(int)
-            convolve.convolve_1D(u, v, uv, k)
+            cython.convolve.convolve_1D(u, v, uv, k)
 
         return uv

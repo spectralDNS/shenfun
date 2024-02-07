@@ -13,7 +13,7 @@ from shenfun import config
 from shenfun.fourier.bases import R2C, C2C
 from shenfun.utilities import apply_mask
 from shenfun.forms.arguments import Function, Array
-from shenfun.optimization.cython import evaluate
+from shenfun.optimization import cython
 from shenfun.spectralbase import slicedict, islicedict, SpectralBase
 from shenfun.coordinates import Coordinates
 
@@ -837,10 +837,10 @@ class TensorProductSpace(PFFT):
                     last_conj_index = M
                 sl = self.local_slice()[axis].start
         if len(self) == 2:
-            output_array = evaluate.evaluate_2D(output_array, coefficients, P, r2c, last_conj_index, sl)
+            output_array = cython.evaluate.evaluate_2D(output_array, coefficients, P, r2c, last_conj_index, sl)
 
         elif len(self) == 3:
-            output_array = evaluate.evaluate_3D(output_array, coefficients, P, r2c, last_conj_index, sl)
+            output_array = cython.evaluate.evaluate_3D(output_array, coefficients, P, r2c, last_conj_index, sl)
 
         output_array = np.atleast_1d(output_array)
         output_array = comm.allreduce(output_array)

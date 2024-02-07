@@ -7,7 +7,7 @@ from mpi4py import MPI
 from mpi4py_fft import fftw
 from mpi4py_fft.fftw.utilities import FFTW_MEASURE, FFTW_PRESERVE_INPUT
 from shenfun.optimization import runtimeoptimizer
-from shenfun.optimization.cython import Leg2Cheb, Cheb2Leg, Lambda
+from shenfun.optimization import cython
 from shenfun.spectralbase import islicedict, slicedict
 from shenfun.forms.arguments import FunctionSpace
 from . import fastgl
@@ -15,6 +15,9 @@ from . import fastgl
 __all__ = ['DLT', 'leg2cheb', 'cheb2leg', 'Leg2chebHaleTownsend',
            'Leg2Cheb', 'Cheb2Leg', 'FMMLeg2Cheb', 'FMMCheb2Leg']
 
+Leg2Cheb = getattr(cython, 'Leg2Cheb', None)
+Cheb2Leg = getattr(cython, 'Cheb2Leg', None)
+Lambda = getattr(cython, 'Lambda', None)
 
 class DLT:
     r"""Discrete Legendre Transform

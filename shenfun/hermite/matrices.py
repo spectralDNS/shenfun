@@ -1,6 +1,6 @@
 import numpy as np
 from shenfun.matrixbase import SpectralMatrix, SpectralMatDict
-from shenfun.optimization.cython import Matvec
+from shenfun.optimization import cython
 from shenfun.la import TDMA
 from . import bases
 
@@ -74,15 +74,15 @@ class AHHmat(SpectralMatrix):
         c.fill(0)
         if format == 'cython' and v.ndim == 3:
             ld = self[-2]*np.ones(M-2)
-            Matvec.Tridiagonal_matvec3D_ptr(v, c, ld, self[0], ld, axis)
+            cython.Matvec.Tridiagonal_matvec3D_ptr(v, c, ld, self[0], ld, axis)
             self.scale_array(c, self.scale)
         elif format == 'cython' and v.ndim == 2:
             ld = self[-2]*np.ones(M-2)
-            Matvec.Tridiagonal_matvec2D_ptr(v, c, ld, self[0], ld, axis)
+            cython.Matvec.Tridiagonal_matvec2D_ptr(v, c, ld, self[0], ld, axis)
             self.scale_array(c, self.scale)
         elif format == 'cython' and v.ndim == 1:
             ld = self[-2]*np.ones(M-2)
-            Matvec.Tridiagonal_matvec(v, c, ld, self[0], ld)
+            cython.Matvec.Tridiagonal_matvec(v, c, ld, self[0], ld)
             self.scale_array(c, self.scale)
         elif format == 'self':
             if axis > 0:

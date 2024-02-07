@@ -6,7 +6,7 @@ from scipy.special import sph_harm, erf, airy, jn, gammaln
 import numpy as np
 import sympy as sp
 from shenfun.config import config
-from shenfun.optimization.cython import evaluate
+from shenfun.optimization import cython
 from shenfun.spectralbase import BoundaryConditions
 from mpi4py_fft import DistArray
 
@@ -775,10 +775,10 @@ class Expr:
                     work = np.dot(P, bv)
 
                 elif len(x) == 2:
-                    work = evaluate.evaluate_2D(work, bv, M, r2c, last_conj_index, sl)
+                    work = cython.evaluate.evaluate_2D(work, bv, M, r2c, last_conj_index, sl)
 
                 elif len(x) == 3:
-                    work = evaluate.evaluate_3D(work, bv, M, r2c, last_conj_index, sl)
+                    work = cython.evaluate.evaluate_3D(work, bv, M, r2c, last_conj_index, sl)
 
                 sc = self.scales()[vec][base_j]
                 if not hasattr(sc, 'free_symbols'):

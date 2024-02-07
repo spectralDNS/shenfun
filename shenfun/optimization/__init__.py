@@ -8,9 +8,12 @@ from within the regular Python modules.
 """
 import importlib
 from functools import wraps
-from . import cython
 from shenfun.config import config
 
+try:
+    from . import cython
+except ModuleNotFoundError:
+    cython = None
 try:
     from . import numba
 except ModuleNotFoundError:
