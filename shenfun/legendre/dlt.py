@@ -9,7 +9,6 @@ from mpi4py_fft.fftw.utilities import FFTW_MEASURE, FFTW_PRESERVE_INPUT
 from shenfun.optimization import runtimeoptimizer
 from shenfun.optimization import cython
 from shenfun.spectralbase import islicedict, slicedict
-from shenfun.forms.arguments import FunctionSpace
 
 __all__ = ['DLT', 'leg2cheb', 'cheb2leg', 'Leg2chebHaleTownsend',
            'Leg2Cheb', 'Cheb2Leg', 'FMMLeg2Cheb', 'FMMCheb2Leg']

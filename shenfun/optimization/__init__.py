@@ -14,10 +14,10 @@ try:
     from . import cython
 except ModuleNotFoundError:
     cython = None
-try:
-    from . import numba
-except ModuleNotFoundError:
-    numba = None
+#try:
+from . import numba
+#except ModuleNotFoundError:
+#    numba = None
 
 
 """

@@ -10,6 +10,7 @@ dependencies:
   - cython
   - fftw
   - numpy
+  - numba
   - sympy
   - pyyaml
   - scipy
