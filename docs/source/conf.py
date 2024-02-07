@@ -16,10 +16,8 @@ import os
 import sys
 import subprocess
 #import sphinx_bootstrap_theme
-print(os.getcwd())
-print(os.listdir())
-print(os.path.abspath('.'), os.path.abspath('..'), os.path.abspath('../..'))
-sys.path.insert(0, os.path.abspath('..'))
+sys.path.insert(0, os.path.abspath('.'))
+sys.path.insert(0, '/home/docs/checkouts/readthedocs.org/user_builds')
 
 # -- Project information -----------------------------------------------------
 
