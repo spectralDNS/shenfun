@@ -10,7 +10,6 @@ from shenfun.optimization import runtimeoptimizer
 from shenfun.optimization import cython
 from shenfun.spectralbase import islicedict, slicedict
 from shenfun.forms.arguments import FunctionSpace
-from . import fastgl
 
 __all__ = ['DLT', 'leg2cheb', 'cheb2leg', 'Leg2chebHaleTownsend',
            'Leg2Cheb', 'Cheb2Leg', 'FMMLeg2Cheb', 'FMMCheb2Leg']
@@ -100,6 +99,7 @@ class DLT:
     """
     def __init__(self, input_array, s=None, axes=(-1,), threads=1, kind='backward',
                  flags=(FFTW_MEASURE, FFTW_PRESERVE_INPUT), output_array=None):
+        from . import fastgl
         if isinstance(axes, tuple):
             assert len(axes) == 1
             axis = axes[-1]

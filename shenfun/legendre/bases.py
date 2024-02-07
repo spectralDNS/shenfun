@@ -50,7 +50,6 @@ from shenfun.matrixbase import SparseMatrix
 from shenfun.utilities import n
 from shenfun.jacobi import JacobiBase
 from .lobatto import legendre_lobatto_nodes_and_weights
-from . import fastgl
 
 
 bases = ['Orthogonal',
@@ -120,6 +119,7 @@ class Orthogonal(JacobiBase):
         return 'legendre'
 
     def points_and_weights(self, N=None, map_true_domain=False, weighted=True, **kw):
+        from . import fastgl
         if N is None:
             N = self.shape(False)
         if self.quad == "LG":
