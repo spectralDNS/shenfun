@@ -18,6 +18,7 @@ import subprocess
 #import sphinx_bootstrap_theme
 sys.path.insert(0, os.path.abspath('.'))
 sys.path.insert(0, '/home/docs/checkouts/readthedocs.org/user_builds')
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
 # -- Project information -----------------------------------------------------
 
