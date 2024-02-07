@@ -90,8 +90,8 @@ pygments_style = 'sphinx'
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-#html_theme = 'sphinx_rtd_theme'
-html_theme = 'alabaster'
+html_theme = 'sphinx_rtd_theme'
+#html_theme = 'alabaster'
 #html_theme = 'sphinxdoc'
 #html_theme = 'traditional'
 #html_theme = 'scrolls'
@@ -129,7 +129,7 @@ html_static_path = ['_static']
 
 #html_split_index = True
 #html_use_index=False
-html_js_files = ['https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js','https://cdn.plot.ly/plotly-2.12.1.min.js?noext']
+html_js_files = ['https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js']
 
 #nbsphinx_prolog = r"""
 #.. raw:: html
