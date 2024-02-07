@@ -5,7 +5,7 @@ channels:
   - defaults
 
 dependencies:
-  - python=3.7
+  - python=3.9
   - pip
   - cython
   - fftw
@@ -15,7 +15,7 @@ dependencies:
   - scipy
   - mpi4py
   - mpi4py-fft
-  - plotly
+  - plotly>=5.8
   - Sphinx==4.2
   - nbsphinx
   - pip:
