@@ -82,7 +82,7 @@ V_F^N = \text{span} \{\exp(\imath k \theta)\}, \text{ for } k \in K,
 \end{equation}
 !et
 
-where $K = \{-N/2, -N/2+1, \ldots, N/2-1\}$. Since the solution $u(\theta, r)$
+where the index set $K = \{-N/2, -N/2+1, \ldots, N/2-1\}$. Since the solution $u(\theta, r)$
 is real, there is Hermitian symmetry and $\hat{u}_{k,j} = \hat{u}_{k,-j}^*$
 (with $*$ denoting a complex conjugate).
 For this reason we use only $k \in K=\{0, 1, \ldots, N/2\}$ in solving for

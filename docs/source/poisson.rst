@@ -61,7 +61,7 @@ And then we look for solutions like
         
 
 where :math:`N` is the size of the discretized problem,
-:math:`\hat{\mathbf{u}} = \{\hat{u}_k\}_{k=0}^{N-1}` are the unknown expansion
+:math:`\{\hat{u}_k\}_{k=0}^{N-1}` are the unknown expansion
 coefficients, and the function space is :math:`\text{span}\{v_k\}_{k=0}^{N-1}`.
 
 The basis functions of the function space can, for example,  be constructed from
@@ -162,34 +162,34 @@ are specific to the chosen basis, and even within basis there are two different
 choices based on which quadrature rule is selected, either Gauss or Gauss-Lobatto.
 
 Inserting for test and trialfunctions, we get the following bilinear form and
-matrix :math:`A\in\mathbb{R}^{N-2\times N-2}` for the Laplacian (using the
-summation convention in step 2)
+matrix :math:`A=(a_{jk})\in\mathbb{R}^{N-2\times N-2}` for the Laplacian
 
 .. math::
         \begin{align*}
         \left( \nabla^2u, v \right)_w^N &= \left( \nabla^2\sum_{k=0}^{N-3}\hat{u}_k v_{k}, v_j \right)_w^N, \quad j=0,1,\ldots, N-3\\ 
-            &= \left(\nabla^2 v_{k}, v_j \right)_w^N \hat{u}_k, \\ 
-            &= a_{jk} \hat{u}_k.
+            &= \sum_{k=0}^{N-3}\left(\nabla^2 v_{k}, v_j \right)_w^N \hat{u}_k, \\ 
+            &= \sum_{k=0}^{N-3}a_{jk} \hat{u}_k.
         \end{align*}
 
-Note that the sum in :math:`a_{jk} \hat{u}_{k}` runs over :math:`k=0, 1, \ldots, N-3` since
-the second derivatives of :math:`v_{N-1}` and :math:`v_{N}` are zero.
+Note that the sum runs over :math:`k=0, 1, \ldots, N-3` since
+the second derivatives of :math:`v_{N-2}` and :math:`v_{N-1}` are zero.
 The right hand side linear form and vector is computed as :math:`\tilde{f}_j = (f,
 v_j)_w^N`, for :math:`j=0,1,\ldots, N-3`, where a tilde is used because this is not
 a complete transform of the function :math:`f`, but only an inner product.
 
-The linear system of equations to solve for the expansion coefficients
-of :math:`u(x)` is given as
+By defining the column vectors :math:`\boldsymbol{\hat{u}}=(\hat{u}_0, \hat{u}_1, \ldots, \hat{u}_{N-3})^T`
+and :math:`\boldsymbol{\tilde{f}}=(\tilde{f}_0, \tilde{f}_1, \ldots, \tilde{f}_{N-3})^T`
+we get the linear system of equations
 
 .. math::
    :label: _auto6
 
         
-        A \hat{\mathbf{u}} = \tilde{\mathbf{f}}.
+        A \hat{\boldsymbol{u}} = \tilde{\boldsymbol{f}}.
         
         
 
-Now, when the expansion coefficients :math:`\hat{\mathbf{u}}` are found by
+Now, when the expansion coefficients :math:`\boldsymbol{\hat{u}}` are found by
 solving this linear system, they may be
 transformed to real space :math:`u(x)` using :eq:`eq:u`, and here the contributions
 from :math:`\hat{u}_{N-2}` and :math:`\hat{u}_{N-1}` must be accounted for. Note that the matrix
@@ -321,7 +321,7 @@ Solve linear equations
 ~~~~~~~~~~~~~~~~~~~~~~
 
 Finally, solve linear equation system and transform solution from spectral
-:math:`\{\hat{u}_k\}_{k=0}^{N-1}` vector to the real space :math:`\{u(x_j)\}_{j=0}^{N-1}`
+:math:`\boldsymbol{\hat{u}}` vector to the real space :math:`\{u(x_j)\}_{j=0}^{N-1}`
 and then check how the solution corresponds with the exact solution :math:`u_e`.
 To this end we compute the :math:`L_2`-errornorm using the ``shenfun`` function
 :func:`.dx`
@@ -331,7 +331,6 @@ To this end we compute the :math:`L_2`-errornorm using the ``shenfun`` function
     u_hat = A.solve(f_hat)
     uj = SD.backward(u_hat)
     ua = Array(SD, buffer=ue)
-    
     print("Error=%2.16e" %(np.sqrt(dx((uj-ua)**2))))
 
 Convergence test

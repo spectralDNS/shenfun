@@ -799,10 +799,10 @@ class TensorProductSpace(PFFT):
             w.append(base.wavenumbers(bcast=False)[self.local_slice()[axis]].astype(float))
 
         if len(self) == 2:
-            output_array = evaluate.evaluate_lm_2D(list(self.bases), output_array, coefficients, x[0], x[1], w[0], w[1], r2c, last_conj_index, sl)
+            output_array = cython.evaluate.evaluate_lm_2D(list(self.bases), output_array, coefficients, x[0], x[1], w[0], w[1], r2c, last_conj_index, sl)
 
         elif len(self) == 3:
-            output_array = evaluate.evaluate_lm_3D(list(self.bases), output_array, coefficients, x[0], x[1], x[2], w[0], w[1], w[2], r2c, last_conj_index, sl)
+            output_array = cython.evaluate.evaluate_lm_3D(list(self.bases), output_array, coefficients, x[0], x[1], x[2], w[0], w[1], w[2], r2c, last_conj_index, sl)
 
         output_array = np.atleast_1d(output_array)
         output_array = comm.allreduce(output_array)

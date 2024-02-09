@@ -120,9 +120,9 @@ is the position vector
 
 From the position vector we compute the he covariant
 basis vectors $\mathbf{b}_i = \partial \mathbf{r} / \partial X^{i}$,
-where $\mathbf{X} = \{X^{i}\}_{i\in(1,2)} = (\varphi, t)$,
+where $\mathbf{X} = (X^{i})_{i\in(1,2)} = (\varphi, t)$,
 and get the covariant metric tensor $g_{ij}=\mathbf{b}_i \cdot \mathbf{b}_j$
-and its determinant $g = \text{det}\{g_{ij}\}$. We get
+and its determinant $g = \text{det}(g_{ij})$. We get
 !bt
 \begin{equation}
     {g} = (2R-2t\cos \varphi)^2+t^2.
@@ -130,7 +130,7 @@ and its determinant $g = \text{det}\{g_{ij}\}$. We get
 !et
 and
 !bt
-g_{ij} =
+(g_{ij}) =
 \begin{pmatrix}
   g & 0 \\
   0 & 1
@@ -139,7 +139,7 @@ g_{ij} =
 Likewise, the contravariant metric tensor $g^{ij}$ is the
 inverse of the covariant
 !bt
-g^{ij} =
+(g^{ij}) =
 \begin{pmatrix}
   \frac{1}{g} & 0 \\
   0 & 1

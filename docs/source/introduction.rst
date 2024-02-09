@@ -31,16 +31,18 @@ using an approximation, :math:`u_N`, to the solution
 
     u(\boldsymbol{x}) \approx u_N(\boldsymbol{x}) = \sum_{k=0}^{N-1} \hat{u}_k \phi_k(\boldsymbol{x}).
 
-Here the :math:`N` expansion coefficients :math:`\hat{u}_k` are unknown
-and :math:`\{\phi_k\}_{k\in \mathcal{I}^N}, \mathcal{I}^N = 0, 1, \ldots, N-1` are
-*trial* functions. The trial functions are a basis for the function space
+Here the :math:`N` expansion coefficients :math:`\{\hat{u}_k\}` are unknown
+and :math:`\{\phi_k\}` are a set of
+*basis* (or *trial*) functions. The basis functions form a basis for the discrete
+(finite-dimensional) function space
 
 .. math::
 
-    V_N = span\{\phi_k\}_{k\in \mathcal{I}^N}.
+    V_N = \text{span}\{\phi_k\}_{k=0}^{N-1},
 
-Inserting for :math:`u_N` in Eq. :eq:`eq:poisson1` we get
-a residual
+and by :eq:`eq:mwr_u` we express that :math:`u \approx u_N \in V_N`.
+
+Inserting for :math:`u_N` in Eq. :eq:`eq:poisson1` we get a residual
 
 .. math::
    :label: eq:residual
@@ -60,23 +62,25 @@ where :math:`\overline{v}` is the complex conjugate of :math:`v`. If we
 now choose the test functions from the same space as the trial functions,
 i.e., :math:`V_N`,
 then the WRM becomes the Galerkin method, and we get :math:`N` equations for
-:math:`N` unknowns :math:`\boldsymbol{\hat{u}}=\{\hat{u}_k\}_{k\in \mathcal{I}^N}`
-(note that :math:`\hat{u}\in \mathbb{R}^N` is a column vector)
+:math:`N` unknowns :math:`\{\hat{u}_j\}`
 
 .. math::
    :label: eq:galerkin
 
-    \sum_{j\in \mathcal{I}^N} \underbrace{\left(-\nabla^2 \phi_j, \phi_k \right)_w}_{a_{kj}} \hat{u}_j = \left( f, \phi_k \right)_w, \text{ for } k \in \mathcal{I}^N.
+    \sum_{j=0}^{N-1} \underbrace{\left(-\nabla^2 \phi_j, \phi_k \right)_w}_{a_{kj}} \hat{u}_j = \left( f, \phi_k \right)_w, \quad k =0, 1, \ldots, N-1.
 
-Note that this is a regular linear system of algebra equations
+Note that this is a regular system of linear algebra equations to be solved for
+the column vector :math:`\boldsymbol{\hat{u}} = (\hat{u}_0, \hat{u}_1, \ldots, \hat{u}_{N-1})^T \in \mathbb{R}^N`
 
 .. math::
 
-    a_{kj} \hat{u}_{j} = \tilde{f}_k,
+    A \boldsymbol{\hat{u}} = \boldsymbol{\tilde{f}},
 
-where the matrix :math:`A=(a_{kj}) \in \mathbb{R}^{N \times N}`.
+where :math:`A=(a_{kj}) \in \mathbb{R}^{N \times N}` is a matrix, :math:`\tilde{f}_k = \left( f, \phi_k \right)_w`
+and :math:`\boldsymbol{\tilde{f}} = (\tilde{f}_0, \tilde{f}_1, \ldots, \tilde{f}_{N-1})^T` :math:`\in \mathbb{R}^N`
+is a column vector.
 
-The choice of basis functions :math:`v(\boldsymbol{x})` (or function space :math:`V_N`)
+The choice of basis functions, or function space :math:`V_N`,
 is highly central to the method.
 For the Galerkin method to be *spectral*, the basis is usually chosen as linear
 combinations of Chebyshev, Legendre, Laguerre, Hermite, Jacobi or trigonometric functions.
@@ -116,84 +120,87 @@ and Fourier functions use a constant weight.
 Tensor products
 ---------------
 
-If the problem is two-dimensional, then we use two function spaces and create
-tensor product spaces to get a two-dimensional domain.
+If the physical problem at hand is two-dimensional, then we need to approximate two-dimensional
+functions like :math:`u(x, y)`. To this end we need to use two one-dimensional function spaces
+and then combine them through tensor products in order to get a two-dimensional (tensor product) space.
 For example, if we choose the function spaces
 :math:`X_N` and :math:`Y_M`, for the first and second dimension, respectively,
-then the tensor product space :math:`W_P` will be
+then we can create a 2D tensor product space :math:`W_P` as
 
 .. math::
 
     W_{P} = X_N \otimes Y_M,
 
-where :math:`P=N \cdot M` and :math:`\otimes` represents a tensor product.
+where the dimension :math:`P=N \cdot M` and :math:`\otimes` represents a tensor product.
 See, e.g., this `tensor product blog`_ for a simple explanation of the
 tensor product.
 
-A generic basis for :math:`X_N` will be
+Two generic bases for :math:`X_N` and :math:`Y_M` will be
 
 .. math::
 
-    \{ \mathcal{X}_j(x) \}_{j \in \mathcal{I}^N},
+    \{ \mathcal{X}_j(x) \}_{j \in \mathcal{I}^N} \text{ and } \{ \mathcal{Y}_k(y) \}_{k \in \mathcal{I}^M},
 
-and for :math:`Y_M`
-
-.. math::
-
-    \{ \mathcal{Y}_k(y) \}_{k \in \mathcal{I}^M},
-
-where :math:`\mathcal{X}_j` and :math:`\mathcal{Y}_k` are some
+where the index set :math:`\mathcal{I}^N=\{0, 1, \ldots, N-1\}`
+and :math:`\mathcal{X}_j(x)` and :math:`\mathcal{Y}_k(y)` are some appropriately
 chosen basis functions. Note that we are here using the
 :math:`y`-coordinate for the
 :math:`Y_M` basis, because this basis is used along the
 second axis of the tensor product space :math:`W_P`.
 
-A basis for :math:`W_P` will then be
+We may now also define the tensor product space :math:`W_P` as
 
 .. math::
 
-    \{ \mathcal{X}_j(x) \mathcal{Y}_k(y) \}_{(j, k) \in \mathcal{I}^N \times \mathcal{I}^M},
+    W_P = \text{span}\{ \mathcal{X}_j(x) \mathcal{Y}_k(y) \}_{(j, k) \in \mathcal{I}^N \times \mathcal{I}^M},
 
-where :math:`\times` represents a Cartesian product.
-
-A test function :math:`v \in W_P` is as such
+where :math:`\times` represents a Cartesian product. A basis function for
+:math:`W_P` may as such be written as
 
 .. math::
 
-   v_{jk}(x, y) = \mathcal{X}_j(x) \mathcal{Y}_k(y) \text{ for } (j, k) \in \mathcal{I}^N \times \mathcal{I}^M.
+   v_{jk}(x, y) = \mathcal{X}_j(x) \mathcal{Y}_k(y),
 
-As an example, assume now that we have a Cartesian domain
-:math:`\Omega = \{ (x, y) : (x, y) \in [-1, 1] \times [0, 2 \pi]\}`,
-with homogeneous Dirichlet boundary conditions at :math:`x=\pm 1` and that the solution is
-periodic in the :math:`y`-direction. We can now choose basis functions
-:math:`\mathcal{X}_j(x) = T_j-T_{j+2}`, for :math:`j \in \mathcal{I}^{N-2}` (
-with :math:`N-2` because :math:`T_{j+2}` then equals :math:`T_{N}` for :math:`j=N-2`),
-and :math:`\mathcal{Y}_k(y) = \exp(\imath k y)` for :math:`k \in \mathcal{I}^M`
-and a tensor product test function is then
+and if we now want to approximate :math:`u(x, y) \approx u_N(x, y) \in W_P` this means that
+we intend to find
+
+.. math::
+
+    u_N(x, y) = \sum_{i\in \mathcal{I}^N}\sum_{j\in \mathcal{I}^M} \hat{u}_{ij} \mathcal{X}_i(x) \mathcal{Y}_{j}(y),
+
+where the :math:`P=N \cdot M` expansion coefficients :math:`\{\hat{u}_{ij}\}` are the unknowns.
+
+As an example, assume now that we have a 2D Cartesian domain
+:math:`\Omega = [-1, 1] \times [0, 2 \pi]`,
+with homogeneous Dirichlet boundary conditions at :math:`x=\pm 1` and a
+periodic solution in the :math:`y`-direction. We may now choose the basis functions
+:math:`\mathcal{X}_j(x) = T_j(x)-T_{j+2}(x)`
+and :math:`\mathcal{Y}_k(y) = \exp(\imath k y)` such that these boundary conditions are
+satisfied exactly, and the 2D basis functions are the tensor products
 
 .. math::
    :label: eq:v2D
 
-   v_{jk}(x, y) = (T_j(x) - T_{j+2}(x)) \exp(\imath k y), \text{ for } (j, k) \in \mathcal{I}^{N-2} \times \mathcal{I}^M.
+   v_{jk}(x, y) = (T_j(x) - T_{j+2}(x)) \exp(\imath k y).
 
 In other words, we choose one test function per spatial dimension and create
 global basis functions by taking the outer products (or tensor products) of these individual
 test functions. Since global basis functions simply are the tensor products of
 one-dimensional basis functions, it is trivial to move to even higher-dimensional spaces.
 The multi-dimensional basis functions then form a basis for a multi-dimensional
-tensor product space. The associated domains are similarily formed by taking
+tensor product space. The associated domains are similarly formed by taking
 Cartesian products of the one-dimensional domains.
 
 The one-dimensional domains are discretized using the quadrature points of the
 chosen basis functions. If the meshes in :math:`x`- and :math:`y`-directions are
-:math:`x = \{x_i\}_{i\in \mathcal{I}^N}` and :math:`y = \{y_j\}_{j\in \mathcal{I}^M}`,
+:math:`x = (x_i)_{i\in \mathcal{I}^N}` and :math:`y = (y_j)_{j\in \mathcal{I}^M}`,
 then a Cartesian product mesh is :math:`x \times y`. With index and set builder
 notation it is given as
 
 .. math::
     :label: eq:tensormesh
 
-    x \times y = \left\{(x_i, y_j) \,|\, (i, j) \in \mathcal{I}^N \times \mathcal{I}^M\right\}.
+    x \times y = \left\{(x_i, y_j) \,|\, i \in \mathcal{I}^N \text{ and } j \in \mathcal{I}^M\right\}.
 
 With shenfun a user chooses the appropriate function spaces (with associated bases)
 for each dimension of the problem, and may then combine these bases into tensor
@@ -204,7 +211,7 @@ example, to create the required spaces for the aforementioned domain, with Diric
 .. math::
 
     N, M &= (16, 16) \\
-    X_N(x) &= \text{span}\{T_j(x)-T_{j+2}(x)\}_{j\in \mathcal{I}^{N-2}} \\
+    X_N(x) &= \text{span}\{T_j(x)-T_{j+2}(x)\}_{j\in \mathcal{I}^{N}} \\
     Y_M(y) &= \text{span}\{\exp(\imath k y)\}_{k\in \mathcal{I}^M} \\
     W_P(x, y) &= X_N(x) \otimes Y_M(y)
 
@@ -212,16 +219,15 @@ This can be implemented in `shenfun` as follows::
 
     from shenfun import comm, FunctionSpace, TensorProductSpace
     N, M = (16, 16)
-    XN = FunctionSpace(N, 'Chebyshev', bc=(0, 0))
+    XN = FunctionSpace(N+2, 'Chebyshev', bc=(0, 0))
     YM = FunctionSpace(M, 'Fourier', dtype='d')
     W = TensorProductSpace(comm, (XN, YM))
 
-Note that the Chebyshev space is created using :math:`N` and not :math:`N-2`. The
-chosen boundary condition ``bc=(0, 0)`` ensures that only :math:`N-2` basis
-functions will be used.
-The Fourier basis ``YM`` has been defined for real inputs to a
-forward transform, which is ensured by the ``dtype`` keyword being set to ``d``
-for double. ``dtype``
+Note that the Chebyshev space is created using :math:`N+2` and not :math:`N`. The two
+chosen boundary condition ``bc=(0, 0)`` ensures that only :math:`N` basis
+functions will be used, or in other words, that the dimension of ``XN`` is :math:`N`.
+The Fourier basis ``YM`` has been defined for real inputs,
+which is ensured by the ``dtype`` keyword being set to ``d`` for double. ``dtype``
 specifies the data type that is input to the ``forward`` method, or the
 data type of the solution in physical space. Setting
 ``dtype='D'`` indicates that this datatype will be complex. Note that it

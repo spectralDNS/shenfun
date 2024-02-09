@@ -15,17 +15,17 @@ TOC: off
 
 ===== Construction =====
 
-A global spectral function $u(x)$ is represented on a one-dimensional
-domain (a line) as
+A global spectral function $u(x)$ can be represented on the real line as
 
 !bt
-u(x) = \sum_{k=0}^{N-1} \hat{u}_k \psi_k(x)
+u(x) = \sum_{k=0}^{N-1} \hat{u}_k \psi_k(x), \quad x \in \Omega = [a, b],
 !et
 
-where $\psi_k(x)$ is the $k$'th basis function and $x$ is a
-position inside the domain. $\{\hat{u}_k\}_{k=0}^{N-1}$ are the
-expansion coefficient for the series, and often referred to as the
-degrees of freedom. There is one degree of freedom per basis function.
+where the domain $\Omega$ has to be defined such that $b > a$.
+The array $\{\hat{u}_k\}_{k=0}^{N-1}$ contains the
+expansion coefficient for the series, often referred to as the
+degrees of freedom. There is one degree of freedom per basis function and
+$\psi_k(x)$ is the $k$'th basis function.
 We can use any number of basis functions,
 and the span of the chosen basis is then a function space. Also part of the
 function space is the domain, which is
@@ -88,64 +88,57 @@ print(u)
 Here the analytical Sympy function will first be evaluated
 on the entire quadrature mesh of the `T` function space,
 and then forward transformed to get the coefficients. This
-corresponds to a projection to `T`. The projection is
+corresponds to a finite-dimensional projection to `T`.
+The projection is
 
 Find $u_h \in T$, such that
 
 !bt
-(u_h - u, v)_w = 0 \quad \forall v \in T,
+(u_h - u, v)^{N}_w = 0 \quad \forall v \in T, label{eq:proj1}
 !et
 
-where $v \in \{T_j\}_{j=0}^{N-1}$ is a test function,
-$u_h=\sum_{k=0}^{N-1} \hat{u}_k T_k$ is a trial function and the
-notation $(\cdot, \cdot)_w$ represents a weighted inner product.
-In this projection $u_h$ is the ${cls('Function')}, $u$ is the sympy function and we use sympy
-to exactly evaluate $u$ on all quadrature points
-$\{x_j\}_{j=0}^{N-1}$. With quadrature we then have
+where $v$ is a test function and
+$u_h=\sum_{k=0}^{N-1} \hat{u}_k T_k$ is a trial function. The
+notation $(\cdot, \cdot)^N_w$ represents a discrete version of
+the weighted inner product $(u, v)_w$ defined as
 
 !bt
-(u, v)_w = \sum_{j\in\mathcal{I}^N} u(x_j) v(x_j) w_j \forall v \in T,
+(u, v)_{\omega} = \int_{\Omega} u \overline{v} \omega d\Omega,
 !et
 
-where $\mathcal{I}^N = (0, 1, \ldots, N-1)$ and $\{w_j\}_{j\in \mathcal{I}^N}$
-are the quadrature weights. The left hand side of the projection is
+where $\omega(x)$ is a weight functions and $\overline{v}$ is the
+complex conjugate of $v$. If $v$ is
+a real function, then $\overline{v}=v$.
+With quadrature we approximate the integral such that
 
 !bt
-(u_h, v)_w = \sum_{j\in\mathcal{I}^N} u_h(x_j) v(x_j) w_j \forall v \in T.
+(u, v)_{\omega} \approx (u, v)^N_{\omega} = \sum_{j\in\mathcal{I}^N} u(x_j) v(x_j) w_j.
 !et
 
-A linear system of equations arise when inserting for the
-basis functions
+where the index set $\mathcal{I}^N = \{0, 1, \ldots, N-1\}$ and $\{x_j\}_{j\in \mathcal{I}^N}$ and $\{w_j\}_{j\in \mathcal{I}^N}$
+are the quadrature points and weights.
+
+A linear system of equations arise when inserting for the chosen
+basis functions in Eq. (ref{eq:proj1}). We get
 
 !bt
-\left(u, T_i\right)_w = \tilde{u}_i \forall i \in \mathcal{I}^N,
+\sum_{k\in \mathcal{I}^N} \left( T_k, T_i\right)^N_{\omega} \hat{u}_k =
+\left(u, T_i\right)^N_{\omega}\, \forall \, i \in \mathcal{I}^N,
 !et
 
-and
+In matrix notation the solution becomes
 
 !bt
-\begin{align*}
-\left(u_h, T_i \right)_w &= (\sum_{k\in \mathcal{I}^N} \hat{u}_k T_k , T_i)_w \\
-  &= \sum_{k\in \mathcal{I}^N} \left( T_k, T_i\right)_w \hat{u}_k
-\end{align*}
+\boldsymbol{\hat{u}} = A^{-1} \boldsymbol{\tilde{u}},
 !et
 
-with the mass matrix
-
-!bt
-a_{ik} = \left( T_k, T_i\right)_w   \forall (i, k) \in \mathcal{I}^N \times \mathcal{I}^N,
-!et
-
-we can now solve to get the unknown
-expansion coefficients. In matrix notation
-
-!bt
-\hat{u} = A^{-1} \tilde{u},
-!et
-
-where $\hat{u}=\{\hat{u}_i\}_{i\in \mathcal{I}^N}$,
-$\tilde{u}=\{\tilde{u}_i\}_{i \in \mathcal{I}^N}$ and
-$A=\{a_{ki}\}_{(i,k) \in \mathcal{I}^N \times \mathcal{I}^N}$
+where we use two column vectors $\boldsymbol{\hat{u}}=(\hat{u}_i)^T_{i\in \mathcal{I}^N}$,
+$\boldsymbol{\tilde{u}}=\left(\tilde{u}_i\right)^T_{i \in \mathcal{I}^N}$,
+$\tilde{u}_i = (u, T_i)^N_{\omega}$ and the matrix
+$A=(a_{ik}) \in \mathbb{R}^{N \times N}$, that is diagonal with
+$a_{ik}=\left( T_k, T_i\right)^N_{\omega}$. For the default
+Gauss-Chebyshev quadrature this matrix is $a_{ik} = c_i \pi/2 \delta_{ik}$,
+where $c_0=2$ and $c_i=1$ for $i>0$.
 
 ===== Adaptive function size =====
 
@@ -202,7 +195,7 @@ a bit ragged, though:
 !bc pycod
 import matplotlib.pyplot as plt
 Tu = u.function_space()
-plt.plot(Tu.mesh(), u.backward())
+plt.plot(Tu.mesh(), u.backward());
 !ec
 
 To improve the quality of this plot we can instead evaluate the
@@ -210,7 +203,7 @@ function on more points
 
 !bc pycod
 xj = np.linspace(0, 100, 1000)
-plt.plot(xj, u(xj))
+plt.plot(xj, u(xj));
 !ec
 
 Alternatively, we can refine the function, which simply
@@ -219,7 +212,7 @@ pads zeros to $\hat{u}$
 !bc pycod
 up = u.refine(200)
 Tp = up.function_space()
-plt.plot(Tp.mesh(), up.backward())
+plt.plot(Tp.mesh(), up.backward());
 !ec
 
 The padded expansion coefficients are now given as
@@ -285,8 +278,8 @@ very similar to the orthogonal space.
 
 The major advantages of working with a space with boundary conditions
 built in only comes to life when solving differential equations. As
-long as we are only interested in approximating functions, we may just
-as well stick to the orthogonal spaces. This goes for Legendre as
+long as we are only interested in approximating functions, we are better off
+sticking to the orthogonal spaces. This goes for Legendre as
 well as Chebyshev.
 
 ===== Multidimensional functions =====
@@ -316,7 +309,7 @@ The multidimensional Functions work more or less exactly like for the
 y = sp.Symbol('y', real=True)
 u = Function(T, buffer=sp.cos(10*x)*sp.cos(10*y))
 X = T.local_mesh(True)
-plt.contourf(X[0], X[1], u.backward())
+plt.contourf(X[0], X[1], u.backward());
 !ec
 
 Like for 1D the coefficients are computed through projection,
@@ -338,7 +331,7 @@ We may alternatively plot on a uniform mesh
 
 !bc pycod
 X = T.local_mesh(bcast=True, kind='uniform')
-plt.contourf(X[0], X[1], u.backward(mesh='uniform'))
+plt.contourf(X[0], X[1], u.backward(mesh='uniform'));
 !ec
 
 ===== Curvilinear coordinates =====
@@ -353,12 +346,12 @@ Consider the unit disc with polar coordinates. Here
 the position vector $\mathbf{r}$ is given by
 
 !bt
-\mathbf{r} = r\cos \theta \mathbf{i} + r\sin \theta \mathbf{j}
+\mathbf{r} = r\cos \theta \mathbf{i} + r\sin \theta \mathbf{j}.
 !et
 
 The physical domain is $\Omega = \{(x, y): x^2 + y^2 < 1\}$,
 whereas the computational domain is the Cartesian product
-$D = \{(r, \theta) \in [0, 1] \times [0, 2 \pi]\}$.
+$D = [0, 1] \times [0, 2 \pi] = \{(r, \theta) | r \in [0, 1] \text{ and } \theta \in [0, 2 \pi]\}$.
 
 We create this domain in shenfun through
 
@@ -383,7 +376,7 @@ However, when this is plotted it may not be what you expect
 
 !bc pycod
 X = T.local_mesh(True)
-plt.contourf(X[0], X[1], u.backward(), 100)
+plt.contourf(X[0], X[1], u.backward(), 100);
 !ec
 
 We see that the function has been plotted in computational coordinates,
@@ -392,7 +385,7 @@ the disc we need the physical mesh, and not the computational
 
 !bc pycod
 X = T.local_cartesian_mesh()
-plt.contourf(X[0], X[1], u.backward(), 100)
+plt.contourf(X[0], X[1], u.backward(), 100);
 !ec
 
 !bnotice
@@ -405,7 +398,7 @@ grid all the way around and re-plot.
 !bc pycod
 up = u.backward()
 xp, yp, up = wrap_periodic([X[0], X[1], up], axes=[1])
-plt.contourf(xp, yp, up, 100)
+plt.contourf(xp, yp, up, 100);
 !ec
 
 ===== Adaptive functions in multiple dimensions =====

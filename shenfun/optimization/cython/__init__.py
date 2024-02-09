@@ -15,3 +15,5 @@ from .transforms import evaluate_expansion_all, scalar_product, leg2cheb, cheb2l
     restricted_product, FMMcheb, FMMdirect1, FMMdirect2, FMMdirect3, FMMdirect4, \
     _leg2cheb, _cheb2leg, FMMcheb, Lambda
 from .leg2chebm import Leg2Cheb, Cheb2Leg
+from .evaluate import evaluate_2D, evaluate_3D, evaluate_lm_2D, evaluate_lm_3D
+from .convolve import convolve_1D, convolve_real_1D

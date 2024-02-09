@@ -113,7 +113,7 @@ A discrete Fourier approximation space with :math:`N` basis functions is then
         
         
 
-where :math:`K = \{-N/2, -N/2+1, \ldots, N/2-1\}`. Since the solution :math:`u(\theta, r)`
+where the index set :math:`K = \{-N/2, -N/2+1, \ldots, N/2-1\}`. Since the solution :math:`u(\theta, r)`
 is real, there is Hermitian symmetry and :math:`\hat{u}_{k,j} = \hat{u}_{k,-j}^*`
 (with :math:`*` denoting a complex conjugate).
 For this reason we use only :math:`k \in K=\{0, 1, \ldots, N/2\}` in solving for

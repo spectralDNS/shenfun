@@ -50,8 +50,13 @@ then the weight is also constant, $w=1$, and the inner product becomes
 an unweighted integral of $u$ over the domain
 
 !bt
-(u, 1)_w = \int_{\Omega} u d\Omega
+(u, 1)_w = \int_{\Omega} u d\Omega.
 !et
+
+Note that the integral in the inner product either can be computed
+exactly using Sympy, adaptively using Scipy or with quadrature
+using Shenfun. The quadrature can be computed with any fixed resolution,
+see ${func('inner')}.
 
 === Curve integrals ===
 

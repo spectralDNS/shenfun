@@ -171,7 +171,7 @@ And then we look for discrete solutions :math:`u \in W^{\boldsymbol{N}}` like
         
 
 where :math:`\hat{u}_{lmn}` are components of the expansion coefficients for :math:`u` and
-the second form, :math:`\{\hat{u}_{\boldsymbol{\textsf{k}}}\}_{\boldsymbol{\textsf{k}}\in\boldsymbol{k}}`, is a shorter,
+the second form, :math:`(\hat{u}_{\boldsymbol{\textsf{k}}})_{\boldsymbol{\textsf{k}}\in\boldsymbol{k}}`, is a shorter,
 simplified notation, with sans-serif :math:`\boldsymbol{\textsf{k}}=(l, m, n)`.
 The expansion coefficients are the unknowns in the spectral Galerkin method.
 
@@ -211,15 +211,16 @@ computed just as quickly as linear. For a linear problem, it does not make much 
         \end{align*}
 
 where :math:`w(\boldsymbol{x})` now are the quadrature weights. The quadrature points
-:math:`\{x_i\}_{i=0}^{N_0-1}` are specific to the chosen basis, and even within basis there
+:math:`(x_i)_{i=0}^{N_0-1}` are specific to the chosen basis, and even within basis there
 are two different choices based on which quadrature rule is selected, either
 Gauss or Gauss-Lobatto. The quadrature points for the Fourier bases are the
-uniform :math:`\{y_j\}_{j=0}^{N_1-1}=2\pi j / N_1` and :math:`\{z_k\}_{k=0}^{N_2-1} = 2 \pi
+uniform :math:`(y_j)_{j=0}^{N_1-1}=2\pi j / N_1` and :math:`(z_k)_{k=0}^{N_2-1} = 2 \pi
 k/N_2`.
 
 Inserting for test function :eq:`eq:3d:u` and trialfunction
 :math:`v_{pqr} = \mathcal{X}_{p} \mathcal{Y}_q \mathcal{Z}_r` on the
-left hand side of :eq:`eq:3d:varform`, we get
+left hand side of :eq:`eq:3d:varform`, we get (with summation on repeated indices
+to avoid too much clutter)
 
 .. math::
         \begin{align*}
@@ -228,7 +229,7 @@ left hand side of :eq:`eq:3d:varform`, we get
         \mathcal{X}_{l} \mathcal{Y}_m \mathcal{Z}_n,
         \mathcal{X}_{p} \mathcal{Y}_q \mathcal{Z}_r \right\rangle_w^{\boldsymbol{N}}, \\ 
             &= \left[\left(\mathcal{X}_l^{''}, \mathcal{X}_p \right)_w^N - (m^2+n^2)\left(\mathcal{X}_l, \mathcal{X}_p \right)_w^N  \right]\delta_{mq} \delta_{nr} \hat{u}_{lmn}, \\ 
-            &= \left( a_{pl} - (m^2 + n^2)b_{pl}\right) \hat{u}_{lqr},
+            &= \left( a_{pl} - (m^2 + n^2)b_{pl}\right) \hat{u}_{lqr}, \quad \forall (p,q,r) \in \boldsymbol{k},
         \end{align*}
 
 where the notation :math:`(\cdot, \cdot)_w^{N_0}`
@@ -285,7 +286,7 @@ be found as follows
    :label: eq:AB
 
         
-        \left(a_{lj} - (m^2+n^2)b_{lj}\right) \hat{u}_{jmn} =
+        \left(a_{lp} - (m^2+n^2)b_{lp}\right) \hat{u}_{pmn} =
         \tilde{f}_{lmn}\quad \forall \, (l,m,n) \in \boldsymbol{k}. 
         
 
@@ -420,8 +421,8 @@ direction to be local to the processor. If the ``SD`` basis is the last to be
 transformed, then the data will be aligned in this direction, whereas the other
 two directions may both, or just one of them, be distributed.
 
-Note that ``X`` is a list containing local values of the arrays :math:`\{x_i\}_{i=0}^{N_0-1}`,
-:math:`\{y_j\}_{j=0}^{N_1-1}` and :math:`\{z_k\}_{k=0}^{N_2-1}`.
+Note that ``X`` is a list containing local values of the arrays :math:`(x_i)_{i=0}^{N_0-1}`,
+:math:`(y_j)_{j=0}^{N_1-1}` and :math:`(z_k)_{k=0}^{N_2-1}`.
 Now, it's not possible to run a jupyter notebook with more than one process,
 but we can imagine running `the complete solver <https://github.com/spectralDNS/shenfun/blob/master/demo/poisson3D.py>`__
 with 4 procesors and a processor mesh of shape :math:`2\times 2`.

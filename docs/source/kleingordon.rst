@@ -101,7 +101,7 @@ The energy of the solution can be computed as
 
 and it is crucial that this energy remains constant in time.
 
-The movie (:ref:`mov:kleingordon`) is showing the solution :math:`u`, computed with the
+The movie above is showing the solution :math:`u`, computed with the
 code shown below.
 
 .. _sec:specgal:
@@ -196,8 +196,8 @@ a finite number of test functions. A function space :math:`V^N` can be defined a
         V^N(x) = \text{span} \{\phi_l(x)\}_{l\in \boldsymbol{l}}, 
         
 
-where :math:`N` is chosen as an even positive integer and :math:`\boldsymbol{l} = (-N/2,
--N/2+1, \ldots, N/2-1)`. And now, since :math:`\Omega` is a
+where :math:`N` is chosen as an even positive integer and :math:`\boldsymbol{l} = -N/2,
+-N/2+1, \ldots, N/2-1`. And now, since :math:`\Omega` is a
 three-dimensional domain, we can create tensor products of such bases to get,
 e.g., for three dimensions
 
@@ -226,7 +226,7 @@ where the indices for :math:`y`- and :math:`z`-direction are :math:`\underline{m
 \underline{n}=\frac{2\pi}{L}n`, and :math:`\boldsymbol{m}` and :math:`\boldsymbol{n}` are the same as
 :math:`\boldsymbol{l}` due to using the same number of basis functions for each direction. One
 distinction, though, is that for the :math:`z`-direction expansion coefficients are only stored for
-:math:`n=(0, 1, \ldots, N/2)` due to Hermitian symmetry (real input data).
+:math:`n=0, 1, \ldots, N/2` due to Hermitian symmetry (real input data).
 
 We now look for solutions of the form
 
@@ -234,7 +234,7 @@ We now look for solutions of the form
    :label: eq:usg
 
         
-        u(x, y, z, t) = \sum_{n=-N/2}^{N/2-1}\sum_{m=-N/2}^{N/2-1}\sum_{l=-N/2}^{N/2-1}
+        u(x, y, z, t) = \sum_{l=-N/2}^{N/2-1}\sum_{m=-N/2}^{N/2-1}\sum_{n=0}^{N/2}
         \hat{u}_{lmn} (t)\Phi_{lmn}(x,y,z). 
         
 
@@ -278,13 +278,12 @@ is set to :math:`[-2\pi, 2\pi]^3` and not the more common :math:`[0, 2\pi]^3`. W
    :label: eq:uxyz
 
         
-        \boldsymbol{u} = \mathcal{F}_k^{-1}\left(\mathcal{F}_j^{-1}\left(\mathcal{F}_i^{-1}\left(\hat{\boldsymbol{u}}\right)\right)\right) 
+        \boldsymbol{u} = \mathcal{F}_z^{-1}\left(\mathcal{F}_y^{-1}\left(\mathcal{F}_z^{-1}\left(\hat{\boldsymbol{u}}\right)\right)\right) 
         
 
 with :math:`\boldsymbol{u} = \{u(x_i, y_j, z_k)\}_{(i,j,k)\in \boldsymbol{i} \times \boldsymbol{j} \times \boldsymbol{k}}`
-and where :math:`\mathcal{F}_i^{-1}` is the inverse Fourier transform along the direction
-of index :math:`i`, for
-all :math:`(j, k) \in \boldsymbol{j} \times \boldsymbol{k}`. Note that the three
+and where :math:`\mathcal{F}_x^{-1}` is the inverse Fourier transform along the direction :math:`x`, for
+all indices in the other direction, i.e., for :math:`(j, k) \in \boldsymbol{j} \times \boldsymbol{k}`. Note that the three
 inverse FFTs are performed sequentially, one direction at the time, and that there is no
 scaling factor due to
 the definition used for the inverse `Fourier transform <https://mpi4py-fft.readthedocs.io/en/latest/dft.html>`__
@@ -323,11 +322,9 @@ are the same and we obtain:
    :label: _auto10
 
         
-        \left(u, \Phi_{lmn}\right) = \hat{u}_{lmn} =
+        \left(u, v \right) = \boldsymbol{\hat{u}} =
         \left(\frac{1}{N}\right)^3
-        \mathcal{F}_l\left(\mathcal{F}_m\left(\mathcal{F}_n\left(\boldsymbol{u}\right)\right)\right)
-        \quad \forall (l,m,n) \in \boldsymbol{l} \times \boldsymbol{m} \times
-        \boldsymbol{n},
+        \mathcal{F}_z\left(\mathcal{F}_y\left(\mathcal{F}_x\left(\boldsymbol{u}\right)\right)\right),
         
         
 
@@ -340,7 +337,7 @@ may be written in terms of the Fourier transformed quantities :math:`\hat{\bolds
 
         
         (\nabla u, \nabla v) =
-        (\underline{l}^2+\underline{m}^2+\underline{n}^2)\hat{u}_{lmn}, 
+        \left((\underline{l}^2+\underline{m}^2+\underline{n}^2)\hat{u}_{lmn}\right), 
         
         
 
@@ -348,7 +345,7 @@ may be written in terms of the Fourier transformed quantities :math:`\hat{\bolds
    :label: _auto12
 
           
-        (u, v) = \hat{u}_{lmn}, 
+        (u, v) = \left(\hat{u}_{lmn}\right), 
         
         
 
@@ -356,11 +353,12 @@ may be written in terms of the Fourier transformed quantities :math:`\hat{\bolds
    :label: _auto13
 
           
-        (u|u|^2, v) = \widehat{u|u|^2}_{lmn}
+        (u|u|^2, v) = \left(\widehat{u|u|^2}_{lmn}\right)
         
         
 
-and as such the equations to be solved for each wavenumber can be found directly as
+where the indices on the right hand side run over :math:`(l, m, n) \in \boldsymbol{l} \times \boldsymbol{m} \times \boldsymbol{n}`.
+The equations to be solved for each wavenumber can now be found directly as
 
 .. math::
    :label: eq:df_var3

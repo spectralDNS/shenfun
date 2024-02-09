@@ -50,56 +50,57 @@ with it, and we may experiment a little. A :class:`.Function` ``u`` using the ba
 .. math::
    :label: eq:sum8
 
-    u(x) = \sum_{k=0}^{7} \hat{u}_k T_k(x)
+    u(x) = \sum_{k=0}^{N} \hat{u}_k T_k(x)
 
-and an instance of this function (initialized with :math:`\hat{u}_k=0\, \forall \, k \in 0, 1, \ldots, 7`)
+and an instance of this function (initialized with :math:`\hat{u}_k=0, \, k = 0, 1, \ldots, N`)
 is created in shenfun as::
 
     from shenfun import Function
     u = Function(T)
 
-Consider now for exampel the polynomial :math:`2x^2-1`, which happens to be
+Consider now for example the polynomial :math:`u_e(x)=2x^2-1`, which happens to be
 exactly equal to :math:`T_2(x)`. We
 can create this polynomial using `sympy <www.sympy.org>`_ ::
 
     import sympy as sp
     x = sp.Symbol('x')
-    u = 2*x**2 - 1  # or simply u = sp.chebyshevt(2, x)
+    ue = 2*x**2 - 1  # or simply ue = sp.chebyshevt(2, x)
 
-The Sympy function ``u`` can now be evaluated on the quadrature points of basis
+The Sympy function ``ue`` can now be evaluated on the quadrature points of basis
 :math:`T`::
 
     from shenfun import Array
     xj = T.mesh()
-    ue = Array(T)
-    ue[:] = [u.subs(x, xx) for xx in xj]
+    ua = Array(T)
+    ua[:] = [ue.subs(x, xx) for xx in xj]
     print(xj)
       [ 0.98078528  0.83146961  0.55557023  0.19509032 -0.19509032 -0.55557023
        -0.83146961 -0.98078528]
-    print(ue)
+    print(ua)
       [ 0.92387953  0.38268343 -0.38268343 -0.92387953 -0.92387953 -0.38268343
         0.38268343  0.92387953]
 
-We see that ``ue`` is an :class:`.Array` on the function space ``T``, and not a
+We see that ``ua`` is an :class:`.Array` on the function space ``T``, and not a
 :class:`.Function`. The :class:`.Array` and :class:`Function` classes
 are both subclasses of Numpy's `ndarray <https://docs.scipy.org/doc/numpy-1.14.0/reference/generated/numpy.ndarray.html>`_,
 and represent the two arrays associated
-with the spectral Galerkin function, like :eq:`eq:sum8`.
+with a spectral Galerkin function, like :eq:`eq:sum8`.
 The :class:`.Function` represents the entire spectral Galerkin function, with
-array values corresponding to the expansion coefficients :math:`\boldsymbol{\hat{u}} = \{\hat{u}_k\}_{k=0}^{7}`.
+array values corresponding to the sequence of expansion coefficients
+:math:`\boldsymbol{\hat{u}}=\{\hat{u}_k\}_{k=0}^{7}`.
 The :class:`.Array` represents the spectral Galerkin function evaluated
-on the quadrature mesh of the function space ``T``, i.e., here
-:math:`u(x_i), \forall \, i \in 0, 1, \ldots, 7`.
+on the quadrature mesh of the function space ``T``, which here is
+equal to :math:`\{u_e(x_i)\}_{i=0}^7`.
 
 We now want to find the :class:`.Function` ``uh`` corresponding to
-:class:`.Array` ``ue``. Considering :eq:`eq:sum8`, this corresponds to finding
+:class:`.Array` ``ua``. Considering :eq:`eq:sum8`, this corresponds to finding
 :math:`\boldsymbol{\hat{u}}` if the left hand side :math:`u(x_j)` is known for
 all quadrature points :math:`x_j`.
 
-Since we already know that ``ue`` is
+Since we already know that ``ue(x)`` is
 equal to the second Chebyshev polynomial, we should get an array of
-expansion coefficients equal to :math:`\boldsymbol{\hat{u}} = (0, 0, 1, 0, 0, 0, 0, 0)^T`.
-We can compute ``uh`` either by using :func:`project` or a forward transform::
+expansion coefficients equal to :math:`\boldsymbol{\hat{u}} = (0, 0, 1, 0, 0, 0, 0, 0)`.
+We can compute ``uh`` either by using :func:`.project` or a forward transform::
 
     from shenfun import project
     uh = Function(T)
@@ -118,7 +119,7 @@ The projection is mathematically: find :math:`u_h \in T`, such that
 
 .. math::
 
-    (u_h - u, v)_w = 0 \quad \forall v \in T,
+    (u_h - u_e, v)_w = 0 \quad \forall v \in T,
 
 where :math:`v` is a test function, :math:`u_h` is a trial function and the
 notation :math:`(\cdot, \cdot)_w` was introduced in :eq:`eq:wrm_test`. Using
@@ -126,20 +127,20 @@ now :math:`v=T_k` and :math:`u_h=\sum_{j=0}^7 \hat{u}_j T_j`, we get
 
 .. math::
 
-    (\sum_{j=0}^7 \hat{u}_j T_j, T_k)_w &= (u, T_k)_w, \\
-    \sum_{j=0}^7 (T_j, T_k)_w \hat{u}_j &= (u, T_k)_w,
+    (\sum_{j=0}^7 \hat{u}_j T_j, T_k)_w &= (u_e, T_k)_w, \\
+    \sum_{j=0}^7 (T_j, T_k)_w \hat{u}_j &= (u_e, T_k)_w,
 
-for all :math:`k \in 0, 1, \ldots, 7`. This can be rewritten on matrix form as
+for :math:`k = 0, 1, \ldots, 7`. This can be rewritten on matrix form as
 
 .. math::
 
     b_{kj} \hat{u}_j = \tilde{u}_k,
 
-where :math:`b_{kj} = (T_j, T_k)_w`, :math:`\tilde{u}_k = (u, T_k)_w` and
+where :math:`b_{kj} = (T_j, T_k)_w`, :math:`\tilde{u}_k = (u_e, T_k)_w` and
 summation is implied by the repeating :math:`j` indices. Since the
-Chebyshev polynomials are orthogonal the mass matrix :math:`B=(b_{kj})_{k,j=0}^{7}`
-is diagonal. We can assemble both the matrix :math:`B` and the column vector
-:math:`\boldsymbol{\tilde{u}}=\{\tilde{u}_j\}_{j=0}^7` with shenfun, and at the
+Chebyshev polynomials are orthogonal the mass matrix :math:`B=(b_{kj}) \in \mathbb{R}^{N \times N}`
+is diagonal. We can assemble both the matrix :math:`B` and the vector
+:math:`\boldsymbol{\tilde{u}}=(\tilde{u}_j) \in \mathbb{R}^N` with shenfun, and at the
 same time introduce the :class:`.TestFunction`, :class:`.TrialFunction` classes
 and the :func:`.inner` function::
 
@@ -174,7 +175,7 @@ Note that the matrix :math:`B` assembled above is stored using shenfun's
 :class:`.SpectralMatrix` class, which is a subclass of Python's dictionary,
 where the keys are the diagonals and the values are the diagonal entries.
 The matrix :math:`B` is seen to have only one diagonal (the principal)
-:math:`\{b_{ii}\}_{i=0}^{7}`.
+:math:`(b_{ii})_{i=0}^{7}`.
 
 With the matrix comes a `solve` method and we can solve for :math:`\hat{u}`
 through::
@@ -320,7 +321,7 @@ outer products of one-dimensional basis functions. We
 create tensor product spaces using the class :class:`.TensorProductSpace`::
 
     N, M = (12, 16)
-    C0 = FunctionSpace(N, 'L', bc=(0, 0), scaled=True)
+    C0 = FunctionSpace(N+2, 'L', bc=(0, 0), scaled=True)
     K0 = FunctionSpace(M, 'F', dtype='d')
     T = TensorProductSpace(comm, (C0, K0))
 
@@ -341,42 +342,49 @@ the second, and the tensor product basis function is
 .. math::
 
     v_{kl}(x, y) &= \frac{1}{\sqrt{4k+6}}(L_k(x) - L_{k+2}(x)) \exp(\imath l y), \\
-                 &= \Psi_k(x) \phi_l(y),
+                 &= \psi_k(x) \exp(\imath l y),
 
-where :math:`L_k` is the :math:`k`'th Legendre polynomial,
-:math:`\psi_k = (L_k-L_{k+2})/\sqrt{4k+6}` and :math:`\phi_l = \exp(\imath l y)` are used
-for simplicity in later derivations. The trial function becomes
+where :math:`\imath=\sqrt{-1}`, :math:`L_k` is the :math:`k`'th Legendre polynomial and
+:math:`\psi_k = (L_k-L_{k+2})/\sqrt{4k+6}` is used
+for simplicity in later expressions. The trial function is now
 
 .. math::
 
-    u(x, y) = \sum_k \sum_l \hat{u}_{kl} v_{kl}
+    u(u, y) = \sum_{k=0}^{N-1} \sum_{l=0}^{M/2} \hat{u}_{kl} \psi_k(x) \exp(\imath l y)
 
-and the inner product is
+where the sum on the Fourier exponentials is halved because we take advantage of
+the Hermitian symmetry of the real input data.
+
+The inner product (``inner(grad(u), grad(v))``) is now computed as
 
 .. math::
     :label: eq:poissons
 
-    (\nabla u, \nabla v)_w &= \int_{-1}^{1} \int_{0}^{2 \pi} \nabla u \cdot \nabla v dxdy, \\
-                           &= \int_{-1}^{1} \int_{0}^{2 \pi} \frac{\partial u}{\partial x} \frac{\partial v}{\partial x} + \frac{\partial u}{\partial y}\frac{\partial v}{\partial y} dxdy, \\
-                           &= \int_{-1}^{1} \int_{0}^{2 \pi} \frac{\partial u}{\partial x} \frac{\partial v}{\partial x} dxdy + \int_{-1}^{1} \int_{0}^{2 \pi} \frac{\partial u}{\partial y} \frac{\partial v}{\partial y} dxdy,
+    (\nabla u, \nabla v)_w &= \int_{-1}^{1} \int_{0}^{2 \pi} \nabla u \cdot \nabla \overline{v} \omega dxdy, \\
+                           &= \frac{1}{2\pi} \int_{-1}^{1} \int_{0}^{2 \pi} \left(\frac{\partial u}{\partial x} \frac{\partial \overline{v}}{\partial x} + \frac{\partial u}{\partial y}\frac{\partial \overline{v}}{\partial y}\right) dxdy, \\
+                           &= \frac{1}{2\pi} \int_{-1}^{1} \int_{0}^{2 \pi} \frac{\partial u}{\partial x} \frac{\partial \overline{v}}{\partial x} dxdy + \frac{1}{2\pi} \int_{-1}^{1} \int_{0}^{2 \pi} \frac{\partial u}{\partial y} \frac{\partial \overline{v}}{\partial y} dxdy,
 
-showing that it is the sum of two tensor product matrices. However, each one of these two
-terms contains the outer product of smaller matrices. To see this we need to insert for the
+where :math:`\overline{v}` is the complex conjugate of :math:`v` and we use the weight
+:math:`\omega = 1/2\pi`. We see that the inner product is really the sum of two tensor
+product matrices. However, each one of these also contains the outer product of
+smaller matrices. To see this we need to insert for the
 trial and test functions (using :math:`v_{mn}` for test):
 
 .. math::
-     \int_{-1}^{1} \int_{0}^{2 \pi} \frac{\partial u}{\partial x} \frac{\partial v}{\partial x} dxdy &= \int_{-1}^{1} \int_{0}^{2 \pi} \frac{\partial}{\partial x} \left( \sum_k \sum_l \hat{u}_{kl} \Psi_k(x) \phi_l(y) \right) \frac{\partial}{\partial x} \left( \Psi_m(x) \phi_n(y)  \right)dxdy, \\
-          &= \sum_k \sum_l \underbrace{ \int_{-1}^{1}  \frac{\partial \Psi_k(x)}{\partial x} \frac{\partial \Psi_m(x)}{\partial x} dx}_{a_{mk}} \underbrace{ \int_{0}^{2 \pi} \phi_l(y) \phi_{n}(y) dy}_{b_{nl}} \, \hat{u}_{kl},
+    \frac{1}{2\pi}\int_{-1}^{1} &\int_{0}^{2 \pi} \frac{\partial u}{\partial x} \frac{\partial \overline{v}}{\partial x} dxdy \\
+    &= \frac{1}{2\pi}\int_{-1}^{1} \int_{0}^{2 \pi} \frac{\partial}{\partial x} \left( \sum_{k=0}^{N-1} \sum_{l=0}^{M/2} \hat{u}_{kl} \psi_k \exp(\imath l y)  \right) \frac{\partial}{\partial x} \left(\psi_m \exp(- \imath n y)\right) dxdy, \\
+    &= \sum_{k=0}^{N-1} \sum_{l=0}^{M/2} \underbrace{ \int_{-1}^{1}  \frac{\partial \psi_k}{\partial x} \frac{\partial \psi_m}{\partial x} dx}_{a_{mk}} \underbrace{ \frac{1}{2\pi}\int_{0}^{2 \pi} \exp(\imath l y) \exp(-\imath n y) dy }_{b_{nl}} \, \hat{u}_{kl},
 
-where :math:`A = (a_{mk}) \in \mathbb{R}^{N-2 \times N-2}` and :math:`B = (b_{nl}) \in \mathbb{R}^{M \times M}`.
+where :math:`A = (a_{mk}) \in \mathbb{R}^{N \times N}` and :math:`B = (b_{nl}) \in \mathbb{R}^{(M/2+1)\times (M/2+1)}`.
 The tensor product matrix :math:`a_{mk} b_{nl}` (or in matrix notation :math:`A \otimes B`)
 is the first item of the two
 items in the list that is returned by ``inner(grad(u), grad(v))``. The other
 item is of course the second term in the last line of :eq:`eq:poissons`:
 
 .. math::
-     \int_{-1}^{1} \int_{0}^{2 \pi} \frac{\partial u}{\partial y} \frac{\partial v}{\partial y} dxdy &= \int_{-1}^{1} \int_{0}^{2 \pi} \frac{\partial}{\partial y} \left( \sum_k \sum_l \hat{u}_{kl} \Psi_k(x) \phi_l(y) \right) \frac{\partial}{\partial y} \left(\Psi_m(x) \phi_n(y) \right) dxdy \\
-          &= \sum_k \sum_l \underbrace{ \int_{-1}^{1}  \Psi_k(x) \Psi_m(x) dx}_{c_{mk}} \underbrace{ \int_{0}^{2 \pi} \frac{\partial \phi_l(y)}{\partial y} \frac{ \phi_{n}(y) }{\partial y} dy}_{d_{nl}} \, \hat{u}_{kl}
+     \frac{1}{2\pi} \int_{-1}^{1} &\int_{0}^{2 \pi} \frac{\partial u}{\partial y} \frac{\partial \overline{v}}{\partial y} dxdy \\
+     &= \frac{1}{2\pi}\int_{-1}^{1} \int_{0}^{2 \pi} \frac{\partial}{\partial y} \left( \sum_{k=0}^{N-1} \sum_{l=0}^{M/2} \hat{u}_{kl} \psi_k \exp(\imath l y) \right) \frac{\partial}{\partial y} \left(\psi_m \exp(- \imath n y) \right) dxdy \\
+     &= \sum_{k=0}^{N-1} \sum_{l=0}^{M/2} \underbrace{ \int_{-1}^{1}  \psi_k \psi_m dx}_{c_{mk}} \underbrace{\frac{1}{2\pi} \int_{0}^{2 \pi} \frac{\partial \exp(\imath l y)}{\partial y} \frac{ \partial  \exp(- \imath n y) }{\partial y} dy}_{d_{nl}} \, \hat{u}_{kl}
 
 The tensor product matrices :math:`a_{mk} b_{nl}` and :math:`c_{mk}d_{nl}` are both instances
 of the :class:`.TPMatrix` class. Together they lead to linear algebra systems
@@ -387,21 +395,16 @@ like:
 
     (a_{mk}b_{nl} + c_{mk}d_{nl}) \hat{u}_{kl} = \tilde{f}_{mn},
 
-where
+where :math:`0 \le m < N, 0 \le n \le M/2` and
+:math:`\tilde{f}_{mn} = (v_{mn}, f)_w` for some right hand side :math:`f`,
+see, e.g., :eq:`eq:poissonmulti`. Note that an alternative formulation here is
 
 .. math::
 
-    \tilde{f}_{mn} = (v_{mn}, f)_w,
+    A U B^T + C U D^T = F,
 
-for some right hand side :math:`f`, see, e.g., :eq:`eq:poissonmulti`. Note that
-an alternative formulation here is
-
-.. math::
-
-    A U B^T + C U D^T = F
-
-where :math:`U=(\hat{u}_{kl}) \in \mathbb{R}^{N-2 \times M}` and
-:math:`F = (\tilde{f}_{kl}) \in \mathbb{R}^{N-2 \times M}` are treated as regular matrices.
+where :math:`U=(\hat{u}_{kl}) \in \mathbb{R}^{N \times M/2+1}` and
+:math:`F = (\tilde{f}_{kl}) \in \mathbb{R}^{N \times M/2+1}` are treated as regular matrices.
 This formulation is utilized to derive efficient solvers for tensor product bases
 in multiple dimensions using the matrix decomposition
 method in :cite:`shen1` and :cite:`shen95`. In shenfun we have generic solvers
@@ -414,8 +417,8 @@ We have
     \text{vec}(A U B^T) + \text{vec}(C U D^T) &= \text{vec}(F), \\
     (A \otimes B + C \otimes D ) \text{vec}(U) &= \text{vec}(F)
 
-where the column vector :math:`\text{vec}(U) = (\hat{u}_{0,0}, \ldots, \hat{u}_{0,M-1}, \hat{u}_{1,0}, \ldots \hat{u}_{1,M-1}, \ldots, \ldots \hat{u}_{N-3,0}, \ldots, \hat{u}_{M-1,M-1})^T`
-is obtained by flattening the row-major matrix :math:`U`. The generic Kronecker solvers
+where :math:`\text{vec}(U) = (\hat{u}_{0,0}, \ldots, \hat{u}_{0,M/2}, \hat{u}_{1,0}, \ldots \hat{u}_{1,M/2}, \ldots, \ldots \hat{u}_{N-1,0}, \ldots, \hat{u}_{N-1,M/2})^T`
+is a vector obtained by flattening the row-major matrix :math:`U`. The generic Kronecker solvers
 are found in :class:`.Solver2D` and :class:`.Solver3D` for two- and three-dimensional
 problems.
 
@@ -433,7 +436,7 @@ whereas the last one can be written in terms of the identity
 
 .. math::
 
-    d_{nl} = -nl\delta_{nl}.
+    d_{nl} = l^2\delta_{nl}.
 
 Inserting for this in :eq:`eq:multisystem` and simplifying by requiring that
 :math:`l=n` in the second step, we get
@@ -441,8 +444,8 @@ Inserting for this in :eq:`eq:multisystem` and simplifying by requiring that
 .. math::
     :label: eq:matfourier
 
-    (\delta_{mk}\delta_{nl} - ln c_{mk}\delta_{nl}) \hat{u}_{kl} &= \tilde{f}_{mn}, \\
-    (\delta_{mk} - l^2 c_{mk}) \hat{u}_{kl} &= \tilde{f}_{ml}.
+    (\delta_{mk}\delta_{nl} + l^2 c_{mk}\delta_{nl}) \hat{u}_{kl} &= \tilde{f}_{mn}, \\
+    (\delta_{mk} + l^2 c_{mk}) \hat{u}_{kl} &= \tilde{f}_{ml}.
 
 Now if we keep :math:`l` fixed this latter equation is simply a regular
 linear algebra problem to solve for :math:`\hat{u}_{kl}`, for all :math:`k`.
@@ -531,7 +534,7 @@ basis vectors, that are also called physical basis vectors. These are
     \mathbf{e}_{r}&=\cos{\left(\theta \right)}\,\mathbf{i}+\sin{\left(\theta \right)}\,\mathbf{j}, \\ \mathbf{e}_{\theta}&=- \sin{\left(\theta \right)}\,\mathbf{i}+\cos{\left(\theta \right)}\,\mathbf{j}, \\ \mathbf{e}_{z}&=\mathbf{k}.
 
 To choose there is a configuration parameter called `basisvectors` in the configuration file
-`shenfun.yaml`, that can be set to either `covariant` or `normal`.
+`shenfun.yaml` (see :ref:`Configuration`), that can be set to either `covariant` or `normal`.
 
 A vector :math:`\mathbf{u}` in the covariant basis is given as
 
@@ -709,6 +712,7 @@ used to integrate a solution forward in time. Integrators are set up to solve
 initial value problems like
 
 .. math::
+    :label: eq:nlsolver
 
     \frac{\partial u}{\partial t} = L u + N(u)
 
@@ -769,7 +773,7 @@ Fourier exponentials as test functions. The initial condition is chosen as
     u(x, t=0) = 3 A^2/\cosh(0.5 A (x-\pi+2))^2 + 3B^2/\cosh(0.5B(x-\pi+1))^2
 
 where :math:`A` and :math:`B` are constants. For discretization in space we use
-the basis :math:`V_N = span\{exp(\imath k x)\}_{k=0}^N` and formulate the
+the basis :math:`V_N = \text{span}\{exp(\imath k x)\}_{k=0}^N` and formulate the
 variational problem: find :math:`u \in V_N` such that
 
 .. math::
@@ -886,17 +890,18 @@ Note that both the TensorProductSpaces have functions with expansion
 .. math::
    :label: u_fourier
 
-        u(x, y, z) = \sum_{n=-N/2}^{N/2-1}\sum_{m=-N/2}^{N/2-1}\sum_{l=-N/2}^{N/2-1}
+        u(x, y, z) = \sum_{l=-N_0/2}^{N_0/2-1}\sum_{m=-N_1/2}^{N_1/2-1}\sum_{n=0}^{N_2/2}
         \hat{u}_{l,m,n} e^{\imath (lx + my + nz)}.
 
 where :math:`u(x, y, z)` is the continuous solution in real physical space, and :math:`\hat{u}`
-are the spectral expansion coefficients. If we evaluate expansion :eq:`u_fourier`
+are the spectral expansion coefficients. Note that the last axis has index set different from the
+two others because the input data is real. If we evaluate expansion :eq:`u_fourier`
 on the real physical mesh, then we get
 
 .. math::
    :label: u_fourier_d
 
-        u(x_i, y_j, z_k) = \sum_{n=-N/2}^{N/2-1}\sum_{m=-N/2}^{N/2-1}\sum_{l=-N/2}^{N/2-1}
+        u(x_i, y_j, z_k) = \sum_{l=-N_0/2}^{N_0/2-1}\sum_{m=-N_1/2}^{N_1/2-1}\sum_{n=0}^{N_2/2}
         \hat{u}_{l,m,n} e^{\imath (lx_i + my_j + nz_k)}.
 
 The function :math:`u(x_i, y_j, z_k)` corresponds to the arrays ``u0, u1``, whereas
@@ -1072,7 +1077,7 @@ number of CPUs, and the number of CPUs does not need to be the same when
 storing or retrieving the data.
 
 After running the above, the different arrays will be found in groups
-stored in `myyfile.h5` with directory tree structure as::
+stored in `myh5file.h5` with directory tree structure as::
 
     myh5file.h5/
     └─ u/
