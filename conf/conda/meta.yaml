@@ -30,6 +30,7 @@ requirements:
     - pyyaml
     - scipy
     - fftw
+    - numba
     - mpi4py
     - mpi4py-fft >=2.0.5
     - sympy
