@@ -53,7 +53,8 @@ with initial conditions
 
 The spatial coordinates are here denoted as :math:`\boldsymbol{x} = (x, y, z)`, and
 :math:`t` is time. The parameter :math:`\gamma=\pm 1` determines whether the equations are focusing
-(:math:`+1`) or defocusing (:math:`-1`) (in the movie we have used :math:`\gamma=1`). The domain :math:`\Omega=[-2\pi, 2\pi]^3` is triply
+(:math:`+1`) or defocusing (:math:`-1`) (in the movie we have used :math:`\gamma=1`).
+The domain :math:`\Omega=[-2\pi, 2\pi]^3` is triply
 periodic and initial conditions will here be set as
 
 .. math::
@@ -114,16 +115,18 @@ the spectral Galerkin method. Being a Galerkin method, we need to reshape the
 governing equations into proper variational forms, and this is done by
 multiplying  :eq:`eq:df` and :eq:`eq:du` with the complex conjugate of proper
 test functions and then integrating
-over the domain. To this end we use testfunctions :math:`g\in V(\Omega)`
-with Eq. :eq:`eq:df`  and  :math:`v \in V(\Omega)` with Eq. :eq:`eq:du`, where
-:math:`V(\omega)` is a suitable function space, and obtain
+over the domain. To this end we make use of the triply periodic tensor product
+function space :math:`W^{\boldsymbol{N}}(\Omega)` (defined in Eq. :eq:`eq:kg:Wn`)
+and use testfunctions :math:`g \in W^{\boldsymbol{N}}`
+with Eq. :eq:`eq:df`  and  :math:`v \in W^{\boldsymbol{N}}` with Eq. :eq:`eq:du`,
+and obtain
 
 .. math::
    :label: eq:df_var
 
         
-        \frac{\partial}{\partial t} \int_{\Omega} f\, \overline{g}\, w \,dx = \int_{\Omega}
-        \left(\nabla^2 u - \gamma( u\, - u|u|^2) \right) \overline{g} \, w \,dx,  
+        \frac{\partial}{\partial t} \int_{\Omega} f\, \overline{g}\, w \,d\Omega = \int_{\Omega}
+        \left(\nabla^2 u - \gamma( u\, - u|u|^2) \right) \overline{g} \, w \,d\Omega,  
         
 
 .. math::
@@ -131,14 +134,14 @@ with Eq. :eq:`eq:df`  and  :math:`v \in V(\Omega)` with Eq. :eq:`eq:du`, where
 
           
         \frac{\partial }{\partial t} \int_{\Omega} u\, \overline{v}\, w \, dx =
-        \int_{\Omega} f\, \overline{v} \, w \, dx. 
+        \int_{\Omega} f\, \overline{v} \, w \, d\Omega. 
         
 
 Note that the overline is used to indicate a complex conjugate, and
 :math:`w` is a weight function associated with the test functions. The functions
 :math:`f` and :math:`u` are now
 to be considered as trial functions, and the integrals over the
-domain are often referred to as inner products. With inner product notation
+domain are referred to as inner products. With inner product notation
 
 .. math::
         
@@ -167,7 +170,10 @@ The time and space discretizations are
 still left open. There are numerous different approaches that one could take for
 discretizing in time, and the first two terms on the right hand side of
 :eq:`eq:df_var2` can easily be treated implicitly as well as explicitly. However,
-the approach we will follow in Sec. (:ref:`sec:rk`) is a fully explicit 4th order `Runge-Kutta <https://en.wikipedia.org/wiki/Runge-Kutta_methods>`__ method.
+the approach we will follow in Sec. (:ref:`sec:rk`) is a fully explicit 4th order `Runge-Kutta <https://en.wikipedia.org/wiki/Runge-Kutta_methods>`__ method. Also note that
+the inner product in the demo will be computed numerically with quadrature
+through fast Fourier transforms, and the integrals are thus not computed exactly
+for all terms.
 
 Discretization
 --------------
@@ -218,7 +224,7 @@ for simplicity. A 3D tensor product basis function is now defined as
         
         \Phi_{lmn}(x,y,z) = e^{\imath \underline{l} x} e^{\imath \underline{m} y}
         e^{\imath \underline{n} z} = e^{\imath
-        (\underline{l}x + \underline{m}y + \underline{n}z)}
+        (\underline{l}x + \underline{m}y + \underline{n}z)},
         
         
 
@@ -226,7 +232,8 @@ where the indices for :math:`y`- and :math:`z`-direction are :math:`\underline{m
 \underline{n}=\frac{2\pi}{L}n`, and :math:`\boldsymbol{m}` and :math:`\boldsymbol{n}` are the same as
 :math:`\boldsymbol{l}` due to using the same number of basis functions for each direction. One
 distinction, though, is that for the :math:`z`-direction expansion coefficients are only stored for
-:math:`n=0, 1, \ldots, N/2` due to Hermitian symmetry (real input data).
+:math:`n=0, 1, \ldots, N/2` due to Hermitian symmetry (real input data). However, for simplicity,
+we still write the sum in Eq. :eq:`eq:usg` over the entire range of basis functions.
 
 We now look for solutions of the form
 
@@ -234,7 +241,7 @@ We now look for solutions of the form
    :label: eq:usg
 
         
-        u(x, y, z, t) = \sum_{l=-N/2}^{N/2-1}\sum_{m=-N/2}^{N/2-1}\sum_{n=0}^{N/2}
+        u(x, y, z, t) = \sum_{l=-N/2}^{N/2-1}\sum_{m=-N/2}^{N/2-1}\sum_{n=-N/2}^{N/2-1}
         \hat{u}_{lmn} (t)\Phi_{lmn}(x,y,z). 
         
 
@@ -278,12 +285,12 @@ is set to :math:`[-2\pi, 2\pi]^3` and not the more common :math:`[0, 2\pi]^3`. W
    :label: eq:uxyz
 
         
-        \boldsymbol{u} = \mathcal{F}_z^{-1}\left(\mathcal{F}_y^{-1}\left(\mathcal{F}_z^{-1}\left(\hat{\boldsymbol{u}}\right)\right)\right) 
+        \boldsymbol{u} = \mathcal{F}_x^{-1}\left(\mathcal{F}_y^{-1}\left(\mathcal{F}_z^{-1}\left(\hat{\boldsymbol{u}}\right)\right)\right) 
         
 
 with :math:`\boldsymbol{u} = \{u(x_i, y_j, z_k)\}_{(i,j,k)\in \boldsymbol{i} \times \boldsymbol{j} \times \boldsymbol{k}}`
 and where :math:`\mathcal{F}_x^{-1}` is the inverse Fourier transform along the direction :math:`x`, for
-all indices in the other direction, i.e., for :math:`(j, k) \in \boldsymbol{j} \times \boldsymbol{k}`. Note that the three
+all indices in the other direction. Note that the three
 inverse FFTs are performed sequentially, one direction at the time, and that there is no
 scaling factor due to
 the definition used for the inverse `Fourier transform <https://mpi4py-fft.readthedocs.io/en/latest/dft.html>`__
@@ -315,7 +322,7 @@ unity:
 .. math::
         \int_{0}^{L} e^{\imath \underline{k}x} e^{- \imath \underline{l}x} \frac{1}{L} dx = \delta_{kl}.
 
-With this weight function the scalar product and the forward transform
+With this weight function the (discrete) scalar product and the forward transform
 are the same and we obtain:
 
 .. math::
@@ -324,7 +331,7 @@ are the same and we obtain:
         
         \left(u, v \right) = \boldsymbol{\hat{u}} =
         \left(\frac{1}{N}\right)^3
-        \mathcal{F}_z\left(\mathcal{F}_y\left(\mathcal{F}_x\left(\boldsymbol{u}\right)\right)\right),
+        \mathcal{F}_z\left(\mathcal{F}_y\left(\mathcal{F}_x\left(\boldsymbol{u}\right)\right)\right).
         
         
 
@@ -394,14 +401,14 @@ for all :math:`t>0`, find :math:`(f, u) \in W^N \times W^N`  such that
 
         
         \frac{\partial}{\partial t} (f, g) = -(\nabla u, \nabla g)
-        -\gamma \left( u - u|u|^2, g \right),  
+        -\gamma \left( u - u|u|^2, g \right) \quad \forall \, g \in W^{N},  
         
 
 .. math::
    :label: eq:kg:duu
 
           
-        \frac{\partial }{\partial t} (u, v) = (f, v) \quad \forall \, (g, v) \in W^N \times W^N. 
+        \frac{\partial }{\partial t} (u, v) = (f, v) \quad \forall \, v \in W^N. 
         
 
 where :math:`u(x, y, z, 0)` and :math:`f(x, y, z, 0)` are given as the initial conditions

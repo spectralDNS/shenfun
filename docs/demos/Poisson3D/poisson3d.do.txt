@@ -35,9 +35,8 @@ u(x, y, 2\pi) &= u(x, y, 0),
 where $u(\bs{x})$ is the solution and $f(\bs{x})$ is a function. The domain
 $\Omega = [-1, 1]\times [0, 2\pi]^2$.
 
-To solve Eq. (ref{eq:3d:poisson}) with the Galerkin method we need smooth basis
-functions, $v(\bs{x})$, that live
-in the Hilbert space $H^1(\Omega)$ and that satisfy the given boundary
+To solve Eq. (ref{eq:3d:poisson}) with the Galerkin method we will make use of
+smooth basis functions, $v(\bs{x})$, that satisfy the given boundary
 conditions. To this end we will use one basis function for the $x$-direction,
 $\mathcal{X}(x)$,
 one for the $y$-direction, $\mathcal{Y}(y)$, and one for the $z$-direction,
@@ -97,7 +96,7 @@ u(\bs{x}) &= \sum_{l\in \bs{l}^{N_0}} \sum_{m\in \bs{m}^{N_1}}\sum_{n\in
 !et
 
 where $\hat{u}_{lmn}$ are components of the expansion coefficients for $u$ and
-the second form, $(\hat{u}_{\ts{k}})_{\ts{k}\in\bs{k}}$, is a shorter,
+the second form, $\{\hat{u}_{\ts{k}}\}_{\ts{k}\in\bs{k}}$, is a shorter,
 simplified notation, with sans-serif $\ts{k}=(l, m, n)$.
 The expansion coefficients are the unknowns in the spectral Galerkin method.
 
@@ -119,8 +118,10 @@ The weighted integrals, weighted by $w(\bs{x})$, are called inner products, and 
 \end{equation}
 !et
 The integral can either be computed exactly, or with quadrature. The advantage
-of the latter is that it is generally faster, and that non-linear terms may be
-computed just as quickly as linear. For a linear problem, it does not make much of a difference, if any at all. Approximating the integral with quadrature, we obtain
+of the latter is that it is faster (through Fast Fourier transforms),
+and that non-linear terms may be computed just as quickly as linear.
+For a linear problem, it does not make much of a difference, if any at all.
+Approximating the integral with quadrature, we obtain
 !bt
 \begin{align*}
 \int_{\Omega} u \, \overline{v} \, w\, \bs{dx} &\approx \langle u, v
@@ -129,11 +130,10 @@ computed just as quickly as linear. For a linear problem, it does not make much 
 \end{align*}
 !et
 where $w(\bs{x})$ now are the quadrature weights. The quadrature points
-$(x_i)_{i=0}^{N_0-1}$ are specific to the chosen basis, and even within basis there
+$\{x_i\}_{i=0}^{N_0-1}$ are specific to the chosen basis, and even within basis there
 are two different choices based on which quadrature rule is selected, either
-Gauss or Gauss-Lobatto. The quadrature points for the Fourier bases are the
-uniform $(y_j)_{j=0}^{N_1-1}=2\pi j / N_1$ and $(z_k)_{k=0}^{N_2-1} = 2 \pi
-k/N_2$.
+Gauss or Gauss-Lobatto. The quadrature points for the Fourier bases are simply
+uniformly distributed throughout the domain.
 
 Inserting for test function (ref{eq:3d:u}) and trialfunction
 $v_{pqr} = \mathcal{X}_{p} \mathcal{Y}_q \mathcal{Z}_r$ on the
@@ -157,7 +157,7 @@ b_{pl} = \left( \mathcal{X}_l, \mathcal{X}_p \right)_w^{N_0} = \sum_{i=0}^{N_0-1
 \mathcal{X}_p(x_i) w(x_i),
 \end{equation}
 !et
-is used to represent an $L_2$ inner product along only the first, nonperiodic,
+is used to represent a discrete $L_2$ inner product along only the first, nonperiodic,
 direction. The delta functions above come from integrating over the two periodic
 directions, where we use constant weight functions $w=1/(2\pi)$ in the
 inner products
@@ -316,8 +316,8 @@ direction to be local to the processor. If the `SD` basis is the last to be
 transformed, then the data will be aligned in this direction, whereas the other
 two directions may both, or just one of them, be distributed.
 
-Note that `X` is a list containing local values of the arrays $(x_i)_{i=0}^{N_0-1}$,
-$(y_j)_{j=0}^{N_1-1}$ and $(z_k)_{k=0}^{N_2-1}$.
+Note that `X` is a list containing local values of the arrays $\{x_i\}_{i=0}^{N_0-1}$,
+$\{y_j\}_{j=0}^{N_1-1}$ and $\{z_k\}_{k=0}^{N_2-1}$.
 Now, it's not possible to run a jupyter notebook with more than one process,
 but we can imagine running "the complete solver": "https://github.com/spectralDNS/shenfun/blob/master/demo/poisson3D.py"
 with 4 procesors and a processor mesh of shape $2\times 2$.

@@ -65,7 +65,7 @@ $\bs{H} = (H_x, H_y) = (\bs{u} \cdot \nabla) \bs{u}$
 \end{equation}
 !et
 
-This equation is solved with $u(\pm 1) = \partial u/\partial x(\pm 1) = 0$, where the latter follows from the
+This equation is solved with $u(\pm 1,y,t) = \partial u/\partial x(\pm 1,y,t) = 0$, where the latter follows from the
 divergence constraint. In summary, we now seem to have the following equations to solve:
 
 !bt

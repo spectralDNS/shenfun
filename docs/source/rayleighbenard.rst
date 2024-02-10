@@ -89,7 +89,7 @@ direction, using the pressure from the divergence of the momentum equation
             \frac{\partial \nabla^2 {u}}{\partial t} = \frac{\partial^2 H_y}{\partial x \partial y} - \frac{\partial^2 H_x}{\partial y\partial y}  + \sqrt{\frac{Pr}{Ra}} \nabla^4 {u}  + \frac{\partial^2 T}{\partial y^2} . 
         
 
-This equation is solved with :math:`u(\pm 1) = \partial u/\partial x(\pm 1) = 0`, where the latter follows from the
+This equation is solved with :math:`u(\pm 1,y,t) = \partial u/\partial x(\pm 1,y,t) = 0`, where the latter follows from the
 divergence constraint. In summary, we now seem to have the following equations to solve:
 
 .. math::

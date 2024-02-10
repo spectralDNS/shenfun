@@ -109,7 +109,7 @@ A discrete Fourier approximation space with :math:`N` basis functions is then
    :label: _auto6
 
         
-        V_F^N = \text{span} \{\exp(\imath k \theta)\}, \text{ for } k \in K,
+        V_F^N = \text{span} \{\exp(\imath k \theta)| \text{ for } k \in K\},
         
         
 

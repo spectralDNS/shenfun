@@ -10,7 +10,7 @@ BUILDDIR      = build
 DEMO          = Poisson/poisson.rst \
                 KleinGordon/kleingordon.rst \
                 Poisson3D/poisson3d.rst \
-				PolarHelmholtz/polarhelmholtz.rst \
+				PolarHelmholtz/polarhelmholtz.ipynb \
 				SphereHelmholtz/sphericalhelmholtz.ipynb \
 				KuramatoSivashinsky/kuramatosivashinsky.rst \
 				Stokes/stokes.rst \

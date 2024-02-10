@@ -350,10 +350,12 @@ for simplicity in later expressions. The trial function is now
 
 .. math::
 
-    u(u, y) = \sum_{k=0}^{N-1} \sum_{l=0}^{M/2} \hat{u}_{kl} \psi_k(x) \exp(\imath l y)
+    u(u, y) = \sum_{k=0}^{N-1} \sum_{l=-M/2}^{M/2-1} \hat{u}_{kl} \psi_k(x) \exp(\imath l y)
 
-where the sum on the Fourier exponentials is halved because we take advantage of
-the Hermitian symmetry of the real input data.
+where the sum on the Fourier exponentials will be implemented to take advantage of
+the Hermitian symmetry of the real input data. That is, :math:`\hat{u}_{k,l} = \overline{\hat{u}}_{k,-l}`,
+where the overline represents a complex conjugate. Note that because of this symmetry the
+shape of the stored array :math:`(\hat{u}_{kl})` will be :math:`N \times M/2+1`.
 
 The inner product (``inner(grad(u), grad(v))``) is now computed as
 
@@ -373,9 +375,10 @@ trial and test functions (using :math:`v_{mn}` for test):
 .. math::
     \frac{1}{2\pi}\int_{-1}^{1} &\int_{0}^{2 \pi} \frac{\partial u}{\partial x} \frac{\partial \overline{v}}{\partial x} dxdy \\
     &= \frac{1}{2\pi}\int_{-1}^{1} \int_{0}^{2 \pi} \frac{\partial}{\partial x} \left( \sum_{k=0}^{N-1} \sum_{l=0}^{M/2} \hat{u}_{kl} \psi_k \exp(\imath l y)  \right) \frac{\partial}{\partial x} \left(\psi_m \exp(- \imath n y)\right) dxdy, \\
-    &= \sum_{k=0}^{N-1} \sum_{l=0}^{M/2} \underbrace{ \int_{-1}^{1}  \frac{\partial \psi_k}{\partial x} \frac{\partial \psi_m}{\partial x} dx}_{a_{mk}} \underbrace{ \frac{1}{2\pi}\int_{0}^{2 \pi} \exp(\imath l y) \exp(-\imath n y) dy }_{b_{nl}} \, \hat{u}_{kl},
+    &= \sum_{k=0}^{N-1} \sum_{l=-M/2}^{M/2-1} \underbrace{ \int_{-1}^{1}  \frac{\partial \psi_k}{\partial x} \frac{\partial \psi_m}{\partial x} dx}_{a_{mk}} \underbrace{ \frac{1}{2\pi}\int_{0}^{2 \pi} \exp(\imath l y) \exp(-\imath n y) dy }_{b_{nl}} \, \hat{u}_{kl},
 
-where :math:`A = (a_{mk}) \in \mathbb{R}^{N \times N}` and :math:`B = (b_{nl}) \in \mathbb{R}^{(M/2+1)\times (M/2+1)}`.
+where :math:`A = (a_{mk}) \in \mathbb{R}^{N \times N}` and :math:`B = (b_{nl}) \in \mathbb{R}^{(M/2+1)\times (M/2+1)}`,
+again using the Hermitian symmetry to reduce the shape of the Fourier axis to :math:`M/2+1`.
 The tensor product matrix :math:`a_{mk} b_{nl}` (or in matrix notation :math:`A \otimes B`)
 is the first item of the two
 items in the list that is returned by ``inner(grad(u), grad(v))``. The other
@@ -384,7 +387,7 @@ item is of course the second term in the last line of :eq:`eq:poissons`:
 .. math::
      \frac{1}{2\pi} \int_{-1}^{1} &\int_{0}^{2 \pi} \frac{\partial u}{\partial y} \frac{\partial \overline{v}}{\partial y} dxdy \\
      &= \frac{1}{2\pi}\int_{-1}^{1} \int_{0}^{2 \pi} \frac{\partial}{\partial y} \left( \sum_{k=0}^{N-1} \sum_{l=0}^{M/2} \hat{u}_{kl} \psi_k \exp(\imath l y) \right) \frac{\partial}{\partial y} \left(\psi_m \exp(- \imath n y) \right) dxdy \\
-     &= \sum_{k=0}^{N-1} \sum_{l=0}^{M/2} \underbrace{ \int_{-1}^{1}  \psi_k \psi_m dx}_{c_{mk}} \underbrace{\frac{1}{2\pi} \int_{0}^{2 \pi} \frac{\partial \exp(\imath l y)}{\partial y} \frac{ \partial  \exp(- \imath n y) }{\partial y} dy}_{d_{nl}} \, \hat{u}_{kl}
+     &= \sum_{k=0}^{N-1} \sum_{l=-M/2}^{M/2-1} \underbrace{ \int_{-1}^{1}  \psi_k \psi_m dx}_{c_{mk}} \underbrace{\frac{1}{2\pi} \int_{0}^{2 \pi} \frac{\partial \exp(\imath l y)}{\partial y} \frac{ \partial  \exp(- \imath n y) }{\partial y} dy}_{d_{nl}} \, \hat{u}_{kl}
 
 The tensor product matrices :math:`a_{mk} b_{nl}` and :math:`c_{mk}d_{nl}` are both instances
 of the :class:`.TPMatrix` class. Together they lead to linear algebra systems
@@ -417,7 +420,7 @@ We have
     \text{vec}(A U B^T) + \text{vec}(C U D^T) &= \text{vec}(F), \\
     (A \otimes B + C \otimes D ) \text{vec}(U) &= \text{vec}(F)
 
-where :math:`\text{vec}(U) = (\hat{u}_{0,0}, \ldots, \hat{u}_{0,M/2}, \hat{u}_{1,0}, \ldots \hat{u}_{1,M/2}, \ldots, \ldots \hat{u}_{N-1,0}, \ldots, \hat{u}_{N-1,M/2})^T`
+where :math:`\text{vec}(U) = (\hat{u}_{0,0}, \ldots, \hat{u}_{0,M/2}, \hat{u}_{1,0}, \ldots \hat{u}_{1,M/2}, \ldots, \ldots, \hat{u}_{N-1,0}, \ldots, \hat{u}_{N-1,M/2})^T`
 is a vector obtained by flattening the row-major matrix :math:`U`. The generic Kronecker solvers
 are found in :class:`.Solver2D` and :class:`.Solver3D` for two- and three-dimensional
 problems.

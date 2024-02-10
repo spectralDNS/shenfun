@@ -104,10 +104,10 @@ gradue = Array(V, buffer=grad(u).tosympy(basis=ue, psi=psi))
 gij = T.coors.get_covariant_metric_tensor()
 ui, vi = TT.local_mesh(True, kind='uniform')
 # Evaluate metric on computational mesh
-g = np.array(sp.lambdify(psi, gij)(ui, vi), dtype=object)
-errorg = inner(1, (du[0]-gradue[0])**2*g[0, 0]+ (du[1]-gradue[1])**2*g[1, 1])
-print('Error gradient = %2.6e'%(np.sqrt(errorg)))
-assert np.sqrt(errorg) < 1e-7
+gij[0, 0] = np.array(sp.lambdify(psi, gij[0, 0])(ui, vi), dtype=object)
+errorg = inner(1, (du[0]-gradue[0])**2*gij[0, 0]+ (du[1]-gradue[1])**2*gij[1, 1])
+print('Error gradient = %2.6e'%(np.sqrt(float(errorg))))
+assert np.sqrt(float(errorg)) < 1e-7
 
 if 'pytest' not in os.environ:
     import matplotlib.pyplot as plt
@@ -133,7 +133,11 @@ if 'pytest' not in os.environ:
     plt.figure()
     plt.contourf(xp, yp, up)
     b = T.coors.get_covariant_basis()
-    bij = np.array(sp.lambdify(psi, b)(ui, vi))
+    #bij = np.array(sp.lambdify(psi, b)(ui, vi)) # no longer allowed in sympy
+    bij = np.zeros((2, 2, N, N))
+    for i in (0, 1):
+        for j in (0, 1):
+            bij[i, j] = sp.lambdify(psi, b[i, j])(ui, vi)
     # Compute Cartesian gradient
     gradu = du[0]*bij[0] + du[1]*bij[1]
     plt.quiver(xi, yi, gradu[0], gradu[1], scale=40, pivot='mid', color='white')

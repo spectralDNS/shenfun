@@ -40,11 +40,11 @@ The nonlinear steady Navier Stokes equations are given in strong form as
 .. math::
         \begin{align*}
         \nu \nabla^2 \boldsymbol{u} - \nabla p &= \nabla \cdot \boldsymbol{u} \boldsymbol{u} \quad \text{in }  \Omega , \\ 
-        \nabla \cdot \boldsymbol{u} &= 0 \quad \text{in } \Omega  \\ 
-        \int_{\Omega} p dx &= 0 \\ 
-        \boldsymbol{u}(x, y=1) = (1, 0) \, &\text{ or }\, \boldsymbol{u}(x, y=1) = ((1-x)^2(1+x)^2, 0) \\ 
-        \boldsymbol{u}(x, y=-1) &= (0, 0) \\ 
-        \boldsymbol{u}(x=\pm 1, y) &= (0, 0)
+        \nabla \cdot \boldsymbol{u} &= 0 \quad \text{in } \Omega,  \\ 
+        \int_{\Omega} p dx &= 0, \\ 
+        \boldsymbol{u}(x, y=1) = (1, 0) \, &\text{ or }\, \boldsymbol{u}(x, y=1) = ((1-x)^2(1+x)^2, 0), \\ 
+        \boldsymbol{u}(x, y=-1) &= (0, 0), \\ 
+        \boldsymbol{u}(x=\pm 1, y) &= (0, 0),
         \end{align*}
 
 where :math:`\boldsymbol{u}, p` and :math:`\nu` are, respectively, the
@@ -178,7 +178,7 @@ using both additional basis functions. We create the space
 
     D1Y = FunctionSpace(N[1], family, quad=quad, bc=(0, 1))
 
-where ``bc=(1, 0)`` fixes the values for :math:`y=1` and :math:`y=-1`, respectively.
+where ``bc=(0, 1)`` fixes the values for :math:`y=-1` and :math:`y=1`, respectively.
 For a regularized lid driven cavity the velocity of the top lid is
 :math:`(1-x)^2(1+x)^2` and not unity. To implement this boundary condition
 instead, we can make use of `sympy <https://www.sympy.org>`__ and
@@ -256,7 +256,15 @@ With shenfun the tensor product spaces are created as
     V0 = TensorProductSpace(comm, (D0X, D0Y))
     P = TensorProductSpace(comm, (PX, PY), modify_spaces_inplace=True)
 
-These tensor product spaces are all scalar valued.
+where ``modify_spaces_inplace=True`` makes use of ``PX`` and
+``PY`` directly. These spaces have now been modified to fit in
+the TensorProductSpace ``P``, along two different directions and as such
+the original spaces have been modified. The default behavior in shenfun
+is to make copies of the 1D spaces under the hood, and thus leave ``PX``
+and ``PY`` untouched. In that case the two new and modified spaces would be accessible
+from ``P.bases``.
+
+Note that all these tensor product spaces are scalar valued.
 The velocity is a vector, and a vector requires a mixed vector basis like
 :math:`W_1^{\boldsymbol{N}} = V_1^{\boldsymbol{N}} \times V_0^{\boldsymbol{N}}`. The vector basis is created
 in shenfun as

@@ -27,8 +27,8 @@ Stokes' equations are given in strong form as
 !bt
 \begin{align*}
 \nabla^2 \bs{u} - \nabla p &= \bs{f} \quad \text{in }  \Omega, \\
-\nabla \cdot \bs{u} &= h \quad \text{in } \Omega  \\
-\int_{\Omega} p dx &= 0
+\nabla \cdot \bs{u} &= h \quad \text{in } \Omega,  \\
+\int_{\Omega} p dx &= 0,
 \end{align*}
 !et
 where $\bs{u}$ and $p$ are, respectively, the
@@ -282,7 +282,7 @@ Breaking it down this inner product is mathematically
 !bt
 \begin{equation}
 label{eq:partialeq1}
-\int_{\Omega} \bs{v}[0] \left(\frac{\partial^2 \bs{u}[0]}{\partial x^2} + \frac{\partial^2 \bs{u}[0]}{\partial y^2} + \frac{\partial^2 \bs{u}[0]}{\partial z^2}\right) w_x dx w_y dy w_z dz.
+\int_{\Omega} \bs{\overline{v}}[0] \left(\frac{\partial^2 \bs{u}[0]}{\partial x^2} + \frac{\partial^2 \bs{u}[0]}{\partial y^2} + \frac{\partial^2 \bs{u}[0]}{\partial z^2}\right) w_x dx w_y dy w_z dz.
 \end{equation}
 !et
 
@@ -304,7 +304,7 @@ performing some exact evaluations over the periodic directions
 
 !bt
 \begin{equation}
- \Big( \underbrace{-\left(l^2 \delta_{lp} + m^2 \delta_{mq} \right) \int_{-1}^{1} \mathcal{Z}_r(z) \mathcal{Z}_n(z) w_z dz}_{A[0]} + \underbrace{\delta_{lp} \delta_{mq} \int_{-1}^{1} \frac{\partial^2 \mathcal{Z}_r(z)}{\partial z^2} \mathcal{Z}_n(z) w_z dz}_{A[1]} \Big) \hat{\bs{u}}[0]_{pqr},
+ \Big( \underbrace{-\left(l^2 \delta_{lp} + m^2 \delta_{mq} \right) \int_{-1}^{1} \mathcal{Z}_r(z) \mathcal{Z}_n(z) w_z dz}_{A[0]} + \underbrace{\delta_{lp} \delta_{mq} \int_{-1}^{1} \frac{\partial^2 \mathcal{Z}_r(z)}{\partial z^2} \mathcal{Z}_n(z) w_z dz}_{A[1]} \Big) \hat{\bs{u}}[0]_{pqr}.
 \end{equation}
 !et
 

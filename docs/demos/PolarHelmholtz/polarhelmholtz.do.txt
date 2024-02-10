@@ -78,7 +78,7 @@ A discrete Fourier approximation space with $N$ basis functions is then
 
 !bt
 \begin{equation}
-V_F^N = \text{span} \{\exp(\imath k \theta)\}, \text{ for } k \in K,
+V_F^N = \text{span} \{\exp(\imath k \theta)| \text{ for } k \in K\},
 \end{equation}
 !et
 
@@ -87,7 +87,7 @@ is real, there is Hermitian symmetry and $\hat{u}_{k,j} = \hat{u}_{k,-j}^*$
 (with $*$ denoting a complex conjugate).
 For this reason we use only $k \in K=\{0, 1, \ldots, N/2\}$ in solving for
 $\hat{u}_{kj}$, and then use Hermitian symmetry to get the remaining
-unknowns.
+unknowns. This is handled under the hood by fast Fourier transforms.
 
 The radial basis is more tricky, because there is a nontrivial 'boundary'
 condition (pole condition) that needs to be applied at the center of the disc $(r=0)$
@@ -427,7 +427,10 @@ on the computational grid
 !bc pycod
 ui, vi = TT.local_mesh(True)
 b = T.coors.get_covariant_basis()
-bij = np.array(sp.lambdify(psi, b)(ui, vi))
+bij = np.zeros((2, 2, N, N))
+for i in (0, 1):
+    for j in (0, 1):
+        bij[i, j] = sp.lambdify(psi, b[i, j])(ui, vi)
 gradu = du[0]*bij[0] + du[1]*bij[1]
 !ec
 
@@ -449,10 +452,10 @@ gradue = Array(V, buffer=grad(u).tosympy(basis=ue, psi=psi))
 gij = T.coors.get_covariant_metric_tensor()
 ui, vi = TT.local_mesh(True, kind='uniform')
 # Evaluate metric on computational mesh
-g = np.array(sp.lambdify(psi, gij)(ui, vi), dtype=object)
+gij[0, 0] = sp.lambdify(psi, gij[0, 0])(ui, vi)
 # Compute L2 error
-errorg = inner(1, (du[0]-gradue[0])**2*g[0, 0]+ (du[1]-gradue[1])**2*g[1, 1])
-print('Error gradient', np.sqrt(errorg))
+errorg = inner(1, (du[0]-gradue[0])**2*gij[0, 0]+ (du[1]-gradue[1])**2*gij[1, 1])
+print('Error gradient', np.sqrt(float(errorg)))
 !ec
 
 % if FORMAT not in ("ipynb"):

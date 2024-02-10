@@ -55,8 +55,8 @@ the spectral Galerkin method. Being a Galerkin method, we need to reshape the
 governing equations into proper variational forms, and this is done by
 multiplying  (ref{eq:ks}) with the complex conjugate of a proper
 test function and then integrating
-over the domain. To this end we use testfunction $v\in V(\Omega)$, where $V(\Omega)$
-is some suitable function space, and obtain
+over the domain. To this end we use testfunction $v\in W^N(\Omega)$, where $W^N(\Omega)$
+is a suitable function space (defined in Eq. (ref{eq:Wn})), and obtain
 
 !bt
 \begin{equation}
@@ -159,13 +159,14 @@ is set to $[-30\pi, 30\pi]^2$ and not the more common $[0, 2\pi]^2$. We now have
 
 !bt
 \begin{equation}
-u(x_i, y_j) =
-\mathcal{F}_y^{-1}\left(\mathcal{F}_x^{-1}\left(\hat{u}\right)\right)
-\, \forall\, (i,j)\in\boldsymbol{i} \times \boldsymbol{j},
+\boldsymbol{u} =
+\mathcal{F}_x^{-1}\left(\mathcal{F}_y^{-1}\left(\boldsymbol{\hat{u}}\right)\right),
 \end{equation}
 !et
-where $\mathcal{F}_x^{-1}$ is the inverse Fourier transform along direction
-$x$, for all $j \in \boldsymbol{j} $. Note that the two
+where $\boldsymbol{u} = \{u(x_i, y_j)\}_{(i,j)\in \boldsymbol{i} \times \boldsymbol{j}}$,
+$\boldsymbol{\hat{u}} = \{\hat{u}_{lm}\}_{(l,m)\in \boldsymbol{l} \times \boldsymbol{m}}$
+and $\mathcal{F}_x^{-1}$ is the inverse Fourier transform along direction
+$x$, for all indices in the other direction. Note that the two
 inverse FFTs are performed sequentially, one direction at the time, and that
 there is no scaling factor due
 the definition used for the inverse
@@ -186,10 +187,9 @@ computed using forward FFTs (using weight functions $w=1/L$):
 
 !bt
 \begin{equation}
-\left(u, \Phi_{lm}\right) = \hat{u}_{lm} =
+\boldsymbol{\hat{u}} =
 \frac{1}{N^2}
-\mathcal{F}_l\left(\mathcal{F}_m\left({u}\right)\right)
-\quad \forall (l,m) \in \boldsymbol{l} \times \boldsymbol{m},
+\mathcal{F}_y\left(\mathcal{F}_x\left(\boldsymbol{u}\right)\right),
 \end{equation}
 !et
 
@@ -200,13 +200,14 @@ exact derivatives of the nabla operator, we have
 !bt
 \begin{align}
 (\nabla^2 u, v) &=
--(\underline{l}^2+\underline{m}^2)\hat{u}_{lm}, \\
-(\nabla^4 u, v) &= (\underline{l}^2+\underline{m}^2)^2\hat{u}_{lm}, \\
-(|\nabla u|^2, v) &= \widehat{|\nabla u|^2}_{lm}
+\left(-(\underline{l}^2+\underline{m}^2)\hat{u}_{lm}\right), \\
+(\nabla^4 u, v) &= \left((\underline{l}^2+\underline{m}^2)^2\hat{u}_{lm}\right), \\
+(|\nabla u|^2, v) &= \left(\widehat{|\nabla u|^2}_{lm}\right),
 \end{align}
 !et
 
-and as such the equation to be solved for each wavenumber can be found directly as
+where the indices on the right hand side run over $\boldsymbol{l} \times \boldsymbol{m}$.
+We find that the equation to be solved for each wavenumber can be found directly as
 
 !bt
 \begin{equation}
@@ -281,8 +282,8 @@ with the second when computing odd derivatives.
 
 !bt
 \begin{align}
-u & = \sum_{k=-N/2}^{N/2-1} \hat{u} e^{\imath k x}\\
-u & = \sideset{}{'}\sum_{k=-N/2}^{N/2} \hat{u} e^{\imath k x}
+u & = \sum_{k=-N/2}^{N/2-1} \hat{u}_k e^{\imath k x}\\
+u & = \sideset{}{'}\sum_{k=-N/2}^{N/2} \hat{u}_k e^{\imath k x}
 \end{align}
 !et
 Here $\sideset{}{'}\sum$ means that the first and last items in the sum are

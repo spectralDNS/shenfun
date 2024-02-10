@@ -35,8 +35,8 @@ Stokes' equations are given in strong form as
 .. math::
         \begin{align*}
         \nabla^2 \boldsymbol{u} - \nabla p &= \boldsymbol{f} \quad \text{in }  \Omega, \\ 
-        \nabla \cdot \boldsymbol{u} &= h \quad \text{in } \Omega  \\ 
-        \int_{\Omega} p dx &= 0
+        \nabla \cdot \boldsymbol{u} &= h \quad \text{in } \Omega,  \\ 
+        \int_{\Omega} p dx &= 0,
         \end{align*}
 
 where :math:`\boldsymbol{u}` and :math:`p` are, respectively, the
@@ -371,7 +371,7 @@ Breaking it down this inner product is mathematically
 
         
         
-        \int_{\Omega} \boldsymbol{v}[0] \left(\frac{\partial^2 \boldsymbol{u}[0]}{\partial x^2} + \frac{\partial^2 \boldsymbol{u}[0]}{\partial y^2} + \frac{\partial^2 \boldsymbol{u}[0]}{\partial z^2}\right) w_x dx w_y dy w_z dz.
+        \int_{\Omega} \boldsymbol{\overline{v}}[0] \left(\frac{\partial^2 \boldsymbol{u}[0]}{\partial x^2} + \frac{\partial^2 \boldsymbol{u}[0]}{\partial y^2} + \frac{\partial^2 \boldsymbol{u}[0]}{\partial z^2}\right) w_x dx w_y dy w_z dz.
         
 
 If we now use test function :math:`\boldsymbol{v}[0]`
@@ -402,7 +402,7 @@ performing some exact evaluations over the periodic directions
    :label: _auto18
 
         
-         \Big( \underbrace{-\left(l^2 \delta_{lp} + m^2 \delta_{mq} \right) \int_{-1}^{1} \mathcal{Z}_r(z) \mathcal{Z}_n(z) w_z dz}_{A[0]} + \underbrace{\delta_{lp} \delta_{mq} \int_{-1}^{1} \frac{\partial^2 \mathcal{Z}_r(z)}{\partial z^2} \mathcal{Z}_n(z) w_z dz}_{A[1]} \Big) \hat{\boldsymbol{u}}[0]_{pqr},
+         \Big( \underbrace{-\left(l^2 \delta_{lp} + m^2 \delta_{mq} \right) \int_{-1}^{1} \mathcal{Z}_r(z) \mathcal{Z}_n(z) w_z dz}_{A[0]} + \underbrace{\delta_{lp} \delta_{mq} \int_{-1}^{1} \frac{\partial^2 \mathcal{Z}_r(z)}{\partial z^2} \mathcal{Z}_n(z) w_z dz}_{A[1]} \Big) \hat{\boldsymbol{u}}[0]_{pqr}.
         
         
 

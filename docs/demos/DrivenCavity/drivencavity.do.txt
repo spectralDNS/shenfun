@@ -32,11 +32,11 @@ The nonlinear steady Navier Stokes equations are given in strong form as
 !bt
 \begin{align*}
 \nu \nabla^2 \bs{u} - \nabla p &= \nabla \cdot \bs{u} \bs{u} \quad \text{in }  \Omega , \\
-\nabla \cdot \bs{u} &= 0 \quad \text{in } \Omega  \\
-\int_{\Omega} p dx &= 0 \\
-\bs{u}(x, y=1) = (1, 0) \, &\text{ or }\, \bs{u}(x, y=1) = ((1-x)^2(1+x)^2, 0) \\
-\bs{u}(x, y=-1) &= (0, 0) \\
-\bs{u}(x=\pm 1, y) &= (0, 0)
+\nabla \cdot \bs{u} &= 0 \quad \text{in } \Omega,  \\
+\int_{\Omega} p dx &= 0, \\
+\bs{u}(x, y=1) = (1, 0) \, &\text{ or }\, \bs{u}(x, y=1) = ((1-x)^2(1+x)^2, 0), \\
+\bs{u}(x, y=-1) &= (0, 0), \\
+\bs{u}(x=\pm 1, y) &= (0, 0),
 \end{align*}
 !et
 where $\bs{u}, p$ and $\nu$ are, respectively, the
@@ -141,7 +141,7 @@ $D_1^{N_1}(y)=\text{span}\{\mathcal{Y}_l(y)\}_{l=0}^{N_1-1}$ as
 D1Y = FunctionSpace(N[1], family, quad=quad, bc=(0, 1))
 !ec
 
-where `bc=(1, 0)` fixes the values for $y=1$ and $y=-1$, respectively.
+where `bc=(0, 1)` fixes the values for $y=-1$ and $y=1$, respectively.
 For a regularized lid driven cavity the velocity of the top lid is
 $(1-x)^2(1+x)^2$ and not unity. To implement this boundary condition
 instead, we can make use of "sympy": "https://www.sympy.org" and
@@ -199,7 +199,15 @@ V1 = TensorProductSpace(comm, (D0X, D1Y))
 V0 = TensorProductSpace(comm, (D0X, D0Y))
 P = TensorProductSpace(comm, (PX, PY), modify_spaces_inplace=True)
 !ec
-These tensor product spaces are all scalar valued.
+where ``modify_spaces_inplace=True`` makes use of ``PX`` and
+``PY`` directly. These spaces have now been modified to fit in
+the TensorProductSpace ``P``, along two different directions and as such
+the original spaces have been modified. The default behavior in shenfun
+is to make copies of the 1D spaces under the hood, and thus leave ``PX``
+and ``PY`` untouched. In that case the two new and modified spaces would be accessible
+from ``P.bases``.
+
+Note that all these tensor product spaces are scalar valued.
 The velocity is a vector, and a vector requires a mixed vector basis like
 $W_1^{\bs{N}} = V_1^{\bs{N}} \times V_0^{\bs{N}}$. The vector basis is created
 in shenfun as

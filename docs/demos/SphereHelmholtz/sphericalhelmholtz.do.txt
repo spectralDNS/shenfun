@@ -68,10 +68,10 @@ u(\theta, \phi) = \sum_{j} \sum_{k} \hat{u}_{jk} v_{jk}(\theta, \phi).
 A discrete Fourier approximation space with $N$ basis functions is then
 
 !bt
-V_F^N = \text{span} \{\exp(\imath k \theta)\}, \text{ for } k \in K,
+V_F^N = \text{span} \{\exp(\imath k \theta)\,|\,\text{ for } k \in K\},
 !et
 
-where $K = \{-N/2, -N/2+1, \ldots, N/2-1\}$. For this demo we assume
+where the index set $K = \{-N/2, -N/2+1, \ldots, N/2-1\}$. For this demo we assume
 that the solution is complex, and as such there is no simplification
 possible for Hermitian symmetry.
 

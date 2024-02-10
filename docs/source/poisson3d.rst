@@ -65,9 +65,8 @@ Poisson's equation is given as
 where :math:`u(\boldsymbol{x})` is the solution and :math:`f(\boldsymbol{x})` is a function. The domain
 :math:`\Omega = [-1, 1]\times [0, 2\pi]^2`.
 
-To solve Eq. :eq:`eq:3d:poisson` with the Galerkin method we need smooth basis
-functions, :math:`v(\boldsymbol{x})`, that live
-in the Hilbert space :math:`H^1(\Omega)` and that satisfy the given boundary
+To solve Eq. :eq:`eq:3d:poisson` with the Galerkin method we will make use of
+smooth basis functions, :math:`v(\boldsymbol{x})`, that satisfy the given boundary
 conditions. To this end we will use one basis function for the :math:`x`-direction,
 :math:`\mathcal{X}(x)`,
 one for the :math:`y`-direction, :math:`\mathcal{Y}(y)`, and one for the :math:`z`-direction,
@@ -171,7 +170,7 @@ And then we look for discrete solutions :math:`u \in W^{\boldsymbol{N}}` like
         
 
 where :math:`\hat{u}_{lmn}` are components of the expansion coefficients for :math:`u` and
-the second form, :math:`(\hat{u}_{\boldsymbol{\textsf{k}}})_{\boldsymbol{\textsf{k}}\in\boldsymbol{k}}`, is a shorter,
+the second form, :math:`\{\hat{u}_{\boldsymbol{\textsf{k}}}\}_{\boldsymbol{\textsf{k}}\in\boldsymbol{k}}`, is a shorter,
 simplified notation, with sans-serif :math:`\boldsymbol{\textsf{k}}=(l, m, n)`.
 The expansion coefficients are the unknowns in the spectral Galerkin method.
 
@@ -200,8 +199,10 @@ The weighted integrals, weighted by :math:`w(\boldsymbol{x})`, are called inner 
         
 
 The integral can either be computed exactly, or with quadrature. The advantage
-of the latter is that it is generally faster, and that non-linear terms may be
-computed just as quickly as linear. For a linear problem, it does not make much of a difference, if any at all. Approximating the integral with quadrature, we obtain
+of the latter is that it is faster (through Fast Fourier transforms),
+and that non-linear terms may be computed just as quickly as linear.
+For a linear problem, it does not make much of a difference, if any at all.
+Approximating the integral with quadrature, we obtain
 
 .. math::
         \begin{align*}
@@ -211,11 +212,10 @@ computed just as quickly as linear. For a linear problem, it does not make much 
         \end{align*}
 
 where :math:`w(\boldsymbol{x})` now are the quadrature weights. The quadrature points
-:math:`(x_i)_{i=0}^{N_0-1}` are specific to the chosen basis, and even within basis there
+:math:`\{x_i\}_{i=0}^{N_0-1}` are specific to the chosen basis, and even within basis there
 are two different choices based on which quadrature rule is selected, either
-Gauss or Gauss-Lobatto. The quadrature points for the Fourier bases are the
-uniform :math:`(y_j)_{j=0}^{N_1-1}=2\pi j / N_1` and :math:`(z_k)_{k=0}^{N_2-1} = 2 \pi
-k/N_2`.
+Gauss or Gauss-Lobatto. The quadrature points for the Fourier bases are simply
+uniformly distributed throughout the domain.
 
 Inserting for test function :eq:`eq:3d:u` and trialfunction
 :math:`v_{pqr} = \mathcal{X}_{p} \mathcal{Y}_q \mathcal{Z}_r` on the
@@ -243,7 +243,7 @@ where the notation :math:`(\cdot, \cdot)_w^{N_0}`
         
         
 
-is used to represent an :math:`L_2` inner product along only the first, nonperiodic,
+is used to represent a discrete :math:`L_2` inner product along only the first, nonperiodic,
 direction. The delta functions above come from integrating over the two periodic
 directions, where we use constant weight functions :math:`w=1/(2\pi)` in the
 inner products
@@ -421,8 +421,8 @@ direction to be local to the processor. If the ``SD`` basis is the last to be
 transformed, then the data will be aligned in this direction, whereas the other
 two directions may both, or just one of them, be distributed.
 
-Note that ``X`` is a list containing local values of the arrays :math:`(x_i)_{i=0}^{N_0-1}`,
-:math:`(y_j)_{j=0}^{N_1-1}` and :math:`(z_k)_{k=0}^{N_2-1}`.
+Note that ``X`` is a list containing local values of the arrays :math:`\{x_i\}_{i=0}^{N_0-1}`,
+:math:`\{y_j\}_{j=0}^{N_1-1}` and :math:`\{z_k\}_{k=0}^{N_2-1}`.
 Now, it's not possible to run a jupyter notebook with more than one process,
 but we can imagine running `the complete solver <https://github.com/spectralDNS/shenfun/blob/master/demo/poisson3D.py>`__
 with 4 procesors and a processor mesh of shape :math:`2\times 2`.

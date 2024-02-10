@@ -57,8 +57,8 @@ the spectral Galerkin method. Being a Galerkin method, we need to reshape the
 governing equations into proper variational forms, and this is done by
 multiplying  :eq:`eq:ks` with the complex conjugate of a proper
 test function and then integrating
-over the domain. To this end we use testfunction :math:`v\in V(\Omega)`, where :math:`V(\Omega)`
-is some suitable function space, and obtain
+over the domain. To this end we use testfunction :math:`v\in W^N(\Omega)`, where :math:`W^N(\Omega)`
+is a suitable function space (defined in Eq. :eq:`eq:Wn`), and obtain
 
 .. math::
    :label: eq:du_var
@@ -190,14 +190,15 @@ is set to :math:`[-30\pi, 30\pi]^2` and not the more common :math:`[0, 2\pi]^2`.
    :label: _auto7
 
         
-        u(x_i, y_j) =
-        \mathcal{F}_y^{-1}\left(\mathcal{F}_x^{-1}\left(\hat{u}\right)\right)
-        \, \forall\, (i,j)\in\boldsymbol{i} \times \boldsymbol{j},
+        \boldsymbol{u} =
+        \mathcal{F}_x^{-1}\left(\mathcal{F}_y^{-1}\left(\boldsymbol{\hat{u}}\right)\right),
         
         
 
-where :math:`\mathcal{F}_x^{-1}` is the inverse Fourier transform along direction
-:math:`x`, for all :math:`j \in \boldsymbol{j}`. Note that the two
+where :math:`\boldsymbol{u} = \{u(x_i, y_j)\}_{(i,j)\in \boldsymbol{i} \times \boldsymbol{j}}`,
+:math:`\boldsymbol{\hat{u}} = \{\hat{u}_{lm}\}_{(l,m)\in \boldsymbol{l} \times \boldsymbol{m}}`
+and :math:`\mathcal{F}_x^{-1}` is the inverse Fourier transform along direction
+:math:`x`, for all indices in the other direction. Note that the two
 inverse FFTs are performed sequentially, one direction at the time, and that
 there is no scaling factor due
 the definition used for the inverse
@@ -222,10 +223,9 @@ computed using forward FFTs (using weight functions :math:`w=1/L`):
    :label: _auto9
 
         
-        \left(u, \Phi_{lm}\right) = \hat{u}_{lm} =
+        \boldsymbol{\hat{u}} =
         \frac{1}{N^2}
-        \mathcal{F}_l\left(\mathcal{F}_m\left({u}\right)\right)
-        \quad \forall (l,m) \in \boldsymbol{l} \times \boldsymbol{m},
+        \mathcal{F}_y\left(\mathcal{F}_x\left(\boldsymbol{u}\right)\right),
         
         
 
@@ -238,7 +238,7 @@ exact derivatives of the nabla operator, we have
 
         
         (\nabla^2 u, v) =
-        -(\underline{l}^2+\underline{m}^2)\hat{u}_{lm}, 
+        \left(-(\underline{l}^2+\underline{m}^2)\hat{u}_{lm}\right), 
         
         
 
@@ -246,7 +246,7 @@ exact derivatives of the nabla operator, we have
    :label: _auto11
 
           
-        (\nabla^4 u, v) = (\underline{l}^2+\underline{m}^2)^2\hat{u}_{lm}, 
+        (\nabla^4 u, v) = \left((\underline{l}^2+\underline{m}^2)^2\hat{u}_{lm}\right), 
         
         
 
@@ -254,11 +254,12 @@ exact derivatives of the nabla operator, we have
    :label: _auto12
 
           
-        (|\nabla u|^2, v) = \widehat{|\nabla u|^2}_{lm}
+        (|\nabla u|^2, v) = \left(\widehat{|\nabla u|^2}_{lm}\right),
         
         
 
-and as such the equation to be solved for each wavenumber can be found directly as
+where the indices on the right hand side run over :math:`\boldsymbol{l} \times \boldsymbol{m}`.
+We find that the equation to be solved for each wavenumber can be found directly as
 
 .. math::
    :label: eq:du_var3
@@ -341,7 +342,7 @@ with the second when computing odd derivatives.
    :label: _auto13
 
         
-        u  = \sum_{k=-N/2}^{N/2-1} \hat{u} e^{\imath k x}
+        u  = \sum_{k=-N/2}^{N/2-1} \hat{u}_k e^{\imath k x}
         
         
 
@@ -349,7 +350,7 @@ with the second when computing odd derivatives.
    :label: _auto14
 
           
-        u  = \sideset{}{'}\sum_{k=-N/2}^{N/2} \hat{u} e^{\imath k x}
+        u  = \sideset{}{'}\sum_{k=-N/2}^{N/2} \hat{u}_k e^{\imath k x}
         
         
 
