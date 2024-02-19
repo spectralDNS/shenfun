@@ -30,7 +30,7 @@ TOC: off
 ===== The Rayleigh Bénard equations =====
 label{demo:rayleighbenard}
 
-The governing equations solved in domain $\Omega=[-1, 1]\times [0, 2\pi]$ are
+The governing equations solved in domain $\Omega=(-1, 1)\times [0, 2\pi)$ are
 
 !bt
 \begin{align}

@@ -39,7 +39,7 @@ We use polar coordinates $(\theta, r)$, defined as
 \end{align}
 !et
 
-which leads to a Cartesian product mesh $(\theta, r) \in [0, 2\pi) \times [0, a]$
+which leads to a Cartesian product mesh $(\theta, r) \in [0, 2\pi) \times (0, a)$
 suitable for numerical implementations. Note that the
 two directions are ordered with $\theta$ first and then $r$, which is less common
 than $(r, \theta)$. This has to do with the fact that we will need to

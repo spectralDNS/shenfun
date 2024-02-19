@@ -53,9 +53,9 @@ regular periodic boundary conditions
 \end{equation}
 !et
 will apply cite{Kalvoda2020}, and we can discretize using Fourier
-exponentials in the $\theta$-direction. Since the reference domain of Fourier
-exponentials is $[-\pi, \pi]$ we define $\varphi = \theta /(2 R)$, such that
-the computational domain is $(\varphi, t) \in \mathbb{I}^2 = [-\pi, \pi] \times [-1, 1]$,
+exponentials in the $\theta$-direction. Since the reference domain of periodic Fourier
+exponentials is $[-\pi, \pi)$ we define $\varphi = \theta /(2 R)$, such that
+the computational domain is $(\varphi, t) \in \mathbb{I}^2 = [-\pi, \pi) \times (-1, 1)$,
 with the parametrization
 
 !bt
@@ -65,7 +65,7 @@ with the parametrization
     z(\varphi, t) &= -t \sin {\varphi}.
 \end{align}
 !et
-Note that the reference domain corresponds to $(\theta, t) \in = [-2\pi R, 2\pi R] \times [-1, 1]$.
+Note that the reference domain corresponds to $(\theta, t) \in = [-2\pi R, 2\pi R) \times (-1, 1)$.
 It is also trivial to adjust the $t$-domain with an affine map for a more narrow or
 wider strip, but this added complexity is not discussed here. One can simply
 choose the width of the strip below when choosing function space for the

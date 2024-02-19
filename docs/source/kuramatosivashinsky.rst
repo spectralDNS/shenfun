@@ -27,7 +27,7 @@ The Kuramato-Sivashinsky equation
 
 The Kuramato-Sivashinsky (KS) equation is known for its chaotic bahaviour, and it is
 often used in study of turbulence or turbulent combustion. We will here solve
-the KS equation in a doubly periodic domain :math:`[-30\pi, 30\pi]^2`, starting from a
+the KS equation in a doubly periodic domain :math:`\Omega=[-30\pi, 30\pi)^2`, starting from a
 single Gaussian pulse
 
 .. math::
@@ -35,7 +35,7 @@ single Gaussian pulse
 
         
         \frac{\partial u(\boldsymbol{x},t)}{\partial t} + \nabla^2 u(\boldsymbol{x},t) + \nabla^4
-        u(\boldsymbol{x},t) + |\nabla u(\boldsymbol{x},t)|^2 = 0 \quad \text{for }\, \boldsymbol{x} \in \Omega=[-30 \pi, 30\pi]^2
+        u(\boldsymbol{x},t) + |\nabla u(\boldsymbol{x},t)|^2 = 0 \quad \text{for }\, \boldsymbol{x} \in \Omega
          
         
 

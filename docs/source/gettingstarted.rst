@@ -302,7 +302,7 @@ returns a space with 4 boundary conditions (biharmonic), where ``a`` and ``b``
 are the Dirichlet and Neumann values on the left boundary, whereas ``c`` and ``d``
 are the values on right.
 
-The Laguerre basis is used to solve problems on the half-line :math:`x \in [0, \infty]`.
+The Laguerre basis is used to solve problems on the half-line :math:`x \in [0, \infty)`.
 For this family you can only specify boundary conditions at the
 left boundary. However, the Poisson equation requires only one condition,
 and the biharmonic problem two. The solution is automatically set to
@@ -325,7 +325,7 @@ create tensor product spaces using the class :class:`.TensorProductSpace`::
     K0 = FunctionSpace(M, 'F', dtype='d')
     T = TensorProductSpace(comm, (C0, K0))
 
-Associated with this is a Cartesian mesh :math:`[-1, 1] \times [0, 2\pi]`. We use
+Associated with this is a Cartesian domain :math:`[-1, 1] \times [0, 2\pi)`. We use
 classes :class:`.Function`, :class:`.TrialFunction` and :class:`.TestFunction`
 exactly as before::
 
@@ -478,7 +478,7 @@ example::
     T = TensorProductSpace(comm, (B0, B1))
 
 uses homogeneous Dirichlet on two out of the four sides of the
-square domain :math:`(-1, 1)\times (-1, 1)`, at :math:`x=-1`
+square domain :math:`[-1, 1]\times [-1, 1]`, at :math:`x=-1`
 and :math:`y=1`. For the side where
 :math:`y=1`, the
 boundary condition is :math:`(1-x)(1+x)`. Note that only
@@ -618,7 +618,7 @@ but now we recast the problem into a mixed formulation
 
 where we solve for the vector :math:`\sigma` and scalar :math:`u` simultaneously. The
 domain :math:`\Omega` is taken as a multidimensional Cartesian product
-:math:`\Omega=[-1, 1] \times [0, 2\pi]`, but the code is more or less identical for
+:math:`\Omega=(-1, 1) \times [0, 2\pi)`, but the code is more or less identical for
 a 3D problem. For boundary conditions we use Dirichlet in the :math:`x`-direction and
 periodicity in the :math:`y`-direction:
 
@@ -767,7 +767,7 @@ which can also be written as
 
     \frac{\partial u}{\partial t} + \frac{\partial ^3 u}{\partial x^3} + \frac{1}{2}\frac{\partial u^2}{\partial x} = 0
 
-We neglect boundary issues and choose a periodic domain :math:`[0, 2\pi]` with
+We neglect boundary issues and choose a periodic domain :math:`[0, 2\pi)` with
 Fourier exponentials as test functions. The initial condition is chosen as
 
 .. math::

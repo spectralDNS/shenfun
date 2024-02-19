@@ -33,7 +33,7 @@ u(x, y, 2\pi) &= u(x, y, 0),
 \end{align}
 !et
 where $u(\bs{x})$ is the solution and $f(\bs{x})$ is a function. The domain
-$\Omega = [-1, 1]\times [0, 2\pi]^2$.
+$\Omega = (-1, 1)\times [0, 2\pi)^2$.
 
 To solve Eq. (ref{eq:3d:poisson}) with the Galerkin method we will make use of
 smooth basis functions, $v(\bs{x})$, that satisfy the given boundary

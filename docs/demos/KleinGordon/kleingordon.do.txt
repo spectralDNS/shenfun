@@ -65,7 +65,7 @@ t=0)}{\partial t} = u_t^0. label{eq:init}
 The spatial coordinates are here denoted as $\boldsymbol{x} = (x, y, z)$, and
 $t$ is time. The parameter $\gamma=\pm 1$ determines whether the equations are focusing
 ($+1$) or defocusing ($-1$) (in the movie we have used $\gamma=1$).
-The domain $\Omega=[-2\pi, 2\pi]^3$ is triply
+The domain $\Omega=[-2\pi, 2\pi)^3$ is triply
 periodic and initial conditions will here be set as
 
 !bt

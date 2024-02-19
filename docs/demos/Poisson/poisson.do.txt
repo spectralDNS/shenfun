@@ -31,7 +31,7 @@ Poisson's equation is given as
 
 !bt
 \begin{align}
-\nabla^2 u(x) &= f(x) \quad \text{for }\, x \in [-1, 1], label{eq:poisson}\\
+\nabla^2 u(x) &= f(x) \quad \text{for }\, x \in (-1, 1), label{eq:poisson}\\
 u(-1)&=a, u(1)=b, \notag
 \end{align}
 !et

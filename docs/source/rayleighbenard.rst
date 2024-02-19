@@ -39,7 +39,7 @@ Rayleigh number (*Ra*).
 The Rayleigh Bénard equations
 -----------------------------
 
-The governing equations solved in domain :math:`\Omega=[-1, 1]\times [0, 2\pi]` are
+The governing equations solved in domain :math:`\Omega=(-1, 1)\times [0, 2\pi)` are
 
 .. math::
    :label: eq:momentum

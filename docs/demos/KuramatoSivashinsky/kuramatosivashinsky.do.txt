@@ -34,12 +34,12 @@ FIGURE: [https://rawgit.com/spectralDNS/spectralutilities/master/movies/Kuramato
 
 The Kuramato-Sivashinsky (KS) equation is known for its chaotic bahaviour, and it is
 often used in study of turbulence or turbulent combustion. We will here solve
-the KS equation in a doubly periodic domain $[-30\pi, 30\pi]^2$, starting from a
+the KS equation in a doubly periodic domain $\Omega=[-30\pi, 30\pi)^2$, starting from a
 single Gaussian pulse
 !bt
 \begin{align}
 \frac{\partial u(\bs{x},t)}{\partial t} &+ \nabla^2 u(\bs{x},t) + \nabla^4
-u(\bs{x},t) + |\nabla u(\bs{x},t)|^2 = 0 \quad \text{for }\, \bs{x} \in \Omega=[-30 \pi, 30\pi]^2
+u(\bs{x},t) + |\nabla u(\bs{x},t)|^2 = 0 \quad \text{for }\, \bs{x} \in \Omega
 label{eq:ks} \\
 u(\bs{x}, 0) &= \exp(-0.01 \bs{x} \cdot \bs{x}) \notag
 \end{align}

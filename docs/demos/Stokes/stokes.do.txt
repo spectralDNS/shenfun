@@ -33,7 +33,7 @@ Stokes' equations are given in strong form as
 !et
 where $\bs{u}$ and $p$ are, respectively, the
 fluid velocity vector and pressure, and the domain
-$\Omega = [0, 2\pi]^2 \times [-1, 1]$. The flow is assumed periodic
+$\Omega = [0, 2\pi)^2 \times (-1, 1)$. The flow is assumed periodic
 in $x$ and $y$-directions, whereas there is a no-slip homogeneous Dirichlet
 boundary condition on $\bs{u}$ on the boundaries of the $z$-direction, i.e.,
 $\bs{u}(x, y, \pm 1) = (0, 0, 0)$. (Note that we can configure shenfun with

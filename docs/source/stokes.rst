@@ -41,7 +41,7 @@ Stokes' equations are given in strong form as
 
 where :math:`\boldsymbol{u}` and :math:`p` are, respectively, the
 fluid velocity vector and pressure, and the domain
-:math:`\Omega = [0, 2\pi]^2 \times [-1, 1]`. The flow is assumed periodic
+:math:`\Omega = [0, 2\pi)^2 \times (-1, 1)`. The flow is assumed periodic
 in :math:`x` and :math:`y`-directions, whereas there is a no-slip homogeneous Dirichlet
 boundary condition on :math:`\boldsymbol{u}` on the boundaries of the :math:`z`-direction, i.e.,
 :math:`\boldsymbol{u}(x, y, \pm 1) = (0, 0, 0)`. (Note that we can configure shenfun with

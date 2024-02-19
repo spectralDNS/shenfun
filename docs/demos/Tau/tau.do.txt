@@ -33,11 +33,11 @@ TOC: off
 
 ===== The tau method for Poisson's equation in 1D =====
 
-Poisson's equation is given on a domain $[-1, 1]$ as
+Poisson's equation is given on a domain $\Omega = (-1, 1)$ as
 
 !bt
 \begin{align}
-\nabla^2 u(x) &= f(x) \quad \text{for }\, x \in [-1, 1], label{eq:poisson}\\
+\nabla^2 u(x) &= f(x) \quad \text{for }\, x \in \Omega, label{eq:poisson}\\
 u(-1)&=a, u(1)=b, \notag
 \end{align}
 !et

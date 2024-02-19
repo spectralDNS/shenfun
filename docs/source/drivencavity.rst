@@ -49,7 +49,7 @@ The nonlinear steady Navier Stokes equations are given in strong form as
 
 where :math:`\boldsymbol{u}, p` and :math:`\nu` are, respectively, the
 fluid velocity vector, pressure and kinematic viscosity. The domain
-:math:`\Omega = [-1, 1]^2` and the nonlinear term :math:`\boldsymbol{u} \boldsymbol{u}` is the
+:math:`\Omega = (-1, 1)^2` and the nonlinear term :math:`\boldsymbol{u} \boldsymbol{u}` is the
 outer product of vector :math:`\boldsymbol{u}` with itself. Note that the final
 :math:`\int_{\Omega} p dx = 0` is there because there is no Dirichlet boundary
 condition on the pressure and the system of equations would otherwise be

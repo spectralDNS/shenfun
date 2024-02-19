@@ -63,7 +63,7 @@ Poisson's equation is given as
         
 
 where :math:`u(\boldsymbol{x})` is the solution and :math:`f(\boldsymbol{x})` is a function. The domain
-:math:`\Omega = [-1, 1]\times [0, 2\pi]^2`.
+:math:`\Omega = (-1, 1)\times [0, 2\pi)^2`.
 
 To solve Eq. :eq:`eq:3d:poisson` with the Galerkin method we will make use of
 smooth basis functions, :math:`v(\boldsymbol{x})`, that satisfy the given boundary

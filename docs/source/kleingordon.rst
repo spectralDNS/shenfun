@@ -54,7 +54,7 @@ with initial conditions
 The spatial coordinates are here denoted as :math:`\boldsymbol{x} = (x, y, z)`, and
 :math:`t` is time. The parameter :math:`\gamma=\pm 1` determines whether the equations are focusing
 (:math:`+1`) or defocusing (:math:`-1`) (in the movie we have used :math:`\gamma=1`).
-The domain :math:`\Omega=[-2\pi, 2\pi]^3` is triply
+The domain :math:`\Omega=[-2\pi, 2\pi)^3` is triply
 periodic and initial conditions will here be set as
 
 .. math::

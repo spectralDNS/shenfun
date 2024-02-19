@@ -76,6 +76,10 @@ class OrrSommerfeld:
         v = TestFunction(test)
         u = TrialFunction(trial)
 
+        Re = self.Re
+        a = self.alfa
+        g = 1j*a*Re
+
         # (u'', v)_w
         K = inner(v, Dx(u, 0, 2))
 
@@ -91,11 +95,18 @@ class OrrSommerfeld:
         # (u, v)_w
         M = inner(v, u)
 
-        Re = self.Re
-        a = self.alfa
         B = -Re*a*1j*(K-a**2*M)
         A = Q-2*a**2*K+(a**4 - 2*a*Re*1j)*M - 1j*a*Re*(K2-a**2*K1)
+
+        # Alternatively:
+        #A1 = lambda f: Dx(f, 0, 4)-2*a**2*Dx(f, 0, 2)+(a**4-2*g)*f-g*(1-x**2)*(Dx(f, 0, 2)-f)
+        #B1 = lambda f: -g*(Dx(f, 0, 2)-f)
+        #A = inner(A1(u), v)
+        #B = inner(B1(u), v)
+        #A = sum(A[1:], A[0])
+        #B = sum(B[1:], B[0])
         A, B = A.diags().toarray(), B.diags().toarray()
+
         if scale is not None and not (scale[0] == 0 and scale[1] == 0):
             assert isinstance(scale, tuple)
             assert len(scale) == 2
@@ -147,7 +158,7 @@ class OrrSommerfeld:
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(description='Orr Sommerfeld parameters')
-    parser.add_argument('--N', type=int, default=120,
+    parser.add_argument('--N', type=int, default=400,
                         help='Number of discretization points')
     parser.add_argument('--Re', default=8000.0, type=float,
                         help='Reynolds number')
