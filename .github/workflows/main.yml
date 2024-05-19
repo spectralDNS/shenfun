@@ -11,16 +11,18 @@ jobs:
         os: [ubuntu-latest, macOS-latest]
         python-version: ["3.9", "3.10", "3.11"]
     name: Python ${{ matrix.python-version }} example
-
+    defaults:
+      run:
+        shell: bash -el {0}
     steps:
-    - uses: actions/checkout@v3
-    - run: git fetch --depth=1 origin +refs/tags/*:refs/tags/*
-    - name: setup-conda
-      uses: s-weigand/setup-conda@v1
+    - uses: actions/checkout@v4
+    - uses: conda-incubator/setup-miniconda@v3
       with:
-          update-conda: true
+          activate-environment: shenfun
+          channels: conda-forge
+          environment-file: environment.yml
           python-version: ${{ matrix.python-version }}
-          conda-channels: anaconda, conda-forge
+          auto-activate-base: true
     - run: conda --version
     - run: which python
     - run: |
