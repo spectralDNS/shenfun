@@ -25,9 +25,8 @@ jobs:
           auto-activate-base: true
     - run: conda --version
     - run: which python
-    - run: pwd
-    - run: conda install pytest
     - run: python setup.py build_ext -i 
+    - run: echo $PYTHONPATH
     - run: export PYTHONPATH=$PWD:$PYTHONPATH
     - run: py.test tests/
     #- run: |
