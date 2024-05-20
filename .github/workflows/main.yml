@@ -25,11 +25,12 @@ jobs:
           auto-activate-base: true
     - run: conda --version
     - run: which python
-    - run: python setup.py build_ext -i 
-    - run: export PYTHONPATH=$PWD:$PYTHONPATH
-    - run: echo $PWD
-    - run: echo $PYTHONPATH
-    - run: py.test tests/
+    - run: |
+        python setup.py build_ext -i 
+        export PYTHONPATH=$PWD:$PYTHONPATH
+        echo $PWD
+        echo $PYTHONPATH
+        py.test tests/
     #- run: |
     #    conda config --set always_yes yes
     #    conda install conda-build numpy
