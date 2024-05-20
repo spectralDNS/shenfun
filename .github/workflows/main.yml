@@ -26,8 +26,9 @@ jobs:
     - run: conda --version
     - run: which python
     - run: python setup.py build_ext -i 
-    - run: echo $PYTHONPATH
     - run: export PYTHONPATH=$PWD:$PYTHONPATH
+    - run: echo $PWD
+    - run: echo $PYTHONPATH
     - run: py.test tests/
     #- run: |
     #    conda config --set always_yes yes
