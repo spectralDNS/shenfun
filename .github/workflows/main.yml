@@ -28,8 +28,6 @@ jobs:
     - run: |
         python setup.py build_ext -i 
         export PYTHONPATH=$PWD:$PYTHONPATH
-        echo $PWD
-        echo $PYTHONPATH
         py.test tests/
     #- run: |
     #    conda config --set always_yes yes

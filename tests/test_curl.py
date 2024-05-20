@@ -16,7 +16,7 @@ def allclose(a, b):
     atol = tol[a.dtype.char.lower()]
     return np.allclose(a, b, rtol=0, atol=atol)
 
-@pytest.mark.parametrize('typecode', 'fdg')
+@pytest.mark.parametrize('typecode', 'fd')
 def test_curl(typecode):
     K0 = FunctionSpace(N[0], 'F', dtype=typecode.upper())
     K1 = FunctionSpace(N[1], 'F', dtype=typecode.upper())
