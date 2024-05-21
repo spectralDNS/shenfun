@@ -9,9 +9,22 @@ from copy import copy
 from numpy.polynomial import chebyshev as n_cheb
 from .transforms import FMMdirect1, FMMcheb, FMMdirect2, FMMdirect3, \
     FMMdirect4, _leg2cheb, _cheb2leg, _Lambda
-from .transforms cimport get_number_of_blocks
+#from .transforms cimport get_number_of_blocks
 
 np.import_array()
+
+cdef int get_number_of_blocks(int level, long* D, int N):
+    cdef:
+        int s = 1
+        int nd = 1
+        int i, j
+    if level > 0:
+        for i in range(level):
+            nd = 1
+            for j in range(i+1):
+                nd *= D[level-j-1]
+            s += nd
+    return s
 
 cdef class FMMLevel:
     cdef public int N

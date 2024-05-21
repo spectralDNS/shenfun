@@ -1,31 +1,79 @@
-name: github-CI
+name: main
 
-on: [push]
+on:
+  push:
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
 
 jobs:
-  build:
-
+  test:
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        os: [ubuntu-latest, macOS-latest]
-        python-version: ["3.9", "3.10", "3.11"]
-    name: Python ${{ matrix.python-version }} example
-    defaults:
-      run:
-        shell: bash -el {0}
+        os:
+          - ubuntu-latest
+          - macos-latest
+        mpi:
+          - mpich
+        py:
+          # - "3.7"
+          # - "3.8"
+          # - "3.9"
+          - "3.10"
+          - "3.11"
+          - "3.12"
+
     steps:
+
     - uses: actions/checkout@v4
-    - uses: conda-incubator/setup-miniconda@v3
+
+    - uses: actions/setup-python@v5
       with:
-          activate-environment: shenfun
-          channels: conda-forge
-          environment-file: environment.yml
-          python-version: ${{ matrix.python-version }}
-          auto-activate-base: true
-    - run: conda --version
-    - run: which python
+        python-version: ${{ matrix.py }}
+
     - run: |
-        python setup.py build_ext -i 
-        export PYTHONPATH=$PWD:$PYTHONPATH
-        py.test tests/
+        # Install fftw
+        case $(uname) in
+          Linux)
+            sudo apt update
+            sudo apt install -y -q libfftw3-dev
+            ;;
+          Darwin)
+            export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
+            brew install fftw
+            ;;
+        esac
+
+    - run: python -m pip install -U pip build
+
+    - run: python -m build
+
+    - uses: mpi4py/setup-mpi@v1
+      with:
+        mpi: ${{ matrix.mpi }}
+
+    - run: pip install -vvv dist/shenfun-*.whl
+      env:
+        CFLAGS: "-O0"
+
+    - run: pip install -r conf/requirements-tests.txt
+
+    - if: matrix.mpi == 'mpich' && startsWith(matrix.os, 'ubuntu')
+      run: pytest tests/ --junitxml=junit/test-results.xml --cov=$(python -c "import site; print(site.getsitepackages()[0]+'/shenfun')") --cov-report=xml --cov-report=html
+
+    - if: matrix.mpi == 'mpich' && startsWith(matrix.os, 'ubuntu')
+      uses: codecov/codecov-action@v4
+      with:
+        files: coverage.xml
+        name: ${{ matrix.os }}-${{ matrix.mpi }}-${{ matrix.py }}
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}      
+    
+    - if: matrix.mpi == 'mpich' && startsWith(matrix.os, 'ubuntu') 
+      uses: codacy/codacy-coverage-reporter-action@v1
+      with:
+        project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
+        coverage-reports: coverage.xml

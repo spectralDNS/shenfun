@@ -1,3 +1,5 @@
+# cython: language_level = 3str
+
 cdef extern from "fastgl.cpp":
     pass
 

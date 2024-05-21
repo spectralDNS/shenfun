@@ -1,0 +1,8 @@
+coverage
+pytest
+pytest-cov
+scipy
+numpy
+numba
+sympy
+pyyaml

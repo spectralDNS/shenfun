@@ -3,7 +3,8 @@
 import os
 import re
 import subprocess
-from setuptools import setup, Extension
+from setuptools import setup
+from setuptools.extension import Extension
 from setuptools.command.build_ext import build_ext
 from numpy import get_include
 
@@ -22,38 +23,41 @@ def has_flag(compiler, flagname):
 
 class build_ext_subclass(build_ext):
     def build_extensions(self):
-        extra_compile_args = ['-g0']
+        extra_compile_args = []
         if os.environ.get("READTHEDOCS", None) == "True":
             extra_compile_args.append('-O0')
         else:
             extra_compile_args.append('-O3')
             if not os.environ.get('CONDA_BUILD', 0):
-                for c in ['-w', '-Ofast', '-ffast-math', '-march=native']:
+                for c in ['-w', '-Ofast']:
                     if has_flag(self.compiler, c):
                         extra_compile_args.append(c)
 
         for e in self.extensions:
-            e.extra_compile_args += extra_compile_args
+            #e.extra_compile_args += extra_compile_args
             e.include_dirs.extend([get_include()])
         build_ext.build_extensions(self)
 
 def get_extensions():
-    ext = []
-    for s in ("Matvec", "la", "evaluate", "transforms", "leg2chebm"):
+    ext = [Extension("shenfun.legendre.fastgl.fastgl_wrap",
+                         libraries=["m"],
+                         language="c++",
+                         sources=[os.path.join(cwd, "shenfun", "legendre", "fastgl", "fastgl_wrap.pyx")],
+                         define_macros=[('NPY_NO_DEPRECATED_API', 'NPY_1_7_API_VERSION')])]
+    for s in ("transforms", "leg2chebm", "Matvec", "la", "evaluate"):
         ext.append(Extension("shenfun.optimization.cython.{0}".format(s),
-                             libraries=['m'],
-                             sources=[os.path.join(cdir, '{0}.pyx'.format(s))],
-                             language="c++"))  # , define_macros=define_macros
-    ext.append(Extension("shenfun.legendre.fastgl.fastgl_wrap",
-                         libraries=['m'],
-                         language='c++',
-                         sources=[os.path.join(cwd, "shenfun", "legendre", "fastgl", "fastgl_wrap.pyx")]))
+                             libraries=["m"],
+                             sources=[os.path.join(cdir, "{0}.pyx".format(s))],
+                             language="c++",
+                             define_macros=[('NPY_NO_DEPRECATED_API', 'NPY_1_7_API_VERSION')]))  # , define_macros=define_macros
+    
     [e.extra_link_args.extend(["-std=c++11"]) for e in ext]
     #[e.extra_link_args.extend(["-std=c++11", "-fopenmp"]) for e in ext]
     for s in ("Cheb", "convolve", "outer", "applymask", "cross"):
         ext.append(Extension("shenfun.optimization.cython.{0}".format(s),
-                             libraries=['m'],
-                             sources=[os.path.join(cdir, '{0}.pyx'.format(s))]))
+                             libraries=["m"],
+                             sources=[os.path.join(cdir, "{0}.pyx".format(s))],
+                             define_macros=[('NPY_NO_DEPRECATED_API', 'NPY_1_7_API_VERSION')]))
 
     return ext
 
@@ -106,9 +110,6 @@ if __name__ == '__main__':
                    ],
           package_dir={"shenfun": "shenfun"},
           install_requires=["mpi4py-fft", "mpi4py", "cython", "numpy", "scipy"],
-          setup_requires=["numpy>=1.9",
-                          "cython>=0.25",
-                          "setuptools>=18.0"],
           ext_modules=get_extensions(),
           cmdclass={"build_ext": build_ext_subclass}
          )

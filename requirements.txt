@@ -1,7 +1,0 @@
-numpy>=1.15
-scipy>=1.0.0
-mpi4py-fft
-mpi4py
-sympy
-cython
-pyyaml
