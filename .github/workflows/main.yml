@@ -71,3 +71,4 @@ jobs:
         name: ${{ matrix.os }}-${{ matrix.mpi }}-${{ matrix.py }}
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
