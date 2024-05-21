@@ -29,10 +29,3 @@ jobs:
         python setup.py build_ext -i 
         export PYTHONPATH=$PWD:$PYTHONPATH
         py.test tests/
-    #- run: |
-    #    conda config --set always_yes yes
-    #    conda install conda-build numpy
-    #- run: |
-    #    conda env list
-    #    conda build ./conf/conda
-

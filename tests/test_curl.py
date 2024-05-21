@@ -16,8 +16,11 @@ def allclose(a, b):
     atol = tol[a.dtype.char.lower()]
     return np.allclose(a, b, rtol=0, atol=atol)
 
-@pytest.mark.parametrize('typecode', 'fd')
+@pytest.mark.parametrize('typecode', 'fdg')
 def test_curl(typecode):
+    from mpi4py_fft.fftw import fftlib
+    if typecode.upper() not in fftlib:
+        return
     K0 = FunctionSpace(N[0], 'F', dtype=typecode.upper())
     K1 = FunctionSpace(N[1], 'F', dtype=typecode.upper())
     K2 = FunctionSpace(N[2], 'F', dtype=typecode)
