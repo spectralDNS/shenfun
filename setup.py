@@ -23,7 +23,7 @@ def has_flag(compiler, flagname):
 
 class build_ext_subclass(build_ext):
     def build_extensions(self):
-        extra_compile_args = ['-g0']
+        extra_compile_args = []
         if os.environ.get("READTHEDOCS", None) == "True":
             extra_compile_args.append('-O0')
         else:
@@ -34,7 +34,7 @@ class build_ext_subclass(build_ext):
                         extra_compile_args.append(c)
 
         for e in self.extensions:
-            e.extra_compile_args += extra_compile_args
+            #e.extra_compile_args += extra_compile_args
             e.include_dirs.extend([get_include()])
         build_ext.build_extensions(self)
 
