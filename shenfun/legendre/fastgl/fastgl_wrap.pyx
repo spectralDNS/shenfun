@@ -1,7 +1,7 @@
 # distutils: language = c++
 #cython: boundscheck=False
 #cython: wraparound=False
-#cython: language_level=3
+#cython: language_level=3str
 from . cimport fastgl_wrap
 
 import numpy as np
