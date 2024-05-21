@@ -106,9 +106,9 @@ if __name__ == '__main__':
                    ],
           package_dir={"shenfun": "shenfun"},
           install_requires=["mpi4py-fft", "mpi4py", "cython", "numpy", "scipy"],
-          setup_requires=["numpy>=1.9",
-                          "cython>=0.25",
-                          "setuptools>=18.0"],
+          setup_requires=["numpy",
+                          "cython>=0.29.32",
+                          "setuptools>=42"],
           ext_modules=get_extensions(),
           cmdclass={"build_ext": build_ext_subclass}
          )
