@@ -10,13 +10,6 @@ Shenfun
     :target: https://codecov.io/gh/spectralDNS/shenfun
 .. image:: https://anaconda.org/conda-forge/shenfun/badges/platforms.svg
     :target: https://anaconda.org/conda-forge/shenfun
-.. |binder| image:: https://mybinder.org/badge_logo.svg
-    :target: https://mybinder.org/v2/gh/spectralDNS/shenfun/master?filepath=binder
-
-
-Try it in a jupyter hub using Binder
-
-|binder|
 
 Description
 -----------
