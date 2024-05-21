@@ -62,7 +62,7 @@ jobs:
     - run: pip install -r conf/requirements-tests.txt
 
     - if: matrix.mpi == 'mpich' && startsWith(matrix.os, 'ubuntu')
-      run: pytest tests/
+      run: pytest tests/ --junitxml=junit/test-results.xml --cov=$(python -c "import site; print(site.getsitepackages()[0]+'/shenfun')") --cov-report=xml --cov-report=html
 
     - if: matrix.mpi == 'mpich' && startsWith(matrix.os, 'ubuntu')
       uses: codecov/codecov-action@v4

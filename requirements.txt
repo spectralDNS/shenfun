@@ -1,7 +1,0 @@
-numpy
-scipy
-mpi4py-fft
-mpi4py
-sympy
-cython
-pyyaml
