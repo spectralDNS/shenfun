@@ -62,13 +62,12 @@ jobs:
     - run: pip install -r conf/requirements-tests.txt
 
     - if: matrix.mpi == 'mpich' && startsWith(matrix.os, 'ubuntu')
-      run: pytest .
-      working-directory: tests
+      run: pytest tests/
 
     - if: matrix.mpi == 'mpich' && startsWith(matrix.os, 'ubuntu')
       uses: codecov/codecov-action@v4
       with:
-        files: test/coverage.xml
+        files: coverage.xml
         name: ${{ matrix.os }}-${{ matrix.mpi }}-${{ matrix.py }}
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
