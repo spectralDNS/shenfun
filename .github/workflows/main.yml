@@ -59,7 +59,7 @@ jobs:
       env:
         CFLAGS: "-O0"
 
-    - run: pip install -r conf/requirements-test.txt
+    - run: pip install -r conf/requirements-tests.txt
 
     - if: matrix.mpi == 'mpich' && startsWith(matrix.os, 'ubuntu')
       run: pytest .
