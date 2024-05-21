@@ -18,6 +18,9 @@ def allclose(a, b):
 
 @pytest.mark.parametrize('typecode', 'fdg')
 def test_curl(typecode):
+    from mpi4py_fft.fftw import fftlib
+    if typecode.upper() not in fftlib:
+        return
     K0 = FunctionSpace(N[0], 'F', dtype=typecode.upper())
     K1 = FunctionSpace(N[1], 'F', dtype=typecode.upper())
     K2 = FunctionSpace(N[2], 'F', dtype=typecode)
