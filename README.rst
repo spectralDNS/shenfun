@@ -53,7 +53,7 @@ Shenfun can be installed using either `pip <https://pypi.org/project/pip/>`_ or 
 Dependencies
 ------------
 
-    * `Python <https://www.python.org/>`_ 3.7 or above. Test suits are run with Python 3.8, 3.9 and 3.10.
+    * `Python <https://www.python.org/>`_ 3.7 or above. Test suits are run with Python 3.10, 3.11 and 3.12.
     * A functional MPI 2.x/3.x implementation like `MPICH <https://www.mpich.org>`_ or `Open MPI <https://www.open-mpi.org>`_ built with shared/dynamic libraries.
     * `FFTW <http://www.fftw.org/>`_ version 3, also built with shared/dynamic libraries.
     * Python modules:
@@ -63,6 +63,17 @@ Dependencies
         * `Cython <https://cython.org/>`_
         * `mpi4py <https://bitbucket.org/mpi4py/mpi4py>`_
         * `mpi4py-fft <https://bitbucket.org/mpi4py/mpi4py-fft>`_
+
+
+Try it in a codespace
+---------------------
+The easiest way to try out shenfun is to create your own codespace. Press the green codespace button on this page and wait for a couple of minutes while everything in `environment.yml` gets installed. Then write in the terminal of the codespace editor:: 
+
+     source activate ./venv
+     python setup.py build_ext -i
+     echo -e "PYTHONPATH=/workspaces/shenfun" > .env
+
+and you are set to run any of the demo programs, or for example try to follow the detailed instructions in the `documentation <https://shenfun.readthedocs.io/en/latest/gettingstarted.html>`_. We assume that you know how to run a Python program. Please note that if you want to use for example IPython or Jupyter in the codespace, then these need to be installed into the venv environment.
 
 Contact
 -------
