@@ -1,4 +1,4 @@
-VERSION=$(shell python3 -c "import shenfun; print(shenfun.__version__)")
+VERSION=$(shell python -c "import shenfun; print(shenfun.__version__)")
 
 default:
 	python setup.py build_ext -i
