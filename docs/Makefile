@@ -7,15 +7,15 @@ SPHINXBUILD   ?= sphinx-build
 SPHINXPROJ    = shenfun
 SOURCEDIR     = source
 BUILDDIR      = build
-DEMO          = Poisson/poisson.rst \
-                KleinGordon/kleingordon.rst \
-                Poisson3D/poisson3d.rst \
+DEMO          = Poisson/poisson.ipynb \
+                KleinGordon/kleingordon.ipynb \
+                Poisson3D/poisson3d.ipynb \
 				PolarHelmholtz/polarhelmholtz.ipynb \
 				SphereHelmholtz/sphericalhelmholtz.ipynb \
-				KuramatoSivashinsky/kuramatosivashinsky.rst \
-				Stokes/stokes.rst \
-				DrivenCavity/drivencavity.rst \
-				RayleighBenard/rayleighbenard.rst \
+				KuramatoSivashinsky/kuramatosivashinsky.ipynb \
+				Stokes/stokes.ipynb \
+				DrivenCavity/drivencavity.ipynb \
+				RayleighBenard/rayleighbenard.ipynb \
 				Functions/functions.ipynb \
 				Integration/surfaceintegration.ipynb \
 				Moebius/moebius.ipynb \
@@ -50,24 +50,13 @@ help:
 	./recite.sh $(notdir $@)
 
 %.ipynb:
-	doconce format ipynb demos/$(basename $@).do.txt
-	python add_metadata.py demos/$(basename $@).ipynb
 	jupyter nbconvert --inplace --execute demos/${basename $@}.ipynb
 	cp demos/$(basename $@).ipynb source/
 
 %.ipynb2:
-	doconce format ipynb demos/$(basename $@).do.txt
-	python add_metadata.py demos/$(basename $@).ipynb
 	jupyter nbconvert --inplace --clear-output demos/${basename $@}.ipynb
-	#jupyter nbconvert --inplace --execute demos/${basename $@}.ipynb
-	doconce subst 'XXX' '   ' demos/$(basename $@).ipynb
-	doconce subst "<div" "<a" demos/$(basename $@).ipynb
-	doconce subst "div>" "a>" demos/$(basename $@).ipynb
-	#doconce subst '<!--.*-->' '' demos/$(basename $@).ipynb
-	#python add_metadata.py demos/$(basename $@).ipynb
 	cp demos/$(basename $@).ipynb ../../shenfun-demos/content/
-	cp demos/$(basename $@).ipynb notebooks/
-
+	
 publish:
 	cd demos && publish export papers.bib && cd ..
 	cp demos/papers.bib source/
