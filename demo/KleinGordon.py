@@ -29,7 +29,7 @@ x, y, z = symbols("x,y,z", real=True)
 ue = 0.1*exp(-(x**2 + y**2 + z**2))
 
 # Size of discretization
-N = (32, 32, 32)
+N = (31, 32, 33)
 
 # Defocusing or focusing
 gamma = 1
@@ -104,8 +104,8 @@ def update(self, fu, fu_hat, t, tstep, **params):
     if rank == 0 and tstep % params['plot_tstep'] == 0 and params['plot_tstep'] > 0:
         fu = fu_hat.backward(fu)
         f, u = fu[:]
-        image.ax.clear()
-        image.ax.contourf(X[1][..., 0], X[0][..., 0], u[..., N[2]//2], 100)
+        #image.axes.clear()
+        image.axes.contourf(X[1][..., 0], X[0][..., 0], u[..., N[2]//2], 100)
         plt.pause(1e-6)
         transformed = True
 
@@ -144,7 +144,7 @@ if __name__ == '__main__':
            'write_tstep': (50, {'fu': [fu]}),
            'Compute_energy': 100,
            'plot_tstep': 100,
-           'end_time': 100.,
+           'end_time': 10.,
            'file': file0}
     dt = 0.005
     #integrator = ETDRK4(TT, N=NonlinearRHS, update=update, **par)

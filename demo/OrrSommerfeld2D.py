@@ -5,27 +5,26 @@ from ChannelFlow2D import KMM
 
 class OrrSommerfeld(KMM):
 
-    def __init__(self, N=(32, 32), domain=((-1, 1), (0, 2*np.pi)), Re=8000.,
+    def __init__(self, N=(32, 32), domain=((-1, 1), (0, 2*np.pi)), Re=8000., alfa=1.,
                  dt=0.1, conv=0, modplot=100, modsave=1e8, moderror=100, filename='KMM',
                  family='C', padding_factor=(1, 1.5), checkpoint=1000, timestepper='IMEXRK3'):
-        KMM.__init__(self, N=N, domain=domain, nu=1/Re, dt=dt, conv=conv, modplot=modplot,
+        KMM.__init__(self, N=N, domain=(domain[0], (domain[1][0], domain[1][1]/alfa)), nu=1/Re, dt=dt, conv=conv, modplot=modplot,
                      modsave=modsave, moderror=moderror, filename=filename, family=family,
                      padding_factor=padding_factor, checkpoint=checkpoint, timestepper=timestepper,
                      dpdy=-2/Re)
         self.Re = Re
+        self.alfa = alfa
 
     def initialize(self, from_checkpoint=False):
         if from_checkpoint:
             return self.init_from_checkpoint()
 
         from OrrSommerfeld_eigs import OrrSommerfeld
-        self.OS = OS = OrrSommerfeld(Re=self.Re, N=128)
+        self.OS = OS = OrrSommerfeld(Re=self.Re, N=128, alfa=self.alfa)
         eigvals, eigvectors = OS.solve(False)
         OS.eigvals, OS.eigvectors = eigvals, eigvectors
         self.initOS(OS, eigvals, eigvectors, self.ub)
         self.u_ = self.ub.forward(self.u_)
-        # Compute convection from data in context (i.e., context.U_hat and context.g)
-        # This is the convection at t=0
         self.e0 = 0.5*dx(self.ub[0]**2+(self.ub[1]-(1-self.X[0]**2))**2)
         self.acc = np.zeros(1)
         return 0, 0
@@ -37,8 +36,8 @@ class OrrSommerfeld(KMM):
         OS.eigval = eigval
         for j in range(U.shape[2]):
             y = X[1][0, j]
-            v = (1-x**2) + 1e-7*np.real(dphidy*np.exp(1j*(y-eigval*t)))
-            u = -1e-7*np.real(1j*phi*np.exp(1j*(y-eigval*t)))
+            v = (1-x**2) + 1e-7*np.real(dphidy*np.exp(1j*self.alfa*(y-eigval*t)))
+            u = -1e-7*np.real(1j*self.alfa*phi*np.exp(1j*self.alfa*(y-eigval*t)))
             U[0, :, j] = u
             U[1, :, j] = v
 
@@ -46,7 +45,7 @@ class OrrSommerfeld(KMM):
         ub = self.u_.backward(self.ub)
         pert = (ub[1] - (1-self.X[0]**2))**2 + ub[0]**2
         e1 = 0.5*dx(pert)
-        exact = np.exp(2*np.imag(self.OS.eigval)*t)
+        exact = np.exp(2*np.imag(self.alfa*self.OS.eigval)*t)
         U0 = self.work[(ub, 0, True)]
         self.initOS(self.OS, self.OS.eigvals, self.OS.eigvectors, U0, t=t)
         pert = (ub[0] - U0[0])**2 + (ub[1] - U0[1])**2
@@ -80,10 +79,8 @@ class OrrSommerfeld(KMM):
             if comm.Get_rank() == 0 and comm.Get_size() == 1:
                 ub = self.u_.backward(self.ub)
                 X = self.X
-                self.im1.axes.clear()
                 self.im1.axes.contourf(X[1], X[0], ub[0], 100)
                 self.im1.autoscale()
-                self.im2.axes.clear()
                 self.im2.axes.contourf(X[1], X[0], ub[1], 100)
                 self.im2.autoscale()
                 self.im3.set_UVC(ub[1]-(1-self.X[0]**2), ub[0])
@@ -105,25 +102,26 @@ if __name__ == '__main__':
     from mpi4py_fft import generate_xdmf
     t0 = time()
     N = (128, 32)
-    config['optimization']['mode'] = 'numba'
+    config['optimization']['mode'] = 'cython'
     d = {
         'N': N,
         'Re': 8000.,
-        'dt': 0.01,
+        'dt': 0.002,
         'filename': f'KMM_OS_{N[0]}_{N[1]}',
         'conv': 0,
-        'modplot': 100,
+        'alfa': 1,
+        'modplot': -1,
         'modsave': 1000,
         'moderror': 10,
         'family': 'C',
         'checkpoint': 10000000,
         'padding_factor': 1,
-        'timestepper': 'IMEXRK222'
+        'timestepper': 'IMEXRK443'
         }
     OS = True
     c = OrrSommerfeld(**d)
     t, tstep = c.initialize(from_checkpoint=False)
-    c.solve(t=t, tstep=tstep, end_time=1)
+    c.solve(t=t, tstep=tstep, end_time=0.1)
     print('Computing time %2.4f'%(time()-t0))
     if comm.Get_rank() == 0:
         generate_xdmf('_'.join((d['filename'], 'U'))+'.h5')

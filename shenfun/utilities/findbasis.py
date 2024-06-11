@@ -46,9 +46,10 @@ def get_stencil_matrix(bcs, family, alpha=None, beta=None, gn=1):
     r = []
     for key in bcs.orderednames():
         k, v = key[0], key[1:]
-        if v == 'R':
-            alfa = bcs[lra[k]]['R'][0]
-            f = [bnd_values(k=0)[lr[k]], bnd_values(k=1)[lr[k]]]
+        if v in 'WR':
+            k0 = 0 if v == 'R' else 1
+            alfa = bcs[lra[k]][v][0]
+            f = [bnd_values(k=k0)[lr[k]], bnd_values(k=k0+1)[lr[k]]]
             s.append([sp.simplify(f[0](n+j)+alfa*f[1](n+j)) for j in range(1, 1+bcs.num_bcs())])
             r.append(-sp.simplify(f[0](n)+alfa*f[1](n)))
         else:
@@ -100,9 +101,10 @@ def get_bc_basis(bcs, family, alpha=None, beta=None, gn=1):
         s = []
         for key in bcs.orderednames():
             k, v = key[0], key[1:]
-            if v == 'R':
-                alfa = bcs[lra[k]]['R'][0]
-                f = [bnd_values(k=0)[lr[k]], bnd_values(k=1)[lr[k]]]
+            if v in 'WR':
+                k0 = 0 if v == 'R' else 1
+                alfa = bcs[lra[k]][v][0]
+                f = [bnd_values(k=k0)[lr[k]], bnd_values(k=k0+1)[lr[k]]]
                 s.append([sp.simplify(f[0](j)+alfa*f[1](j)) for j in range(first, first+bcs.num_bcs())])
             else:
                 f = bnd_values(k=bc[v])[lr[k]]

@@ -82,10 +82,8 @@ class OrrSommerfeld(KMM):
             if comm.Get_rank() == 0 and comm.Get_size() == 1:
                 ub = self.u_.backward(self.ub)
                 X = self.X
-                self.im1.axes.clear()
                 self.im1.axes.contourf(X[1][:, :, 0], X[0][:, :, 0], ub[0, :, :, 0], 100)
                 self.im1.autoscale()
-                self.im2.axes.clear()
                 self.im2.axes.contourf(X[1][:, :, 0], X[0][:, :, 0], ub[1, :, :, 0], 100)
                 self.im2.autoscale()
                 self.im3.set_UVC(ub[1, :, :, 0]-(1-self.X[0][:, :, 0]**2), ub[0, :, :, 0])

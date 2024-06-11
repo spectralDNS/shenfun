@@ -446,6 +446,9 @@ class SparseMatrix(MutableMapping):
         """
         from .la import (Solve, TDMA, TDMA_O, FDMA, TwoDMA, ThreeDMA, PDMA,
             DiagMA, HeptaDMA)
+        if self.scale == 0:
+            return Solve
+            
         if len(self) == 1:
             if list(self.keys())[0] == 0:
                 return DiagMA

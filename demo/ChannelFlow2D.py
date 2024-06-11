@@ -90,10 +90,10 @@ class KMM:
         self.TD = TensorProductSpace(comm, (self.D0, self.F1), modify_spaces_inplace=True) # Streamwise velocity
         self.TC = TensorProductSpace(comm, (self.C0, self.F1), modify_spaces_inplace=True) # No bc
         self.BD = VectorSpace([self.TB, self.TD])  # Velocity vector space
-        self.CD = VectorSpace(self.TD)             # Dirichlet vector space
+        self.CD = VectorSpace(self.TC)             # Dirichlet vector space
 
         # Padded space for dealiasing
-        self.TDp = self.TD.get_dealiased(padding_factor)
+        self.TDp = self.TC.get_dealiased(padding_factor)
 
         self.u_ = Function(self.BD)      # Velocity vector solution
         self.H_ = Function(self.CD)      # convection
@@ -110,9 +110,9 @@ class KMM:
         # Classes for fast projections. All are not used except if self.conv=0
         self.dudx = Project(Dx(self.u_[0], 0, 1), self.TD)
         if self.conv == 0:
-            self.dudy = Project(Dx(self.u_[0], 1, 1), self.TB)
+            self.dudy = Project(Dx(self.u_[0], 1, 1), self.TC)
             self.dvdx = Project(Dx(self.u_[1], 0, 1), self.TC)
-            self.dvdy = Project(Dx(self.u_[1], 1, 1), self.TD)
+            self.dvdy = Project(Dx(self.u_[1], 1, 1), self.TC)
 
         self.curl = Project(curl(self.u_), self.TC)
         self.divu = Project(div(self.u_), self.TD)
@@ -130,8 +130,8 @@ class KMM:
         v = TestFunction(self.TB)
 
         # Chebyshev matrices are not sparse, so need a tailored solver. Legendre has simply 5 nonzero diagonals and can use generic solvers.
-        #sol1 = chebyshev.la.Biharmonic if self.B0.family() == 'chebyshev' else la.SolverGeneric1ND
-        sol1 = la.SolverGeneric1ND
+        sol1 = chebyshev.la.Biharmonic if self.B0.family() == 'chebyshev' else la.SolverGeneric1ND
+        #sol1 = la.SolverGeneric1ND
 
         self.pdes = {
 
@@ -151,7 +151,7 @@ class KMM:
         # v. Momentum equation for Fourier wavenumber 0
         if comm.Get_rank() == 0:
             v0 = TestFunction(self.D00)
-            self.h1 = Function(self.D00)  # Copy from H_[1, :, 0, 0] (cannot use view since not contiguous)
+            self.h1 = Function(self.C00)  # Copy from H_[1, :, 0, 0] (cannot use view since not contiguous)
             source = Array(self.C00)
             source[:] = -self.dpdy        # dpdy set by subclass
             sol = chebyshev.la.Helmholtz if self.B0.family() == 'chebyshev' else la.Solver
@@ -164,13 +164,14 @@ class KMM:
                           solver=sol,
                           latex=r"\frac{\partial v}{\partial t} = \nu \frac{\partial^2 v}{\partial x^2} - N_y - \frac{\partial p}{\partial y}"),
             }
-
-    def convection(self):
+    
+    def convection(self, rk):
         H = self.H_.v
         self.up = self.u_.backward(padding_factor=self.padding_factor)
         up = self.up.v
         if self.conv == 0:
-            dudxp = self.dudx().backward(padding_factor=self.padding_factor).v
+            dudx = self.dudx() if rk == 0 else self.dudx.output_array
+            dudxp = dudx.backward(padding_factor=self.padding_factor).v
             dudyp = self.dudy().backward(padding_factor=self.padding_factor).v
             dvdxp = self.dvdx().backward(padding_factor=self.padding_factor).v
             dvdyp = self.dvdy().backward(padding_factor=self.padding_factor).v
@@ -192,7 +193,7 @@ class KMM:
 
         # Find velocity components v from div. constraint
         u[1] = 1j*self.dudx()/self.K[1]
-
+            
         # Still have to compute for wavenumber = 0, 0
         if comm.Get_rank() == 0:
             # v component
@@ -206,7 +207,6 @@ class KMM:
             self.d2udx2 = Project(self.nu*Dx(self.u_[0], 0, 2), self.TC)
             N0 = self.N0 = FunctionSpace(self.N[0], self.B0.family(), bc={'left': {'N': self.d2udx2()}, 'right': {'N': self.d2udx2()}})
             TN = self.TN = TensorProductSpace(comm, (N0, self.F1), modify_spaces_inplace=True)
-            #sol = chebyshev.la.Helmholtz if self.B0.family() == 'chebyshev' else la.SolverGeneric1ND
             sol = la.SolverGeneric1ND
             self.divH = Inner(TestFunction(TN), -div(self.H_))
             self.solP = sol(inner(TestFunction(TN), div(grad(TrialFunction(TN)))))
@@ -251,7 +251,7 @@ class KMM:
         self.file_u.write(tstep, {'u': [self.u_.backward(mesh='uniform')]}, as_scalar=True)
 
     def prepare_step(self, rk):
-        self.convection()
+        self.convection(rk)
 
     def assemble(self):
         for pde in self.pdes.values():
@@ -259,7 +259,7 @@ class KMM:
         if comm.Get_rank() == 0:
             for pde in self.pdes1d.values():
                 pde.assemble()
-
+    
     def solve(self, t=0, tstep=0, end_time=1000):
         self.assemble()
         while t < end_time-1e-8:

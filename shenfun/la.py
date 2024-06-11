@@ -132,6 +132,10 @@ class SparseMatrixSolver:
         if self._lu is None:
             if isinstance(self.mat, SparseMatrix):
                 self.mat = self.mat.diags('csc')
+            self.mat.eliminate_zeros()
+            if self.mat.nnz < 2:
+                self._lu = None
+                return self._lu
             self._lu = splu(self.mat, permc_spec=config['matrix']['sparse']['permc_spec'])
             self.dtype = self.mat.dtype.char
             self._inner_arg = (self._lu, self.dtype)
@@ -238,7 +242,8 @@ class SparseMatrixSolver:
         b = self.apply_bcs(b, u, axis=axis)
         b = self.apply_constraints(b, constraints, axis=axis)
         lu = self.perform_lu() # LU must be performed after constraints, because constraints modify the matrix
-        u = self.solve(b, u, axis, lu)
+        if not lu is None:
+            u = self.solve(b, u, axis, lu)
         if hasattr(u, 'set_boundary_dofs'):
             u.set_boundary_dofs()
         return u
@@ -838,7 +843,6 @@ class Solve(SparseMatrixSolver):
         SparseMatrixSolver.__init__(self, mats)
         self.mat = self.mat.diags(format)
 
-
 class SolverGeneric2ND:
     """Generic solver for problems consisting of tensorproduct matrices
     containing two non-diagonal submatrices.
@@ -1371,7 +1375,8 @@ class SolverGeneric1ND:
             for i, sol in enumerate(solvers1D):
                 s[paxes[0]] = i
                 s0 = tuple(s)
-                sol.inner_solve(u[s0], sol._inner_arg)
+                if sol._inner_arg is not None:
+                    sol.inner_solve(u[s0], sol._inner_arg)
 
         elif u.ndim == 3:
             for i, m in enumerate(solvers1D):
@@ -1379,7 +1384,8 @@ class SolverGeneric1ND:
                 for j, sol in enumerate(m):
                     s[paxes[1]] = j
                     s0 = tuple(s)
-                    sol.inner_solve(u[s0], sol._inner_arg)
+                    if sol._inner_arg is not None:
+                        sol.inner_solve(u[s0], sol._inner_arg)
 
     def __call__(self, b, u=None, constraints=(), fast=True):
         """Solve problem with one non-diagonal direction
@@ -1472,9 +1478,7 @@ class BlockMatrixSolver:
         space = b.function_space()
         if u is None:
             u = Function(space)
-        else:
-            assert u.shape == b.shape
-
+        
         if self.bc_mat: # Add contribution to right hand side due to inhomogeneous boundary conditions
             u.set_boundary_dofs()
             w0 = np.zeros_like(b)

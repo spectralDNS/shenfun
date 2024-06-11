@@ -346,7 +346,7 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
             else:
                 raise NotImplementedError
             B = bases[''.join(key)]
-
+        
         return B(N, **par)
 
     elif family.lower() in ('hermite', 'h'):
