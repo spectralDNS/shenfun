@@ -19,5 +19,5 @@
       }
     }
   },
-  "postCreateCommand": ""
+  "postCreateCommand": "conda init"
 }
