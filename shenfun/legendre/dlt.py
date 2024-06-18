@@ -92,7 +92,7 @@ class DLT:
     >>> print(c)
     [-0.86113631 -0.33998104  0.33998104  0.86113631]
     >>> u[:] = 1
-    >>> np.alltrue(np.abs(u - u.backward().forward()) < 1e-12)
+    >>> np.all(np.abs(u - u.backward().forward()) < 1e-12)
     True
 
     """

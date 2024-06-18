@@ -1226,20 +1226,15 @@ def chebvanderU(x, deg):
         the converted `x`.
 
     """
-    import numpy.polynomial.polyutils as pu
-    ideg = pu._deprecate_as_int(deg, "deg")
-    if ideg < 0:
-        raise ValueError("deg must be non-negative")
-
     x = np.array(x, copy=False, ndmin=1) + 0.0
-    dims = (ideg + 1,) + x.shape
+    dims = (deg + 1,) + x.shape
     dtyp = x.dtype
     v = np.empty(dims, dtype=dtyp)
     # Use forward recursion to generate the entries.
     v[0] = x*0 + 1
-    if ideg > 0:
+    if deg > 0:
         x2 = 2*x
         v[1] = 2*x
-        for i in range(2, ideg + 1):
+        for i in range(2, deg + 1):
             v[i] = v[i-1]*x2 - v[i-2]
     return np.moveaxis(v, 0, -1)

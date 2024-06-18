@@ -38,11 +38,11 @@ def test_imul(basis):
     assert np.allclose(np.array(e.scales()).astype(int), 4)
     x = sp.symbols('x', real=True)
     e *= x
-    assert np.alltrue(np.array(e.scales()) == 4*x)
+    assert np.all(np.array(e.scales()) == 4*x)
     if e.expr_rank() == 1:
         a = tuple(range(e.dimensions))
         e *= a
-        assert np.alltrue(np.array(e.scales())[:, 0] == (0, 4*x))
+        assert np.all(np.array(e.scales())[:, 0] == (0, 4*x))
 
 @pytest.mark.parametrize('basis', (u0, u1, u2))
 def test_add(basis):

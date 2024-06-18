@@ -100,9 +100,9 @@ def test_map_domain():
     B = FunctionSpace(8, 'C', domain=(0, 2))
     assert B.map_reference_domain(1) == 0
     assert B.map_reference_domain(0) == -1
-    assert np.alltrue(B.map_reference_domain(np.array([0.5, 1.5])) == np.array([-0.5, 0.5]))
+    assert np.all(B.map_reference_domain(np.array([0.5, 1.5])) == np.array([-0.5, 0.5]))
     assert B.map_true_domain(0) == 1.0
-    assert np.alltrue(B.map_true_domain(np.array([-1, 1])) == np.array([0, 2]))
+    assert np.all(B.map_true_domain(np.array([-1, 1])) == np.array([0, 2]))
     assert B.map_expression_true_domain(x) == x+1
     assert B.domain_length() == 2
     assert B.dims() == (8,)
@@ -110,8 +110,8 @@ def test_map_domain():
     assert B.is_padded == False
     assert B.ndim == 1
     xj, wj = B.points_and_weights()
-    assert np.alltrue(B.get_measured_weights(measure=x) == xj*wj)
-    assert np.alltrue(B.get_measured_weights(measure=2) == 2*wj)
+    assert np.all(B.get_measured_weights(measure=x) == xj*wj)
+    assert np.all(B.get_measured_weights(measure=2) == 2*wj)
 
 @pytest.mark.parametrize('family', 'CLUQJ')
 def test_constant_inner(family):

@@ -3,16 +3,9 @@ VERSION=$(shell python -c "import shenfun; print(shenfun.__version__)")
 default:
 	python setup.py build_ext -i
 
-pip:
-	rm -f dist/*
-	python setup.py sdist
-	twine upload dist/*
-
 tag:
 	git tag $(VERSION)
 	git push --tags
-
-publish: tag pip
 
 clean:
 	git clean shenfun -fx
