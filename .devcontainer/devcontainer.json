@@ -5,9 +5,7 @@
   },
   "waitFor": "onCreateCommand",
   "updateContentCommand": "conda env create --file environment.yml",
-  "postCreateCommand": ["source activate shenfun", 
-                        "python setup.py build_ext -i", 
-                        "export PYTHONPATH=$PWD"],
+  "postCreateCommand": "source activate shenfun && python setup.py build_ext -i && export PYTHONPATH=$PWD",
   "customizations": {
     "codespaces": {
       "openFiles": []
