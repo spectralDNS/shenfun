@@ -14,8 +14,8 @@
         "ms-python.python"
       ],
       "settings": {  
-        "python.pythonPath": "/opt/conda/envs/shenfun/bin/python",             
-        "python.defaultInterpreterPath": "/opt/conda/envs/shenfun/bin/python"  
+        "python.pythonPath": "/opt/conda/envs/shenfun",             
+        "python.defaultInterpreterPath": "/opt/conda/envs/shenfun"  
       }
     }
   },
