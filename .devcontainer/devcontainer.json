@@ -5,7 +5,6 @@
   },
   "waitFor": "onCreateCommand",
   "updateContentCommand": ["/bin/bash", "-c", "conda env create --file environment.yml && source activate shenfun && python setup.py build_ext -i && export PYTHONPATH=$PWD"],
-  "postCreateCommand": "",
   "customizations": {
     "codespaces": {
       "openFiles": []
@@ -13,7 +12,12 @@
     "vscode": {
       "extensions": [
         "ms-python.python"
-      ]
+      ],
+      "settings": {  
+        "python.pythonPath": "/opt/conda/envs/shenfun/bin/python",             
+        "python.defaultInterpreterPath": "/opt/conda/envs/shenfun/bin/python"  
+      }
     }
-  }
+  },
+  "postCreateCommand": ""
 }
