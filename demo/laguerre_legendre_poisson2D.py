@@ -79,6 +79,7 @@ def main(N):
         plt.show()
     else:
         assert error < 1e-5
+    T.destroy()
 
 if __name__ == '__main__':
     main(60)

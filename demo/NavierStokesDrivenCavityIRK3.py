@@ -66,10 +66,18 @@ class NavierStokesIRK3(IRK3):
 
         # Create padded spaces for nonlinearity
         self.uip = Array(W1.get_dealiased())
-        S1 = TensorSpace(V1.get_orthogonal().get_dealiased())
+        self.T1 = V1.get_orthogonal()
+        S1 = TensorSpace(self.T1.get_dealiased())
         self.uiuj = Array(S1)
         self.uiuj_hat = Function(S1)
         IRK3.__init__(self, VQ)
+
+    def destroy(self):
+        for T in [*self.up_.function_space(),
+                  *self.uip.function_space(),
+                  *self.uiuj.function_space(),
+                  self.T1]:
+            T.destroy()
 
     def LinearRHS(self, up):
         u, p = up
@@ -163,3 +171,4 @@ if __name__ == '__main__':
         dx = dx/4.
         print("%d %d " %(xi, yi) +("%+2.7e "*4) %(xmid, ymid, psi_min, err))
         count += 1
+    sol.destroy()

@@ -72,7 +72,6 @@ def update(self, u, u_hat, t, tstep, plot_step, **params):
     if tstep % plot_step == 0 and plot_step > 0:
         u = u_hat.backward(u)
         u_hat = u.forward(u_hat)
-        self.image.axes.clear()
         self.image.axes.contourf(X[0], X[1], u, 256, cmap=self.cm)
         plt.autoscale()
         plt.pause(1e-6)
@@ -86,8 +85,10 @@ if __name__ == '__main__':
            'gradu': gradu,
            'count': 0}
     dt = 0.01
-    end_time = 500
+    end_time = 50
     integrator = ETDRK4(T, L=LinearRHS, N=NonlinearRHS, update=update, **par)
     #integrator = RK4(T, L=LinearRHS, N=NonlinearRHS, update=update, **par)
     integrator.setup(dt)
     U_hat = integrator.solve(U, U_hat, dt, (0, end_time))
+    for space in (T, Tp):
+        space.destroy()

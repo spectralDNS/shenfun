@@ -59,3 +59,4 @@ if __name__ == '__main__':
         k = comm.reduce(0.5*np.sum(U*U)/np.prod(np.array(N)))
         if comm.Get_rank() == 0:
             assert np.round(k - 0.124953117517, (4, 7, 7)[i]) == 0
+    T.destroy()

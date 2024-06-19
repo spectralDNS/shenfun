@@ -352,6 +352,7 @@ def inner(expr0, expr1, output_array=None, assemble=None, kind=None, fixed_resol
     if output_array is None and trial.argument == 2:
         output_array = Function(test.function_space())
 
+    orthogonal = None
     if trial.argument > 1:
         # Linear form
         assert isinstance(test, (Expr, BasisFunction))
@@ -505,6 +506,9 @@ def inner(expr0, expr1, output_array=None, assemble=None, kind=None, fixed_resol
             wh = b.matvec(uh, wh)
         output_array += wh
         wh.fill(0)
+    if orthogonal:
+        for trans in orthogonal.transfer:
+            trans.destroy()
     return output_array
 
 work = CachedArrayDict()

@@ -101,6 +101,7 @@ def main(N, family):
             print('    L2 error      u       dudx       dudy')
             print('         %2.4e %2.4e %2.4e' %(error[0], error[1], error[2]))
         assert np.all(abs(np.array(error)) < 1e-8), error
+    Q.destroy()
 
 if __name__ == '__main__':
     for family in ('CLUQJ'):

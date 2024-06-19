@@ -169,6 +169,8 @@ class MicroPolar(KMM):
         return t, tstep
 
     def convection(self):
+        self.curlwx()
+        self.curlcurlwx()
         KMM.convection(self)
         HW = self.HW_
         up = self.up

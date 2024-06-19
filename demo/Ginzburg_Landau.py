@@ -64,7 +64,6 @@ def update(self, u, u_hat, t, tstep, plot_tstep, write_tstep, file, **params):
     global count
     if tstep % plot_tstep == 0 and plot_tstep > 0:
         u = u_hat.backward(u)
-        image.axes.clear()
         image.axes.contourf(X[0], X[1], u.real, 100)
         plt.pause(1e-6)
         count += 1
@@ -80,10 +79,13 @@ if __name__ == '__main__':
            'file': file0}
     t = 0.0
     dt = 0.01
-    end_time = 100
+    end_time = 1
     integrator = ETDRK4(T, L=LinearRHS, N=NonlinearRHS, update=update, **par)
     integrator.setup(dt)
     U_hat = integrator.solve(U, U_hat, dt, (0, end_time))
     if comm.Get_rank() == 0:
         generate_xdmf("Ginzburg_Landau_{}.h5".format(N[0]))
     fftw.export_wisdom('GL.wisdom')
+    T.destroy()
+    for space in U_hat._padded_space.values():
+        space.destroy()

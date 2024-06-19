@@ -42,6 +42,7 @@ as they assume all matrices are diagonal.
 import copy
 import types
 import numpy as np
+
 from shenfun import Function, TPMatrix, TrialFunction, TestFunction,\
     inner, la, Expr, CompositeSpace, BlockMatrix, SparseMatrix, \
     get_simplified_tpmatrices, ScipyMatrix, Inner, SpectralMatrix
@@ -83,7 +84,7 @@ class IntegratorBase:
             self.NonlinearRHS = types.MethodType(N, self)
         if update is not None:
             self.update = types.MethodType(update, self)
-
+        
     def update(self, u, u_hat, t, tstep, **par):
         pass
 

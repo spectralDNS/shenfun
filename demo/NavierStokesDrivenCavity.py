@@ -115,12 +115,14 @@ max_count = 1000
 if 'pytest' in os.environ:
     max_count = 1
 t0 = time.time()
+up0 = up_hat[0].view()
+up1 = up_new[0].view()
 while not converged:
     count += 1
     bh_hat = compute_rhs(up_hat, bh_hat)
     up_new = sol(bh_hat, u=up_new, constraints=((2, 0, 0),)) # Constraint for component 2 of mixed space
-    error = np.linalg.norm(up_hat[0]-up_new[0])
-    up_hat[:] = alfa*up_new + (1-alfa)*up_hat
+    error = np.linalg.norm(up0-up1)
+    up_hat.v[:] = alfa*up_new.v + (1-alfa)*up_hat.v
     converged = abs(error) < 1e-11 or count >= max_count
     if count % 1 == 0:
         print('Iteration %d Error %2.4e' %(count, error))
@@ -142,12 +144,14 @@ s = TrialFunction(V0)
 S = inner(r, div(grad(s)))
 h = inner(r, -curl(up_hat[0]))
 H = la.SolverGeneric2ND(S)
+
 phi_h = H(h)
 phi = phi_h.backward()
 # Compute vorticity
-P = V1.get_orthogonal()
-w_h = Function(P)
-w_h = project(curl(up_hat[0]), P, output_array=w_h)
+P1 = V1.get_orthogonal()
+w_h = Function(P1)
+
+w_h = project(curl(up_hat[0]), P1, output_array=w_h)
 #p0 = np.array([[0.], [0.]])
 #print(w_h.eval(p0)*2)
 
@@ -175,3 +179,6 @@ while not converged:
     print("%d %d " %(xi, yi) +("%+2.7e "*4) %(xmid, ymid, psi_min, err))
     count += 1
 
+# clean up
+for T in [V0, V1, P, P1, uiuj.function_space(), up_hat._padded_space[1.5]]:
+    T.destroy()

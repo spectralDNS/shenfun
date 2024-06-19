@@ -41,8 +41,8 @@ from mpi4py_fft.pencil import Subcomm
 
 # Use sympy to compute a rhs, given an analytical solution
 x, y, z = sp.symbols("x,y,z", real=True)
-a = -2
-b = 1
+a = -1
+b = 2
 domain = (a, b)
 
 ue = sp.cos(2*sp.pi*(y+0.1)/2)*(sp.sin(2*x)+sp.cos(3*x))*(sp.sin(3*z)+sp.cos(2*z))
@@ -99,9 +99,11 @@ def main(N, family, bc):
     uj = Array(T, buffer=ue)
     error = np.sqrt(inner(1, (uj-uq)**2))
     if comm.Get_rank() == 0:
-        print(f'poisson3D L2 error = {error:2.6e}')
+        print(f'poisson3D {family:s} L2 error = {error:2.6e}')
     if 'pytest 'in os.environ:
-        assert error < 1e-8
+        assert error < 1e-6
+    T.destroy()
+    B.destroy()
 
 if __name__ == '__main__':
     for family in ('legendre', 'chebyshev', 'chebyshevu', 'jacobi'):

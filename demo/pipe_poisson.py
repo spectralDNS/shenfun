@@ -122,3 +122,6 @@ if comm.Get_rank() == 0:
     plt.contourf(xp, yp, up)
     plt.colorbar()
     plt.show()
+
+for space in (T, T0, u_hat2.function_space(), u0_hat2.function_space()):
+    space.destroy()

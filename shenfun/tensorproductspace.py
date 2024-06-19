@@ -1351,7 +1351,7 @@ class TensorProductSpace(PFFT):
         sl = self._get_ndiag_slices(j)
         dims = self._get_ndiag_cum_dofs()
         return sl, dims
-
+    
 
 class CompositeSpace:
     """Class for composite tensorproductspaces.
@@ -1614,6 +1614,10 @@ class CompositeSpace:
 
     def __len__(self):
         return len(self.spaces)
+    
+    def destroy(self):
+        for space in self.flatten():
+            space.destroy()
 
 
 class VectorSpace(CompositeSpace):

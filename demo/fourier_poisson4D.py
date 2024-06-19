@@ -68,3 +68,5 @@ if 'pytest' not in os.environ and comm.Get_size() == 1:
     plt.colorbar()
     plt.title('Error')
     plt.show()
+
+T.destroy()

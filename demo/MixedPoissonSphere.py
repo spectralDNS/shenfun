@@ -97,3 +97,4 @@ fig = surf3D(u_.imag, [xx, yy, zz], backend='mayavi', wrapaxes=[1], kind='unifor
 #fig.show()
 quiver3D(df.imag, [xx, yy, zz], wrapaxes=[1], kind='uniform', fig=fig)
 mlab.show()
+T.destroy()

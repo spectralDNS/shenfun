@@ -90,6 +90,8 @@ def main(N, family, bci, bcj, plotting=False):
         bx += " :: y: L-" + "".join(list(BY.bc.bc["left"].keys())) + " R-" + "".join(list(BY.bc.bc["right"].keys()))
         print(f"poisson2ND {BX.family():14s} {bx} L2 error = {error:2.6e}")
         assert error < 1e-6
+    trialspace.destroy()
+    testspace.destroy()
 
 if __name__ == '__main__':
     # Note - some are slower since the basis stencil is not precomputed

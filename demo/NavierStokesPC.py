@@ -65,7 +65,7 @@ def main(n):
 
     # Define the coefficient vector
     U_hat = Function(Ws); U_hat = Ws.forward(U, U_hat)
-    P_hat = Function(Ps); P_hat = Ps.forward(P, P_hat)
+    P_hat = Function(Ps); 
     F_hat = Function(Ws); F_hat = Ws.forward(F, F_hat)
 
     # Initial time, time step, final time
@@ -90,8 +90,8 @@ def main(n):
     rhsU, rhsP = Function(Ws), Function(Ps)
     U0_hat = Function(Ws); U0_hat = Ws.forward(U, U0_hat)
     Ut_hat = Function(Ws); Ut_hat = Ws.forward(U, Ut_hat)
-    P0_hat = Function(Ps); P0_hat = Ps.forward(P, P0_hat)
-    Phi_hat = Function(Ps); Phi_hat = Ps.forward(P, Phi_hat)
+    P0_hat = Function(Ps); 
+    Phi_hat = Function(Ps); 
 
     # Create work arrays for nonlinear part
     UiUj = Array(Cs)
@@ -140,7 +140,7 @@ def main(n):
     rhsP.fill(0)
     rhsP += inner(q, phi_hat) + inner(q, p_hat) - inner(q, div(ut_hat))
     p_hat = Lu2.solve(rhsP, u=p_hat, constraints=((0, 0, 0),))
-
+    
     time += dt
 
     # BDF time step
@@ -181,7 +181,7 @@ def main(n):
         rhsP.fill(0)
         rhsP += inner(q, phi_hat) + inner(q, p_hat) - inner(q, div(ut_hat))
         p_hat = Lu2.solve(rhsP, u=p_hat, constraints=((0, 0, 0),))
-
+        
         # increment time
         time += dt
 
@@ -193,6 +193,8 @@ def main(n):
     Pe = Array(Ps, buffer=(pe.subs(t, tf)))
     UPe = [*Ue, Pe]
     l2_error = list(map(np.linalg.norm, [u-ue for u, ue in zip(UP, UPe)]))
+    Vs.destroy()
+    Ps.destroy()
     return l2_error
 
 

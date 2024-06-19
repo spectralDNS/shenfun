@@ -74,6 +74,8 @@ def main(N, family):
 
     else:
         assert error < 1e-6
+    
+    T.destroy()
 
 if __name__ == '__main__':
     for family in ('legendre', 'chebyshev', 'chebyshevu', 'ultraspherical', 'jacobi'):

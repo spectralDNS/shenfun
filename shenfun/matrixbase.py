@@ -1474,6 +1474,7 @@ class TPMatrix:
             cC = bb.matvec(cB, cC, format=format, axis=second_axis)
             transAB.backward(cC, c)
             c *= tpmat.scale
+            transAB.destroy()
             if newspace:
                 space.destroy()
 

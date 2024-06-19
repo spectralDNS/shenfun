@@ -2008,8 +2008,9 @@ class Array(ShenfunBaseArray):
         psi = T.coors.psi
         x = T.local_mesh(True)
         b = T.coors.get_basis()
-        bij = np.array(sp.lambdify(psi, b)(*x), dtype=object)
+        bij = np.zeros(b.shape, dtype=object)
         for bi in np.ndindex(bij.shape):
+            bij[bi] = sp.lambdify(psi, b[bi])(*x) 
             if isinstance(bij[bi], int):
                 bij[bi] = np.full(x[0].shape, bij[bi])
         bij = np.array(bij.tolist())

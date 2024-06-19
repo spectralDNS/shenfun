@@ -153,6 +153,7 @@ def project(uh, T, output_array=None, fill=True, use_to_ortho=True, use_assign=T
             b = B[0].mats[second_axis]
             output_arrayB2 = b.solve(output_arrayB, output_arrayB2, axis=second_axis)
             transAB.backward(output_arrayB2, output_array)
+            transAB.destroy()
             return output_array
 
     if isinstance(B, (TPMatrix, SpectralMatrix)):

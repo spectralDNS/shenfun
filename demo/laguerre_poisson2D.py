@@ -83,6 +83,7 @@ def main(N, bc):
         plt.show()
     else:
         assert error < 1e-6
+    T.destroy()
 
 if __name__ == '__main__':
     for bc in range(2):

@@ -90,11 +90,12 @@ def main(N, family):
         X = TD.local_mesh(True)
         plt.contourf(X[0][:, :, 0], X[1][:, :, 0], u_[:, :, 0])
         plt.figure()
-        plt.spy(M.diags((4, 4, 0)).toarray()) # The matrix for given Fourier wavenumber
+        plt.spy(M.diags((4, 4)).toarray()) # The matrix for given Fourier wavenumber
         plt.show()
 
     else:
         assert np.all(abs(np.array(error)) < 1e-8), error
+    Q.destroy()
 
 if __name__ == '__main__':
     for family in ('CLUQJ'):

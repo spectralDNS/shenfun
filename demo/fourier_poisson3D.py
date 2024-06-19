@@ -75,3 +75,5 @@ if 'pytest' not in os.environ:
     plt.colorbar()
     plt.title('Error')
     plt.show()
+
+T.destroy()

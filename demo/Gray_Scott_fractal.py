@@ -100,8 +100,7 @@ uv0 = np.zeros_like(UV)
 def update(self, uv, uv_hat, t, tstep, **params):
     if tstep % params['plot_step'] == 0 and params['plot_step'] > 0:
         uv = uv_hat.backward(uv)
-        image.ax.clear()
-        image.ax.contourf(X[0], X[1], uv[0].real, 100)
+        image.axes.contourf(X[0], X[1], uv[0].real, 100)
         plt.pause(1e-6)
         print(np.linalg.norm(uv[0]-uv0[0]),
               np.linalg.norm(uv[1]-uv0[1]),
@@ -122,8 +121,10 @@ if __name__ == '__main__':
            'alpha1': 1.5,
            'alpha2': 1.9}
     dt = 10.
-    end_time = 1000000
+    end_time = 100000
     integrator = ETDRK4(TV, L=LinearRHS, N=NonlinearRHS, update=update, **par)
     integrator.setup(dt)
     UV_hat = integrator.solve(UV, UV_hat, dt, (0, end_time))
     generate_xdmf("Gray_Scott_{}.h5".format(N[0]))
+    for space in (T, TVp, UV_hat._padded_space[padding_factor]):
+        space.destroy()

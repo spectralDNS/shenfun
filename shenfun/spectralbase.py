@@ -1953,8 +1953,7 @@ class BoundaryConditions(dict):
                 for key, val in bc.items():
                     bcs[key] = {v[0]: copy.deepcopy(v[1]) for v in val}
             else:
-                #bcs.update(copy.deepcopy(bc))
-                bcs.update(bc)
+                bcs.update(copy.deepcopy(bc))
 
         # Take care of non-standard domain size
         df = 1

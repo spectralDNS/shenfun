@@ -78,6 +78,8 @@ def main(N, family):
         plt.show()
     else:
         assert error < 1e-6
+    
+    T.destroy()
 
 if __name__ == '__main__':
     for family in ('chebyshev', 'chebyshevu', 'legendre', 'ultraspherical', 'jacobi'):

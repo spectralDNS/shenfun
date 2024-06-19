@@ -1482,7 +1482,7 @@ class BlockMatrixSolver:
         if self.bc_mat: # Add contribution to right hand side due to inhomogeneous boundary conditions
             u.set_boundary_dofs()
             w0 = np.zeros_like(b)
-            b -= self.bc_mat.matvec(u, w0)
+            b -= self.bc_mat.matvec(u, w0, use_scipy=True)
 
         nvars = b.shape[0] if len(b.shape) > space.dimensions else 1
         u = np.expand_dims(u, 0) if nvars == 1 else u

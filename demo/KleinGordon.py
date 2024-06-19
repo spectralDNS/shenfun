@@ -156,3 +156,6 @@ if __name__ == '__main__':
 
     if rank == 0:
         generate_xdmf("KleinGordon{}.h5".format(N[0]))
+    
+    for space in (T, Tp):
+        space.destroy()
