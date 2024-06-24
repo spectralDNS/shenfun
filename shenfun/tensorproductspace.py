@@ -1323,6 +1323,14 @@ class TensorProductSpace(PFFT):
         if forward_output is not True:
             return self.forward.input_pencil.subshape
         return self.forward.output_array.shape
+    
+    def destroy_transfer(self):
+        """Destroy all MPI communicators used for transfer objects of current space
+        
+        Does not destroy the main communicator.
+        """
+        for trans in self.transfer:
+            trans.destroy()
 
     def _get_ndiag_cum_dofs(self):
         """Return the cumulative sum of degrees of freedom along nondiagonal axes"""

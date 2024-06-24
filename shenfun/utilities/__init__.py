@@ -396,6 +396,10 @@ def dot(u, v, output_array=None, forward_output=True):
         else:
             raise NotImplementedError
 
+    if Top.is_padded:
+        Vup.destroy_transfer()
+        Vvp.destroy_transfer() 
+        
     if forward_output is True:
 
         if isinstance(output_array, Function):
@@ -404,6 +408,7 @@ def dot(u, v, output_array=None, forward_output=True):
 
         uv_hat = Function(To)
         uv_hat = uv.forward(uv_hat)
+        Top.destroy_transfer()
         return uv_hat
 
     return uv

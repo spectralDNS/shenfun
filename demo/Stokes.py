@@ -110,6 +110,8 @@ def main(N, family):
         plt.show()
     else:
         assert np.all(abs(np.array(error)) < 1e-8), error
+    TD.destroy()
+    Q.destroy()
 
 if __name__ == '__main__':
     for family in 'CULQJ':

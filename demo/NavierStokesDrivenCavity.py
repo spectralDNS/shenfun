@@ -135,6 +135,8 @@ up = up_hat.backward(up)
 u_, p_ = up
 
 if 'pytest' in os.environ:
+    for T in [V0, V1, P, uiuj.function_space(), up_hat._padded_space[1.5]]:
+        T.destroy()
     sys.exit(1)
 
 # Postprocessing

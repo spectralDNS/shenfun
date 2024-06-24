@@ -169,6 +169,7 @@ def test_curl_cc():
     d = curl(grad(u_hat))
     assert d.terms() == [[],[],[]]
     T.destroy()
+    T1.destroy()
 
 if __name__ == '__main__':
     #test_curl('d')

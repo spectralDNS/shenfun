@@ -36,6 +36,7 @@ def test_cylinder():
     u = TrialFunction(V)
     du = div(grad(u))
     assert du.tolatex() == '\\left( \\frac{\\partial^2 u^{x}}{\\partial x^2 }+\\frac{1}{x}\\frac{\\partial  u^{x}}{\\partial x  }+\\frac{1}{x^{2}}\\frac{\\partial^2 u^{x}}{\\partial y^2 }- \\frac{2}{x}\\frac{\\partial  u^{y}}{\\partial y  }- \\frac{1}{x^{2}}u^{x}+\\frac{\\partial^2 u^{x}}{\\partial z^2 }\\right) \\mathbf{b}_{x} \\\\+\\left( \\frac{\\partial^2 u^{y}}{\\partial x^2 }+\\frac{3}{x}\\frac{\\partial  u^{y}}{\\partial x  }+\\frac{2}{x^{3}}\\frac{\\partial  u^{x}}{\\partial y  }+\\frac{1}{x^{2}}\\frac{\\partial^2 u^{y}}{\\partial y^2 }+\\frac{\\partial^2 u^{y}}{\\partial z^2 }\\right) \\mathbf{b}_{y} \\\\+\\left( \\frac{\\partial^2 u^{z}}{\\partial x^2 }+\\frac{1}{x}\\frac{\\partial  u^{z}}{\\partial x  }+\\frac{1}{x^{2}}\\frac{\\partial^2 u^{z}}{\\partial y^2 }+\\frac{\\partial^2 u^{z}}{\\partial z^2 }\\right) \\mathbf{b}_{z} \\\\'
+    T.destroy()
 
 @pytest.mark.parametrize('space', ('cylinder', 'sphere'))
 def test_vector_laplace(space):
@@ -62,6 +63,7 @@ def test_vector_laplace(space):
     b0 = a0.matvec(u_hat, b0)
     b1 = a1.matvec(u_hat, b1)
     assert np.linalg.norm(b0-b1) < 1e-8
+    T.destroy()
 
 if __name__ == '__main__':
     #test_cylinder()

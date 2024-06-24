@@ -579,6 +579,8 @@ def test_dlt():
     assert np.linalg.norm(c3-1) < 1e-8
     c3 = shenfun.legendre.dlt.leg2cheb(cl, c3, axis=1, transpose=False)
     assert np.linalg.norm(c3(xx)-cl(xx)) < 1e-8
+    TL.destroy()
+    TT.destroy()
     TL = shenfun.TensorProductSpace(shenfun.comm, (F1, L, F), dtype='d')
     TT = shenfun.TensorProductSpace(shenfun.comm, (F1, T, F), dtype='d')
     cl = shenfun.Function(TL, val=1)
@@ -592,6 +594,8 @@ def test_dlt():
     cb1 = cl.backward(kind={'legendre': 'recursive'})
     cb2 = cl.backward(kind={'legendre': 'fast'})
     assert np.linalg.norm(cb1-cb2) < 1e-7, np.linalg.norm(cb1-cb2)
+    TL.destroy()
+    TT.destroy()
 
 def test_leg2cheb():
     for N in (100, 701, 1200):

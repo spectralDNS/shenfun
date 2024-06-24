@@ -96,6 +96,7 @@ def test_neg(basis):
             s += sai+sbi
     assert sp.simplify(s) == 0
 
+T.destroy()
 K0 = shenfun.FunctionSpace(N, 'F', dtype='D')
 K1 = shenfun.FunctionSpace(N, 'F', dtype='D')
 K2 = shenfun.FunctionSpace(N, 'F', dtype='d')
@@ -178,6 +179,10 @@ def test_tensor2():
     #assert np.allclose(g.v[1], 0)
     #assert np.allclose(g.v[2], 0)
     #assert np.allclose(g.v[3], 2)
+    T.destroy()
+
+T.destroy()
+C.destroy()
 
 if __name__ == '__main__':
     # test_mul(u2)

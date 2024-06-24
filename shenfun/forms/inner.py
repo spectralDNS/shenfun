@@ -507,8 +507,7 @@ def inner(expr0, expr1, output_array=None, assemble=None, kind=None, fixed_resol
         output_array += wh
         wh.fill(0)
     if orthogonal:
-        for trans in orthogonal.transfer:
-            trans.destroy()
+        orthogonal.destroy_transfer()
     return output_array
 
 work = CachedArrayDict()

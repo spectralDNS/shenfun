@@ -62,6 +62,9 @@ def main(N, family):
     error = np.sqrt(inner(1, (uj-uq)**2))
     print(f'dirichlet_dirichlet_poisson2D {family:14s} L2 error {error:2.6e}')
 
+    if family == 'legendre':
+        H.destroy()
+
     if 'pytest' not in os.environ:
         import matplotlib.pyplot as plt
         plt.figure()

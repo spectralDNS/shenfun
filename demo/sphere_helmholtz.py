@@ -80,3 +80,5 @@ if 'pytest' not in os.environ:
     mlab.show()
 else:
     assert error < 1e-6
+
+T.destroy()

@@ -532,7 +532,6 @@ def test_assign(fam):
         VT = VectorSpace(T)
         u_hat = Function(VT)
         u_hat[:, 1:4, 1:4] = 1
-        Tp = T.get_refined((2*N[0], 2*N[1]))
         VTp = VectorSpace(Tp)
         ub_hat = Function(VTp)
         u_hat.assign(ub_hat)
@@ -568,6 +567,7 @@ def test_refine():
     u3 = u_hat.refine(2*np.array(N))
     T.destroy()
     Tp.destroy()
+    Vp.destroy()
 
 def test_eval_expression():
     import sympy as sp

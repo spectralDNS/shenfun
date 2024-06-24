@@ -15,6 +15,8 @@ class Helmholtz_2dirichlet:
 
     Somewhat experimental.
 
+    The solver needs to be destroyed after use is finished.
+
     """
 
     def __init__(self, matrices):
@@ -82,6 +84,9 @@ class Helmholtz_2dirichlet:
             a[0, :] = B[0]
             a[2, :-2] = B[2]
             self.lmbda[s], self.V[s, s] = scipy_la.eig_banded(a, lower=True)
+
+    def destroy(self):
+        self.transAB.destroy() 
 
     def __call__(self, b, u, solver=1):
         from shenfun import FunctionSpace, TensorProductSpace, TPMatrix, Identity, la
@@ -155,5 +160,6 @@ class Helmholtz_2dirichlet:
             self.u_B = Helmy(self.rhs_B, self.u_B, fast=False)
             self.transAB.backward(self.u_B, u)
             u[:] = self.V.dot(u)
+            FT.destroy()
 
         return u
