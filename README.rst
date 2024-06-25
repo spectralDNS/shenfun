@@ -82,9 +82,9 @@ Try it in a codespace
 ---------------------
 The easiest way to try out shenfun is to create your own codespace. Press the green codespace button on this page and wait for a couple of minutes while everything in `environment.yml` gets installed. Then write in the terminal of the codespace editor:: 
 
-     source activate ./venv
-     python setup.py build_ext -i
+     source activate shenfun
      echo -e "PYTHONPATH=/workspaces/shenfun" > .env
+     export PYTHONPATH=/workspaces/shenfun
 
 and you are set to run any of the demo programs, or for example try to follow the detailed instructions in the `documentation <https://shenfun.readthedocs.io/en/latest/gettingstarted.html>`_. We assume that you know how to run a Python program. Please note that if you want to use for example IPython or Jupyter in the codespace, then these need to be installed into the venv environment.
 
