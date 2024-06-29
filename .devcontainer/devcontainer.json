@@ -12,11 +12,7 @@
     "vscode": {
       "extensions": [
         "ms-python.python"
-      ],
-      "settings": {  
-        "python.pythonPath": "/opt/conda/envs/shenfun",             
-        "python.defaultInterpreterPath": "/opt/conda/envs/shenfun"  
-      }
+      ]
     }
   },
   "postCreateCommand": "conda init"

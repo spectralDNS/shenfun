@@ -45,6 +45,19 @@ Shenfun can also be used to approximate analytical functions with global spectra
 .. image:: https://cdn.jsdelivr.net/gh/spectralDNS/spectralutilities@master/figures/seashell3.png
     :alt: The surface of a seashell
 
+Some recent papers using Shenfun
+---------------------------
+
+- `Effective control of two-dimensional Rayleigh–Bénard convection: Invariant multi-agent reinforcement learning is all you need <https://pubs.aip.org/aip/pof/article/35/6/065146/2900730>`_ C. Vignon, J. Rabault, J. Vasanth, F. Alcántara-Ávila, M. Mortensen, R. Vinuesa, Physics of Fluids 35, 065146 (2023)
+- `Solving Partial Differential Equations with Equivariant Extreme Learning Machines <https://www.researchgate.net/profile/Sebastian-Peitz/publication/380897446_Solving_Partial_Differential_Equations_with_Equivariant_Extreme_Learning_Machines/links/66544d0fbc86444c7205cbdb/Solving-Partial-Differential-Equations-with-Equivariant-Extreme-Learning-Machines.pdf>`_, H. Harder, J. Rabault, R. Vinuesa, M. Mortensen, S. Peitz. preprint (2024)
+- `A global spectral-Galerkin investigation of a Rayleigh–Taylor instability in plasma using an MHD–Boussinesq model <https://pubs.aip.org/aip/adv/article/13/10/105319/2917415>`_  A. Piterskaya, Wojciech J. Miloch, M. Mortensen, AIP Advances 13, 105319 (2023)
+- `A Generic and Strictly Banded Spectral Petrov–Galerkin Method for Differential Equations with Polynomial Coefficients <https://epubs.siam.org/doi/full/10.1137/22M1492842>`_ M. Mortensen, SIAM J. on Scientific Computing, 45, 1, A123-A146, (2023)
+- `Variance representations and convergence rates for data-driven approximations of Koopman operators <https://arxiv.org/abs/2402.02494>`_ F. M. Philipp, M. Schaller, S. Boshoff, S. Peitz, F. Nüske, K. Worthmann, preprint (2024)
+- `Partial observations, coarse graining and equivariance in Koopman operator theory for large-scale dynamical systems <https://arxiv.org/abs/2307.15325>`_, S. Peitz, H. Harder, F. Nüske, F. Philipp, M. Schaller, K. Worthmann, preprint (2024)
+- `Koopman-Based Surrogate Modelling of Turbulent Rayleigh-Bénard Convection <https://arxiv.org/abs/2405.06425>`_ T. Markmann, M. Straat, B. Hammer, preprint (2024)
+- `Shenfun: High performance spectral Galerkin computing platform <https://joss.theoj.org/papers/10.21105/joss.01071.pdf>`_, M. Mortensen, Journal of Open Source Software, 3(31), 1071 (2018)
+
+
 Installation
 ------------
 
@@ -69,11 +82,11 @@ Try it in a codespace
 ---------------------
 The easiest way to try out shenfun is to create your own codespace. Press the green codespace button on this page and wait for a couple of minutes while everything in `environment.yml` gets installed. Then write in the terminal of the codespace editor:: 
 
-     source activate ./venv
-     python setup.py build_ext -i
+     source activate shenfun
      echo -e "PYTHONPATH=/workspaces/shenfun" > .env
+     export PYTHONPATH=/workspaces/shenfun
 
-and you are set to run any of the demo programs, or for example try to follow the detailed instructions in the `documentation <https://shenfun.readthedocs.io/en/latest/gettingstarted.html>`_. We assume that you know how to run a Python program. Please note that if you want to use for example IPython or Jupyter in the codespace, then these need to be installed into the venv environment.
+and you are set to run any of the demo programs, or for example try to follow the detailed instructions in the `documentation <https://shenfun.readthedocs.io/en/latest/gettingstarted.html>`_. We assume that you know how to run a Python program. Please note that if you want to use for example IPython or Jupyter in the codespace, then these need to be installed into the shenfun environment.
 
 Contact
 -------
