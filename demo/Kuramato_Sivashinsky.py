@@ -90,5 +90,4 @@ if __name__ == '__main__':
     #integrator = RK4(T, L=LinearRHS, N=NonlinearRHS, update=update, **par)
     integrator.setup(dt)
     U_hat = integrator.solve(U, U_hat, dt, (0, end_time))
-    for space in (T, Tp):
-        space.destroy()
+    cleanup((T, Tp))

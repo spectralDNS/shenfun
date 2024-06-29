@@ -72,13 +72,6 @@ class NavierStokesIRK3(IRK3):
         self.uiuj_hat = Function(S1)
         IRK3.__init__(self, VQ)
 
-    def destroy(self):
-        for T in [*self.up_.function_space(),
-                  *self.uip.function_space(),
-                  *self.uiuj.function_space(),
-                  self.T1]:
-            T.destroy()
-
     def LinearRHS(self, up):
         u, p = up
         return self.nu*div(grad(u))-grad(p)
@@ -130,6 +123,7 @@ class NavierStokesIRK3(IRK3):
             plt.pause(0.01)
 
 if __name__ == '__main__':
+    import sys
     d = {'N': (32, 32),
          'dt': 0.1,
          'modplot': 100,
@@ -138,7 +132,7 @@ if __name__ == '__main__':
         }
     sol = NavierStokesIRK3(**d)
     sol.solve(sol.up_, sol.up_hat, sol.dt, (0, 100))
-
+    
     # Solve streamfunction
     r = TestFunction(sol.T[0][1])
     s = TrialFunction(sol.T[0][1])
@@ -147,7 +141,7 @@ if __name__ == '__main__':
     H = la.SolverGeneric2ND(S)
     phi_h = H(h)
     phi = phi_h.backward()
-
+    
     # Find minimal streamfunction value and position
     # by gradually zooming in on mesh
     W = 101
@@ -171,4 +165,4 @@ if __name__ == '__main__':
         dx = dx/4.
         print("%d %d " %(xi, yi) +("%+2.7e "*4) %(xmid, ymid, psi_min, err))
         count += 1
-    sol.destroy()
+    cleanup(vars(sol))

@@ -212,4 +212,5 @@ if __name__ == '__main__':
     t0 = time()
     c.solve(t=t, tstep=tstep, end_time=2)
     print('Computing time %2.4f'%(time()-t0))
+    cleanup(vars(c))
 

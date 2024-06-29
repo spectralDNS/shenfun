@@ -18,7 +18,8 @@ from .findbasis import get_bc_basis, get_stencil_matrix, n
 __all__ = ['dx', 'clenshaw_curtis1D', 'CachedArrayDict', 'surf3D',
            'wrap_periodic', 'outer', 'dot', 'apply_mask', 'integrate_sympy',
            'mayavi_show', 'quiver3D', 'get_bc_basis', 'get_stencil_matrix',
-           'scalar_product', 'n', 'cross', 'reset_profile', 'Lambda']
+           'scalar_product', 'n', 'cross', 'reset_profile', 'Lambda', 
+           'cleanup']
 
 Lambda = getattr(cython, 'Lambda', None)
 
@@ -132,6 +133,33 @@ class CachedArrayDict(MutableMapping):
 
     def values(self):
         raise TypeError('Cached work arrays not iterable')
+
+def cleanup(d, destroy_subcomm=True):
+    """Destroy MPI transfer objects in dictionary `d`
+    
+    Parameters
+    ----------
+    d : dictionary or tuple
+        dictionary containing variables (e.g., locals(), vars()) 
+        or tuple containing objects with a destroy method
+    destroy_subcomm : bool, optional
+        Whether to destroy communicators
+    """
+    from shenfun import TensorProductSpace, VectorSpace, TensorSpace, \
+        CompositeSpace, Function, Array
+    if isinstance(d, tuple):
+        for val in d:
+            val.destroy(destroy_subcomm=destroy_subcomm)
+    elif isinstance(d, dict):
+        for key, val in d.items():
+            if isinstance(val, (TensorProductSpace, VectorSpace, TensorSpace, CompositeSpace)):
+                val.destroy(destroy_subcomm=destroy_subcomm)
+                for k, v in val._padded_space.items():
+                    v.destroy(destroy_subcomm=destroy_subcomm)
+            elif isinstance(val, (Function, Array)):
+                space = val.function_space()
+                if hasattr(space, 'comm'):
+                    space.destroy(destroy_subcomm=destroy_subcomm)
 
 def reset_profile(prof):
     """Reset profiler for kernprof
@@ -395,11 +423,7 @@ def dot(u, v, output_array=None, forward_output=True):
 
         else:
             raise NotImplementedError
-
-    if Top.is_padded:
-        Vup.destroy_transfer()
-        Vvp.destroy_transfer() 
-        
+    
     if forward_output is True:
 
         if isinstance(output_array, Function):
@@ -408,11 +432,10 @@ def dot(u, v, output_array=None, forward_output=True):
 
         uv_hat = Function(To)
         uv_hat = uv.forward(uv_hat)
-        Top.destroy_transfer()
+        Top.destroy(destroy_subcomm=False)
         return uv_hat
 
     return uv
-
 
 @runtimeoptimizer
 def apply_mask(u_hat, mask):

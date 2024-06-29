@@ -59,6 +59,7 @@ class SpectralBase:
         self.si = islicedict()
         self.sl = slicedict()
         self._tensorproductspace = None     # link if belonging to TensorProductSpace
+        self._padded_space = {}   # Storage for padded space that is otherwise as self 
 
     def points_and_weights(self, N=None, map_true_domain=False, weighted=True, **kw):
         r"""Return points and weights of quadrature for weighted integral

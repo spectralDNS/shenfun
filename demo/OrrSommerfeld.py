@@ -133,3 +133,4 @@ if __name__ == '__main__':
         plt.contourf(X[1][0, :, 0], X[0][:, 0, 0], p0)
         generate_xdmf('_'.join((d['filename'], 'U'))+'.h5')
     plt.show()
+    cleanup(vars(c))

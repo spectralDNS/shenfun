@@ -328,6 +328,7 @@ class TensorProductSpace(PFFT):
         self.coors = Coordinates(*coors)
         self.hi = self.coors.hi
         self.sg = self.coors.sg
+        self._padded_space = {}   # Storage for padded space that is otherwise as self
         shape = list(self.global_shape())
         self.axes = axes
         assert shape
@@ -557,6 +558,10 @@ class TensorProductSpace(PFFT):
             padding_factor = (padding_factor,)*len(self)
         elif isinstance(padding_factor, (tuple, list, np.ndarray)):
             assert len(padding_factor) == len(self)
+        
+        if padding_factor in self._padded_space:
+            return self._padded_space[padding_factor]
+        
         padded_bases = [base.get_dealiased(padding_factor=padding_factor[axis],
                                            dealias_direct=dealias_direct)
                         for axis, base in enumerate(self.bases)]
@@ -565,10 +570,12 @@ class TensorProductSpace(PFFT):
         for ax in self.axes:
             for ai in ax:
                 axes.append(ai)
-        return TensorProductSpace(self.comm, padded_bases, axes=tuple(axes),
-                                  dtype=self.forward.output_array.dtype,
-                                  backward_from_pencil=self.forward.output_pencil,
-                                  coordinates=self.coors.coordinates)
+        paddedspace = TensorProductSpace(self.comm, padded_bases, axes=tuple(axes),
+                                         dtype=self.forward.output_array.dtype,
+                                         backward_from_pencil=self.forward.output_pencil,
+                                         coordinates=self.coors.coordinates)
+        self._padded_space[padding_factor] = paddedspace
+        return paddedspace
 
     def get_refined(self, N):
         """Return space (otherwise as self) refined to new shape
@@ -1324,11 +1331,17 @@ class TensorProductSpace(PFFT):
             return self.forward.input_pencil.subshape
         return self.forward.output_array.shape
     
-    def destroy_transfer(self):
-        """Destroy all MPI communicators used for transfer objects of current space
-        
-        Does not destroy the main communicator.
+    def destroy(self, destroy_subcomm=True):
+        """Destroy MPI transfer objects of current space
+
+        Parameters
+        ----------
+        destroy_subcomm : bool, optional
+            Whether to also destroy self.subcomm
         """
+        if destroy_subcomm:
+            if isinstance(self.subcomm, Subcomm):
+                self.subcomm.destroy()
         for trans in self.transfer:
             trans.destroy()
 
@@ -1623,9 +1636,16 @@ class CompositeSpace:
     def __len__(self):
         return len(self.spaces)
     
-    def destroy(self):
+    def destroy(self, destroy_subcomm=False):
+        """Destroy MPI transfer objects in subspaces
+
+        Parameters
+        ----------
+        destroy_subcomm : bool, optional
+            Whether to also destroy self.subcomm
+        """
         for space in self.flatten():
-            space.destroy()
+            space.destroy(destroy_subcomm=destroy_subcomm)
 
 
 class VectorSpace(CompositeSpace):

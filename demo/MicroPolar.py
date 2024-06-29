@@ -1,7 +1,8 @@
 from random import sample
 from shenfun import *
 from ChannelFlow import KMM
-np.warnings.filterwarnings('ignore')
+import warnings
+warnings.filterwarnings('ignore')
 
 class MicroPolar(KMM):
     """Micropolar channel flow solver
@@ -174,19 +175,19 @@ class MicroPolar(KMM):
         KMM.convection(self)
         HW = self.HW_
         up = self.up
-        dw0dxp = self.dw0dx().backward(padding_factor=self.padding_factor)
-        dw0dyp = self.dw0dy().backward(padding_factor=self.padding_factor)
-        dw0dzp = self.dw0dz().backward(padding_factor=self.padding_factor)
-        dw1dxp = self.dw1dx().backward(padding_factor=self.padding_factor)
-        dw1dyp = self.dw1dy().backward(padding_factor=self.padding_factor)
-        dw1dzp = self.dw1dz().backward(padding_factor=self.padding_factor)
-        dw2dxp = self.dw2dx().backward(padding_factor=self.padding_factor)
-        dw2dyp = self.dw2dy().backward(padding_factor=self.padding_factor)
-        dw2dzp = self.dw2dz().backward(padding_factor=self.padding_factor)
-        HW[0] = self.TDp.forward(up[0]*dw0dxp+up[1]*dw0dyp+up[2]*dw0dzp, HW[0])
-        HW[1] = self.TDp.forward(up[0]*dw1dxp+up[1]*dw1dyp+up[2]*dw1dzp, HW[1])
-        HW[2] = self.TDp.forward(up[0]*dw2dxp+up[1]*dw2dyp+up[2]*dw2dzp, HW[2])
-        HW.mask_nyquist(self.mask)
+        dw0dxp = self.dw0dxp = self.dw0dx().backward(padding_factor=self.padding_factor).v
+        #dw0dyp = self.dw0dy().backward(padding_factor=self.padding_factor)
+        #dw0dzp = self.dw0dz().backward(padding_factor=self.padding_factor)
+        #dw1dxp = self.dw1dx().backward(padding_factor=self.padding_factor)
+        #dw1dyp = self.dw1dy().backward(padding_factor=self.padding_factor)
+        #dw1dzp = self.dw1dz().backward(padding_factor=self.padding_factor)
+        #dw2dxp = self.dw2dx().backward(padding_factor=self.padding_factor)
+        #dw2dyp = self.dw2dy().backward(padding_factor=self.padding_factor)
+        #dw2dzp = self.dw2dz().backward(padding_factor=self.padding_factor)
+        #HW[0] = self.TDp.forward(up[0]*dw0dxp+up[1]*dw0dyp+up[2]*dw0dzp, HW[0])
+        #HW[1] = self.TDp.forward(up[0]*dw1dxp+up[1]*dw1dyp+up[2]*dw1dzp, HW[1])
+        #HW[2] = self.TDp.forward(up[0]*dw2dxp+up[1]*dw2dyp+up[2]*dw2dzp, HW[2])
+        #HW.mask_nyquist(self.mask)
 
     def tofile(self, tstep):
         self.file_u.write(tstep, {'u': [self.u_.backward(mesh='uniform')]}, as_scalar=True)

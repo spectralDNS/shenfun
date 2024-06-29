@@ -61,14 +61,7 @@ class GinzburgLandau:
         phij = np.hstack([phij, phij[:, 0][:, None]])
         self.file_u = HDF5File(filename+'_U.h5', domain=[np.squeeze(d) for d in [thetaj, phij]], mode='a')
         self.file_c = HDF5File(filename+'_C.h5', domain=self.T.mesh(), mode='w')
-    
-    def destroy(self):
-        spaces = [self.T, self.T2, self.T3, *self.u_hat._padded_space.values()]
-        if self.refineplot not in (False, 1):
-            spaces.append(self.ur_hat.function_space())
-        for T in spaces:
-            T.destroy()
-
+        
     def prepare_step(self, rk=0):
         up = self.u_hat.backward(padding_factor=(1.5, 1.5))
         self.H_ = up.function_space().forward(up*abs(up)**2, self.H_)
@@ -176,4 +169,4 @@ if __name__ == '__main__':
     print(f'Computing time {time()-t0: 2.4f}')
     if comm.Get_rank() == 0:
         generate_xdmf('_'.join((d['filename'], 'U'))+'.h5')
-    c.destroy()
+    cleanup(vars(c))

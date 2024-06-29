@@ -14,7 +14,7 @@ import os
 import sympy as sp
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, \
-    Array, Function, FunctionSpace, dx, TensorProductSpace, comm, la
+    Array, Function, FunctionSpace, dx, TensorProductSpace, comm, la, cleanup
 
 # Use sympy to compute a rhs, given an analytical solution
 # Choose a solution with non-zero values
@@ -90,9 +90,8 @@ def main(N, family, bci, bcj, plotting=False):
         bx += " :: y: L-" + "".join(list(BY.bc.bc["left"].keys())) + " R-" + "".join(list(BY.bc.bc["right"].keys()))
         print(f"poisson2ND {BX.family():14s} {bx} L2 error = {error:2.6e}")
         assert error < 1e-6
-    trialspace.destroy()
-    testspace.destroy()
-
+    cleanup((trialspace, testspace))
+    
 if __name__ == '__main__':
     # Note - some are slower since the basis stencil is not precomputed
     for family in ('C', 'L', 'U', 'Q', 'J'):

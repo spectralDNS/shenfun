@@ -59,7 +59,7 @@ def main(n):
 
     # Define the coefficient vector
     U_hat = Function(Ws); U_hat = Ws.forward(U, U_hat)
-    P_hat = Function(Ps); P_hat = Ps.forward(P, P_hat)
+    P_hat = Function(Ps)
     F_hat = Function(Ws); F_hat = Ws.forward(F, F_hat)
 
     # Initial time, time step, final time
@@ -84,8 +84,8 @@ def main(n):
     rhsU, rhsP = Function(Ws), Function(Ps)
     U0_hat = Function(Ws); U0_hat = Ws.forward(U, U0_hat)
     Ut_hat = Function(Ws); Ut_hat = Ws.forward(U, Ut_hat)
-    P0_hat = Function(Ps); P0_hat = Ps.forward(P, P0_hat)
-    Phi_hat = Function(Ps); Phi_hat = Ps.forward(P, Phi_hat)
+    P0_hat = Function(Ps)
+    Phi_hat = Function(Ps)
 
     # integrate in time
     time = ti
@@ -148,7 +148,6 @@ def main(n):
         rhsP += 1.5/dt*inner(q, div(ut_hat))
         phi_hat = Lb2.solve(rhsP, u=phi_hat, constraints=((0, 0, 0),))
 
-
         # update for next time step
         u0_hat[:] = u_hat; p0_hat[:] = p_hat
 
@@ -173,6 +172,7 @@ def main(n):
     Pe = Array(Ps, buffer=(pe.subs(t, tf)))
     UPe = [*Ue, Pe]
     l2_error = list(map(np.linalg.norm, [u-ue for u, ue in zip(UP, UPe)]))
+    cleanup(vars())
     return l2_error
 
 
@@ -187,9 +187,9 @@ if __name__ == "__main__":
     fig = plt.figure(figsize=(5.69, 4.27))
     ax = plt.gca()
     marks = ('or', '-g', '-ob')
-    vars = (r'$u_x$', r'$u_y$', r'$p$')
+    varis = (r'$u_x$', r'$u_y$', r'$p$')
     for i in range(3):
-        plt.loglog(N, E[i, :], marks[i], label=vars[i])
+        plt.loglog(N, E[i, :], marks[i], label=varis[i])
         slope, intercept = np.polyfit(np.log(N[-2:]), np.log(E[i, -2:]), 1)
         if i != 1:
             annotation.slope_marker((N[-2], E[i, -2]), ("{0:.2f}".format(slope), 1),

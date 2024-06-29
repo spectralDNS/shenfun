@@ -125,3 +125,4 @@ if __name__ == '__main__':
     print('Computing time %2.4f'%(time()-t0))
     if comm.Get_rank() == 0:
         generate_xdmf('_'.join((d['filename'], 'U'))+'.h5')
+    cleanup(vars(c))

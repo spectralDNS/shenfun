@@ -36,7 +36,7 @@ import sympy as sp
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, \
     Array, Function, FunctionSpace, TensorProductSpace, comm, la, \
-    chebyshev, dx
+    chebyshev, dx, cleanup
 
 # Use sympy to compute a rhs, given an analytical solution
 x, y = sp.symbols("x,y", real=True)
@@ -97,9 +97,8 @@ def main(N, family, bc):
         print(f'poisson2D {family:s} L2 error = {error:2.6e}')
     if 'pytest 'in os.environ:
         assert error < 1e-6
-    T.destroy()
-    B.destroy()
-
+    cleanup((T, B))
+    
 if __name__ == '__main__':
     for family in 'CLUJ':
         for bc in range(6):

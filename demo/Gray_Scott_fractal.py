@@ -35,7 +35,7 @@ import matplotlib.pyplot as plt
 from mpi4py_fft import generate_xdmf
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \
     HDF5File, ETDRK4, TensorProductSpace, VectorSpace, FunctionSpace, Array, \
-    comm, get_simplified_tpmatrices
+    comm, get_simplified_tpmatrices, cleanup
 
 # Use sympy to set up initial condition
 x, y = symbols("x,y", real=True)
@@ -126,5 +126,5 @@ if __name__ == '__main__':
     integrator.setup(dt)
     UV_hat = integrator.solve(UV, UV_hat, dt, (0, end_time))
     generate_xdmf("Gray_Scott_{}.h5".format(N[0]))
-    for space in (T, TVp, UV_hat._padded_space[padding_factor]):
-        space.destroy()
+    cleanup(vars())
+    

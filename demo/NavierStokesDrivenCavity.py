@@ -135,8 +135,7 @@ up = up_hat.backward(up)
 u_, p_ = up
 
 if 'pytest' in os.environ:
-    for T in [V0, V1, P, uiuj.function_space(), up_hat._padded_space[1.5]]:
-        T.destroy()
+    cleanup(vars())
     sys.exit(1)
 
 # Postprocessing
@@ -181,6 +180,4 @@ while not converged:
     print("%d %d " %(xi, yi) +("%+2.7e "*4) %(xmid, ymid, psi_min, err))
     count += 1
 
-# clean up
-for T in [V0, V1, P, P1, uiuj.function_space(), up_hat._padded_space[1.5]]:
-    T.destroy()
+cleanup(vars())

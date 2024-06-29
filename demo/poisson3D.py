@@ -36,7 +36,7 @@ import sympy as sp
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, \
     Array, Function, FunctionSpace, TensorProductSpace, la, \
-    dx, comm
+    dx, comm, cleanup
 from mpi4py_fft.pencil import Subcomm
 
 # Use sympy to compute a rhs, given an analytical solution
@@ -102,9 +102,8 @@ def main(N, family, bc):
         print(f'poisson3D {family:s} L2 error = {error:2.6e}')
     if 'pytest 'in os.environ:
         assert error < 1e-6
-    T.destroy()
-    B.destroy()
-
+    cleanup((T, B))
+    
 if __name__ == '__main__':
     for family in ('legendre', 'chebyshev', 'chebyshevu', 'jacobi'):
         for bc in range(6):

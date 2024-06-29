@@ -66,19 +66,11 @@ if 'pytest' not in os.environ:
     # using any higher number.
     u_hat2 = u_hat.refine([N*3, M*3])
     ur = u_hat2.backward(kind='uniform')
+    surf3D(ur.real, backend='mayavi', wrapaxes=(1,))
     from mayavi import mlab
-    xx, yy, zz = u_hat2.function_space().local_cartesian_mesh(uniform=True)
-    # Wrap periodic direction around
-    if T.bases[1].domain == (0, 2*np.pi):
-        xx = np.hstack([xx, xx[:, 0][:, None]])
-        yy = np.hstack([yy, yy[:, 0][:, None]])
-        zz = np.hstack([zz, zz[:, 0][:, None]])
-        ur = np.hstack([ur, ur[:, 0][:, None]])
-    mlab.figure(bgcolor=(1, 1, 1), size=(400, 400))
-    mlab.mesh(xx, yy, zz, scalars=ur.real, colormap='jet')
     mlab.savefig('spherewhite.png')
     mlab.show()
 else:
     assert error < 1e-6
 
-T.destroy()
+cleanup(vars())

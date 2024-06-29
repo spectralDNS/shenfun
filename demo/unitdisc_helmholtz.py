@@ -147,3 +147,4 @@ if 'pytest' not in os.environ:
     plt.yticks([])
     plt.axis('off')
     plt.show()
+cleanup(vars())

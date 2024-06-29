@@ -1259,8 +1259,6 @@ class ShenfunBaseArray(DistArray):
                                     val=val0, rank=space.is_composite_space)
             obj._space = space
             obj._offset = 0
-            if cls.__name__ == 'Function':
-                obj._padded_space = {}
             if buffer is None and isinstance(val, (list, tuple)):
                 assert len(val) == len(obj)
                 for i, v in enumerate(val):
@@ -1340,8 +1338,6 @@ class ShenfunBaseArray(DistArray):
         if isinstance(val, (list, tuple)):
             for i, v in enumerate(val):
                 obj.v[i] = v
-        if cls.__name__ == 'Function':
-            obj._padded_space = {}
 
         return obj
 
@@ -1353,8 +1349,6 @@ class ShenfunBaseArray(DistArray):
         self._rank = getattr(obj, '_rank', None)
         self._offset = getattr(obj, '_offset', None)
         self._base = getattr(obj, '_base', None)
-        if hasattr(obj, '_padded_space'):
-            self._padded_space = obj._padded_space
 
     def function_space(self):
         """Return function space of array ``self``"""
@@ -1623,11 +1617,11 @@ class Function(ShenfunBaseArray, BasisFunction):
                 # Note that the output_array is not the same shape as
                 # space.backward.output_array for spaces of rank > 0.
                 # Also, it is probably not safe to return space.backward.output_array
-                if hasattr(space, '_backward_work_array'):
-                    output_array = space._backward_work_array
+                if hasattr(self, '_backward_work_array'):
+                    output_array = self._backward_work_array
                 else:
                     output_array = Array(space)
-                    space._backward_work_array = output_array
+                    self._backward_work_array = output_array
             output_array = space.backward(self, output_array, kind=kind, mesh=mesh)
             return output_array
 
@@ -1649,15 +1643,13 @@ class Function(ShenfunBaseArray, BasisFunction):
             The padding factor of the backward transform
             A tuple can be used for padding differently in each direction.
         """
+        space = self.function_space()
         if padding_factor is None:
-            return self.function_space()
+            return space
         if np.all(abs(np.atleast_1d(padding_factor)-1) < 1e-8):
-            return self.function_space()
-        if padding_factor in self._padded_space:
-            return self._padded_space[padding_factor]
-        space = self.function_space().get_dealiased(padding_factor)
-        self._padded_space[padding_factor] = space
-        return space
+            return space
+        paddedspace = space.get_dealiased(padding_factor)
+        return paddedspace
 
     def to_ortho(self, output_array=None):
         """Project Function to orthogonal basis"""

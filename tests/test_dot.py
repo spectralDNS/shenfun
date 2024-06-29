@@ -2,7 +2,8 @@ import pytest
 import numpy as np
 import sympy as sp
 from shenfun import Function, Array, FunctionSpace, VectorSpace, \
-    TensorSpace, TensorProductSpace, dot, project, comm, div, grad, config
+    TensorSpace, TensorProductSpace, dot, project, comm, div, grad, config, \
+    cleanup
 
 x, y =sp.symbols('x,y', real=True)
 
@@ -15,21 +16,16 @@ def test_dot():
     u = Function(V, buffer=(x, -y))
     bu = dot(u, u)
     assert np.linalg.norm(bu-Function(T, buffer=x**2+y**2)) < 1e-8
-    bu.function_space().destroy_transfer()
     gradu = project(grad(u), S)
     du = dot(gradu, u, forward_output=True)
     xy = Function(V, buffer=(x, y))
     assert np.linalg.norm(du - xy) < 1e-12
-    du.function_space().destroy_transfer() 
-    du = dot(u, gradu, forward_output=True)
-    assert np.linalg.norm(du - xy) < 1e-12
-    du.function_space().destroy_transfer() 
+    dd = dot(u, gradu, forward_output=True)
+    assert np.linalg.norm(dd - xy) < 1e-12
     gu = dot(gradu, gradu, forward_output=True)
-    dd = Function(S, buffer=(1, 0, 0, 1))
-    assert np.linalg.norm(gu - dd) < 1e-12
-    gu.function_space().destroy()
-    T.destroy()
-    
+    ds = Function(S, buffer=(1, 0, 0, 1))
+    assert np.linalg.norm(gu - ds) < 1e-12
+    cleanup(locals())
     
 #@pytest.mark.skip('skipping')
 def test_dot_curvilinear():
@@ -50,25 +46,21 @@ def test_dot_curvilinear():
     gij = T.coors.get_metric_tensor(config['basisvectors'])
     ue = Function(T, buffer=sp.sin(theta)**2*gij[1, 1]+sp.cos(phi)**2*gij[2, 2])
     assert np.linalg.norm(ue-u2) < 1e-6
-    u2.function_space().destroy_transfer()
     u = Function(V, buffer=(0, r, 0))
     gu = Function(S, buffer=(0, -1, 0, 1, 0, 0, 0, 0, 1/sp.tan(theta)))
     bu = dot(gu, u)
     but = Function(V, buffer=(-r, 0, 0))
     assert np.linalg.norm(bu-but) < 1e-6
-    bu.function_space().destroy_transfer()
     ub = dot(u, gu)
     ubt = Function(V, buffer=(r, 0, 0))
     assert np.linalg.norm(ub-ubt) < 1e-6
-    ub.function_space().destroy_transfer()
     gg = dot(gu, gu)
     ggt = Function(S, buffer=(-1, 0, 0, 0, -1, 0, 0, 0, 1/sp.tan(theta)**2))
     assert np.linalg.norm(gg-ggt) < 1e-4
-    gg.function_space().destroy_transfer()
-    T.destroy()
+    cleanup(locals())
     config['basisvectors'] = basisvectors
 
 if __name__ == '__main__':
     import sys
-    #test_dot()
+    test_dot()
     test_dot_curvilinear()

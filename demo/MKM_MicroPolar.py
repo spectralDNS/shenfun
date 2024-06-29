@@ -101,17 +101,14 @@ class MKM(MicroPolar):
             ub = self.u_.backward(self.ub)
             if comm.Get_rank() == 0:
                 X = self.X
-                self.im1.axes.clear()
                 self.im1.axes.contourf(X[1][:, :, 0], X[0][:, :, 0], ub[0, :, :, 0], 100)
                 self.im1.autoscale()
                 plt.figure(1)
                 plt.pause(1e-6)
-                self.im2.axes.clear()
                 self.im2.axes.contourf(X[1][:, :, 0], X[0][:, :, 0], ub[1, :, :, 0], 100)
                 self.im2.autoscale()
                 plt.figure(2)
                 plt.pause(1e-6)
-                self.im3.axes.clear()
                 self.im3.axes.contourf(X[2][:, 0, :], X[0][:, 0, :], ub[0, :, 0, :], 100)
                 self.im3.autoscale()
                 plt.figure(3)
@@ -365,16 +362,16 @@ if __name__ == '__main__':
     from time import time
     from mpi4py_fft import generate_xdmf
     t0 = time()
-    N = (128, 128, 64)
+    N = (64, 64, 32)
     d = {
         'N': N,
         'Re': 180.,
         'dt': 0.0005,
         'filename': f'MKM_MP_{N[0]}_{N[1]}_{N[2]}',
         'conv': 1,
-        'modplot': 100,
+        'modplot': -10,
         'modsave': 1000,
-        'moderror': 100,
+        'moderror': 1,
         'family': 'C',
         'checkpoint': 100,
         'sample_stats': 100,
@@ -383,8 +380,8 @@ if __name__ == '__main__':
         'timestepper': 'IMEXRK222', # IMEXRK222, IMEXRK443
         }
     c = MKM(**d)
-    t, tstep = c.initialize(from_checkpoint=True)
-    c.solve(t=t, tstep=tstep, end_time=50)
+    t, tstep = c.initialize(from_checkpoint=False)
+    c.solve(t=t, tstep=tstep, end_time=0.001)
     print('Computing time %2.4f'%(time()-t0))
     if comm.Get_rank() == 0:
         generate_xdmf('_'.join((d['filename'], 'U'))+'.h5')
@@ -401,3 +398,4 @@ if __name__ == '__main__':
         # multiply by utau=0.0635 to get the same scaling as fig 7
         plt.semilogx((x[32:] + 1)*180, np.sqrt(ww[1, 32:])*0.0635, 'b', (1 - x[:32])*180, np.sqrt(ww[1, :32])*0.0635, 'r')
         #plt.show()
+    cleanup(vars(c))

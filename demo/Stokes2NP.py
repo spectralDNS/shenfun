@@ -131,3 +131,5 @@ if 'pytest' not in os.environ:
     plt.figure()
     plt.contourf(X[0], X[1], u_[0], 100)
     #plt.show()
+
+cleanup(vars())

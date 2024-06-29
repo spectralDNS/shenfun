@@ -81,7 +81,7 @@ class RayleighBenard(KMM):
         self.T_.get_dealiased_space(self.padding_factor).bases[0].bc.update(t)
 
     def prepare_step(self, rk):
-        self.convection()
+        self.convection(rk)
         Tp = self.T_.backward(padding_factor=self.padding_factor)
         self.uT_ = self.up.function_space().forward(self.up*Tp, self.uT_)
 
@@ -159,7 +159,6 @@ class RayleighBenard(KMM):
                 self.im1.scale = np.linalg.norm(ub[1])
                 plt.pause(1e-6)
                 plt.figure(2)
-                self.im2.axes.clear()
                 self.im2.axes.contourf(self.X[1][:, :], self.X[0][:, :], self.Tb[:, :], 100)
                 self.im2.autoscale()
                 plt.pause(1e-6)
@@ -213,4 +212,4 @@ if __name__ == '__main__':
         generate_xdmf('_'.join((d['filename'], 'U'))+'.h5', order='visit')
         generate_xdmf('_'.join((d['filename'], 'T'))+'.h5', order='visit')
     print('Computing time %2.4f'%(time()-t0))
-
+    cleanup(vars(c))

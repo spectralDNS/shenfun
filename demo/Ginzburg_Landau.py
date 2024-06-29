@@ -13,7 +13,8 @@ from sympy import symbols, exp
 import matplotlib.pyplot as plt
 from mpi4py_fft import generate_xdmf, fftw
 from shenfun import div, grad, TestFunction, TrialFunction, \
-    TensorProductSpace, Array, Function, ETDRK4, HDF5File, FunctionSpace, comm
+    TensorProductSpace, Array, Function, ETDRK4, HDF5File, FunctionSpace, \
+    comm, cleanup
 
 # Use sympy to set up initial condition
 x, y = symbols("x,y", real=True)
@@ -86,6 +87,4 @@ if __name__ == '__main__':
     if comm.Get_rank() == 0:
         generate_xdmf("Ginzburg_Landau_{}.h5".format(N[0]))
     fftw.export_wisdom('GL.wisdom')
-    T.destroy()
-    for space in U_hat._padded_space.values():
-        space.destroy()
+    cleanup(vars())

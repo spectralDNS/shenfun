@@ -77,17 +77,14 @@ class MKM(KMM):
             ub = self.u_.backward(self.ub)
             if comm.Get_rank() == 0:
                 X = self.X
-                self.im1.axes.clear()
                 self.im1.axes.contourf(X[1][:, :, 0], X[0][:, :, 0], ub[0, :, :, 0], 100)
                 self.im1.autoscale()
                 plt.figure(1)
                 plt.pause(1e-6)
-                self.im2.axes.clear()
                 self.im2.axes.contourf(X[1][:, :, 0], X[0][:, :, 0], ub[1, :, :, 0], 100)
                 self.im2.autoscale()
                 plt.figure(2)
                 plt.pause(1e-6)
-                self.im3.axes.clear()
                 self.im3.axes.contourf(X[2][:, 0, :], X[0][:, 0, :], ub[0, :, 0, :], 100)
                 self.im3.autoscale()
                 plt.figure(3)
@@ -129,8 +126,8 @@ if __name__ == '__main__':
         'Re': 180.,
         'dt': 0.0005,
         'filename': f'MKM_{N[0]}_{N[1]}_{N[1]}',
-        'conv': 1,
-        'modplot': -100,
+        'conv': 0,
+        'modplot': 100,
         'modsave': 1000,
         'moderror': 1,
         'family': 'C',
@@ -141,7 +138,8 @@ if __name__ == '__main__':
     c = MKM(**d)
     t, tstep = c.initialize(from_checkpoint=False)
     t0 = time()
-    c.solve(t=t, tstep=tstep, end_time=40)
+    c.solve(t=t, tstep=tstep, end_time=0.01)
     print('Computing time %2.4f'%(time()-t0))
     if comm.Get_rank() == 0:
         generate_xdmf('_'.join((d['filename'], 'U'))+'.h5')
+    cleanup(vars(c))

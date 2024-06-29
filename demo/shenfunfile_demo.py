@@ -78,14 +78,14 @@ if backend == 'hdf5' and MPI.COMM_WORLD.Get_rank() == 0:
     generate_xdmf('mix4Dfile.h5')
 
 N = (14, 16)
-K0 = FunctionSpace(N[0], 'F', dtype='D')
-K1 = FunctionSpace(N[1], 'F', dtype='d')
-T = TensorProductSpace(MPI.COMM_WORLD, (K0, K1))
-TT = CompositeSpace([T, T])
-d2file_s = ShenfunFile('my2Dfile', T, backend=backend, mode='w')
+K4 = FunctionSpace(N[0], 'F', dtype='D')
+K5 = FunctionSpace(N[1], 'F', dtype='d')
+T1 = TensorProductSpace(MPI.COMM_WORLD, (K4, K5))
+TT = CompositeSpace([T1, T1])
+d2file_s = ShenfunFile('my2Dfile', T1, backend=backend, mode='w')
 d2file_m = ShenfunFile('mix2Dfile', TT, backend=backend, mode='w')
 
-u = Array(T)
+u = Array(T1)
 uf = Array(TT)
 
 tstep = 0
@@ -97,3 +97,4 @@ while tstep < nsteps:
 if backend == 'hdf5' and MPI.COMM_WORLD.Get_rank() == 0:
     generate_xdmf('my2Dfile.h5')
     generate_xdmf('mix2Dfile.h5')
+cleanup(vars())
