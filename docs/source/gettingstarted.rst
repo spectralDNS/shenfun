@@ -302,15 +302,39 @@ returns a space with 4 boundary conditions (biharmonic), where ``a`` and ``b``
 are the Dirichlet and Neumann values on the left boundary, whereas ``c`` and ``d``
 are the values on right.
 
+Any kind of boundary condition may be specified. For higher order
+derivatives, use the form ``bc = f"u''(-1)={a}"``, or ``bc = {'left': {'N2': a}}``,
+and similar for higher order.
+
+It is also possible to apply Robin conditions 
+
+.. math::
+
+    u(x) + c u'(x) = d 
+
+Applying this on both sides of the domain is achieved through::
+
+    bc = {'left': {'R': (c, d)}, 'right': {'R': (c, d)}}
+
+Finally, one can use the boundary condition
+
+.. math::
+
+    u'(x) + c u''(x) = d 
+
+Applying this on both sides of the domain::
+
+    bc = {'left': {'W': (c, d)}, 'right': {'W': (c, d)}}
+
+Currently there are no hardcoded spaces implemented for these latter two boundary 
+conditions, so the composition of these bases is computed using a generic approach
+that is slower than for the more common Dirichlet and Neumann spaces.
+
 The Laguerre basis is used to solve problems on the half-line :math:`x \in [0, \infty)`.
 For this family you can only specify boundary conditions at the
 left boundary. However, the Poisson equation requires only one condition,
 and the biharmonic problem two. The solution is automatically set to
 zero at :math:`x \rightarrow \infty`.
-
-Any kind of boundary condition may be specified. For higher order
-derivatives, use the form ``bc = f"u''(-1)={a}"``, or ``bc = {'left': {'N2': a}}``,
-and similar for higher order.
 
 Multidimensional problems
 -------------------------
@@ -496,14 +520,13 @@ Curvilinear coordinates
 -----------------------
 Shenfun can be used to solve equations using curvilinear
 coordinates, like polar, cylindrical
-and spherical coordinates. The feature was added April 2020, and is still rather
-experimental. The curvilinear coordinates are defined by the user, who
+and spherical coordinates. The curvilinear coordinates are defined by the user, who
 needs to provide a map, i.e., the position vector, between new coordinates and
 the Cartesian coordinates. The basis functions of the new coordinates need not
 be orthogonal, but non-orthogonal is not widely tested so use with care.
-In shenfun we use non-normalized natural (covariant) basis vectors. For this
-reason the equations may look a little bit different than usual. For example,
-in cylindrical coordinates we have the position vector
+In shenfun we use non-normalized natural (covariant) basis vectors by default. 
+For this reason the equations may look a little bit different than usual. For 
+example, in cylindrical coordinates we have the position vector
 
 .. math::
     :label: eq:cylpositionvector

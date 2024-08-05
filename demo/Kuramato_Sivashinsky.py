@@ -11,14 +11,15 @@ Initial condition is
 Use Fourier basis V and tensor product space VxV
 
 """
-from sympy import symbols, exp, pi
+import sys
+from sympy import symbols, exp, pi, Rational
 import numpy as np
 import matplotlib.pyplot as plt
 from shenfun import *
 
 # Use sympy to set up initial condition
 x, y = symbols("x,y", real=True)
-ue = exp(-0.01*((x-30*pi)**2+(y-30*pi)**2))        # + exp(-0.02*((x-15*np.pi)**2+(y)**2))
+ue = exp(-((x-30*pi)**2+(y-30*pi)**2)/100) - Rational(1, 36) / pi
 
 # Size of discretization
 N = (128, 128)
@@ -51,8 +52,6 @@ def NonlinearRHS(self, U, U_hat, dU, gradu, **params):
     gradu = TVp.backward(1j*K*U_hat, gradu)
     dU = Tp.forward(0.5*(gradu[0]*gradu[0]+gradu[1]*gradu[1]), dU)
     dU.mask_nyquist(mask)
-    if comm.Get_rank() == 0:
-        dU[0, 0] = 0
     return -dU
 
 #initialize
@@ -61,17 +60,18 @@ U_hat = U.forward(U_hat)
 U_hat.mask_nyquist(mask)
 
 # Integrate using an exponential time integrator
-def update(self, u, u_hat, t, tstep, plot_step, **params):
+def update(self, u, u_hat, t, tstep, plot_step, wash, **params):
     if not hasattr(self, 'fig'):
         self.fig = plt.figure()
         self.cm = plt.get_cmap('hot')
         self.image = plt.contourf(X[0], X[1], U, 256, cmap=self.cm)
-    if comm.Get_rank() == 0:
-        u_hat[0, 0] = 0
-
-    if tstep % plot_step == 0 and plot_step > 0:
+    u_hat.mask_nyquist(mask)
+    if tstep % wash == 0 and wash > 0:
         u = u_hat.backward(u)
         u_hat = u.forward(u_hat)
+    
+    if tstep % plot_step == 0 and plot_step > 0:
+        u = u_hat.backward(u)    
         self.image.axes.contourf(X[0], X[1], u, 256, cmap=self.cm)
         plt.autoscale()
         plt.pause(1e-6)
@@ -82,10 +82,11 @@ def update(self, u, u_hat, t, tstep, plot_step, **params):
 
 if __name__ == '__main__':
     par = {'plot_step': 100,
+           'wash': 1, 
            'gradu': gradu,
            'count': 0}
     dt = 0.01
-    end_time = 50
+    end_time = 100
     integrator = ETDRK4(T, L=LinearRHS, N=NonlinearRHS, update=update, **par)
     #integrator = RK4(T, L=LinearRHS, N=NonlinearRHS, update=update, **par)
     integrator.setup(dt)
