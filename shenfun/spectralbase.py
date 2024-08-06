@@ -1834,6 +1834,30 @@ class BoundaryConditions(dict):
         Etc. Any combination should be possible, and it should also be possible
         to use higher order derivatives with `N2`, `N3` etc.
 
+        It is also possible to apply Robin conditions 
+
+        .. math::
+
+            u(x) + c u'(x) = d 
+
+        Applying this on both sides of the domain is achieved through::
+
+            bc = {'left': {'R': (c, d)}, 'right': {'R': (c, d)}}
+
+        Finally, one can use the boundary condition
+
+        .. math::
+
+            u'(x) + c u''(x) = d 
+
+        Applying this on both sides of the domain::
+
+            bc = {'left': {'W': (c, d)}, 'right': {'W': (c, d)}}
+
+        Currently there are no hardcoded spaces implemented for these latter two boundary 
+        conditions, so the composition of these bases is computed using a generic approach
+        that is slower than for the more common Dirichlet and Neumann spaces.
+
         If `bc` is an n-tuple, then we assume the basis function is::
 
             (None, a) - {'right': {'D': a}}
@@ -2317,7 +2341,7 @@ def get_norm_sq(v, u, method):
 
     .. math::
 
-        `(\phi_i, \phi_i)_w`
+        (\phi_i, \phi_i)_w
 
     where :math:`\phi_i` is the orthogonal basis for a spectral family.
 
