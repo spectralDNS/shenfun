@@ -58,7 +58,7 @@ help:
 	cp demos/$(basename $@).ipynb ../../shenfun-demos/content/
 	
 publish:
-	cd demos && publish export papers.bib && cd ..
+	#cd demos && publish export papers.bib && cd ..
 	cp demos/papers.bib source/
 
 demos: $(DEMO)
