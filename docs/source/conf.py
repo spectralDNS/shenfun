@@ -56,6 +56,14 @@ extensions = [
     'sphinxcontrib.bibtex'
 ]
 
+myst_enable_extensions = [
+    "amsmath",
+    "colon_fence",
+    "deflist",
+    "dollarmath",
+    "html_image",
+]
+
 napoleon_google_docstring = False
 napoleon_use_param = False
 napoleon_use_ivar = True
