@@ -21,7 +21,6 @@ dependencies:
   - mpi4py-fft
   - plotly
   - Sphinx
-  - nbsphinx
   - pip:
     - sphinxcontrib-bibtex
     - sphinx-rtd-theme
