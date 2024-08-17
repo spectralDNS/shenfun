@@ -22,3 +22,4 @@ dependencies:
   - pip:
     - sphinxcontrib-bibtex
     - sphinx-rtd-theme
+    - myst-nb
