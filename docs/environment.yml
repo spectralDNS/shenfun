@@ -14,6 +14,7 @@ dependencies:
   - sympy
   - pyyaml
   - scipy
+  - shenfun
   - mpi4py
   - mpi4py-fft
   - plotly
