@@ -4,7 +4,7 @@ Shenfun
     :target: https://www.codacy.com/gh/spectralDNS/shenfun/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=spectralDNS/shenfun&amp;utm_campaign=Badge_Grade
 .. image:: https://dev.azure.com/spectralDNS/shenfun/_apis/build/status/spectralDNS.shenfun?branchName=master
     :target: https://dev.azure.com/spectralDNS/shenfun
-.. image:: https://github.com/spectralDNS/shenfun/workflows/github-CI/badge.svg?branch=master
+.. image:: https://github.com/spectralDNS/shenfun/actions/workflows/main.yml/badge.svg?branch=master
     :target: https://github.com/spectralDNS/shenfun
 .. image:: https://codecov.io/gh/spectralDNS/shenfun/branch/master/graph/badge.svg
     :target: https://codecov.io/gh/spectralDNS/shenfun
