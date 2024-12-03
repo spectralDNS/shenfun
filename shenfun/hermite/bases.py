@@ -4,7 +4,7 @@ import numpy as np
 from numpy.polynomial import hermite
 from scipy.special import eval_hermite, factorial
 from mpi4py_fft import fftw
-from shenfun.spectralbase import SpectralBase, Transform, islicedict, slicedict
+from shenfun.spectralbase import SpectralBase, Transform, islicedict, slicedict, Domain
 
 #pylint: disable=method-hidden,no-else-return,not-callable,abstract-method,no-member,cyclic-import
 
@@ -50,7 +50,7 @@ class Orthogonal(SpectralBase):
     """
     def __init__(self, N, dtype=float, padding_factor=1, dealias_direct=False,
                  coordinates=None, **kw):
-        SpectralBase.__init__(self, N, quad="HG", domain=(-sp.S.Infinity, sp.S.Infinity),
+        SpectralBase.__init__(self, N, quad="HG", domain=Domain(-sp.S.Infinity, sp.S.Infinity),
                               dtype=dtype, padding_factor=padding_factor,
                               dealias_direct=dealias_direct, coordinates=coordinates)
         self.plan(int(N*padding_factor), 0, dtype, {})
@@ -60,7 +60,7 @@ class Orthogonal(SpectralBase):
         return 'hermite'
 
     def reference_domain(self):
-        return (-sp.S.Infinity, sp.S.Infinity)
+        return Domain(-sp.S.Infinity, sp.S.Infinity)
 
     def domain_factor(self):
         return 1

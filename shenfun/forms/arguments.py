@@ -7,7 +7,7 @@ import numpy as np
 import sympy as sp
 from shenfun.config import config
 from shenfun.optimization import cython
-from shenfun.spectralbase import BoundaryConditions
+from shenfun.spectralbase import BoundaryConditions, Domain
 from mpi4py_fft import DistArray
 
 __all__ = ('Expr', 'BasisFunction', 'TestFunction', 'TrialFunction', 'Function',
@@ -89,7 +89,7 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
 
           - QG - Jacobi-Gauss
 
-    domain : two-tuple of floats, optional
+    domain : Domain, 2-tuple of floats, optional
         The computational domain
     scaled : bool
         Whether to use scaled basis
@@ -129,6 +129,8 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
            'coordinates': coordinates}
     par.update(kw)
     if domain is not None:
+        assert len(domain) == 2
+        domain = Domain(*domain)
         par['domain'] = domain
 
     if family.lower() in ('fourier', 'f'):
@@ -175,7 +177,7 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
                 par['bc'] = bc
         else:
             if isinstance(bc, (str, tuple, dict)):
-                domain = (-1, 1) if domain is None else domain
+                domain = Domain(-1, 1) if domain is None else domain
                 bcs = BoundaryConditions(bc, domain=domain)
                 key = bcs.orderednames()
                 par['bc'] = bcs
@@ -220,7 +222,7 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
                 par['bc'] = bc
         else:
             if isinstance(bc, (str, tuple, dict)):
-                domain = (-1, 1) if domain is None else domain
+                domain = Domain(-1, 1) if domain is None else domain
                 bcs = BoundaryConditions(bc, domain=domain)
                 key = bcs.orderednames()
                 par['bc'] = bcs
@@ -261,7 +263,7 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
                 par['bc'] = bc
         else:
             if isinstance(bc, (str, tuple, dict)):
-                domain = (-1, 1) if domain is None else domain
+                domain = Domain(-1, 1) if domain is None else domain
                 bcs = BoundaryConditions(bc, domain=domain)
                 key = bcs.orderednames()
                 par['bc'] = bcs
@@ -303,7 +305,7 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
                 par['bc'] = bc
         else:
             if isinstance(bc, (str, tuple, dict)):
-                domain = (-1, 1) if domain is None else domain
+                domain = Domain(-1, 1) if domain is None else domain
                 bcs = BoundaryConditions(bc, domain=domain)
                 key = bcs.orderednames()
                 par['bc'] = bcs
@@ -336,7 +338,7 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
                 par['bc'] = bc
         else:
             if isinstance(bc, (str, tuple, dict)):
-                domain = (0, np.inf) if domain is None else domain
+                domain = Domain(0, np.inf) if domain is None else domain
                 bcs = BoundaryConditions(bc, domain=domain)
                 key = bcs.orderednames()
                 par['bc'] = bcs
@@ -392,7 +394,7 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
                             })
 
         if isinstance(bc, (str, tuple, dict)):
-            domain = (-1, 1) if domain is None else domain
+            domain = Domain(-1, 1) if domain is None else domain
             bcs = BoundaryConditions(bc, domain=domain)
             key = bcs.orderednames()
             par['bc'] = bcs

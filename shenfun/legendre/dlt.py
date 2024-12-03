@@ -8,7 +8,7 @@ from mpi4py_fft import fftw
 from mpi4py_fft.fftw.utilities import FFTW_MEASURE, FFTW_PRESERVE_INPUT
 from shenfun.optimization import runtimeoptimizer
 from shenfun.optimization import cython
-from shenfun.spectralbase import islicedict, slicedict
+from shenfun.spectralbase import islicedict, slicedict, Domain
 
 __all__ = ['DLT', 'leg2cheb', 'cheb2leg', 'Leg2chebHaleTownsend',
            'Leg2Cheb', 'Cheb2Leg', 'FMMLeg2Cheb', 'FMMCheb2Leg']
@@ -789,13 +789,13 @@ def getChebyshev(level, D, s, diags, A, N, l2c=True):
     h = s*get_h(level, D)
     i0, j0 = get_ij(level, 0, s, D, diags)
     Nb = get_number_of_blocks(level, D)
-    T0 = FunctionSpace(100, 'C', domain=[j0+2*h, j0+4*h])
+    T0 = FunctionSpace(100, 'C', domain=(j0+2*h, j0+4*h))
     fun = Mxy if l2c == True else Lxy
     w0 = fun(2*h-1, T0.mesh())
     m0 = T0.forward(w0)
     z = np.where(np.diff(abs(m0)) > 0)[0]
     Nx = 100 if len(z) < 2 else z[1]
-    T0.domain = [j0+4*h, j0+6*h]
+    T0.domain = Domain(j0+4*h, j0+6*h)
     w0 = fun(2*h-1, T0.mesh())
     m0 = T0.forward(w0)
     z = np.where(np.diff(abs(m0)) > 0)[0]
@@ -817,9 +817,9 @@ def getChebyshev(level, D, s, diags, A, N, l2c=True):
     for k in range(Nb):
         i0, j0 = get_ij(level, k, s, D, diags)
         for j in range(D[level]):
-            S.bases[1].domain = 2*(j0+(j+1)*h), 2*(j0+(j+2)*h)
+            S.bases[1].domain = Domain(2*(j0+(j+1)*h), 2*(j0+(j+2)*h))
             for i in range(j+1):
-                S.bases[0].domain = 2*(i0+i*h), 2*(i0+(i+1)*h)
+                S.bases[0].domain = Domain(2*(i0+i*h), 2*(i0+(i+1)*h))
                 f[:] = 0
                 if j > i:
                     Y2[0, :] = S.bases[1].map_true_domain(xj2)

@@ -39,7 +39,7 @@ where :math:`\overline{v}` is the complex conjugate of :math:`v`, and
 import sympy as sp
 import numpy as np
 from mpi4py_fft import fftw
-from shenfun.spectralbase import SpectralBase, Transform, islicedict, slicedict
+from shenfun.spectralbase import SpectralBase, Transform, islicedict, slicedict, Domain
 from shenfun.optimization import cython
 from shenfun.config import config
 
@@ -54,7 +54,7 @@ __all__ = bases
 class FourierBase(SpectralBase):
     r"""Abstract base class for Fourier exponentials
     """
-    def __init__(self, N, padding_factor=1, domain=(0, 2*sp.pi), dtype=float,
+    def __init__(self, N, padding_factor=1, domain=Domain(0, 2*sp.pi), dtype=float,
                  dealias_direct=False, coordinates=None):
         self._k = None
         self._planned_axes = None  # Collapsing of axes means that this base can be used to plan transforms over several collapsed axes. Store the axes planned for here.
@@ -162,7 +162,7 @@ class FourierBase(SpectralBase):
         output *= self.get_normalization()
 
     def reference_domain(self):
-        return (0, 2*sp.pi)
+        return Domain(0, 2*sp.pi)
 
     @property
     def is_orthogonal(self):
@@ -307,7 +307,7 @@ class R2C(FourierBase):
     padding_factor : float, optional
         Factor for padding backward transforms. padding_factor=1.5
         corresponds to a 3/2-rule for dealiasing.
-    domain : 2-tuple of numbers, optional
+    domain : Domain, 2-tuple of numbers, optional
         The computational domain.
     dealias_direct : bool, optional
         True for dealiasing using 2/3-rule. Must be used with
@@ -317,7 +317,7 @@ class R2C(FourierBase):
 
     """
 
-    def __init__(self, N, padding_factor=1., domain=(0, 2*sp.pi),
+    def __init__(self, N, padding_factor=1., domain=Domain(0, 2*sp.pi),
                  dealias_direct=False, coordinates=None, **kw):
         FourierBase.__init__(self, N, padding_factor=padding_factor, dtype=float,
                              domain=domain, dealias_direct=dealias_direct,
@@ -496,7 +496,7 @@ class C2C(FourierBase):
     padding_factor : float, optional
         Factor for padding backward transforms. padding_factor=1.5
         corresponds to a 3/2-rule for dealiasing.
-    domain : 2-tuple of numbers, optional
+    domain : Domain, 2-tuple of numbers, optional
         The computational domain.
     dealias_direct : bool, optional
         True for dealiasing using 2/3-rule. Must be used with
@@ -506,7 +506,7 @@ class C2C(FourierBase):
 
     """
 
-    def __init__(self, N, padding_factor=1, domain=(0, 2*sp.pi),
+    def __init__(self, N, padding_factor=1, domain=Domain(0, 2*sp.pi),
                  dealias_direct=False, coordinates=None, **kw):
         FourierBase.__init__(self, N, padding_factor=padding_factor, dtype=complex,
                              domain=domain, dealias_direct=dealias_direct,

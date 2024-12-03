@@ -49,7 +49,7 @@ from .coordinates import Coordinates
 from .fourier import energy_fourier
 from .io import *
 from .matrixbase import *
-from .spectralbase import inner_product, MixedFunctionSpace, BoundaryConditions
+from .spectralbase import inner_product, MixedFunctionSpace, BoundaryConditions, Domain
 from .forms import *
 from .tensorproductspace import *
 from .utilities import *

@@ -18,6 +18,7 @@ import importlib
 import re
 import copy
 import importlib
+from typing import NamedTuple
 from numbers import Number
 import sympy as sp
 import numpy as np
@@ -29,14 +30,18 @@ from .coordinates import Coordinates
 work = CachedArrayDict()
 xp = sp.Symbol('x', real=True)
 
+class Domain(NamedTuple):
+    lower: Number
+    upper: Number 
+
 class SpectralBase:
     """Abstract base class for all spectral function spaces
     """
     # pylint: disable=method-hidden, too-many-instance-attributes
-    def __init__(self, N, quad='', padding_factor=1, domain=(-1., 1.), dtype=None,
+    def __init__(self, N, quad='', padding_factor=1, domain=Domain(-1., 1.), dtype=None,
                  dealias_direct=False, coordinates=None):
         self.N = N
-        self.domain = domain
+        self.domain = Domain(*domain)
         self.quad = quad
         self.axis = 0
         self.bc = None
@@ -115,7 +120,7 @@ class SpectralBase:
 
         else:
             d = self.domain
-            X = np.linspace(float(d[0]), float(d[1]), N)
+            X = np.linspace(float(d.lower), float(d.upper), N)
             if map_true_domain is False:
                 X = self.map_reference_domain(X)
 
@@ -658,8 +663,8 @@ class SpectralBase:
         x : coordinate or array of points
         """
         if not self.domain == self.reference_domain():
-            a = self.domain[0]
-            c = self.reference_domain()[0]
+            a = self.domain.lower
+            c = self.reference_domain().lower
             if isinstance(x, (np.ndarray, float)):
                 x = float(c) + (x-float(a))*float(self.domain_factor())
             else:
@@ -675,8 +680,8 @@ class SpectralBase:
         x : coordinate or array of points
         """
         if not self.domain == self.reference_domain():
-            a = self.domain[0]
-            c = self.reference_domain()[0]
+            a = self.domain.lower
+            c = self.reference_domain().lower
             if isinstance(x, (np.ndarray, float)):
                 x = float(a) + (x-float(c))/float(self.domain_factor())
             else:
@@ -829,11 +834,11 @@ class SpectralBase:
         """
         return 1
 
-    def reference_domain(self):
+    def reference_domain(self) -> Domain:
         raise NotImplementedError
 
     def domain_length(self):
-        return self.domain[1]-self.domain[0]
+        return self.domain.upper-self.domain.lower
 
     def slice(self):
         """Return index set of current space"""
@@ -1315,7 +1320,7 @@ class SpectralBase:
         converged = False
         count = 0
         points = np.random.random(8)
-        points = float(T.domain[0]) + points*float(T.domain[1]-T.domain[0])
+        points = float(T.domain.lower) + points*float(T.domain.upper-T.domain.lower)
         sym = fun.free_symbols
         assert len(sym) == 1
         x = sym.pop()
@@ -1877,7 +1882,7 @@ class BoundaryConditions(dict):
                 x=-2 and x=2.
             etc.
 
-    domain : 2-tuple of numbers, optional
+    domain : Domain, 2-tuple of numbers, optional
         The domain, if different than (-1, 1).
 
     """
@@ -1890,10 +1895,10 @@ class BoundaryConditions(dict):
                 # Check for Dirichlet
                 x = re.search(r"u\((.*)\)=(.*)", bci)
                 if x:
-                    if np.abs(float(x.group(1))-domain[0]) < 1e-8:
+                    if np.abs(float(x.group(1))-domain.lower) < 1e-8:
                         # left boundary
                         bcs['left']['D'] = float(x.group(2))
-                    elif np.abs(float(x.group(1))-domain[1]) < 1e-8:
+                    elif np.abs(float(x.group(1))-domain.upper) < 1e-8:
                         # right boundary
                         bcs['right']['D'] = float(x.group(2))
                     else:
@@ -1901,10 +1906,10 @@ class BoundaryConditions(dict):
                     continue
                 x = re.search(r"u'\((.*)\)=(.*)", bci)
                 if x:
-                    if np.abs(float(x.group(1))-domain[0]) < 1e-8:
+                    if np.abs(float(x.group(1))-domain.lower) < 1e-8:
                         # left boundary
                         bcs['left']['N'] = float(x.group(2))
-                    elif np.abs(float(x.group(1))-domain[1]) < 1e-8:
+                    elif np.abs(float(x.group(1))-domain.upper) < 1e-8:
                         # right boundary
                         bcs['right']['N'] = float(x.group(2))
                     else:
@@ -1912,10 +1917,10 @@ class BoundaryConditions(dict):
                     continue
                 x = re.search(r"u''\((.*)\)=(.*)", bci)
                 if x:
-                    if np.abs(float(x.group(1))-domain[0]) < 1e-8:
+                    if np.abs(float(x.group(1))-domain.lower) < 1e-8:
                         # left boundary
                         bcs['left']['N2'] = float(x.group(2))
-                    elif np.abs(float(x.group(1))-domain[1]) < 1e-8:
+                    elif np.abs(float(x.group(1))-domain.upper) < 1e-8:
                         # right boundary
                         bcs['right']['N2'] = float(x.group(2))
                     else:
@@ -1923,10 +1928,10 @@ class BoundaryConditions(dict):
                     continue
                 x = re.search(r"u'''\((.*)\)=(.*)", bci)
                 if x:
-                    if np.abs(float(x.group(1))-domain[0]) < 1e-8:
+                    if np.abs(float(x.group(1))-domain.lower) < 1e-8:
                         # left boundary
                         bcs['left']['N3'] = float(x.group(2))
-                    elif np.abs(float(x.group(1))-domain[1]) < 1e-8:
+                    elif np.abs(float(x.group(1))-domain.upper) < 1e-8:
                         # right boundary
                         bcs['right']['N3'] = float(x.group(2))
                     else:
@@ -1934,10 +1939,10 @@ class BoundaryConditions(dict):
                     continue
                 x = re.search(r"u''''\((.*)\)=(.*)", bci)
                 if x:
-                    if np.abs(float(x.group(1))-domain[0]) < 1e-8:
+                    if np.abs(float(x.group(1))-domain.lower) < 1e-8:
                         # left boundary
                         bcs['left']['N4'] = float(x.group(2))
-                    elif np.abs(float(x.group(1))-domain[1]) < 1e-8:
+                    elif np.abs(float(x.group(1))-domain.upper) < 1e-8:
                         # right boundary
                         bcs['right']['N4'] = float(x.group(2))
                     else:
@@ -1983,9 +1988,9 @@ class BoundaryConditions(dict):
         # Take care of non-standard domain size
         df = 1
         if domain is not None:
-            assert isinstance(domain, (tuple, list))
-            if np.isfinite(float(domain[0]*domain[1])):
-                df = 2/float(domain[1]-domain[0])
+            assert isinstance(domain, Domain)
+            if np.isfinite(float(domain.lower*domain.upper)):
+                df = 2/float(domain.upper-domain.lower)
 
         for key, val in bcs.items():
             for bc, v in val.items():

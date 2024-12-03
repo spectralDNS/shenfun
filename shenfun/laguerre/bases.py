@@ -4,7 +4,7 @@ from numpy.polynomial import laguerre as lag
 from scipy.special import eval_laguerre
 from shenfun.matrixbase import SparseMatrix
 from shenfun.jacobi.recursions import n
-from shenfun.spectralbase import SpectralBase, getCompositeBase, getBCGeneric, BoundaryConditions
+from shenfun.spectralbase import SpectralBase, getCompositeBase, getBCGeneric, BoundaryConditions, Domain
 
 #pylint: disable=method-hidden,no-else-return,not-callable,abstract-method,no-member,cyclic-import
 
@@ -51,7 +51,7 @@ class Orthogonal(SpectralBase):
     """
     def __init__(self, N, dtype=float, padding_factor=1, dealias_direct=False,
                  coordinates=None, **kw):
-        SpectralBase.__init__(self, N, quad="LG", domain=(0, sp.S.Infinity), dtype=dtype,
+        SpectralBase.__init__(self, N, quad="LG", domain=Domain(0, sp.S.Infinity), dtype=dtype,
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
                               coordinates=coordinates)
         self.plan(int(N*padding_factor), 0, dtype, {})
@@ -61,7 +61,7 @@ class Orthogonal(SpectralBase):
         return 'laguerre'
 
     def reference_domain(self):
-        return (0, sp.S.Infinity)
+        return Domain(0, sp.S.Infinity)
 
     def domain_factor(self):
         return 1
@@ -258,7 +258,7 @@ class CompactDirichlet(CompositeBase):
     def __init__(self, N, bc=(0,), dtype=float, padding_factor=1,
                  dealias_direct=False, coordinates=None, **kw):
         CompositeBase.__init__(self, N, quad='LG', dtype=dtype, padding_factor=padding_factor,
-                               bc=bc, dealias_direct=dealias_direct, domain=(0, sp.S.Infinity),
+                               bc=bc, dealias_direct=dealias_direct, domain=Domain(0, sp.S.Infinity),
                                coordinates=coordinates)
         self._stencil = {0: 1, 1: -1}
 
@@ -311,9 +311,9 @@ class CompactNeumann(CompositeBase):
                  dealias_direct=False, coordinates=None, **kw):
         if isinstance(bc, (tuple, list)):
             assert len(bc) == 1
-            bc = BoundaryConditions({'left': {'N': bc[0]}, 'right': {}}, domain=(0, np.inf))
+            bc = BoundaryConditions({'left': {'N': bc[0]}, 'right': {}}, domain=Domain(0, np.inf))
         CompositeBase.__init__(self, N, dtype=dtype, quad='LG', padding_factor=padding_factor,
-                               bc=bc, dealias_direct=dealias_direct, domain=(0, sp.S.Infinity),
+                               bc=bc, dealias_direct=dealias_direct, domain=Domain(0, sp.S.Infinity),
                                coordinates=coordinates)
         self._stencil = {0: 1, 1: -(2*n+1)/(2*n+3)}
 
@@ -365,7 +365,7 @@ class Generic(CompositeBase):
         Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
 
     """
-    def __init__(self, N, quad="LG", bc={}, domain=(0, sp.S.Infinity), dtype=float,
+    def __init__(self, N, quad="LG", bc={}, domain=Domain(0, sp.S.Infinity), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None, **kw):
         from shenfun.utilities.findbasis import get_stencil_matrix
         self._stencil = get_stencil_matrix(bc, 'laguerre')

@@ -455,7 +455,6 @@ class ETDRK4(IntegratorBase):
         elif isinstance(L, SparseMatrix):
             L.simplify_diagonal_matrices()
             L = L.scale
-
         L = np.atleast_1d(L)
         hL = L*dt
         self.ehL = np.exp(hL)
