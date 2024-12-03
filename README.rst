@@ -4,7 +4,7 @@ Shenfun
     :target: https://www.codacy.com/gh/spectralDNS/shenfun/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=spectralDNS/shenfun&amp;utm_campaign=Badge_Grade
 .. image:: https://dev.azure.com/spectralDNS/shenfun/_apis/build/status/spectralDNS.shenfun?branchName=master
     :target: https://dev.azure.com/spectralDNS/shenfun
-.. image:: https://github.com/spectralDNS/shenfun/workflows/github-CI/badge.svg?branch=master
+.. image:: https://github.com/spectralDNS/shenfun/actions/workflows/main.yml/badge.svg?branch=master
     :target: https://github.com/spectralDNS/shenfun
 .. image:: https://codecov.io/gh/spectralDNS/shenfun/branch/master/graph/badge.svg
     :target: https://codecov.io/gh/spectralDNS/shenfun
@@ -46,7 +46,7 @@ Shenfun can also be used to approximate analytical functions with global spectra
     :alt: The surface of a seashell
 
 Some recent papers using Shenfun
----------------------------
+--------------------------------
 
 - `Effective control of two-dimensional Rayleigh–Bénard convection: Invariant multi-agent reinforcement learning is all you need <https://pubs.aip.org/aip/pof/article/35/6/065146/2900730>`_ C. Vignon, J. Rabault, J. Vasanth, F. Alcántara-Ávila, M. Mortensen, R. Vinuesa, Physics of Fluids 35, 065146 (2023)
 - `Solving Partial Differential Equations with Equivariant Extreme Learning Machines <https://www.researchgate.net/profile/Sebastian-Peitz/publication/380897446_Solving_Partial_Differential_Equations_with_Equivariant_Extreme_Learning_Machines/links/66544d0fbc86444c7205cbdb/Solving-Partial-Differential-Equations-with-Equivariant-Extreme-Learning-Machines.pdf>`_, H. Harder, J. Rabault, R. Vinuesa, M. Mortensen, S. Peitz. preprint (2024)

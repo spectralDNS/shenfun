@@ -65,7 +65,7 @@ jobs:
       run: pytest tests/
 
     - if: matrix.mpi == 'mpich' && startsWith(matrix.os, 'ubuntu') && matrix.py == '3.11'
-      uses: codecov/codecov-action@v4
+      uses: codecov/codecov-action@v5
       with:
         files: coverage.xml
         name: ${{ matrix.os }}-${{ matrix.mpi }}-${{ matrix.py }}
@@ -73,7 +73,7 @@ jobs:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}      
     
     - if: matrix.mpi == 'mpich' && startsWith(matrix.os, 'ubuntu') && matrix.py == '3.11' 
-      uses: codacy/codacy-coverage-reporter-action@v1
+      uses: codacy/codacy-coverage-reporter-action@v1.3.0
       with:
         project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
         coverage-reports: coverage.xml
