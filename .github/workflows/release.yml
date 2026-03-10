@@ -37,7 +37,7 @@ jobs:
       run:  python -m twine check dist/*.tar.gz
 
     - name: Upload distribution assets
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       with:
         name: release
         path: |
