@@ -30,16 +30,16 @@ from shenfun import *
 
 assert comm.Get_size() == 1, "Two non-periodic directions only have solver implemented for serial"
 
-Re = 250.
+Re = 10.
 nu = 2./Re
-alfa = 0.1 # underrelaxation factor
-N = 64
-family = 'Chebyshev'
-#family = 'Legendre'
+alfa = 0.01 # underrelaxation factor
+N = 50
+#family = 'Chebyshev'
+family = 'Legendre'
 x = sp.symbols('x', real='True')
 D0 = FunctionSpace(N, family, bc=(0, 0))
-#D1 = FunctionSpace(N, family, bc=(0, 1))
-D1 = FunctionSpace(N, family, bc=(0, (1-x)**2*(1+x)**2))
+D1 = FunctionSpace(N, family, bc=(0, 1))
+#D1 = FunctionSpace(N, family, bc=(0, (1-x)**2*(1+x)**2))
 
 # Create tensor product spaces with different combination of bases
 V1 = TensorProductSpace(comm, (D0, D1))
@@ -111,7 +111,7 @@ def compute_rhs(up_hat, bh_hat):
 
 converged = False
 count = 0
-max_count = 1000
+max_count = 10000
 if 'pytest' in os.environ:
     max_count = 1
 t0 = time.time()
@@ -180,4 +180,4 @@ while not converged:
     print("%d %d " %(xi, yi) +("%+2.7e "*4) %(xmid, ymid, psi_min, err))
     count += 1
 
-cleanup(vars())
+#cleanup(vars())

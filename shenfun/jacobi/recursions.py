@@ -39,6 +39,27 @@ def djt(alf, bet, n, k):
     """
     return sp.diff(jt(alf, bet, n), x, k)
 
+def wn(alf, bet, n):
+    r"""Scaling function
+
+    .. math::
+
+        w_n^{(\alpha, \alpha)} = \frac{(2\alpha)_n}{(\alpha+1/2)_n}
+
+    Parameters
+    ----------
+    alf, bet : numbers
+        Jacobi parameters
+    n : int
+        Index
+
+    Note
+    ----
+    Used by Gegenbauer polynomials.
+    """
+    return sp.rf(2*alf + 1, n) / sp.rf(alf + 1, n)
+
+
 def cn(alf, bet, n):
     r"""Scaling function
 
@@ -143,21 +164,18 @@ def bnd_values(alf, bet, k=0, gn=1):
     if gn == 1:
         gn = lambda a, b, n: 1
 
-    if k == 0:
-        return (lambda i: gn(alf, bet, i)*(-1)**i*sp.binomial(i+bet, i), lambda i: gn(alf, bet, i)*sp.binomial(i+alf, i))
-    elif k == 1:
-        gam = lambda i: sp.rf(i+alf+bet+1, 1)*sp.Rational(1, 2)
-        return (lambda i: gn(alf, bet, i)*(-1)**(i-1)*gam(i)*sp.binomial(i+bet, i-1), lambda i: gn(alf, bet, i)*gam(i)*sp.binomial(i+alf, i-1))
-    elif k == 2:
-        gam = lambda i: sp.rf(i+alf+bet+1, 2)*sp.Rational(1, 4)
-        return (lambda i: gn(alf, bet, i)*(-1)**i*gam(i)*sp.binomial(i+bet, i-2), lambda i: gn(alf, bet, i)*gam(i)*sp.binomial(i+alf, i-2))
-    elif k == 3:
-        gam = lambda i: sp.rf(i+alf+bet+1, 3)*sp.Rational(1, 8)
-        return (lambda i: gn(alf, bet, i)*(-1)**i*gam(i)*sp.binomial(i+bet, i-3), lambda i: gn(alf, bet, i)*gam(i)*sp.binomial(i+alf, i-3))
-    elif k == 4:
-        gam = lambda i: sp.rf(i+alf+bet+1, 4)*sp.Rational(1, 16)
-        return (lambda i: gn(alf, bet, i)*(-1)**i*gam(i)*sp.binomial(i+bet, i-4), lambda i: gn(alf, bet, i)*gam(i)*sp.binomial(i+alf, i-4))
-    raise RuntimeError
+    def gam(i: int) -> sp.Expr:
+        if k > 0:
+            return sp.rf(i + alf + bet + 1, k) * sp.Rational(1, 2 ** (k))
+        return 1
+
+    return (
+        lambda i: gn(alf, bet, i)
+        * (-1) ** (k + i)
+        * gam(i)
+        * sp.binomial(i + bet, i - k),
+        lambda i: gn(alf, bet, i) * gam(i) * sp.binomial(i + alf, i - k),
+    )
 
 def _a(alf, bet, i, j):
     """Matrix A for non-normalized Jacobi polynomials
@@ -298,7 +316,7 @@ def a_(k, q, alf, bet, i, j, gn=1):
 
     .. math::
 
-        x \partial^k \boldsymbol{Q} = \underline{A}^T \partial^k \boldsymbol{Q} \quad (*)
+        x^q \partial^k \boldsymbol{Q} = \underline{A}^T \partial^k \boldsymbol{Q} \quad (*)
 
     where :math:`\partial^k` represents the :math:`k`'th derivative and
 

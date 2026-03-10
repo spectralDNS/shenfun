@@ -39,6 +39,7 @@ All composite bases make use of the fast transforms that exists for
 is used to transfer any composite basis back and forth to the orthogonal basis.
 
 """
+
 from __future__ import division
 import functools
 import numpy as np
@@ -46,8 +47,17 @@ from numpy.polynomial import chebyshev as n_cheb
 import sympy as sp
 from scipy.special import eval_chebyt
 from mpi4py_fft import fftw
-from shenfun.spectralbase import SpectralBase, Transform, FuncWrap, \
-    islicedict, slicedict, getCompositeBase, getBCGeneric, BoundaryConditions, Domain
+from shenfun.spectralbase import (
+    SpectralBase,
+    Transform,
+    FuncWrap,
+    islicedict,
+    slicedict,
+    getCompositeBase,
+    getBCGeneric,
+    BoundaryConditions,
+    Domain,
+)
 from shenfun.matrixbase import SparseMatrix
 from shenfun.optimization import optimizer
 from shenfun.config import config
@@ -55,41 +65,44 @@ from shenfun.jacobi.recursions import half, cn
 from shenfun.jacobi import JacobiBase
 from shenfun.utilities import n
 
-bases = ['Orthogonal',
-         'ShenDirichlet',
-         'Heinrichs',
-         'ShenNeumann',
-         'CombinedShenNeumann',
-         'MikNeumann',
-         'ShenBiharmonic',
-         'UpperDirichlet',
-         'LowerDirichlet',
-         'UpperDirichletNeumann',
-         'LowerDirichletNeumann',
-         'ShenBiPolar',
-         'PolarDirichlet',
-         'DirichletNeumann',
-         'NeumannDirichlet',
-         'Compact3',
-         'Compact4',
-         'Generic']
-bcbases = ['BCGeneric']
-testbases = ['Phi1', 'Phi2', 'Phi3', 'Phi4', 'Phi6']
+bases = [
+    "Orthogonal",
+    "ShenDirichlet",
+    "Heinrichs",
+    "ShenNeumann",
+    "CombinedShenNeumann",
+    "MikNeumann",
+    "ShenBiharmonic",
+    "UpperDirichlet",
+    "LowerDirichlet",
+    "UpperDirichletNeumann",
+    "LowerDirichletNeumann",
+    "ShenBiPolar",
+    "PolarDirichlet",
+    "DirichletNeumann",
+    "NeumannDirichlet",
+    "Compact3",
+    "Compact4",
+    "Generic",
+]
+bcbases = ["BCGeneric"]
+testbases = ["Phi1", "Phi2", "Phi3", "Phi4", "Phi6"]
 
 __all__ = bases + bcbases + testbases
 
-#pylint: disable=abstract-method, not-callable, method-hidden, no-self-use, cyclic-import
+# pylint: disable=abstract-method, not-callable, method-hidden, no-self-use, cyclic-import
 
 chebval = optimizer(n_cheb.chebval)
 
-xp = sp.Symbol('x', real=True)
+xp = sp.Symbol("x", real=True)
+
 
 class DCTWrap(FuncWrap):
     """DCT for complex input"""
 
     @property
     def dct(self):
-        return object.__getattribute__(self, '_func')
+        return object.__getattribute__(self, "_func")
 
     def __call__(self, **kw):
         dct_obj = self.dct
@@ -136,25 +149,43 @@ class Orthogonal(JacobiBase):
         Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
     """
 
-    def __init__(self, N, quad='GC', domain=Domain(-1, 1), dtype=float, padding_factor=1,
-                 dealias_direct=False, coordinates=None, **kw):
-        JacobiBase.__init__(self, N, quad=quad, alpha=-half, beta=-half, domain=domain, dtype=dtype,
-                            padding_factor=padding_factor, dealias_direct=dealias_direct,
-                            coordinates=coordinates)
-        assert quad in ('GC', 'GL', 'GU')
+    def __init__(
+        self,
+        N,
+        quad="GC",
+        domain=Domain(-1, 1),
+        dtype=float,
+        padding_factor=1,
+        dealias_direct=False,
+        coordinates=None,
+        **kw,
+    ):
+        JacobiBase.__init__(
+            self,
+            N,
+            quad=quad,
+            alpha=-half,
+            beta=-half,
+            domain=domain,
+            dtype=dtype,
+            padding_factor=padding_factor,
+            dealias_direct=dealias_direct,
+            coordinates=coordinates,
+        )
+        assert quad in ("GC", "GL", "GU")
         self.gn = cn
-        if quad == 'GC':
+        if quad == "GC":
             self._xfftn_fwd = functools.partial(fftw.dctn, type=2)
             self._xfftn_bck = functools.partial(fftw.dctn, type=3)
-            self._xfftn_fwd.opts = self._xfftn_bck.opts = config['fftw']['dct']
-        elif quad in ('GL', 'GU'):
+            self._xfftn_fwd.opts = self._xfftn_bck.opts = config["fftw"]["dct"]
+        elif quad in ("GL", "GU"):
             self._xfftn_fwd = functools.partial(fftw.dctn, type=1)
             self._xfftn_bck = functools.partial(fftw.dctn, type=1)
-            self._xfftn_fwd.opts = self._xfftn_bck.opts = config['fftw']['dct']
-        self.plan((int(padding_factor*N),), 0, dtype, {})
+            self._xfftn_fwd.opts = self._xfftn_bck.opts = config["fftw"]["dct"]
+        self.plan((int(padding_factor * N),), 0, dtype, {})
 
     # Comment due to curvilinear issues
-    #def apply_inverse_mass(self, array):
+    # def apply_inverse_mass(self, array):
     #    coors = self.tensorproductspace.coors if self.dimensions > 1 else self.coors
     #    if not coors.hi.prod() == 1:
     #        return JacobiBase.apply_inverse_mass(self, array)
@@ -166,7 +197,7 @@ class Orthogonal(JacobiBase):
 
     @staticmethod
     def family():
-        return 'chebyshev'
+        return "chebyshev"
 
     def points_and_weights(self, N=None, map_true_domain=False, weighted=True, **kw):
         if N is None:
@@ -175,7 +206,7 @@ class Orthogonal(JacobiBase):
         if weighted:
             if self.quad == "GL":
                 points = -(n_cheb.chebpts2(N)).astype(float)
-                weights = np.full(N, np.pi/(N-1))
+                weights = np.full(N, np.pi / (N - 1))
                 weights[0] /= 2
                 weights[-1] /= 2
 
@@ -185,15 +216,15 @@ class Orthogonal(JacobiBase):
                 weights = weights.astype(float)
 
             elif self.quad == "GU":
-                points = np.cos((np.arange(N)+1)*np.pi/(N+1))
-                weights = np.full(N, np.pi/(N+1))
+                points = np.cos((np.arange(N) + 1) * np.pi / (N + 1))
+                weights = np.full(N, np.pi / (N + 1))
 
         else:
             if self.quad == "GL":
-                points = np.cos(np.arange(N)*np.pi/(N-1))
+                points = np.cos(np.arange(N) * np.pi / (N - 1))
                 d = fftw.aligned(N, fill=0)
-                k = 2*(1 + np.arange((N-1)//2))
-                d[::2] = (2./(N-1))/np.hstack((1., 1.-k*k))
+                k = 2 * (1 + np.arange((N - 1) // 2))
+                d[::2] = (2.0 / (N - 1)) / np.hstack((1.0, 1.0 - k * k))
                 w = fftw.aligned_like(d)
                 dct = fftw.dctn(w, axes=(0,), type=1)
                 weights = dct(d, w)
@@ -203,22 +234,22 @@ class Orthogonal(JacobiBase):
             elif self.quad == "GC":
                 points = n_cheb.chebgauss(N)[0]
                 d = fftw.aligned(N, fill=0)
-                k = 2*(1 + np.arange((N-1)//2))
-                d[::2] = (2./N)/np.hstack((1., 1.-k*k))
+                k = 2 * (1 + np.arange((N - 1) // 2))
+                d[::2] = (2.0 / N) / np.hstack((1.0, 1.0 - k * k))
                 w = fftw.aligned_like(d)
                 dct = fftw.dctn(w, axes=(0,), type=3)
                 weights = dct(d, w)
 
             elif self.quad == "GU":
-                theta = (np.arange(N)+1)*np.pi/(N+1)
+                theta = (np.arange(N) + 1) * np.pi / (N + 1)
                 points = np.cos(theta)
                 d = fftw.aligned(N, fill=0)
                 k = np.arange(N)
-                d[::2] = 2/(k[::2]+1)
+                d[::2] = 2 / (k[::2] + 1)
                 w = fftw.aligned_like(d)
                 dst = fftw.dstn(w, axes=(0,), type=1)
                 weights = dst(d, w)
-                weights *= (np.sin(theta))/(N+1)
+                weights *= (np.sin(theta)) / (N + 1)
 
         if map_true_domain is True:
             points = self.map_true_domain(points)
@@ -226,33 +257,33 @@ class Orthogonal(JacobiBase):
         return points, weights
 
     def vandermonde(self, x):
-        return n_cheb.chebvander(x, self.shape(False)-1)
+        return n_cheb.chebvander(x, self.shape(False) - 1)
 
     def weight(self, x=xp):
-        return 1/sp.sqrt(1-x**2)
+        return 1 / sp.sqrt(1 - x**2)
 
     def orthogonal_basis_function(self, i=0, x=xp):
         return sp.chebyshevt(i, x)
 
     def L2_norm_sq(self, i):
-        return (1+int(i==0))*sp.pi/2
+        return (1 + int(i == 0)) * sp.pi / 2
 
     def l2_norm_sq(self, i=None):
         if i is None:
-            f = np.full(self.N, np.pi/2)
+            f = np.full(self.N, np.pi / 2)
             f[0] *= 2
-            if self.quad == 'GL':
+            if self.quad == "GL":
                 f[-1] *= 2
             return f
-        elif i == 0 or i == self.N-1 and self.quad == 'GL':
+        elif i == 0 or i == self.N - 1 and self.quad == "GL":
             return np.pi
-        return np.pi/2
+        return np.pi / 2
 
     def evaluate_basis(self, x, i=0, output_array=None):
         x = np.atleast_1d(x)
         if output_array is None:
             output_array = np.zeros(x.shape)
-        #output_array[:] = np.cos(i*np.arccos(x))
+        # output_array[:] = np.cos(i*np.arccos(x))
         output_array[:] = eval_chebyt(i, x)
         return output_array
 
@@ -281,9 +312,11 @@ class Orthogonal(JacobiBase):
             V = np.dot(V, D)
         return V
 
-    def _evaluate_expansion_all(self, input_array, output_array, x=None, kind='fast'):
-        if kind != 'fast':
-            SpectralBase._evaluate_expansion_all(self, input_array, output_array, x, kind=kind)
+    def _evaluate_expansion_all(self, input_array, output_array, x=None, kind="fast"):
+        if kind != "fast":
+            SpectralBase._evaluate_expansion_all(
+                self, input_array, output_array, x, kind=kind
+            )
             return
 
         assert input_array is self.backward.tmp_array
@@ -293,34 +326,36 @@ class Orthogonal(JacobiBase):
         if self.quad == "GC":
             s0 = self.sl[slice(0, 1)]
             output_array *= 0.5
-            output_array += input_array[s0]/2
+            output_array += input_array[s0] / 2
 
         elif self.quad == "GL":
             output_array *= 0.5
-            output_array += input_array[self.sl[slice(0, 1)]]/2
+            output_array += input_array[self.sl[slice(0, 1)]] / 2
             s0 = self.sl[slice(-1, None)]
             s2 = self.sl[slice(0, None, 2)]
-            output_array[s2] += input_array[s0]/2
+            output_array[s2] += input_array[s0] / 2
             s2 = self.sl[slice(1, None, 2)]
-            output_array[s2] -= input_array[s0]/2
+            output_array[s2] -= input_array[s0] / 2
 
-    def _evaluate_scalar_product(self, kind='fast'):
-        if kind != 'fast':
+    def _evaluate_scalar_product(self, kind="fast"):
+        if kind != "fast":
             SpectralBase._evaluate_scalar_product(self, kind=kind)
             return
 
         if self.quad == "GC":
             out = self.scalar_product.xfftn()
-            out *= (np.pi/(2*self.domain_factor()*self.N*self.padding_factor))
+            out *= np.pi / (2 * self.domain_factor() * self.N * self.padding_factor)
 
         elif self.quad == "GL":
             out = self.scalar_product.xfftn()
-            out *= (np.pi/(2*self.domain_factor()*(self.N*self.padding_factor-1)))
-    #@profile
+            out *= np.pi / (
+                2 * self.domain_factor() * (self.N * self.padding_factor - 1)
+            )
+
     def eval(self, x, u, output_array=None):
         x = np.atleast_1d(x)
         x = self.map_reference_domain(x)
-        #oa = chebval(x, u)
+        # oa = chebval(x, u)
         oa = n_cheb.chebval(x, u, False)
         if output_array is not None:
             output_array[:] = oa
@@ -333,29 +368,33 @@ class Orthogonal(JacobiBase):
 
     @staticmethod
     def short_name():
-        return 'T'
+        return "T"
 
     def stencil_matrix(self, N=None):
         N = self.N if N is None else N
         return SparseMatrix({0: 1}, (N, N))
 
-    def sympy_stencil(self, i=sp.Symbol('i', integer=True), j=sp.Symbol('j', integer=True)):
+    def sympy_stencil(
+        self, i=sp.Symbol("i", integer=True), j=sp.Symbol("j", integer=True)
+    ):
         return sp.KroneckerDelta(i, j)
 
     def to_ortho(self, input_array, output_array=None):
-        assert input_array.__class__.__name__ == 'Orthogonal'
+        assert input_array.__class__.__name__ == "Orthogonal"
         if output_array:
             output_array[:] = input_array
             return output_array
         return input_array
 
     def get_orthogonal(self, **kwargs):
-        d = dict(quad=self.quad,
-                 domain=self.domain,
-                 dtype=self.dtype,
-                 padding_factor=self.padding_factor,
-                 dealias_direct=self.dealias_direct,
-                 coordinates=self.coors.coordinates)
+        d = dict(
+            quad=self.quad,
+            domain=self.domain,
+            dtype=self.dtype,
+            padding_factor=self.padding_factor,
+            dealias_direct=self.dealias_direct,
+            coordinates=self.coors.coordinates,
+        )
         d.update(kwargs)
         return Orthogonal(self.N, **d)
 
@@ -382,21 +421,25 @@ class Orthogonal(JacobiBase):
         plan_bck = self._xfftn_bck
 
         opts = plan_fwd.opts
-        opts['overwrite_input'] = 'FFTW_DESTROY_INPUT'
+        opts["overwrite_input"] = "FFTW_DESTROY_INPUT"
         opts.update(options)
-        flags = (fftw.flag_dict[opts['planner_effort']],
-                 fftw.flag_dict[opts['overwrite_input']])
-        threads = opts['threads']
+        flags = (
+            fftw.flag_dict[opts["planner_effort"]],
+            fftw.flag_dict[opts["overwrite_input"]],
+        )
+        threads = opts["threads"]
 
         U = fftw.aligned(shape, dtype=float)
 
         xfftn_fwd = plan_fwd(U, axes=(axis,), threads=threads, flags=flags)
         V = xfftn_fwd.output_array
-        xfftn_bck = plan_bck(V, axes=(axis,), threads=threads, flags=flags, output_array=U)
+        xfftn_bck = plan_bck(
+            V, axes=(axis,), threads=threads, flags=flags, output_array=U
+        )
         V.fill(0)
         U.fill(0)
 
-        if np.dtype(dtype) is np.dtype('complex'):
+        if np.dtype(dtype) is np.dtype("complex"):
             # dct only works on real data, so need to wrap it
             U = fftw.aligned(shape, dtype=complex)
             V = fftw.aligned(shape, dtype=complex)
@@ -408,7 +451,9 @@ class Orthogonal(JacobiBase):
         self.axis = axis
         if self.padding_factor != 1:
             trunc_array = self._get_truncarray(shape, V.dtype)
-            self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, trunc_array)
+            self.scalar_product = Transform(
+                self.scalar_product, xfftn_fwd, U, V, trunc_array
+            )
             self.forward = Transform(self.forward, xfftn_fwd, U, V, trunc_array)
             self.backward = Transform(self.backward, xfftn_bck, trunc_array, V, U)
         else:
@@ -419,12 +464,14 @@ class Orthogonal(JacobiBase):
         self.si = islicedict(axis=self.axis, dimensions=U.ndim)
         self.sl = slicedict(axis=self.axis, dimensions=U.ndim)
 
+
 # Note that all composite spaces rely on the fast transforms of
 # the orthogonal space. For this reason we have an intermediate
 # class CompositeBase for all composite spaces, where common code
 # is implemented and reused by all.
 CompositeBase = getCompositeBase(Orthogonal)
 BCGeneric = getBCGeneric(CompositeBase)
+
 
 class ShenDirichlet(CompositeBase):
     r"""Function space for Dirichlet boundary conditions.
@@ -473,22 +520,40 @@ class ShenDirichlet(CompositeBase):
 
     """
 
-    def __init__(self, N, quad="GC", bc=(0, 0), domain=Domain(-1, 1), dtype=float,
-                 padding_factor=1, dealias_direct=False, coordinates=None, **kw):
-        CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
-                               padding_factor=padding_factor, dealias_direct=dealias_direct,
-                               coordinates=coordinates)
+    def __init__(
+        self,
+        N,
+        quad="GC",
+        bc=(0, 0),
+        domain=Domain(-1, 1),
+        dtype=float,
+        padding_factor=1,
+        dealias_direct=False,
+        coordinates=None,
+        **kw,
+    ):
+        CompositeBase.__init__(
+            self,
+            N,
+            quad=quad,
+            domain=domain,
+            dtype=dtype,
+            bc=bc,
+            padding_factor=padding_factor,
+            dealias_direct=dealias_direct,
+            coordinates=coordinates,
+        )
         self._stencil = {0: 1, 2: -1}
 
     @staticmethod
     def boundary_condition():
-        return 'Dirichlet'
+        return "Dirichlet"
 
     @staticmethod
     def short_name():
-        return 'SD'
+        return "SD"
 
-    #def _evaluate_scalar_product(self, kind='fast'):
+    # def _evaluate_scalar_product(self, kind='fast'):
     #    if kind != 'fast':
     #        SpectralBase._evaluate_scalar_product(self, kind=kind)
     #        self.scalar_product.tmp_array[self.si[-2]] = 0
@@ -502,7 +567,7 @@ class ShenDirichlet(CompositeBase):
     #    output[self.si[-2]] = 0
     #    output[self.si[-1]] = 0
 
-    #def to_ortho(self, input_array, output_array=None):
+    # def to_ortho(self, input_array, output_array=None):
     #    if output_array is None:
     #        output_array = np.zeros_like(input_array)
     #    else:
@@ -513,6 +578,7 @@ class ShenDirichlet(CompositeBase):
     #    output_array[s1] -= input_array[s0]
     #    self.bc._add_to_orthogonal(output_array, input_array)
     #    return output_array
+
 
 class Phi1(CompositeBase):
     r"""Function space for Dirichlet boundary conditions.
@@ -560,23 +626,42 @@ class Phi1(CompositeBase):
         Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
 
     """
-    def __init__(self, N, quad="GC", bc=(0, 0), domain=Domain(-1., 1.), dtype=float,
-                 padding_factor=1, dealias_direct=False, coordinates=None, **kw):
-        CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
-                               padding_factor=padding_factor, dealias_direct=dealias_direct,
-                               coordinates=coordinates)
-        #self._stencil = {
+
+    def __init__(
+        self,
+        N,
+        quad="GC",
+        bc=(0, 0),
+        domain=Domain(-1.0, 1.0),
+        dtype=float,
+        padding_factor=1,
+        dealias_direct=False,
+        coordinates=None,
+        **kw,
+    ):
+        CompositeBase.__init__(
+            self,
+            N,
+            quad=quad,
+            domain=domain,
+            dtype=dtype,
+            bc=bc,
+            padding_factor=padding_factor,
+            dealias_direct=dealias_direct,
+            coordinates=coordinates,
+        )
+        # self._stencil = {
         #   0: sp.simplify(b(-half, -half, n+1, n, cn) / (h(-half, -half, n, 0, cn))),
         #   2: sp.simplify(b(-half, -half, n+1, n+2, cn) / (h(-half, -half, n+2, 0, cn)))}
-        self._stencil = {0: 1/sp.pi/(n+1), 2: -1/sp.pi/(n+1)}
+        self._stencil = {0: 1 / sp.pi / (n + 1), 2: -1 / sp.pi / (n + 1)}
 
     @staticmethod
     def boundary_condition():
-        return 'Dirichlet'
+        return "Dirichlet"
 
     @staticmethod
     def short_name():
-        return 'P1'
+        return "P1"
 
 
 class Heinrichs(CompositeBase):
@@ -629,38 +714,150 @@ class Heinrichs(CompositeBase):
 
     """
 
-    def __init__(self, N, quad="GC", bc=(0, 0), domain=Domain(-1, 1), dtype=float, scaled=False,
-                 padding_factor=1, dealias_direct=False, coordinates=None, **kw):
-        CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc, scaled=scaled,
-                               padding_factor=padding_factor, dealias_direct=dealias_direct,
-                               coordinates=coordinates)
+    def __init__(
+        self,
+        N,
+        quad="GC",
+        bc=(0, 0),
+        domain=Domain(-1, 1),
+        dtype=float,
+        scaled=False,
+        padding_factor=1,
+        dealias_direct=False,
+        coordinates=None,
+        **kw,
+    ):
+        CompositeBase.__init__(
+            self,
+            N,
+            quad=quad,
+            domain=domain,
+            dtype=dtype,
+            bc=bc,
+            scaled=scaled,
+            padding_factor=padding_factor,
+            dealias_direct=dealias_direct,
+            coordinates=coordinates,
+        )
 
     @staticmethod
     def boundary_condition():
-        return 'Dirichlet'
+        return "Dirichlet"
 
     @staticmethod
     def short_name():
-        return 'HH'
+        return "HH"
 
     def stencil_matrix(self, N=None):
         N = self.N if N is None else N
-        d = 0.5*np.ones(N, dtype=int)
+        d = 0.5 * np.ones(N, dtype=int)
         d[-2:] = 0
         d[1] = 0.25
-        dm2 = -0.25*np.ones(N-2, dtype=int)
+        dm2 = -0.25 * np.ones(N - 2, dtype=int)
         dm2[-2:] = 0
-        dp2 = -0.25*np.ones(N-2, dtype=int)
+        dp2 = -0.25 * np.ones(N - 2, dtype=int)
         dp2[0] = -0.5
         if self.is_scaled():
             k = np.arange(N)
-            d /= ((k+1)*(k+2))
-            dm2 /= ((k[:-2]+3)*(k[:-2]+4))
-            dp2 /= ((k[:-2]+1)*(k[:-2]+2))
+            d /= (k + 1) * (k + 2)
+            dm2 /= (k[:-2] + 3) * (k[:-2] + 4)
+            dp2 /= (k[:-2] + 1) * (k[:-2] + 2)
         return SparseMatrix({-2: dm2, 0: d, 2: dp2}, (N, N))
 
-    def sympy_stencil(self, i=sp.Symbol('i', integer=True), j=sp.Symbol('j', integer=True)):
+    def sympy_stencil(
+        self, i=sp.Symbol("i", integer=True), j=sp.Symbol("j", integer=True)
+    ):
         return RuntimeError, "Not possible for current basis"
+
+
+class Heinrichs2(CompositeBase):
+    r"""Function space for Dirichlet boundary conditions
+
+    The basis :math:`\{\phi_k\}_{k=0}^{N-1}` is
+
+    .. math::
+
+        \phi_k &= \frac{1}{4}\alpha_k(1-x^2) T_{k}, \, k=0, 1, \ldots, N-3, \\
+        \phi_{N-2} &= \frac{1}{2}(T_0-T_1), \\
+        \phi_{N-1} &= \frac{1}{2}(T_0+T_1),
+
+    such that
+
+    .. math::
+        u(x) &= \sum_{k=0}^{N-1} \hat{u}_k \phi_k(x), \\
+        u(-1) &= a \text{ and } u(1) = b.
+
+    The last two bases are for boundary conditions and only used if a or b are
+    different from 0. In one dimension :math:`\hat{u}_{N-2}=a` and
+    :math:`\hat{u}_{N-1}=b`. If the parameter `scaled=True`, then
+    :math:`\alpha_k=1/(k+1)/(k+2)`, otherwise, :math:`\alpha_k=1`.
+
+    Parameters
+    ----------
+    N : int, optional
+        Number of quadrature points
+    quad : str, optional
+        Type of quadrature
+
+        - GL - Chebyshev-Gauss-Lobatto
+        - GC - Chebyshev-Gauss
+
+    bc : 2-tuple of floats, optional
+        Boundary conditions at, respectively, x=(-1, 1).
+    domain : Domain, 2-tuple of numbers, optional
+        The computational domain
+    dtype : data-type, optiona
+        Type of input data in real physical space. Will be overloaded when
+        basis is part of a :class:`.TensorProductSpace`.
+    scaled : bool, optional
+        Whether or not to use scaled basis
+    padding_factor : float, optional
+        Factor for padding backward transforms.
+    dealias_direct : bool, optional
+        Set upper 1/3 of coefficients to zero before backward transform
+    coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
+        Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
+
+    """
+
+    def __init__(
+        self,
+        N,
+        quad="GC",
+        bc=(0, 0),
+        domain=Domain(-1, 1),
+        dtype=float,
+        scaled=False,
+        padding_factor=1,
+        dealias_direct=False,
+        coordinates=None,
+        **kw,
+    ):
+        CompositeBase.__init__(
+            self,
+            N,
+            quad=quad,
+            domain=domain,
+            dtype=dtype,
+            bc=bc,
+            scaled=scaled,
+            padding_factor=padding_factor,
+            dealias_direct=dealias_direct,
+            coordinates=coordinates,
+        )
+        self._stencil = {
+            -2: 1 / (4 * (n + 3) * (n + 4)),
+            0: -1 / (2 * (n + 1) * (n + 2)),
+            2: 1 / (4 * (n + 1) * (n + 2)),
+        }
+
+    @staticmethod
+    def boundary_condition():
+        return "Dirichlet"
+
+    @staticmethod
+    def short_name():
+        return "H2"
 
 
 class ShenNeumann(CompositeBase):
@@ -709,22 +906,43 @@ class ShenNeumann(CompositeBase):
         Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
 
     """
-    def __init__(self, N, quad="GC", bc=(0, 0), domain=Domain(-1, 1), dtype=float, padding_factor=1,
-                 dealias_direct=False, coordinates=None, **kw):
+
+    def __init__(
+        self,
+        N,
+        quad="GC",
+        bc=(0, 0),
+        domain=Domain(-1, 1),
+        dtype=float,
+        padding_factor=1,
+        dealias_direct=False,
+        coordinates=None,
+        **kw,
+    ):
         if isinstance(bc, (tuple, list)):
-            bc = BoundaryConditions({'left': {'N': bc[0]}, 'right': {'N': bc[1]}}, domain=domain)
-        CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
-                               padding_factor=padding_factor, dealias_direct=dealias_direct,
-                               coordinates=coordinates)
-        self._stencil = {0: 1, 2: -(n/(n+2))**2}
+            bc = BoundaryConditions(
+                {"left": {"N": bc[0]}, "right": {"N": bc[1]}}, domain=domain
+            )
+        CompositeBase.__init__(
+            self,
+            N,
+            quad=quad,
+            domain=domain,
+            dtype=dtype,
+            bc=bc,
+            padding_factor=padding_factor,
+            dealias_direct=dealias_direct,
+            coordinates=coordinates,
+        )
+        self._stencil = {0: 1, 2: -((n / (n + 2)) ** 2)}
 
     @staticmethod
     def boundary_condition():
-        return 'Neumann'
+        return "Neumann"
 
     @staticmethod
     def short_name():
-        return 'SN'
+        return "SN"
 
 
 class CombinedShenNeumann(CompositeBase):
@@ -778,40 +996,64 @@ class CombinedShenNeumann(CompositeBase):
         Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
 
     """
-    def __init__(self, N, quad="GC", bc=(0, 0), domain=Domain(-1, 1), dtype=float, padding_factor=1,
-                 dealias_direct=False, coordinates=None, **kw):
+
+    def __init__(
+        self,
+        N,
+        quad="GC",
+        bc=(0, 0),
+        domain=Domain(-1, 1),
+        dtype=float,
+        padding_factor=1,
+        dealias_direct=False,
+        coordinates=None,
+        **kw,
+    ):
         if isinstance(bc, (tuple, list)):
-            bc = BoundaryConditions({'left': {'N': bc[0]}, 'right': {'N': bc[1]}}, domain=domain)
-        CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
-                               padding_factor=padding_factor, dealias_direct=dealias_direct,
-                               coordinates=coordinates)
+            bc = BoundaryConditions(
+                {"left": {"N": bc[0]}, "right": {"N": bc[1]}}, domain=domain
+            )
+        CompositeBase.__init__(
+            self,
+            N,
+            quad=quad,
+            domain=domain,
+            dtype=dtype,
+            bc=bc,
+            padding_factor=padding_factor,
+            dealias_direct=dealias_direct,
+            coordinates=coordinates,
+        )
 
     @staticmethod
     def boundary_condition():
-        return 'Neumann'
+        return "Neumann"
 
     @staticmethod
     def short_name():
-        return 'CN'
+        return "CN"
 
     def stencil_matrix(self, N=None):
         N = self.N if N is None else N
         k = np.arange(N)
         k[0] = 1
-        d = 2/k**2
+        d = 2 / k**2
         d[-2:] = 0
         d[0] = 1
         d[1] = 1
         d[2] = 0.25
-        dm2 = -1/k[:-2]**2
+        dm2 = -1 / k[:-2] ** 2
         dm2[0] = 0
         dm2[-2:] = 0
-        dp2 = -1/k[2:]**2
+        dp2 = -1 / k[2:] ** 2
         dp2[0] = 0
         return SparseMatrix({-2: dm2, 0: d, 2: dp2}, (N, N))
 
-    def sympy_stencil(self, i=sp.Symbol('i', integer=True), j=sp.Symbol('j', integer=True)):
+    def sympy_stencil(
+        self, i=sp.Symbol("i", integer=True), j=sp.Symbol("j", integer=True)
+    ):
         return RuntimeError, "Not possible for current basis"
+
 
 class MikNeumann(CompositeBase):
     r"""Function space for Neumann boundary conditions
@@ -869,41 +1111,64 @@ class MikNeumann(CompositeBase):
     coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
         Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
     """
-    def __init__(self, N, quad="GC", bc=(0, 0), domain=Domain(-1, 1), dtype=float, padding_factor=1,
-                 dealias_direct=False, coordinates=None, **kw):
+
+    def __init__(
+        self,
+        N,
+        quad="GC",
+        bc=(0, 0),
+        domain=Domain(-1, 1),
+        dtype=float,
+        padding_factor=1,
+        dealias_direct=False,
+        coordinates=None,
+        **kw,
+    ):
         if isinstance(bc, (tuple, list)):
-            bc = BoundaryConditions({'left': {'N': bc[0]}, 'right': {'N': bc[1]}}, domain=domain)
-        CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
-                               padding_factor=padding_factor, dealias_direct=dealias_direct,
-                               coordinates=coordinates)
+            bc = BoundaryConditions(
+                {"left": {"N": bc[0]}, "right": {"N": bc[1]}}, domain=domain
+            )
+        CompositeBase.__init__(
+            self,
+            N,
+            quad=quad,
+            domain=domain,
+            dtype=dtype,
+            bc=bc,
+            padding_factor=padding_factor,
+            dealias_direct=dealias_direct,
+            coordinates=coordinates,
+        )
 
     @staticmethod
     def boundary_condition():
-        return 'Neumann'
+        return "Neumann"
 
     @staticmethod
     def short_name():
-        return 'MN'
+        return "MN"
 
     def stencil_matrix(self, N=None):
         N = self.N if N is None else N
         k = np.arange(N)
         k[0] = 1
-        d = 2/k/(k+1)
+        d = 2 / k / (k + 1)
         d[-2:] = 0
         d[0] = 1
-        d[1] = 3/2
-        d[2] = 1/3
-        dm2 = -1/k[:-2]/(k[2:]+1)
+        d[1] = 3 / 2
+        d[2] = 1 / 3
+        dm2 = -1 / k[:-2] / (k[2:] + 1)
         dm2[0] = 0
         dm2[-2:] = 0
-        dp2 = -1/k[2:]/(k[2:]-1)
+        dp2 = -1 / k[2:] / (k[2:] - 1)
         dp2[0] = 0
-        #dp2[1] = -1/6
-        #dp2[2] = -1/12
+        # dp2[1] = -1/6
+        # dp2[2] = -1/12
         return SparseMatrix({-2: dm2, 0: d, 2: dp2}, (N, N))
 
-    def sympy_stencil(self, i=sp.Symbol('i', integer=True), j=sp.Symbol('j', integer=True)):
+    def sympy_stencil(
+        self, i=sp.Symbol("i", integer=True), j=sp.Symbol("j", integer=True)
+    ):
         return RuntimeError, "Not possible for current basis"
 
 
@@ -957,20 +1222,41 @@ class ShenBiharmonic(CompositeBase):
         Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
 
     """
-    def __init__(self, N, quad="GC", bc=(0, 0, 0, 0), domain=Domain(-1, 1), dtype=float,
-                 padding_factor=1, dealias_direct=False, coordinates=None, **kw):
-        CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
-                               padding_factor=padding_factor, dealias_direct=dealias_direct,
-                               coordinates=coordinates)
-        self._stencil = {0: 1, 2: -(2*n + 4)/(n + 3), 4: (n + 1)/(n + 3)}
+
+    def __init__(
+        self,
+        N,
+        quad="GC",
+        bc=(0, 0, 0, 0),
+        domain=Domain(-1, 1),
+        dtype=float,
+        padding_factor=1,
+        dealias_direct=False,
+        coordinates=None,
+        **kw,
+    ):
+        CompositeBase.__init__(
+            self,
+            N,
+            quad=quad,
+            domain=domain,
+            dtype=dtype,
+            bc=bc,
+            padding_factor=padding_factor,
+            dealias_direct=dealias_direct,
+            coordinates=coordinates,
+        )
+        self._stencil = {0: 1, 2: -(2 * n + 4) / (n + 3), 4: (n + 1) / (n + 3)}
+        # self._stencil = {0: (n + 3) / (n + 1), 2: -(2 * n + 4) / (n + 1), 4: 1}
 
     @staticmethod
     def boundary_condition():
-        return 'Biharmonic'
+        return "Biharmonic"
 
     @staticmethod
     def short_name():
-        return 'SB'
+        return "SB"
+
 
 class PolarDirichlet(CompositeBase):
     r"""Function space for polar coordinates.
@@ -1021,15 +1307,34 @@ class PolarDirichlet(CompositeBase):
         Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
 
     """
-    def __init__(self, N, quad="GC", bc=(0, 0), domain=Domain(-1, 1), dtype=float,
-                 padding_factor=1, dealias_direct=False, coordinates=None, **kw):
-        CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
-                               padding_factor=padding_factor, dealias_direct=dealias_direct,
-                               coordinates=coordinates)
+
+    def __init__(
+        self,
+        N,
+        quad="GC",
+        bc=(0, 0),
+        domain=Domain(-1, 1),
+        dtype=float,
+        padding_factor=1,
+        dealias_direct=False,
+        coordinates=None,
+        **kw,
+    ):
+        CompositeBase.__init__(
+            self,
+            N,
+            quad=quad,
+            domain=domain,
+            dtype=dtype,
+            bc=bc,
+            padding_factor=padding_factor,
+            dealias_direct=dealias_direct,
+            coordinates=coordinates,
+        )
 
     @staticmethod
     def boundary_condition():
-        return 'Dirichlet'
+        return "Dirichlet"
 
     def stencil_matrix(self, N=None):
         N = self.N if N is None else N
@@ -1041,9 +1346,11 @@ class PolarDirichlet(CompositeBase):
 
     @staticmethod
     def short_name():
-        return 'PD'
+        return "PD"
 
-    def sympy_stencil(self, i=sp.Symbol('i', integer=True), j=sp.Symbol('j', integer=True)):
+    def sympy_stencil(
+        self, i=sp.Symbol("i", integer=True), j=sp.Symbol("j", integer=True)
+    ):
         return RuntimeError, "Not possible for current basis"
 
 
@@ -1103,28 +1410,47 @@ class Phi2(CompositeBase):
         Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
 
     """
-    def __init__(self, N, quad="GC", bc=(0, 0, 0, 0), domain=Domain(-1, 1), dtype=float,
-                 padding_factor=1, dealias_direct=False, coordinates=None, **kw):
-        CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
-                               padding_factor=padding_factor, dealias_direct=dealias_direct,
-                               coordinates=coordinates)
-        #self._stencil = {
+
+    def __init__(
+        self,
+        N,
+        quad="GC",
+        bc=(0, 0, 0, 0),
+        domain=Domain(-1, 1),
+        dtype=float,
+        padding_factor=1,
+        dealias_direct=False,
+        coordinates=None,
+        **kw,
+    ):
+        CompositeBase.__init__(
+            self,
+            N,
+            quad=quad,
+            domain=domain,
+            dtype=dtype,
+            bc=bc,
+            padding_factor=padding_factor,
+            dealias_direct=dealias_direct,
+            coordinates=coordinates,
+        )
+        # self._stencil = {
         #    0: sp.simplify(matpow(b, 2, -half, -half, n+2, n, cn) / h(-half, -half, n, 0, cn)),
         #    2: sp.simplify(matpow(b, 2, -half, -half, n+2, n+2, cn) / h(-half, -half, n+2, 0, cn)),
         #    4: sp.simplify(matpow(b, 2, -half, -half, n+2, n+4, cn) / h(-half, -half, n+4, 0, cn))}
         self._stencil = {
-            0: 1/(2*sp.pi*(n + 1)*(n + 2)),
-            2: -1/(sp.pi*(n**2 + 4*n + 3)),
-            4:  1/(2*sp.pi*(n + 2)*(n + 3))
+            0: 1 / (2 * sp.pi * (n + 1) * (n + 2)),
+            2: -1 / (sp.pi * (n**2 + 4 * n + 3)),
+            4: 1 / (2 * sp.pi * (n + 2) * (n + 3)),
         }
 
     @staticmethod
     def boundary_condition():
-        return 'Biharmonic'
+        return "Biharmonic"
 
     @staticmethod
     def short_name():
-        return 'P2'
+        return "P2"
 
 
 class Phi3(CompositeBase):
@@ -1171,31 +1497,50 @@ class Phi3(CompositeBase):
         Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
 
     """
-    def __init__(self, N, quad="GC", bc=(0,)*6, domain=Domain(-1, 1), dtype=float,
-                 padding_factor=1, dealias_direct=False, coordinates=None, **kw):
-        CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
-                               padding_factor=padding_factor, dealias_direct=dealias_direct,
-                               coordinates=coordinates)
-        #self._stencil = {
+
+    def __init__(
+        self,
+        N,
+        quad="GC",
+        bc=(0,) * 6,
+        domain=Domain(-1, 1),
+        dtype=float,
+        padding_factor=1,
+        dealias_direct=False,
+        coordinates=None,
+        **kw,
+    ):
+        CompositeBase.__init__(
+            self,
+            N,
+            quad=quad,
+            domain=domain,
+            dtype=dtype,
+            bc=bc,
+            padding_factor=padding_factor,
+            dealias_direct=dealias_direct,
+            coordinates=coordinates,
+        )
+        # self._stencil = {
         #    0: sp.simplify(matpow(b, 3, -half, -half, n+3, n, cn) / h(-half, -half, n, 0, cn)),
         #    2: sp.simplify(matpow(b, 3, -half, -half, n+3, n+2, cn) / h(-half, -half, n+2, 0, cn)),
         #    4: sp.simplify(matpow(b, 3, -half, -half, n+3, n+4, cn) / h(-half, -half, n+4, 0, cn)),
         #    6: sp.simplify(matpow(b, 3, -half, -half, n+3, n+6, cn) / h(-half, -half, n+6, 0, cn))}
         # Below is the same but faster since already simplified
         self._stencil = {
-            0: 1/(4*sp.pi*(n + 1)*(n + 2)*(n + 3)),
-            2: -3/(4*sp.pi*(n + 1)*(n + 3)*(n + 4)),
-            4: 3/(4*sp.pi*(n + 2)*(n + 3)*(n + 5)),
-            6: -1/(4*sp.pi*(n + 3)*(n + 4)*(n + 5))
+            0: 1 / (4 * sp.pi * (n + 1) * (n + 2) * (n + 3)),
+            2: -3 / (4 * sp.pi * (n + 1) * (n + 3) * (n + 4)),
+            4: 3 / (4 * sp.pi * (n + 2) * (n + 3) * (n + 5)),
+            6: -1 / (4 * sp.pi * (n + 3) * (n + 4) * (n + 5)),
         }
 
     @staticmethod
     def boundary_condition():
-        return '6th order'
+        return "6th order"
 
     @staticmethod
     def short_name():
-        return 'P3'
+        return "P3"
 
 
 class Phi4(CompositeBase):
@@ -1235,12 +1580,31 @@ class Phi4(CompositeBase):
         Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
 
     """
-    def __init__(self, N, quad="GC", bc=(0,)*8, domain=Domain(-1, 1), dtype=float,
-                 padding_factor=1, dealias_direct=False, coordinates=None, **kw):
-        CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
-                               padding_factor=padding_factor, dealias_direct=dealias_direct,
-                               coordinates=coordinates)
-        #self._stencil = {
+
+    def __init__(
+        self,
+        N,
+        quad="GC",
+        bc=(0,) * 8,
+        domain=Domain(-1, 1),
+        dtype=float,
+        padding_factor=1,
+        dealias_direct=False,
+        coordinates=None,
+        **kw,
+    ):
+        CompositeBase.__init__(
+            self,
+            N,
+            quad=quad,
+            domain=domain,
+            dtype=dtype,
+            bc=bc,
+            padding_factor=padding_factor,
+            dealias_direct=dealias_direct,
+            coordinates=coordinates,
+        )
+        # self._stencil = {
         #    0: sp.simplify(matpow(b, 4, -half, -half, n+4, n, cn) / h(-half, -half, n, 0, cn)),
         #    2: sp.simplify(matpow(b, 4, -half, -half, n+4, n+2, cn) / h(-half, -half, n+2, 0, cn)),
         #    4: sp.simplify(matpow(b, 4, -half, -half, n+4, n+4, cn) / h(-half, -half, n+4, 0, cn)),
@@ -1248,20 +1612,21 @@ class Phi4(CompositeBase):
         #    8: sp.simplify(matpow(b, 4, -half, -half, n+4, n+8, cn) / h(-half, -half, n+8, 0, cn))}
         # Below is the same but faster since already simplified
         self._stencil = {
-            0: 1/(8*sp.pi*(n + 1)*(n + 2)*(n + 3)*(n + 4)),
-            2: -1/(2*sp.pi*(n + 1)*(n + 3)*(n + 4)*(n + 5)),
-            4: 3/(4*sp.pi*(n + 2)*(n + 3)*(n + 5)*(n + 6)),
-            6: -1/(2*sp.pi*(n + 3)*(n + 4)*(n + 5)*(n + 7)),
-            8: 1/(8*sp.pi*(n + 4)*(n + 5)*(n + 6)*(n + 7))
+            0: 1 / (8 * sp.pi * (n + 1) * (n + 2) * (n + 3) * (n + 4)),
+            2: -1 / (2 * sp.pi * (n + 1) * (n + 3) * (n + 4) * (n + 5)),
+            4: 3 / (4 * sp.pi * (n + 2) * (n + 3) * (n + 5) * (n + 6)),
+            6: -1 / (2 * sp.pi * (n + 3) * (n + 4) * (n + 5) * (n + 7)),
+            8: 1 / (8 * sp.pi * (n + 4) * (n + 5) * (n + 6) * (n + 7)),
         }
 
     @staticmethod
     def boundary_condition():
-        return 'Biharmonic*2'
+        return "Biharmonic*2"
 
     @staticmethod
     def short_name():
-        return 'P4'
+        return "P4"
+
 
 class Phi6(CompositeBase):
     r"""Function space for 12th order equation
@@ -1300,12 +1665,31 @@ class Phi6(CompositeBase):
         Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
 
     """
-    def __init__(self, N, quad="GC", bc=(0,)*12, domain=Domain(-1, 1), dtype=float,
-                 padding_factor=1, dealias_direct=False, coordinates=None, **kw):
-        CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
-                               padding_factor=padding_factor, dealias_direct=dealias_direct,
-                               coordinates=coordinates)
-        #self._stencil = {
+
+    def __init__(
+        self,
+        N,
+        quad="GC",
+        bc=(0,) * 12,
+        domain=Domain(-1, 1),
+        dtype=float,
+        padding_factor=1,
+        dealias_direct=False,
+        coordinates=None,
+        **kw,
+    ):
+        CompositeBase.__init__(
+            self,
+            N,
+            quad=quad,
+            domain=domain,
+            dtype=dtype,
+            bc=bc,
+            padding_factor=padding_factor,
+            dealias_direct=dealias_direct,
+            coordinates=coordinates,
+        )
+        # self._stencil = {
         #    0: sp.simplify(matpow(b, 6, -half, -half, n+6, n, cn) / h(-half, -half, n, 0, cn)),
         #    2: sp.simplify(matpow(b, 6, -half, -half, n+6, n+2, cn) / h(-half, -half, n+2, 0, cn)),
         #    4: sp.simplify(matpow(b, 6, -half, -half, n+6, n+4, cn) / h(-half, -half, n+4, 0, cn)),
@@ -1315,22 +1699,32 @@ class Phi6(CompositeBase):
         #   12: sp.simplify(matpow(b, 6, -half, -half, n+6, n+12, cn) / h(-half, -half, n+12, 0, cn))}
         # Below is the same but faster since already simplified
         self._stencil = {
-            0:  1/(32*sp.pi*(n + 1)*(n + 2)*(n + 3)*(n + 4)*(n + 5)*(n + 6)),
-            2: -3/(16*sp.pi*(n + 1)*(n + 3)*(n + 4)*(n + 5)*(n + 6)*(n + 7)),
-            4: 15/(32*sp.pi*(n + 2)*(n + 3)*(n + 5)*(n + 6)*(n + 7)*(n + 8)),
-            6: -5/(8*sp.pi*(n + 3)*(n + 4)*(n + 5)*(n + 7)*(n + 8)*(n + 9)),
-            8: 15/(32*sp.pi*(n + 4)*(n + 5)*(n + 6)*(n + 7)*(n + 9)*(n + 10)),
-           10: -3/(16*sp.pi*(n + 5)*(n + 6)*(n + 7)*(n + 8)*(n + 9)*(n + 11)),
-           12: 1/(32*sp.pi*(n + 6)*(n + 7)*(n + 8)*(n + 9)*(n + 10)*(n + 11))
+            0: 1
+            / (32 * sp.pi * (n + 1) * (n + 2) * (n + 3) * (n + 4) * (n + 5) * (n + 6)),
+            2: -3
+            / (16 * sp.pi * (n + 1) * (n + 3) * (n + 4) * (n + 5) * (n + 6) * (n + 7)),
+            4: 15
+            / (32 * sp.pi * (n + 2) * (n + 3) * (n + 5) * (n + 6) * (n + 7) * (n + 8)),
+            6: -5
+            / (8 * sp.pi * (n + 3) * (n + 4) * (n + 5) * (n + 7) * (n + 8) * (n + 9)),
+            8: 15
+            / (32 * sp.pi * (n + 4) * (n + 5) * (n + 6) * (n + 7) * (n + 9) * (n + 10)),
+            10: -3
+            / (16 * sp.pi * (n + 5) * (n + 6) * (n + 7) * (n + 8) * (n + 9) * (n + 11)),
+            12: 1
+            / (
+                32 * sp.pi * (n + 6) * (n + 7) * (n + 8) * (n + 9) * (n + 10) * (n + 11)
+            ),
         }
 
     @staticmethod
     def boundary_condition():
-        return '12th order'
+        return "12th order"
 
     @staticmethod
     def short_name():
-        return 'P6'
+        return "P6"
+
 
 class UpperDirichlet(CompositeBase):
     r"""Function space with single Dirichlet on upper edge
@@ -1376,20 +1770,39 @@ class UpperDirichlet(CompositeBase):
         Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
 
     """
-    def __init__(self, N, quad="GC", bc=(None, 0), domain=Domain(-1, 1), dtype=float,
-                 padding_factor=1, dealias_direct=False, coordinates=None, **kw):
-        CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
-                               padding_factor=padding_factor, dealias_direct=dealias_direct,
-                               coordinates=coordinates)
+
+    def __init__(
+        self,
+        N,
+        quad="GC",
+        bc=(None, 0),
+        domain=Domain(-1, 1),
+        dtype=float,
+        padding_factor=1,
+        dealias_direct=False,
+        coordinates=None,
+        **kw,
+    ):
+        CompositeBase.__init__(
+            self,
+            N,
+            quad=quad,
+            domain=domain,
+            dtype=dtype,
+            bc=bc,
+            padding_factor=padding_factor,
+            dealias_direct=dealias_direct,
+            coordinates=coordinates,
+        )
         self._stencil = {0: 1, 1: -1}
 
     @staticmethod
     def boundary_condition():
-        return 'UpperDirichlet'
+        return "UpperDirichlet"
 
     @staticmethod
     def short_name():
-        return 'UD'
+        return "UD"
 
 
 class LowerDirichlet(CompositeBase):
@@ -1436,20 +1849,39 @@ class LowerDirichlet(CompositeBase):
         Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
 
     """
-    def __init__(self, N, quad="GC", bc=(0, None), domain=Domain(-1, 1), dtype=float,
-                 padding_factor=1, dealias_direct=False, coordinates=None, **kw):
-        CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
-                               padding_factor=padding_factor, dealias_direct=dealias_direct,
-                               coordinates=coordinates)
+
+    def __init__(
+        self,
+        N,
+        quad="GC",
+        bc=(0, None),
+        domain=Domain(-1, 1),
+        dtype=float,
+        padding_factor=1,
+        dealias_direct=False,
+        coordinates=None,
+        **kw,
+    ):
+        CompositeBase.__init__(
+            self,
+            N,
+            quad=quad,
+            domain=domain,
+            dtype=dtype,
+            bc=bc,
+            padding_factor=padding_factor,
+            dealias_direct=dealias_direct,
+            coordinates=coordinates,
+        )
         self._stencil = {0: 1, 1: 1}
 
     @staticmethod
     def boundary_condition():
-        return 'LowerDirichlet'
+        return "LowerDirichlet"
 
     @staticmethod
     def short_name():
-        return 'LD'
+        return "LD"
 
 
 class ShenBiPolar(CompositeBase):
@@ -1481,35 +1913,56 @@ class ShenBiPolar(CompositeBase):
         Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
 
     """
-    def __init__(self, N, quad="GC", bc=(0, 0, 0, 0), domain=Domain(-1, 1), dtype=float,
-                 padding_factor=1, dealias_direct=False, coordinates=None, **kw):
-        CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
-                               padding_factor=padding_factor, dealias_direct=dealias_direct,
-                               coordinates=coordinates)
+
+    def __init__(
+        self,
+        N,
+        quad="GC",
+        bc=(0, 0, 0, 0),
+        domain=Domain(-1, 1),
+        dtype=float,
+        padding_factor=1,
+        dealias_direct=False,
+        coordinates=None,
+        **kw,
+    ):
+        CompositeBase.__init__(
+            self,
+            N,
+            quad=quad,
+            domain=domain,
+            dtype=dtype,
+            bc=bc,
+            padding_factor=padding_factor,
+            dealias_direct=dealias_direct,
+            coordinates=coordinates,
+        )
 
     @staticmethod
     def boundary_condition():
-        return 'Biharmonic'
+        return "Biharmonic"
 
     @staticmethod
     def short_name():
-        return 'SP'
+        return "SP"
 
     def stencil_matrix(self, N=None):
         N = self.N if N is None else N
         k = np.arange(N)
-        d = (k+1)*3/8
+        d = (k + 1) * 3 / 8
         d[0] = 0.5
         d[1] = 0.5
         d[-4:] = 0
-        dm2 = -(k[2:]+1)/8
+        dm2 = -(k[2:] + 1) / 8
         dm2[-4:] = 0
-        dp2 = -(k[:-2]+1)*3/8
+        dp2 = -(k[:-2] + 1) * 3 / 8
         dp2[-2:] = 0
-        dp4 = (k[:-4]+1)/8
+        dp4 = (k[:-4] + 1) / 8
         return SparseMatrix({-2: dm2, 0: d, 2: dp2, 4: dp4}, (N, N))
 
-    def sympy_stencil(self, i=sp.Symbol('i', integer=True), j=sp.Symbol('j', integer=True)):
+    def sympy_stencil(
+        self, i=sp.Symbol("i", integer=True), j=sp.Symbol("j", integer=True)
+    ):
         return RuntimeError, "Not possible for current basis"
 
 
@@ -1560,26 +2013,46 @@ class DirichletNeumann(CompositeBase):
 
     """
 
-    def __init__(self, N, quad="GC", bc=(0, 0), domain=Domain(-1, 1), dtype=float,
-                 padding_factor=1, dealias_direct=False, coordinates=None, **kw):
+    def __init__(
+        self,
+        N,
+        quad="GC",
+        bc=(0, 0),
+        domain=Domain(-1, 1),
+        dtype=float,
+        padding_factor=1,
+        dealias_direct=False,
+        coordinates=None,
+        **kw,
+    ):
         if isinstance(bc, (tuple, list)):
-            bc = BoundaryConditions({'left': {'D': bc[0]}, 'right': {'N': bc[1]}}, domain=domain)
-        CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
-                               padding_factor=padding_factor, dealias_direct=dealias_direct,
-                               coordinates=coordinates)
+            bc = BoundaryConditions(
+                {"left": {"D": bc[0]}, "right": {"N": bc[1]}}, domain=domain
+            )
+        CompositeBase.__init__(
+            self,
+            N,
+            quad=quad,
+            domain=domain,
+            dtype=dtype,
+            bc=bc,
+            padding_factor=padding_factor,
+            dealias_direct=dealias_direct,
+            coordinates=coordinates,
+        )
         self._stencil = {
             0: 1,
-            1: 4*(n + 1)/(2*n**2 + 6*n + 5),
-            2: -(2*n**2 + 2*n + 1)/(2*n**2 + 6*n + 5)
+            1: 4 * (n + 1) / (2 * n**2 + 6 * n + 5),
+            2: -(2 * n**2 + 2 * n + 1) / (2 * n**2 + 6 * n + 5),
         }
 
     @staticmethod
     def boundary_condition():
-        return 'DirichletNeumann'
+        return "DirichletNeumann"
 
     @staticmethod
     def short_name():
-        return 'DN'
+        return "DN"
 
 
 class NeumannDirichlet(CompositeBase):
@@ -1629,26 +2102,46 @@ class NeumannDirichlet(CompositeBase):
 
     """
 
-    def __init__(self, N, quad="GC", bc=(0, 0), domain=Domain(-1, 1), dtype=float,
-                 padding_factor=1, dealias_direct=False, coordinates=None, **kw):
+    def __init__(
+        self,
+        N,
+        quad="GC",
+        bc=(0, 0),
+        domain=Domain(-1, 1),
+        dtype=float,
+        padding_factor=1,
+        dealias_direct=False,
+        coordinates=None,
+        **kw,
+    ):
         if isinstance(bc, (tuple, list)):
-            bc = BoundaryConditions({'left': {'N': bc[0]}, 'right': {'D': bc[1]}}, domain=domain)
-        CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
-                               padding_factor=padding_factor, dealias_direct=dealias_direct,
-                               coordinates=coordinates)
+            bc = BoundaryConditions(
+                {"left": {"N": bc[0]}, "right": {"D": bc[1]}}, domain=domain
+            )
+        CompositeBase.__init__(
+            self,
+            N,
+            quad=quad,
+            domain=domain,
+            dtype=dtype,
+            bc=bc,
+            padding_factor=padding_factor,
+            dealias_direct=dealias_direct,
+            coordinates=coordinates,
+        )
         self._stencil = {
             0: 1,
-            1: -(4*n + 4)/(2*n**2 + 6*n + 5),
-            2: -(2*n**2 + 2*n + 1)/(2*n**2 + 6*n + 5)
+            1: -(4 * n + 4) / (2 * n**2 + 6 * n + 5),
+            2: -(2 * n**2 + 2 * n + 1) / (2 * n**2 + 6 * n + 5),
         }
 
     @staticmethod
     def boundary_condition():
-        return 'NeumannDirichlet'
+        return "NeumannDirichlet"
 
     @staticmethod
     def short_name():
-        return 'ND'
+        return "ND"
 
 
 class UpperDirichletNeumann(CompositeBase):
@@ -1699,26 +2192,44 @@ class UpperDirichletNeumann(CompositeBase):
 
     """
 
-    def __init__(self, N, quad="GC", bc=(0, 0), domain=Domain(-1, 1), dtype=float,
-                 padding_factor=1, dealias_direct=False, coordinates=None, **kw):
+    def __init__(
+        self,
+        N,
+        quad="GC",
+        bc=(0, 0),
+        domain=Domain(-1, 1),
+        dtype=float,
+        padding_factor=1,
+        dealias_direct=False,
+        coordinates=None,
+        **kw,
+    ):
         if isinstance(bc, (tuple, list)):
-            bc = BoundaryConditions({'right': {'D': bc[0], 'N': bc[1]}}, domain=domain)
-        CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
-                               padding_factor=padding_factor, dealias_direct=dealias_direct,
-                               coordinates=coordinates)
+            bc = BoundaryConditions({"right": {"D": bc[0], "N": bc[1]}}, domain=domain)
+        CompositeBase.__init__(
+            self,
+            N,
+            quad=quad,
+            domain=domain,
+            dtype=dtype,
+            bc=bc,
+            padding_factor=padding_factor,
+            dealias_direct=dealias_direct,
+            coordinates=coordinates,
+        )
         self._stencil = {
             0: 1,
-            1: -(4*n + 4)/(2*n + 3),
-            2: (2*n + 1)/(2*n + 3)
+            1: -(4 * n + 4) / (2 * n + 3),
+            2: (2 * n + 1) / (2 * n + 3),
         }
 
     @staticmethod
     def boundary_condition():
-        return 'UpperDirichletNeumann'
+        return "UpperDirichletNeumann"
 
     @staticmethod
     def short_name():
-        return 'US'
+        return "US"
 
 
 class LowerDirichletNeumann(CompositeBase):
@@ -1769,26 +2280,45 @@ class LowerDirichletNeumann(CompositeBase):
 
     """
 
-    def __init__(self, N, quad="GC", bc=(0, 0), domain=Domain(-1, 1), dtype=float,
-                 padding_factor=1, dealias_direct=False, coordinates=None, **kw):
+    def __init__(
+        self,
+        N,
+        quad="GC",
+        bc=(0, 0),
+        domain=Domain(-1, 1),
+        dtype=float,
+        padding_factor=1,
+        dealias_direct=False,
+        coordinates=None,
+        **kw,
+    ):
         if isinstance(bc, (tuple, list)):
-            bc = BoundaryConditions({'left': {'D': bc[0], 'N': bc[1]}}, domain=domain)
-        CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
-                               padding_factor=padding_factor, dealias_direct=dealias_direct,
-                               coordinates=coordinates)
+            bc = BoundaryConditions({"left": {"D": bc[0], "N": bc[1]}}, domain=domain)
+        CompositeBase.__init__(
+            self,
+            N,
+            quad=quad,
+            domain=domain,
+            dtype=dtype,
+            bc=bc,
+            padding_factor=padding_factor,
+            dealias_direct=dealias_direct,
+            coordinates=coordinates,
+        )
         self._stencil = {
             0: 1,
-            1: 4*(n + 1)/(2*n + 3),
-            2: (2*n + 1)/(2*n + 3)
+            1: 4 * (n + 1) / (2 * n + 3),
+            2: (2 * n + 1) / (2 * n + 3),
         }
 
     @staticmethod
     def boundary_condition():
-        return 'LowerDirichletNeumann'
+        return "LowerDirichletNeumann"
 
     @staticmethod
     def short_name():
-        return 'LS'
+        return "LS"
+
 
 class Compact3(CompositeBase):
     r"""Function space for 6'th order equation
@@ -1838,12 +2368,31 @@ class Compact3(CompositeBase):
         Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
 
     """
-    def __init__(self, N, quad="GC", bc=(0,)*6, domain=Domain(-1, 1), dtype=float,
-                 padding_factor=1, dealias_direct=False, coordinates=None, **kw):
-        CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
-                               padding_factor=padding_factor, dealias_direct=dealias_direct,
-                               coordinates=coordinates)
-        #self._stencil = {
+
+    def __init__(
+        self,
+        N,
+        quad="GC",
+        bc=(0,) * 6,
+        domain=Domain(-1, 1),
+        dtype=float,
+        padding_factor=1,
+        dealias_direct=False,
+        coordinates=None,
+        **kw,
+    ):
+        CompositeBase.__init__(
+            self,
+            N,
+            quad=quad,
+            domain=domain,
+            dtype=dtype,
+            bc=bc,
+            padding_factor=padding_factor,
+            dealias_direct=dealias_direct,
+            coordinates=coordinates,
+        )
+        # self._stencil = {
         #    0: 1,
         #    2: sp.simplify(matpow(b, 3, -half, -half, n+3, n+2, cn) / matpow(b, 3, -half, -half, n+3, n, cn) * h(-half, -half, n, 0, cn) / h(-half, -half, n+2, 0, cn)),
         #    4: sp.simplify(matpow(b, 3, -half, -half, n+3, n+4, cn) / matpow(b, 3, -half, -half, n+3, n, cn) * h(-half, -half, n, 0, cn) / h(-half, -half, n+4, 0, cn)),
@@ -1852,18 +2401,19 @@ class Compact3(CompositeBase):
         # Can also use findbasis.get_stencil_matrix
         self._stencil = {
             0: 1,
-            2: -(3*n + 6)/(n + 4),
-            4: 3*(n + 1)/(n + 5),
-            6: -(n + 1)*(n + 2)/((n + 4)*(n + 5))
+            2: -(3 * n + 6) / (n + 4),
+            4: 3 * (n + 1) / (n + 5),
+            6: -(n + 1) * (n + 2) / ((n + 4) * (n + 5)),
         }
 
     @staticmethod
     def boundary_condition():
-        return '6th order'
+        return "6th order"
 
     @staticmethod
     def short_name():
-        return 'C3'
+        return "C3"
+
 
 class Compact4(CompositeBase):
     r"""Function space for 8'th order equation
@@ -1913,12 +2463,31 @@ class Compact4(CompositeBase):
         Map for curvilinear coordinatesystem, and parameters to :class:`~shenfun.coordinates.Coordinates`
 
     """
-    def __init__(self, N, quad="GC", bc=(0,)*8, domain=Domain(-1, 1), dtype=float,
-                 padding_factor=1, dealias_direct=False, coordinates=None, **kw):
-        CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
-                               padding_factor=padding_factor, dealias_direct=dealias_direct,
-                               coordinates=coordinates)
-        #self._stencil = {
+
+    def __init__(
+        self,
+        N,
+        quad="GC",
+        bc=(0,) * 8,
+        domain=Domain(-1, 1),
+        dtype=float,
+        padding_factor=1,
+        dealias_direct=False,
+        coordinates=None,
+        **kw,
+    ):
+        CompositeBase.__init__(
+            self,
+            N,
+            quad=quad,
+            domain=domain,
+            dtype=dtype,
+            bc=bc,
+            padding_factor=padding_factor,
+            dealias_direct=dealias_direct,
+            coordinates=coordinates,
+        )
+        # self._stencil = {
         #    0: 1,
         #    2: sp.simplify(matpow(b, 4, -half, -half, n+4, n+2, cn) / matpow(b, 4, -half, -half, n+4, n, cn) * h(-half, -half, n, 0, cn) / h(-half, -half, n+2, 0, cn)),
         #    4: sp.simplify(matpow(b, 4, -half, -half, n+4, n+4, cn) / matpow(b, 4, -half, -half, n+4, n, cn) * h(-half, -half, n, 0, cn) / h(-half, -half, n+4, 0, cn)),
@@ -1929,33 +2498,34 @@ class Compact4(CompositeBase):
         # Can also use findbasis.get_stencil_matrix
         self._stencil = {
             0: 1,
-            2: -(4*n + 8)/(n + 5),
-            4: 6*(n + 1)*(n + 4)/((n + 5)*(n + 6)),
-            6: -4*(n + 1)*(n + 2)/((n + 5)*(n + 7)),
-            8: (n + 1)*(n + 2)*(n + 3)/((n + 5)*(n + 6)*(n + 7))
+            2: -(4 * n + 8) / (n + 5),
+            4: 6 * (n + 1) * (n + 4) / ((n + 5) * (n + 6)),
+            6: -4 * (n + 1) * (n + 2) / ((n + 5) * (n + 7)),
+            8: (n + 1) * (n + 2) * (n + 3) / ((n + 5) * (n + 6) * (n + 7)),
         }
-        #self._stencil = {
+        # self._stencil = {
         #    0: 1/(8*sp.pi*(n + 1)*(n + 2)),
         #    2: -1/(2*sp.pi*(n + 1)*(n + 5)),
         #    4: 3*(n + 4)/(4*sp.pi*(n + 2)*(n + 5)*(n + 6)),
         #    6: -1/(2*sp.pi*(n + 5)*(n + 7)),
         #    8: (n + 3)/(8*sp.pi*(n + 5)*(n + 6)*(n + 7))
-        #}
-        #self._stencil = {
+        # }
+        # self._stencil = {
         #    0: 1/(8*sp.pi*(n + 1)*(n + 2)*(n + 3)*(n + 4)),
         #    2: -1/(2*sp.pi*(n + 1)*(n + 3)*(n + 4)*(n + 5)),
         #    4: 3/(4*sp.pi*(n + 2)*(n + 3)*(n + 5)*(n + 6)),
         #    6: -1/(2*sp.pi*(n + 3)*(n + 4)*(n + 5)*(n + 7)),
         #    8: 1/(8*sp.pi*(n + 4)*(n + 5)*(n + 6)*(n + 7))
-        #}
+        # }
 
     @staticmethod
     def boundary_condition():
-        return '8th order'
+        return "8th order"
 
     @staticmethod
     def short_name():
-        return 'C4'
+        return "C4"
+
 
 class Generic(CompositeBase):
     r"""Function space for space with any boundary conditions
@@ -2007,20 +2577,40 @@ class Generic(CompositeBase):
     A test function is always using homogeneous boundary conditions.
 
     """
-    def __init__(self, N, quad="GC", bc={}, domain=Domain(-1, 1), dtype=float,
-                 padding_factor=1, dealias_direct=False, coordinates=None, **kw):
+
+    def __init__(
+        self,
+        N,
+        quad="GC",
+        bc={},
+        domain=Domain(-1, 1),
+        dtype=float,
+        padding_factor=1,
+        dealias_direct=False,
+        coordinates=None,
+        **kw,
+    ):
         from shenfun.utilities.findbasis import get_stencil_matrix
-        self._stencil = get_stencil_matrix(bc, 'chebyshev', -half, -half, cn)
+
+        self._stencil = get_stencil_matrix(bc, "chebyshev", -half, -half, cn)
         if not isinstance(bc, BoundaryConditions):
             bc = BoundaryConditions(bc, domain=domain)
-        CompositeBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
-                               padding_factor=padding_factor, dealias_direct=dealias_direct,
-                               coordinates=coordinates)
+        CompositeBase.__init__(
+            self,
+            N,
+            quad=quad,
+            domain=domain,
+            dtype=dtype,
+            bc=bc,
+            padding_factor=padding_factor,
+            dealias_direct=dealias_direct,
+            coordinates=coordinates,
+        )
 
     @staticmethod
     def boundary_condition():
-        return 'Generic'
+        return "Generic"
 
     @staticmethod
     def short_name():
-        return 'GT'
+        return "GT"

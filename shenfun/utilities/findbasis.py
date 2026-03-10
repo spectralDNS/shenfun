@@ -114,7 +114,7 @@ def get_bc_basis(bcs, family, alpha=None, beta=None, gn=1):
         s = sp.simplify(A.solve(sp.eye(bcs.num_bcs())).T)
         return s
 
-    first_basis = bcs.num_derivatives() // bcs.num_bcs()
+    first_basis = bcs.num_derivatives()
     first = 0
     for first in range(first_basis+1):
         try:

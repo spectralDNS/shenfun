@@ -48,7 +48,6 @@ def leggauss(int N):
         A1008-A1026, 2014"
 
     """
-    x = np.zeros(N)
-    w = np.zeros(N)
+    x, w = np.zeros((2, N))
     GLPairs(N, x, w)
     return x, w

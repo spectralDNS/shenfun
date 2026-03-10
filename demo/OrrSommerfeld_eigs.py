@@ -186,6 +186,6 @@ if __name__ == '__main__':
     if args.plot:
         plt.figure()
         evi = evals*z.alfa
-        plt.plot(evi.imag, evi.real, 'o')
-        plt.axis([-10, 0.1, 0, 1])
+        plt.plot(evi.real, evi.imag, 'o')
+        plt.axis([0, 1, -10, 0.1])
         plt.show()

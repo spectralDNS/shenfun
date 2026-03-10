@@ -3,7 +3,7 @@ import numpy as np
 import sympy as sp
 from shenfun import FunctionSpace, TensorProductSpace, TrialFunction, div, grad, \
     curl, comm, VectorSpace, Function, inner, \
-    BlockMatrix, TestFunction as _TestFunction
+    BlockMatrix, TestFunction
 
 def get_function_space(space='cylinder'):
     if space == 'cylinder':
@@ -48,7 +48,7 @@ def test_vector_laplace(space):
     T = get_function_space(space)
     V = VectorSpace(T)
     u = TrialFunction(V)
-    v = _TestFunction(V)
+    v = TestFunction(V)
     du = div(grad(u))
     dv = grad(div(u)) - curl(curl(u))
     u_hat = Function(V)

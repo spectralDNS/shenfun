@@ -1,7 +1,7 @@
 from itertools import product
 import pytest
 from shenfun import FunctionSpace, TrialFunction, inner, Array, \
-    Function, TestFunction as _TestFunction
+    Function, TestFunction
 import numpy as np
 import sympy as sp
 
@@ -40,7 +40,7 @@ def test_inner_kind(family):
     N = 8
     f = sp.cos(8*sp.pi*x)
     B = FunctionSpace(8, family)
-    v = _TestFunction(B)
+    v = TestFunction(B)
     ff = inner(v, f)
     fv = inner(v, f, kind='vandermonde')
     fr = inner(v, f, kind='recursive')

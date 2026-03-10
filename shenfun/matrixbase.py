@@ -448,7 +448,7 @@ class SparseMatrix(MutableMapping):
             DiagMA, HeptaDMA)
         if self.scale == 0:
             return Solve
-            
+
         if len(self) == 1:
             if list(self.keys())[0] == 0:
                 return DiagMA
@@ -658,9 +658,9 @@ class SpectralMatrix(SparseMatrix):
                     if test[0].family() == 'fourier':
                         kind = 'vandermonde'
                     else:
-                        if test[0].family() != trial[0].family():
-                            kind = 'vandermonde'
-                        elif test[0].short_name() in ('P1', 'P2', 'P3', 'P4'):
+                        #if test[0].family() != trial[0].family():
+                        #    kind = 'vandermonde'
+                        if test[0].short_name() in ('P1', 'P2', 'P3', 'P4', 'P6'):
                             try:
                                 d = assemble_phi(test, trial, measure)
                                 _assembly_method += '_phi'
@@ -680,7 +680,7 @@ class SpectralMatrix(SparseMatrix):
                     _assembly_method += '_implemented'
                 elif kind == 'stencil':
                     assert sp.sympify(measure).is_polynomial(), 'Cannot use `stencil` with non-polynomial coefficients'
-                    if test[0].short_name() in ('P1', 'P2', 'P3', 'P4') and test[0].N != trial[0].N:
+                    if test[0].short_name() in ('P1', 'P2', 'P3', 'P4', 'P6') and test[0].N != trial[0].N:
                         d = assemble_phi(test, trial, measure)
                         _assembly_method += '_phi'
                     else:
@@ -2028,6 +2028,7 @@ def _assemble_stencil(test, trial, measure=1):
         A = K.diags('csr') * A.T * B.diags('csr') * S.diags('csr').T
     else:
         A = K.diags('csr') * B.diags('csr') * S.diags('csr').T
+
     K.shape = (test[0].N, test[0].N)
     S.shape = (trial[0].N, trial[0].N)
     if test[1]+trial[1] == 0 and test[0].family() == trial[0].family():
@@ -2061,7 +2062,7 @@ def _assemble_stencil(test, trial, measure=1):
     return d
 
 def assemble_phi(test, trial, measure=1):
-    assert test[0].short_name() in ('P1', 'P2', 'P3', 'P4')
+    assert test[0].short_name() in ('P1', 'P2', 'P3', 'P4', 'P6')
     if trial[0].is_boundary_basis:
         return _assemble_phi_bc(test, trial, measure)
     return _assemble_phi(test, trial, measure)

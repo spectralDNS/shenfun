@@ -60,6 +60,9 @@ class JacobiBase(SpectralBase):
     def reference_domain(self):
         return Domain(-1, 1)
 
+    def weight(self, x=xp):
+        return sp.Pow(1 - x, self.alpha) * sp.Pow(1 + x, self.beta)
+
     def unweighted_quadrature_weights(self):
         r"""Return quadrature weights for unweighted integrals
 

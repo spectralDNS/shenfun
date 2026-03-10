@@ -19,9 +19,9 @@ using curvilinear coordinates.
 import os
 from shenfun import *
 import sympy as sp
-#config['basisvectors'] = 'covariant'
+config['basisvectors'] = 'covariant'
 
-t = sp.Symbol('x', real=True, positive=True)
+t = sp.Symbol('x', real=True)
 #rv = (t, t+sp.sin(t))
 rv = (sp.sin(2*sp.pi*t), sp.cos(2*sp.pi*t), 2*t)
 

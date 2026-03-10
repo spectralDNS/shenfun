@@ -1172,6 +1172,7 @@ class TestFunction(BasisFunction):
         ahead of this space
     base : The base :class:`.TestFunction`
     """
+    __test__ = False
 
     def __init__(self, space, index=0, offset=0, base=None):
         BasisFunction.__init__(self, space, index, offset, base)
