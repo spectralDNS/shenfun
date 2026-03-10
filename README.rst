@@ -48,6 +48,7 @@ Shenfun can also be used to approximate analytical functions with global spectra
 Some recent papers using Shenfun
 --------------------------------
 
+- `Posterior comparison of model dynamics in several hybrid turbulence model forms <https://pubs.aip.org/aip/pof/article/36/10/105148/3315660/Posterior-comparison-of-model-dynamics-in-several>`_ Towery, Colin A. Z. and Sáenz, Juan A. and Livescu, Daniel, Physics of Fluids 36, 105148 (2024)
 - `Effective control of two-dimensional Rayleigh–Bénard convection: Invariant multi-agent reinforcement learning is all you need <https://pubs.aip.org/aip/pof/article/35/6/065146/2900730>`_ C. Vignon, J. Rabault, J. Vasanth, F. Alcántara-Ávila, M. Mortensen, R. Vinuesa, Physics of Fluids 35, 065146 (2023)
 - `Solving Partial Differential Equations with Equivariant Extreme Learning Machines <https://www.researchgate.net/profile/Sebastian-Peitz/publication/380897446_Solving_Partial_Differential_Equations_with_Equivariant_Extreme_Learning_Machines/links/66544d0fbc86444c7205cbdb/Solving-Partial-Differential-Equations-with-Equivariant-Extreme-Learning-Machines.pdf>`_, H. Harder, J. Rabault, R. Vinuesa, M. Mortensen, S. Peitz. preprint (2024)
 - `A global spectral-Galerkin investigation of a Rayleigh–Taylor instability in plasma using an MHD–Boussinesq model <https://pubs.aip.org/aip/adv/article/13/10/105319/2917415>`_  A. Piterskaya, Wojciech J. Miloch, M. Mortensen, AIP Advances 13, 105319 (2023)
