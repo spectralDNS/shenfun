@@ -2,7 +2,7 @@ from numbers import Number, Integral
 from itertools import product
 from collections import defaultdict
 import copy
-from scipy.special import sph_harm, erf, airy, jn, gammaln
+from scipy.special import sph_harm_y, erf, airy, jn, gammaln
 import numpy as np
 import sympy as sp
 from shenfun.config import config
@@ -15,7 +15,7 @@ __all__ = ('Expr', 'BasisFunction', 'TestFunction', 'TrialFunction', 'Function',
 
 # Define some special functions required for spherical harmonics
 cot = lambda x: 1/np.tan(x)
-Ynm = lambda n, m, x, y : sph_harm(m, n, y, x)
+Ynm = lambda n, m, x, y: sph_harm_y(n, m, x, y)
 airyai = lambda x: airy(x)[0]
 besselj = jn
 
@@ -348,7 +348,7 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
             else:
                 raise NotImplementedError
             B = bases[''.join(key)]
-        
+
         return B(N, **par)
 
     elif family.lower() in ('hermite', 'h'):
@@ -2005,7 +2005,7 @@ class Array(ShenfunBaseArray):
         b = T.coors.get_basis()
         bij = np.zeros(b.shape, dtype=object)
         for bi in np.ndindex(bij.shape):
-            bij[bi] = sp.lambdify(psi, b[bi])(*x) 
+            bij[bi] = sp.lambdify(psi, b[bi])(*x)
             if isinstance(bij[bi], int):
                 bij[bi] = np.full(x[0].shape, bij[bi])
         bij = np.array(bij.tolist())
