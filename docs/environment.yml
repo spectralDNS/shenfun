@@ -20,6 +20,7 @@ dependencies:
   - mpi4py
   - mpi4py-fft
   - plotly
+  - setuptools
   - Sphinx
   - pip:
     - sphinxcontrib-bibtex
