@@ -14,7 +14,7 @@ dependencies:
   - sympy
   - pyyaml
   - scipy
-  - shenfun
+  - shenfun>=4.3.0
   - matplotlib
   - pandas
   - mpi4py

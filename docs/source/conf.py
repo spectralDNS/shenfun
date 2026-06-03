@@ -23,7 +23,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..',
 # -- Project information -----------------------------------------------------
 
 project = 'shenfun'
-copyright = '2024, Mikael Mortensen'
+copyright = '2026, Mikael Mortensen'
 author = 'Mikael Mortensen'
 
 p = subprocess.Popen(["git describe --tags | cut -d'-' -f 1"], stdout=subprocess.PIPE, shell=True)
