@@ -29,7 +29,7 @@ coordinates, like polar or spherical coordinates.
 """
 #pylint: disable=wildcard-import,no-name-in-module
 
-__version__ = '4.2.2'
+__version__ = '4.3.0'
 __author__ = 'Mikael Mortensen'
 
 import numpy as np
@@ -37,7 +37,6 @@ from mpi4py import MPI
 from .config import config, dumpconfig
 from . import chebyshev
 from . import chebyshevu
-#from . import gegenbauer
 from . import legendre
 from . import laguerre
 from . import hermite
