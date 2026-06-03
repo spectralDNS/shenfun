@@ -9,7 +9,7 @@ version: 2
 build:
   os: ubuntu-22.04
   tools:
-    python: "miniconda3-3.12-24.9"
+    python: "3.10"
   jobs:
     pre_build:
       - python setup.py build_ext -i
