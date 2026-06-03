@@ -13,7 +13,7 @@ The demo is implemented in slightly more generic terms (more boundary conditions
 "poisson3D.py":
 "https://github.com/spectralDNS/shenfun/blob/master/demo/poisson3D.py", and the numerical method is is described in more detail by J. Shen cite{shen1} and cite{shen95}.
 
-FIGURE: [https://rawgit.com/spectralDNS/spectralutilities/master/figures/poisson3D_errornorm.png] Convergence of 3D Poisson solvers for both Legendre and Chebyshev modified basis function. label{fig:3d:ct0}
+FIGURE: [https://raw.githack.com/spectralDNS/spectralutilities/master/figures/poisson3D_errornorm.png] Convergence of 3D Poisson solvers for both Legendre and Chebyshev modified basis function. label{fig:3d:ct0}
 
 TOC: off
 

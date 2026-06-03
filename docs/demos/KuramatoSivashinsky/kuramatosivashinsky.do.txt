@@ -16,17 +16,17 @@ TOC: off
 
 % if FORMAT in ("latex", "pdflatex"):
 
-FIGURE: [https://rawgit.com/spectralDNS/spectralutilities/master/figures/Kuramato_Sivashinsky_128_399.png] The solution $u$ from Eq. (ref{eq:ks}), at $t=100$.
+FIGURE: [https://raw.githack.com/spectralDNS/spectralutilities/master/figures/Kuramato_Sivashinsky_128_399.png] The solution $u$ from Eq. (ref{eq:ks}), at $t=100$.
 
 % elif FORMAT in ("sphinx"):
 
-MOVIE: [https://rawgit.com/spectralDNS/spectralutilities/master/movies/Kuramato_movie_128.gif]
+MOVIE: [https://raw.githack.com/spectralDNS/spectralutilities/master/movies/Kuramato_movie_128.gif]
 
 Movie showing the evolution of the solution $u$ from Eq. (ref{eq:ks}).
 
 % else:
 
-FIGURE: [https://rawgit.com/spectralDNS/spectralutilities/master/movies/Kuramato_movie_128.gif] Movie showing the evolution of the solution of the Kuramato-Sivashinsky equation.
+FIGURE: [https://raw.githack.com/spectralDNS/spectralutilities/master/movies/Kuramato_movie_128.gif] Movie showing the evolution of the solution of the Kuramato-Sivashinsky equation.
 
 % endif
 

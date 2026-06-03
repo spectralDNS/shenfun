@@ -13,7 +13,7 @@ without any further considerations required from the user.
 The solver assembles a block matrix with sparsity pattern as shown below
 for the Legendre basis.
 
-FIGURE: [https://rawgit.com/spectralDNS/spectralutilities/master/figures/BlockMat.png] Coupled block matrix for Stokes equations. label{fig:BlockMat}
+FIGURE: [https://raw.githack.com/spectralDNS/spectralutilities/master/figures/BlockMat.png] Coupled block matrix for Stokes equations. label{fig:BlockMat}
 
 TOC: off
 
