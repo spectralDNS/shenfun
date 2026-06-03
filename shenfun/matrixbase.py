@@ -1924,13 +1924,15 @@ def _get_matrix(test, trial, measure=1, assemble=None, fixed_resolution=None):
                 else:
                     assert isinstance(measure, Number)
 
-            cheb = test[0].family() == 'chebyshev'
+            cheb = test[0].family() in ('chebyshev', 'chebyshevu', 'ultraspherical', 'gegenbauer')
             if cheb: # use adaptive quadrature with weight incorporated
                 w = {'weight': 'alg',
-                     'wvar': (-0.5, -0.5)}
+                     'wvar': (float(test[0].alpha), float(test[0].beta)),
+                     'epsabs': 0, 'epsrel': 1e-8}
             else:
                 w = {}
                 measure *= test[0].weight() # Weight of weighted space (in reference domain)
+
             domain = test[0].reference_domain()
             for i in range(test[0].slice().start, test[0].slice().stop):
                 pi = np.conj(test[0].basis_function(i, x=x))

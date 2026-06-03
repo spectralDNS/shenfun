@@ -22,6 +22,7 @@ config = {
             'fourier': 'fast',
             'legendre': 'recursive',
             'ultraspherical': 'recursive',
+            'gegenbauer': 'recursive',
             'hermite': 'vandermonde',
             'laguerre': 'vandermonde',
             'jacobi': 'recursive'

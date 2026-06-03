@@ -15,7 +15,7 @@ __all__ = ('Expr', 'BasisFunction', 'TestFunction', 'TrialFunction', 'Function',
 
 # Define some special functions required for spherical harmonics
 cot = lambda x: 1/np.tan(x)
-Ynm = lambda n, m, x, y: sph_harm_y(n, m, x, y)
+Ynm = sph_harm_y
 airyai = lambda x: airy(x)[0]
 besselj = jn
 
