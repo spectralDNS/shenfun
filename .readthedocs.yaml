@@ -9,7 +9,7 @@ version: 2
 build:
   os: ubuntu-22.04
   tools:
-    python: "mambaforge-22.9"
+    python: "miniconda3-3.12-24.9""
   jobs:
     pre_build:
       - python setup.py build_ext -i
